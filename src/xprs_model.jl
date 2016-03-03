@@ -21,12 +21,12 @@ end
 
 # If environment is tied to this model, the, we can safely finalize
 # both at the same time, working around the Julia GC.
-function Model(env::Env, name::ASCIIString; finalize_env::Bool=false)
+function Model(env::Env; finalize_env::Bool=false)
 
     @assert is_valid(env)
     
     a = Array(Ptr{Void}, 1)
-    ret = @xprs_ccall(newmodel, Cint, ( Ptr{Ptr{Void}},
+    ret = @xprs_ccall(createprob, Cint, ( Ptr{Ptr{Void}},
         ), 
         a, 
     )
@@ -58,7 +58,7 @@ Base.unsafe_convert(ty::Type{Ptr{Void}}, model::Model) = model.ptr_model::Ptr{Vo
 
 function free_model(model::Model)
     if model.ptr_model != C_NULL
-        @grb_ccall(freemodel, Void, (Ptr{Void},), model.ptr_model)
+        @xprs_ccall(destroyprob, Void, (Ptr{Void},), model.ptr_model)
         model.ptr_model = C_NULL
     end
 end
