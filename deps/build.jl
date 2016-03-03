@@ -9,19 +9,18 @@ function write_depsfile(path)
     close(f)
 end
 
-aliases = ["xpress"]
+aliases = ASCIIString["xprs"]
 
 paths_to_try = copy(aliases)
 
 for a in aliases
-    if haskey(ENV, "XPRESS")
-        @unix_only push!(paths_to_try, joinpath(ENV["XPRESS"],"lib",string("lib",a,".so")))
-        @windows_only push!(paths_to_try, joinpath(ENV["XPRESS"],"bin",string(a,".",Libdl.dlext)))
+    if haskey(ENV, "XPRESSDIR")
+        @unix_only push!(paths_to_try, joinpath(ENV["XPRESSDIR"],"lib",string("lib",a,".so")))
+        @windows_only push!(paths_to_try, joinpath(ENV["XPRESSDIR"],"bin",string(a,".",Libdl.dlext)))
     end
-    # # gurobi uses .so on OS X for some reason
-    # @osx_only push!(paths_to_try, string("lib$a.so"))
 end
 
+#println(paths_to_try)
 found = false
 for l in paths_to_try
     d = Libdl.dlopen_e(l)
@@ -33,5 +32,5 @@ for l in paths_to_try
 end
 
 if !found
-    error("Unable to locate Xpress installation. Note that this must be downloaded separately from fico.com")
+    error("Unable to locate Xpress installation, please check your enviromental variable XPRESSDIR. Note that this must be downloaded separately from fico.com")
 end

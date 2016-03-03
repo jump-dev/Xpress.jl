@@ -1,8 +1,9 @@
-__precompile__()
+#__precompile__()
 
-module Xpress
+#module Xpress
 
     if isfile(joinpath(dirname(@__FILE__),"..","deps","deps.jl"))
+        println("../deps/deps.jl")
         include("../deps/deps.jl")
     else
         error("Xpress not properly installed. Please run Pkg.build(\"Xpress\")")
@@ -10,13 +11,13 @@ module Xpress
 
     ### imports
 
-    import Base.show, Base.copy
+    #import Base.show, Base.copy
 
     # Standard LP interface
-    importall MathProgBase.SolverInterface
+    #importall MathProgBase.SolverInterface
 
     ### exports
-    export 
+    #export 
 
     ## xprs_env
     #free_env,
@@ -60,9 +61,9 @@ module Xpress
     ### include source files
 
     include("xprs_common.jl")
-    include("xprs_env.jl")
+    #include("xprs_env.jl")
 
-    include("xprs_model.jl")
+    #include("xprs_model.jl")
     #include("xprs_params.jl")
     #include("xprs_vars.jl")
     #include("xprs_attrs.jl")
@@ -74,4 +75,4 @@ module Xpress
     #include("xprs_callbacks.jl")
 
     #include("XpressSolverInterface.jl")
-end
+#end

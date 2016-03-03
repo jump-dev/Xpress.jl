@@ -55,11 +55,9 @@ end
 
 # Xpress library version
 function getlibversion()
-    _major = Cint[0]
-    _minor = Cint[0]
-    _tech = Cint[0]
-    @xprs_ccall(version, Void, (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}), _major, _minor, _tech)
-    return VersionNumber(_major[1], _minor[1], _tech[1])        
+    out = Array(Cchar, 16)                                     # "                "
+    ret = @xprs_ccall(getversion, Cint, ( Ptr{Cchar},), out)   # ( Cstring,), out)
+    return bytestring(pointer(out))                            # VersionNumber(_major[1], _minor[1], _tech[1])        
 end
 
 # version need not be export
