@@ -5,7 +5,7 @@ end
 
 function write_depsfile(path)
     f = open(depsfile,"w")
-    println(f,"const xprs = \"$path\"")
+    println(f,"const xprs = \"$(path)\"")
     close(f)
 end
 
@@ -20,12 +20,13 @@ for a in aliases
     end
 end
 
-#println(paths_to_try)
+println(paths_to_try)
 found = false
-for l in paths_to_try
+for l in paths_to_try[2:end]
     d = Libdl.dlopen_e(l)
     if d != C_NULL
         found = true
+        print($(l))
         write_depsfile(l)
         break
     end

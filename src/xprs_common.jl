@@ -1,5 +1,5 @@
 # Common stuff
-
+const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
 ## convenient types and type conversion functions
 
 typealias GChars Union{Cchar, Char}
@@ -45,6 +45,7 @@ const emptyfmat = Array(Float64, 0, 0)
 # macro to call a Xpress C functions
 macro xprs_ccall(func, args...)
     f = "XPRS$(func)"
+
     @unix_only return quote
         ccall(($f,xprs), $(args...))
     end
@@ -57,7 +58,14 @@ end
 function getlibversion()
     out = Array(Cchar, 16)                                     # "                "
     ret = @xprs_ccall(getversion, Cint, ( Ptr{Cchar},), out)   # ( Cstring,), out)
-    return bytestring(pointer(out))                            # VersionNumber(_major[1], _minor[1], _tech[1])        
+
+    numbers = split(bytestring(pointer(out)) ,".")
+
+    _major = parse(Int,numbers[1]) 
+    _minor = parse(Int,numbers[2])
+    _tech  = parse(Int,numbers[3])
+
+    return  VersionNumber(_major, _minor, _tech)    #bytestring(pointer(out))                            #    
 end
 
 # version need not be export
