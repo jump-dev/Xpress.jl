@@ -48,6 +48,30 @@ end
 
 #################################################
 #
+#  model error handling
+#
+#################################################
+function get_error_msg(m::Model)
+    #@assert env.ptr_env == 1
+    out = Array(Cchar, 512) 
+    sz = @xprs_ccall(getlasterror, Cint, (Ptr{Void},Ptr{Cchar}), 
+        m.ptr_model, out)
+    ascii( bytestring(pointer(out))  )
+end
+# 
+# # error
+# 
+type XpressError
+    #code::Int
+    msg::ASCIIString 
+    
+    function XpressError(m::Model)#, code::Integer)
+        new( get_error_msg(m) )#convert(Int, code), get_error_msg(env))
+    end
+end
+
+#################################################
+#
 #  model manipulation
 #
 #################################################
@@ -59,8 +83,7 @@ function free_model(model::Model)
     if model.ptr_model != C_NULL
         ret = @xprs_ccall(destroyprob, Cint, (Ptr{Void},), model.ptr_model)
         if ret != 0
-            error("could not destroy prob")
-            #throw(XpressError(env, ret))
+            throw(XpressError(model))
         end
         model.ptr_model = C_NULL
     end
@@ -73,7 +96,7 @@ function copy(model_src::Model)
         ret = @xprs_ccall(copyprob, Cint, (Ptr{Void},Ptr{Void},Ptr{UInt8}), 
             model_dest.ptr_model, model_src.ptr_model, "")
         if ret != 0
-            error("Failed to copy a Xpress model.")
+            throw(XpressError(model_src))
         end
     end
     model_dest
@@ -106,8 +129,7 @@ function read_model(model::Model, filename::ASCIIString)
         (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}), 
         model.ptr_model, filename, flags)
     if ret != 0
-        error("error reading prob file")
-        #throw(XpressError(model.env, ret))
+        throw(XpressError(model))
     end
     nothing
 end
@@ -117,8 +139,7 @@ function write_model(model::Model, filename::ASCIIString)
     ret = @xprs_ccall(writeprob, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}), 
         model.ptr_model, filename, flags)
     if ret != 0
-        error("could not write model")
-        #throw(XpressError(model.env, ret))
+        throw(XpressError(model))
     end
     nothing
 end
@@ -165,22 +186,5 @@ end
 
 
 
-function get_error_msg(m::Model)
-    #@assert env.ptr_env == 1
-    out = Array(Cchar, 512) 
-    sz = @xprs_ccall(getlasterror, Cint, (Ptr{Void},Ptr{Cchar}), 
-        m.ptr_model, out)
-    ascii( bytestring(pointer(out))  )
-end
-# 
-# # error
-# 
-type XpressError
-    #code::Int
-    msg::ASCIIString 
-    
-    function XpressError(m::Model)#, code::Integer)
-        new( get_error_msg(m) )#convert(Int, code), get_error_msg(env))
-    end
-end
+
 

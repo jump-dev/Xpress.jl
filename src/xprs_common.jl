@@ -23,6 +23,10 @@ ivec(v::Vector) = convert(IVec, v)
 fvec(v::Vector) = convert(FVec, v)
 cvec(v::Vector) = convert(CVec, v)
 
+ivec(v::Int) = Int[v]
+fvec(v::Float64) = Float64[v]
+#cvec(v::Vector) = convert(CVec, v)
+
 # cvecx(v, n) and fvecx(v, n)
 # converts v into a vector of Cchar or Float64 of length n,
 # where v can be either a scalar or a vector of length n.

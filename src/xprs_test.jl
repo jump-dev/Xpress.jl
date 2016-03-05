@@ -12,7 +12,7 @@ m2 = copy(m)
 
 write_model(m2, "opt3.mps")
 
-a = get_int_control(m,5878546)
+a = get_int_control(m,XPRS_DEFAULTALG)
 
 
 println(a)

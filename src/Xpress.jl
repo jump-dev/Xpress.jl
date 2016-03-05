@@ -67,7 +67,7 @@
 
     include("xprs_model.jl")
     include("xprs_params.jl")
-    #include("xprs_vars.jl")
+    include("xprs_vars.jl")
     #include("xprs_attrs.jl")
     #include("xprs_constrs.jl")
     #include("xprs_quad.jl")
