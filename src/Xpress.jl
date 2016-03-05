@@ -60,11 +60,13 @@
 
     ### include source files
 
+    include("xprs_full_defines.jl")
+
     include("xprs_common.jl")
     include("xprs_env.jl")
 
     include("xprs_model.jl")
-    #include("xprs_params.jl")
+    include("xprs_params.jl")
     #include("xprs_vars.jl")
     #include("xprs_attrs.jl")
     #include("xprs_constrs.jl")

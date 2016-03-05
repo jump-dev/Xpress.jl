@@ -32,19 +32,3 @@ function free_env(env::Env)
     end
 end
 
-# function get_error_msg(env::Env)
-#     @assert env.ptr_env == 1
-#     sz = @xprs_ccall(geterrormsg, Ptr{UInt8}, (Ptr{Void},), env.ptr_env)
-# end
-# 
-# # error
-# 
-# type XpressError
-#     code::Int
-#     msg::ASCIIString 
-#     
-#     function XpressError(env::Env, code::Integer)
-#         new(convert(Int, code), get_error_msg(env))
-#     end
-# end
-

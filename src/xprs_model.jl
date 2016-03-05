@@ -162,3 +162,25 @@ end
 #     end
 #     Model(model.env, fixed)
 # end
+
+
+
+function get_error_msg(m::Model)
+    #@assert env.ptr_env == 1
+    out = Array(Cchar, 512) 
+    sz = @xprs_ccall(getlasterror, Cint, (Ptr{Void},Ptr{Cchar}), 
+        m.ptr_model, out)
+    ascii( bytestring(pointer(out))  )
+end
+# 
+# # error
+# 
+type XpressError
+    #code::Int
+    msg::ASCIIString 
+    
+    function XpressError(m::Model)#, code::Integer)
+        new( get_error_msg(m) )#convert(Int, code), get_error_msg(env))
+    end
+end
+

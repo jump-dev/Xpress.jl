@@ -11,3 +11,8 @@ write_model(m, "opt2.mps")
 m2 = copy(m)
 
 write_model(m2, "opt3.mps")
+
+a = get_int_control(m,5878546)
+
+
+println(a)
