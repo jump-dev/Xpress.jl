@@ -58,16 +58,25 @@ function get_error_msg(m::Model)
         m.ptr_model, out)
     ascii( bytestring(pointer(out))  )
 end
+function get_error_msg(m::Model,ret::Int)
+    #@assert env.ptr_env == 1
+    out = Array(Cint,1)
+    out2 = @xprs_ccall(getintattrib, Cint,(Ptr{Void}, Cint, Ptr{Cint}),
+        m.ptr_model, ret , out)
+    #convert(Int,out[1])
+end
 # 
 # # error
 # 
 type XpressError
-    #code::Int
+    code::Int
     msg::ASCIIString 
-    
-    function XpressError(m::Model)#, code::Integer)
-        new( get_error_msg(m) )#convert(Int, code), get_error_msg(env))
-    end
+end
+function XpressError(m::Model)#, code::Integer)
+    XpressError( 0, get_error_msg(m) )#convert(Int, code), get_error_msg(env))
+end
+function XpressError(m::Model,ret::Int)
+    XpressError( get_error_msg(m,ret), "get message from optimizer manual" )
 end
 
 #################################################
