@@ -14,7 +14,7 @@ read_model(m, "testeMod.mps")
 #a = get_int_control(m,XPRS_DEFAULTALG)
 #println(a)
 
-add_vars!(m, XPRS_CONTINUOUS, [33, 43], 0.03, 1.03)
+add_vars!(m, XPRS_INTEGER, [33, 43], 0.03, 1.03)
 chgcoltype!(m,1,XPRS_INTEGER)
 write_model(m, "testeModOut.mps")
 

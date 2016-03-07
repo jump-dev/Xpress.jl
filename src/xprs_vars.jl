@@ -46,20 +46,20 @@ function add_var!(model::Model, newnz::Int, mrwind::Vector{Int},dmatval::Vector{
 end
 
 function chgcoltype!(model::Model,colnum::Int,vtype::Cchar)
-    ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Cchar),
-        model.ptr_model,1,Int[colnum],XPRS_INTEGER)
+    ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Ptr{Cchar}),
+        model.ptr_model,1,Int[colnum],Cchar[XPRS_INTEGER])
     if  0 != ret
         throw(XpressError(model))
     end
 end
-function chgcoltypes!(model::Model,colnums::Vector{Int},vtypes::Vector{Cchar})
-    n=length(colnums)
-    ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Ptr{Cchar}),
-        model.ptr_model,n,colnum,vtype)
-    if 0 != ret
-        throw(XpressError(model))
-    end
-end
+# function chgcoltypes!(model::Model,colnums::Vector{Int},vtypes::Vector{Cchar})
+#     n=length(colnums)
+#     ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Ptr{Cchar}),
+#         model.ptr_model,n,colnum,vtype)
+#     if 0 != ret
+#         throw(XpressError(model))
+#     end
+# end
 #only add in obj
 function add_var!(model::Model, vtype::Cchar, c::Float64, lb::Float64, ub::Float64)
     lb = fixInf(lb)
@@ -114,6 +114,9 @@ function add_vars!(model::Model, vtypes::CVec, c::FVec, lb::FVec, ub::FVec)
     _chklen(c, n)
     _chklen(lb, n)
     _chklen(ub, n)
+    
+    fixInfs!(lb)
+    fixInfs!(ub)
 
     prev_cols = get_intattr(model,XPRS_COLS)
     # main call
@@ -134,12 +137,12 @@ function add_vars!(model::Model, vtypes::CVec, c::FVec, lb::FVec, ub::FVec)
         throw(XpressError(model))
     end
     
-    vtypes = cvecx(vtypes, n)
+    #vtypes = cvecx(vtypes, n)
     for i in 1:n
         if vtypes[i] == XPRS_INTEGER
-            chgcoltype!(model,prev_cols+i,XPRS_INTEGER)
+            chgcoltype!(model,prev_cols+i-1,XPRS_INTEGER)
         elseif vtypes[i] ==XPRS_BINARY
-            chgcoltype!(model,prev_cols+i,XPRS_BINARY)
+            chgcoltype!(model,prev_cols+i-1,XPRS_BINARY)
         end
     end
     nothing
