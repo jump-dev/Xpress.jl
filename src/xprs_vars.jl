@@ -82,9 +82,9 @@ function add_var!(model::Model, vtype::Cchar, c::Float64, lb::Float64, ub::Float
     end
 
     if vtype == XPRS_INTEGER
-        chgcoltype!(model,get_intattr(model,XPRS_COLS),XPRS_INTEGER)
+        chgcoltype!(model,get_intattr(model,XPRS_COLS)-1,XPRS_INTEGER)
     elseif vtype ==XPRS_BINARY
-        chgcoltype!(model,get_intattr(model,XPRS_COLS),XPRS_BINARY)
+        chgcoltype!(model,get_intattr(model,XPRS_COLS)-1,XPRS_BINARY)
     end        
 
     nothing  
@@ -114,7 +114,7 @@ function add_vars!(model::Model, vtypes::CVec, c::FVec, lb::FVec, ub::FVec)
     _chklen(c, n)
     _chklen(lb, n)
     _chklen(ub, n)
-    
+
     fixInfs!(lb)
     fixInfs!(ub)
 
