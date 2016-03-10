@@ -88,11 +88,11 @@ end
 
 #TODO
 
-function getparam(m::Model,name::ASCIIString)
+function getparam(m::Model,param::Cint)
 
 end
 
-function setparam(m::Model,name::ASCIIString,param::Any)
+function setparam(m::Model,param::Cint,val::Any)
 
 end
 
