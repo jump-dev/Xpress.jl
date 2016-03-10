@@ -41,127 +41,21 @@ end
 
 #=
 
-# Note: in attrarray API, the start argument is one-based (following Julia convention)
-
-function get_intattrarray!(r::Array{Cint}, model::Model, name::ASCIIString, start::Integer)
-    ret = @grb_ccall(getintattrarray, Cint, 
-        (Ptr{Void}, Ptr{UInt8}, Cint, Cint, Ptr{Cint}), 
-        model, name, start - 1, length(r), r)
-    if ret != 0
-        throw(GurobiError(model.env, ret))
-    end
-    r    
-end
-
-function get_intattrarray(model::Model, name::ASCIIString, start::Integer, len::Integer)
-    get_intattrarray!(Array(Cint, len), model, name, start)
-end
-
-function get_dblattrarray!(r::Array{Float64}, model::Model, name::ASCIIString, start::Integer)
-    ret = @grb_ccall(getdblattrarray, Cint, 
-        (Ptr{Void}, Ptr{UInt8}, Cint, Cint, Ptr{Float64}), 
-        model, name, start - 1, length(r), r)
-    if ret != 0
-        throw(GurobiError(model.env, ret))
-    end
-    r    
-end
-
-function get_dblattrarray(model::Model, name::ASCIIString, start::Integer, len::Integer)
-    get_dblattrarray!(Array(Float64, len), model, name, start)
-end
-
-function get_charattrarray!(r::Array{Cchar}, model::Model, name::ASCIIString, start::Integer)
-    ret = @grb_ccall(getcharattrarray, Cint, 
-        (Ptr{Void}, Ptr{UInt8}, Cint, Cint, Ptr{Cchar}), 
-        model, name, start - 1, length(r), r)
-    if ret != 0
-        throw(GurobiError(model.env, ret))
-    end
-    map(Char,r)
-end
-
-function get_charattrarray(model::Model, name::ASCIIString, start::Integer, len::Integer)
-    get_charattrarray!(Array(Cchar, len), model, name, start)
-end
-
-# setters
-
-function set_intattr!(model::Model, name::ASCIIString, v::Integer)
-    ret = @grb_ccall(setintattr, Cint, 
-        (Ptr{Void}, Ptr{UInt8}, Cint), model, name, v)
-    if ret != 0
-        throw(GurobiError(model.env, ret))
-    end
-    nothing
-end
-
-function set_dblattr!(model::Model, name::ASCIIString, v::Real)
-    ret = @grb_ccall(setdblattr, Cint, 
-        (Ptr{Void}, Ptr{UInt8}, Float64), model, name, v)
-    if ret != 0
-        throw(GurobiError(model.env, ret))
-    end
-    nothing
-end
-
-function set_strattr!(model::Model, name::ASCIIString, v::ASCIIString)
-    ret = @grb_ccall(setstrattr, Cint, 
-        (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}), model, name, v)
-    if ret != 0
-        throw(GurobiError(model.env, ret))
-    end
-    nothing
-end
-
-# reminder: start is one-based
-
-function set_intattrarray!(model::Model, name::ASCIIString, start::Integer, len::Integer, values::Vector)
-    values = convert(Vector{Cint},values)
-    ret = @grb_ccall(setintattrarray, Cint, 
-        (Ptr{Void}, Ptr{UInt8}, Cint, Cint, Ptr{Cint}), model, name, start-1, len, ivec(values))
-    if ret != 0
-        throw(GurobiError(model.env, ret))
-    end
-    nothing
-end
-
-function set_dblattrarray!(model::Model, name::ASCIIString, start::Integer, len::Integer, values::Vector)
-    values = convert(Vector{Float64},values)
-    ret = @grb_ccall(setdblattrarray, Cint, 
-        (Ptr{Void}, Ptr{UInt8}, Cint, Cint, Ptr{Float64}), model, name, start-1, len, fvec(values))
-    if ret != 0
-        throw(GurobiError(model.env, ret))
-    end
-    nothing
-end
-
-function set_charattrarray!(model::Model, name::ASCIIString, start::Integer, len::Integer, values::Vector)
-    values = convert(Vector{Cchar},values)
-    ret = @grb_ccall(setcharattrarray, Cint, 
-        (Ptr{Void}, Ptr{UInt8}, Cint, Cint, Ptr{Cchar}), model, name, start-1, len, cvec(values))
-    if ret != 0
-        throw(GurobiError(model.env, ret))
-    end
-    nothing
-end
-
-
 ############################################
 #
 #   Macros for array definition
 #
 ############################################
 
-macro grb_int_attr(fun, attrname)
+macro xprs_int_attr(fun, attrname)
     @eval $(fun)(model::Model) = get_intattr(model, $(attrname))
 end
 
-macro grb_dbl_attr(fun, attrname)
+macro xprs_dbl_attr(fun, attrname)
     @eval $(fun)(model::Model) = get_dblattr(model, $(attrname))
 end
 
-macro grb_str_attr(fun, attrname)
+macro xprs_str_attr(fun, attrname)
     @eval $(fun)(model::Model) = get_strattr(model, $(attrname))
 end
 
@@ -174,18 +68,18 @@ end
 
 # basic attributes
 
-@grb_str_attr model_name  "ModelName"
+@xprs_str_attr model_name  "ModelName"
 
-@grb_int_attr num_vars     "NumVars"
-@grb_int_attr num_constrs  "NumConstrs"
-@grb_int_attr num_sos      "NumSOS"
-@grb_int_attr num_qconstrs "NumQConstrs"
-@grb_int_attr num_cnzs     "NumNZs"
-@grb_int_attr num_qnzs     "NumQNZs"
-@grb_int_attr num_qcnzs    "NumQCNZs"
+@xprs_int_attr num_vars     "NumVars"
+@xprs_int_attr num_constrs  "NumConstrs"
+@xprs_int_attr num_sos      "NumSOS"
+@xprs_int_attr num_qconstrs "NumQConstrs"
+@xprs_int_attr num_cnzs     "NumNZs"
+@xprs_int_attr num_qnzs     "NumQNZs"
+@xprs_int_attr num_qcnzs    "NumQCNZs"
 
-@grb_int_attr num_intvars  "NumIntVars"
-@grb_int_attr num_binvars  "NumBinVars"
+@xprs_int_attr num_intvars  "NumIntVars"
+@xprs_int_attr num_binvars  "NumBinVars"
 
 # derived attribute functions
 
@@ -210,9 +104,9 @@ end
 
 # variable related attributes
 
-lowerbounds(model::Model) = get_dblattrarray(model, "LB", 1, num_vars(model))
-upperbounds(model::Model) = get_dblattrarray(model, "UB", 1, num_vars(model))
-objcoeffs(model::Model) = get_dblattrarray(model, "Obj", 1, num_vars(model))
+#lowerbounds(model::Model) = get_dblattrarray(model, "LB", 1, num_vars(model))
+#upperbounds(model::Model) = get_dblattrarray(model, "UB", 1, num_vars(model))
+#objcoeffs(model::Model) = get_dblattrarray(model, "Obj", 1, num_vars(model))
 
 # note: this takes effect only after update_model! is called:
 function set_objcoeffs!(model::Model, c::Vector)
@@ -247,7 +141,7 @@ function show(io::IO, model::Model)
         println(io, "    number of non-zero qp objective terms  = $(num_qnzs(model))")
         println(io, "    number of non-zero qp constraint terms = $(num_qcnzs(model))")
     else
-        println(io, "Gurobi Model: NULL")
+        println(io, "Xpress Model: NULL")
     end
 end
 
