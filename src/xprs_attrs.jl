@@ -39,7 +39,7 @@ function get_strattr(model::Model, ipar::Cint)
     bytestring(pointer(a))
 end
 
-#=
+
 
 ############################################
 #
@@ -68,19 +68,20 @@ end
 
 # basic attributes
 
-@xprs_str_attr model_name  "ModelName"
+#@xprs_str_attr model_name  XPRS_PROBNAME
 
-@xprs_int_attr num_vars     "NumVars"
-@xprs_int_attr num_constrs  "NumConstrs"
-@xprs_int_attr num_sos      "NumSOS"
-@xprs_int_attr num_qconstrs "NumQConstrs"
-@xprs_int_attr num_cnzs     "NumNZs"
-@xprs_int_attr num_qnzs     "NumQNZs"
-@xprs_int_attr num_qcnzs    "NumQCNZs"
+@xprs_int_attr num_vars     XPRS_COLS
+@xprs_int_attr num_constrs  XPRS_ROWS
+@xprs_int_attr num_sos      XPRS_SETS
+@xprs_int_attr num_qconstrs XPRS_QCONSTRAINTS
+@xprs_int_attr num_cnzs     XPRS_ELEMS
+@xprs_int_attr num_qnzs     XPRS_QELEMS
+@xprs_int_attr num_qcnzs    XPRS_QCELEMS
 
-@xprs_int_attr num_intvars  "NumIntVars"
-@xprs_int_attr num_binvars  "NumBinVars"
+@xprs_int_attr num_intents  XPRS_MIPENTS
+#@xprs_int_attr num_binvars  "NumBinVars"
 
+#= 
 # derived attribute functions
 
 model_sense(model::Model) = get_intattr(model, "ModelSense") > 0 ? (:minimize) : (:maximize)
@@ -115,6 +116,7 @@ function set_objcoeffs!(model::Model, c::Vector)
     set_dblattrarray!(model, "Obj", 1, n, c)
 end
 
+=#
 
 ############################################
 #
@@ -126,13 +128,13 @@ end
 
 function show(io::IO, model::Model)
     if model.ptr_model != C_NULL
-        println(io, "Gurobi Model: $(model_name(model))")
-        if is_mip(model)
-            println(io, "    type   : $(model_type(model)) (MIP)")
-        else
-            println(io, "    type   : $(model_type(model))")
-        end
-        println(io, "    sense  : $(model_sense(model))")
+        println(io, "Xpress Model:"     )# $(model_name(model))")
+        #if is_mip(model)
+        #    println(io, "    type   : $(model_type(model)) (MIP)")
+        #else
+        #    println(io, "    type   : $(model_type(model))")
+        #end
+        #println(io, "    sense  : $(model_sense(model))")
         println(io, "    number of variables             = $(num_vars(model))")
         println(io, "    number of linear constraints    = $(num_constrs(model))")
         println(io, "    number of quadratic constraints = $(num_qconstrs(model))")
@@ -140,9 +142,9 @@ function show(io::IO, model::Model)
         println(io, "    number of non-zero coeffs       = $(num_cnzs(model))")
         println(io, "    number of non-zero qp objective terms  = $(num_qnzs(model))")
         println(io, "    number of non-zero qp constraint terms = $(num_qcnzs(model))")
+        println(io, "    number of integer entities = $(num_intents(model))")
     else
         println(io, "Xpress Model: NULL")
     end
 end
 
-=#

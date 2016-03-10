@@ -18,8 +18,17 @@ add_vars!(m, XPRS_INTEGER, [33, 43], 0.03, 1.03)
 chgcoltype!(m,1,XPRS_INTEGER)
 write_model(m, "testeModOut.mps")
 
+add_constr!(m,[1, 2, 3, 4],Cchar('L'),4)
 
+add_constrs!(m, eye(4), XPRS_EQ,ones(4))
 
+#add_rangeconstr!(m,[4,5,6,7],99,100)
+
+#add_rangeconstrs!(m,rand(4,4),20*ones(4),30*ones(4))
+
+write_model(m, "teste_withcstr_Out.mps")
+
+show(STDOUT,m)
 #out=get_intattr(m,XPRS_COLS)
 #out=get_intattr(m,XPRS_MATRIXNAME)
 #println(out)

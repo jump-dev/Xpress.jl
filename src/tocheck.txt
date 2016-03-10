@@ -1,0 +1,1 @@
+1) verify behavioviour of XPRS_rows and XPRS_ORIGINALROWS mainly in xprs attributes

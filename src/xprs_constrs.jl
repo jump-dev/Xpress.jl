@@ -1,11 +1,13 @@
 ## Add Linear constraints
-
+const XPRS_LEQ = Cchar('L')
+const XPRS_GEQ = Cchar('G')
+const XPRS_EQ = Cchar('E')
 # add single constraint
 
 function add_constr!(model::Model, inds::IVec, coeffs::FVec, rel::Cchar, rhs::Float64)
     length(inds) == length(coeffs) || error("Inconsistent argument dimensions.")
    
-    ret = @xpres_ccall(addrows, Cint,(
+    ret = @xprs_ccall(addrows, Cint,(
         Ptr{Void}, #prob
         Cint,    #number new rowws
         Cint, #number nonzeros
@@ -16,7 +18,7 @@ function add_constr!(model::Model, inds::IVec, coeffs::FVec, rel::Cchar, rhs::Fl
         Ptr{Cint}, # ind (size new nz)
         Ptr{Float64} # val (size newnz)
         ),
-        model.ptr_model, 1, length(inds), Cchar[rel], Float64[rhs], C_NULL, Cint[0], inds, coeffs
+        model.ptr_model, 1, length(inds), Cchar[rel], Float64[rhs], C_NULL, Cint[0], inds-1, coeffs
     )
 
     if ret != 0
@@ -43,7 +45,7 @@ function add_constrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec, rel
     (m == length(rel) == length(rhs) && nnz == length(coeffs)) || error("Inconsistent argument dimensions.")
 
     if m > 0
-        ret = @xpres_ccall(addrows, Cint,(
+        ret = @xprs_ccall(addrows, Cint,(
             Ptr{Void}, #prob
             Cint,    #number new rowws
             Cint, #number nonzeros
@@ -92,7 +94,7 @@ end
 function add_rangeconstr!(model::Model, inds::IVec, coeffs::FVec, lb::Float64, ub::Float64)
     # b = ub
     r = ub - lb 
-    ret = @xpres_ccall(addrows, Cint,(
+    ret = @xprs_ccall(addrows, Cint,(
         Ptr{Void}, #prob
         Cint,    #number new rowws
         Cint, #number nonzeros
@@ -103,7 +105,7 @@ function add_rangeconstr!(model::Model, inds::IVec, coeffs::FVec, lb::Float64, u
         Ptr{Cint}, # ind (size new nz)
         Ptr{Float64} # val (size newnz)
         ),
-        model.ptr_model, 1, length(inds), Cchar['R'], Float64[ub], Float64[r], Cint[0], inds, coeffs
+        model.ptr_model, 1, length(inds), Cchar['R'], Float64[ub], Float64[r], Cint[0], inds-1, coeffs
     )
     if ret != 0
         throw(XpressError(model))
@@ -130,20 +132,8 @@ function add_rangeconstrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec
     (m == length(lb) == length(ub) && nnz == length(coeffs)) || error("Incompatible argument dimensions.")
 
     if m > 0
-        ret = @grb_ccall(addrangeconstrs, Cint, (
-            Ptr{Void},    # model
-            Cint,         # num constraints
-            Cint,         # num non-zeros
-            Ptr{Cint},    # cbeg
-            Ptr{Cint},    # cind
-            Ptr{Float64}, # cval
-            Ptr{Float64}, # lower
-            Ptr{Float64}, # upper
-            Ptr{UInt8}    # names
-            ),
-            model, m, nnz, cbegins - 1, inds - 1, coeffs, lb, ub, C_NULL)
         r = ub - lb 
-        ret = @xpres_ccall(addrows, Cint,(
+        ret = @xprs_ccall(addrows, Cint,(
             Ptr{Void}, #prob
             Cint,    #number new rowws
             Cint, #number nonzeros
@@ -154,7 +144,7 @@ function add_rangeconstrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec
             Ptr{Cint}, # ind (size new nz)
             Ptr{Float64} # val (size newnz)
             ),
-            model.ptr_model, m, nnz, cvecx( convert(Cchar,'R') , m), ub, r, cbegins, inds, coeffs
+            model.ptr_model, m, nnz, cvecx( convert(Cchar,'R') , m), ub, r, cbegins-1, inds-1, coeffs
         )
 
         if ret != 0
@@ -184,10 +174,10 @@ function add_rangeconstrs!(model::Model, A::CoeffMat, lb::Vector, ub::Vector)
 end
 
 # prepare macros for retrieving numvars and num cols and num NNZ
-
 #=
+
 function get_constrmatrix(model::Model)
-    nnz = get_intattr(model, "NumNZs")
+    nnz = num_cnzs(model)
     m = num_constrs(model)
     n = num_vars(model)
     numnzP = Array(Cint, 1)

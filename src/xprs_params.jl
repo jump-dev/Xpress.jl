@@ -86,18 +86,33 @@ function set_str_control(m::Model,ipar::Int,csval::AbstractString)
 end
 
 
-#TODO
 
 function getparam(m::Model,param::Cint)
-
+    if convert(Int,param) in XPRS_INT_CONTROLS
+        return get_int_param(m, param)
+    elseif convert(Int,param) in XPRS_DBL_CONTROLS
+        return get_dbl_param(m, param)
+    elseif convert(Int,param) in XPRS_STR_CONTROLS
+        return get_str_param(m, param)
+    else
+        error("Unrecognized parameter number: $(param).")
+    end
 end
 
-function setparam(m::Model,param::Cint,val::Any)
-
+function setparam!(m::Model,param::Cint,val::Any)
+    if convert(Int,param) in XPRS_INT_CONTROLS
+        set_int_param(m, param, val)
+    elseif convert(Int,param) in XPRS_DBL_CONTROLS
+        set_dbl_param(m, param, val)
+    elseif convert(Int,param) in XPRS_STR_CONTROLS
+        set_str_param(m, param, val)
+    else
+        error("Unrecognized parameter number: $(param).")
+    end
 end
 
 function setparams!(m::Model;args...)
-	for (name_int,param) in args
-		setparam!(m,name_int,param)
+	for (param,val) in args
+		setparam!(m,param,val)
 	end
 end
