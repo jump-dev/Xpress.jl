@@ -174,7 +174,7 @@ function add_rangeconstrs!(model::Model, A::CoeffMat, lb::Vector, ub::Vector)
 end
 
 # prepare macros for retrieving numvars and num cols and num NNZ
-#=
+
 
 function get_constrmatrix(model::Model)
     nnz = num_cnzs(model)
@@ -183,23 +183,31 @@ function get_constrmatrix(model::Model)
     numnzP = Array(Cint, 1)
     cbeg = Array(Cint, m+1)
     cind = Array(Cint, nnz)
-    cval = Array(Cdouble, nnz)
-    ret = @grb_ccall(getconstrs, Cint, (
+    cval = Array(Float64, nnz)
+    ret = @xprs_ccall(getrows, Cint, (
                      Ptr{Void},
                      Ptr{Cint},
                      Ptr{Cint},
+                     Ptr{Float64},
+                     Cint,
                      Ptr{Cint},
-                     Ptr{Cdouble},
                      Cint,
                      Cint
                      ),
-                     model, numnzP, cbeg, cind, cval, 0, m)
+                     model.ptr_model, 
+                     cbeg, 
+                     cind, 
+                     cval,
+                     nnz, 
+                     numnzP, 
+                     0,
+                     m-1)
     if ret != 0
-        throw(GurobiError(model.env, ret))
+        throw(XpressError(model))
     end
     cbeg[end] = nnz
-    I = Array(Int64, nnz)
-    J = Array(Int64, nnz)
+    I = Array(Int, nnz)
+    J = Array(Int, nnz)
     V = Array(Float64, nnz)
     for i in 1:length(cbeg)-1
         for j in (cbeg[i]+1):cbeg[i+1]
@@ -211,27 +219,33 @@ function get_constrmatrix(model::Model)
     return sparse(I, J, V, m, n)
 end
 
-const GRB_SOS_TYPE1 = convert(Cint, 1)
-const GRB_SOS_TYPE2 = convert(Cint, 2)
+const XPRS_SOS_TYPE1 = convert(Cint, 1)
+const XPRS_SOS_TYPE2 = convert(Cint, 2)
 
 function add_sos!(model::Model, sostype::Symbol, idx::Vector{Int}, weight::Vector{Cdouble})
     ((nelem = length(idx)) == length(weight)) || error("Index and weight vectors of unequal length")
-    (sostype == :SOS1) ? (typ = GRB_SOS_TYPE1) : ( (sostype == :SOS2) ? (typ = GRB_SOS_TYPE2) : error("Invalid SOS constraint type") )
-    ret = @grb_ccall(addsos, Cint, (
+    (sostype == :SOS1) ? (typ = XPRS_SOS_TYPE1) : ( (sostype == :SOS2) ? (typ = XPRS_SOS_TYPE2) : error("Invalid SOS constraint type") )
+    ret = @xprs_ccall(addsets, Cint, (
                      Ptr{Void},
                      Cint,
                      Cint,
+                     Ptr{Cchar},
                      Ptr{Cint},
                      Ptr{Cint},
-                     Ptr{Cint},
-                     Ptr{Cdouble}
+                     Ptr{Float64}
                      ),
-                     model, convert(Cint, 1), convert(Cint, nelem), Cint[typ], Cint[0], convert(Vector{Cint}, idx-1), weight)
+                     model.ptr_model, 
+                     convert(Cint, 1), 
+                     convert(Cint, nelem), 
+                     Cchar[typ], 
+                     Cint[0], 
+                     convert(Vector{Cint}, idx-1), 
+                     weight)
     if ret != 0
-        throw(GurobiError(model.env, ret))
+        throw(XpressError(model))
     end
 end
-
+#=
 del_constrs!{T<:Real}(model::Model, idx::T) = del_constrs!(model, Cint[idx])
 del_constrs!{T<:Real}(model::Model, idx::Vector{T}) = del_constrs!(model, convert(Vector{Cint},idx))
 function del_constrs!(model::Model, idx::Vector{Cint})
