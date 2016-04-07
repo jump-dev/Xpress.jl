@@ -33,7 +33,9 @@ function Model(env::Env; finalize_env::Bool=false)
         #throw(XpressError(env, ret))
     end
     
-    Model(env, a[1]; finalize_env=finalize_env)
+    m = Model(env, a[1]; finalize_env=finalize_env)
+    load_empty(m)
+    return m
 end
 
 
@@ -130,7 +132,42 @@ end
 # end
 # 
 # read / write file
-
+#=
+XPRSprob a-> Ptr{Void}
+const char *a -> Ptr{UInt8}  -> "" : ASCIIString
+int -> Cint
+const char a[] -> Ptr{Cchar} -> Cchar[]
+=#
+function load_empty(model::Model)
+#=int XPRS_CC XPRSloadlp(XPRSprob prob, const char *probname, int ncol, int
+      nrow, const char qrtype[], const double rhs[], const double range[],
+      const double obj[], const int mstart[], const int mnel[], const int
+      mrwind[], const double dmatval[], const double dlb[], const double
+      dub[]);
+=#
+    ret = @xprs_ccall(loadlp,Cint,
+        (Ptr{Void},
+            Ptr{UInt8},
+            Cint,
+            Cint,
+            Ptr{Cchar},#type
+            Ptr{Float64},#rhs
+            Ptr{Float64},#range
+            Ptr{Float64},#obj
+            Ptr{Cint},#mastart
+            Ptr{Cint},#mnel
+            Ptr{Cint},#mrwind
+            Ptr{Float64},#dmat
+            Ptr{Float64},#lb
+            Ptr{Float64}#ub
+            ),model.ptr_model,"",0,0,Cchar[],Float64[],Float64[],Float64[],
+                Cint[],Cint[],Cint[],Float64[],Float64[],Float64[]
+    )
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
 function read_model(model::Model, filename::ASCIIString)
     @assert is_valid(model.env)
     flags = ""

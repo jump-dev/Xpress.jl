@@ -219,8 +219,8 @@ function get_constrmatrix(model::Model)
     return sparse(I, J, V, m, n)
 end
 
-const XPRS_SOS_TYPE1 = convert(Cint, 1)
-const XPRS_SOS_TYPE2 = convert(Cint, 2)
+const XPRS_SOS_TYPE1 = convert(Cchar, '1')
+const XPRS_SOS_TYPE2 = convert(Cchar, '2')
 
 function add_sos!(model::Model, sostype::Symbol, idx::Vector{Int}, weight::Vector{Cdouble})
     ((nelem = length(idx)) == length(weight)) || error("Index and weight vectors of unequal length")
@@ -238,7 +238,7 @@ function add_sos!(model::Model, sostype::Symbol, idx::Vector{Int}, weight::Vecto
                      convert(Cint, 1), 
                      convert(Cint, nelem), 
                      Cchar[typ], 
-                     Cint[0], 
+                     Cint[0,0], 
                      convert(Vector{Cint}, idx-1), 
                      weight)
     if ret != 0

@@ -1,12 +1,15 @@
 include("Xpress.jl")
-
+println(version)
 env = Env()
 
 m = Model(env)
 
-read_model(m, "testeMod.mps")
+println(pwd())
+#read_model(m, "testeMod.mps")
 
 #write_model(m, "opt2.mps")
+
+#read_model(m, "testeMod.mps")
 
 #m2 = copy(m)
 #write_model(m2, "opt3.mps")
@@ -14,13 +17,16 @@ read_model(m, "testeMod.mps")
 #a = get_int_control(m,XPRS_DEFAULTALG)
 #println(a)
 
+
+
+add_cvars!(m, [4])
 add_vars!(m, XPRS_INTEGER, [33, 43], 0.03, 1.03)
 chgcoltype!(m,1,XPRS_INTEGER)
 write_model(m, "testeModOut.mps")
 
-add_constr!(m,[1, 2, 3, 4],Cchar('L'),4)
+add_constr!(m,[1, 2, 3],Cchar('L'),4)
 
-add_constrs!(m, eye(4), XPRS_EQ,ones(4))
+add_constrs!(m, eye(3), XPRS_EQ,ones(3))
 
 A = get_constrmatrix(m)
 
