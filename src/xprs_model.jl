@@ -74,6 +74,9 @@ type XpressError
     code::Int
     msg::ASCIIString 
 end
+#function XpressError(ret::Int,m::Model)#, code::Integer)
+#    XpressError( ret, get_error_msg(m) )#convert(Int, code), get_error_msg(env))
+#end
 function XpressError(m::Model)#, code::Integer)
     XpressError( 0, get_error_msg(m) )#convert(Int, code), get_error_msg(env))
 end
