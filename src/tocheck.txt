@@ -1,1 +1,5 @@
 1) verify behavioviour of XPRS_rows and XPRS_ORIGINALROWS mainly in xprs attributes
+
+2) SOS : msstart = newset+1
+
+3) change xpress erro to include ret
