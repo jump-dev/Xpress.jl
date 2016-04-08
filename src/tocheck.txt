@@ -5,3 +5,65 @@
 3) change xpress erro to include ret
 
 4) Test xprs_quad
+
+5) high level
+
+
+
+
+
+
+
+# solve:
+
+fazer um if pra entidaded inteiras...
+(obs contar numero de sets SOS)
+
+global
+minim
+maxim
+
+lpoptimize
+mipoptimize
+
+#get solve
+getbasis
+getlpsol
+getmipsol
+
+# IIS
+iisall
+iisfirst
+iisnext
+MAXIIS
+
+# status
+MIPSTATUS
+LPSTATUS
+
+###########################
+
+# getters
+
+getglobal: binary, integer, SOS1, SOS2...
+
+
+getlb
+getub
+getobj
+getqobj
+getrhs
+
+# unbounded ray:
+getunbvec
+
+# algorithms
+DEFAULTALG
+
+# presolve problems
+PRESOLVE
+postsolve
+num row after andd before presolve handle this...
+ORIGINALCOLS
+ORIGINALROWS
+

@@ -7,7 +7,7 @@ type Env
     function Env()
         ret = @xprs_ccall(init, Cint, (Ptr{Cchar},), C_NULL)
         if ret != 0
-            if ret == 10009
+            if ret == :number
                 error("Invalid Xpress license")
             else
                 error("Failed to create environment (error $ret).")
@@ -32,3 +32,5 @@ function free_env(env::Env)
     end
 end
 
+
+## errors are handled in model level
