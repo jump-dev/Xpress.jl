@@ -3,3 +3,5 @@
 2) SOS : msstart = newset+1
 
 3) change xpress erro to include ret
+
+4) Test xprs_quad

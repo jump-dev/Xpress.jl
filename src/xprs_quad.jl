@@ -10,7 +10,7 @@ function add_qpterms!(model::Model, qr::IVec, qc::IVec, qv::FVec)
             Cint,         # nnz
             Ptr{Cint},    # qrow
             Ptr{Cint},    # qcol
-            Ptr{Float64}, # qval
+            Ptr{Float64} # qval
             ), 
             model.ptr_model, nnz, qr.-1, qc.-1, qv)
             

@@ -73,7 +73,7 @@
     
     include("xprs_constrs.jl")
     include("xprs_quad.jl")
-    #include("xprs_highlevel.jl")
+    include("xprs_highlevel.jl")
 
     #include("xprs_solve.jl")
     #include("xprs_callbacks.jl")
