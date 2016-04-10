@@ -1,5 +1,4 @@
 # Common stuff
-const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
 ## convenient types and type conversion functions
 
 typealias GChars Union{Cchar, Char}

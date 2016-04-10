@@ -1,5 +1,7 @@
 #__precompile__()
 
+const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
+
 #module Xpress
     # println("../deps/deps.jl")
     # if isfile(joinpath(dirname(@__FILE__),"..","deps","deps.jl"))
@@ -75,7 +77,7 @@
     include("xprs_quad.jl")
     include("xprs_highlevel.jl")
 
-    #include("xprs_solve.jl")
+    include("xprs_solve.jl")
     #include("xprs_callbacks.jl")
 
     #include("XpressSolverInterface.jl")

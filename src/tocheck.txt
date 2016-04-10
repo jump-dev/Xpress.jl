@@ -47,12 +47,9 @@ LPSTATUS
 
 getglobal: binary, integer, SOS1, SOS2...
 
+vartype
 
-getlb
-getub
-getobj
 getqobj
-getrhs
 
 # unbounded ray:
 getunbvec
@@ -63,7 +60,25 @@ DEFAULTALG
 # presolve problems
 PRESOLVE
 postsolve
+
 num row after andd before presolve handle this...
 ORIGINALCOLS
 ORIGINALROWS
+
+attrt
+presolvestate
+
+#########
+
+int XPRS_CC XPRSgetglobal(XPRSprob prob, int *nglents, int *sets, char
+      qgtype[], int mgcols[], double dlim[], char qstype[], int msstart[],
+      int mscols[], double dref[]);
+
+int XPRS_CC XPRSloadbasis(XPRSprob prob, const int rstatus[], const int
+      cstatus[]);
+
+
+############
+
+ask fico about quad status
 

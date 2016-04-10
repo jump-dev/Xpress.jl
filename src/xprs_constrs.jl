@@ -1,7 +1,5 @@
 ## Add Linear constraints
-const XPRS_LEQ = Cchar('L')
-const XPRS_GEQ = Cchar('G')
-const XPRS_EQ = Cchar('E')
+
 # add single constraint
 
 function add_constr!(model::Model, inds::IVec, coeffs::FVec, rel::Cchar, rhs::Float64)
@@ -218,9 +216,6 @@ function get_constrmatrix(model::Model)
     end
     return sparse(I, J, V, m, n)
 end
-
-const XPRS_SOS_TYPE1 = convert(Cchar, '1')
-const XPRS_SOS_TYPE2 = convert(Cchar, '2')
 
 function add_sos!(model::Model, sostype::Symbol, idx::Vector{Int}, weight::Vector{Cdouble})
     ((nelem = length(idx)) == length(weight)) || error("Index and weight vectors of unequal length")

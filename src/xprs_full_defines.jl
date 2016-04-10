@@ -1,3 +1,14 @@
+# defined for julia interface
+const XPRS_LEQ = Cchar('L')
+const XPRS_GEQ = Cchar('G')
+const XPRS_EQ = Cchar('E')
+
+const XPRS_CONTINUOUS = convert(Cchar, 'C')
+const XPRS_BINARY     = convert(Cchar, 'B')
+const XPRS_INTEGER    = convert(Cchar, 'I')
+
+const XPRS_SOS_TYPE1 = convert(Cchar, '1')
+const XPRS_SOS_TYPE2 = convert(Cchar, '2')
 
 
 #***************************************************************************\

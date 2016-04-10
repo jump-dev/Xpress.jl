@@ -18,3 +18,5 @@ Reference at:
 * Verify differences from gurobi/cplex wrappers.
 * Prepare specific tests for  the library.
 
+* deal with presolve state
+

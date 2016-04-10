@@ -2,9 +2,6 @@
 
 # variable kinds
 
-const XPRS_CONTINUOUS = convert(Cchar, 'C')
-const XPRS_BINARY     = convert(Cchar, 'B')
-const XPRS_INTEGER    = convert(Cchar, 'I')
 
 function fixInf(val::Float64)
     if val == Inf
@@ -52,14 +49,14 @@ function chgcoltype!(model::Model,colnum::Int,vtype::Cchar)
         throw(XpressError(model))
     end
 end
-# function chgcoltypes!(model::Model,colnums::Vector{Int},vtypes::Vector{Cchar})
-#     n=length(colnums)
-#     ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Ptr{Cchar}),
-#         model.ptr_model,n,colnum,vtype)
-#     if 0 != ret
-#         throw(XpressError(model))
-#     end
-# end
+function chgcoltypes!(model::Model,colnums::Vector{Int},vtypes::Vector{Cchar})
+    n=length(colnums)
+    ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Ptr{Cchar}),
+        model.ptr_model,n,colnums,vtypes)
+    if 0 != ret
+        throw(XpressError(model))
+    end
+end
 #only add in obj
 function add_var!(model::Model, vtype::Cchar, c::Float64, lb::Float64, ub::Float64)
     lb = fixInf(lb)
