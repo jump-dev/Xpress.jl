@@ -51,7 +51,11 @@ function chgcoltype!(model::Model,colnum::Int,vtype::Cchar)
 end
 function chgcoltypes!(model::Model,colnums::Vector{Int},vtypes::Vector{Cchar})
     n=length(colnums)
-    ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Ptr{Cchar}),
+    ret = @xprs_ccall(chgcoltype,Cint,(
+        Ptr{Void},
+        Cint,
+        Ptr{Cint},
+        Ptr{Cchar}),
         model.ptr_model,n,colnums,vtypes)
     if 0 != ret
         throw(XpressError(model))

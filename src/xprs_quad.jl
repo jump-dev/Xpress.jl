@@ -120,6 +120,20 @@ function delq!(model::Model)
     end 
 end
 =#
+function delq!(model::Model)
+
+    n = num_vars(model)
+
+    qr = [i for i in 1:n, j in 1:n]
+    qc = [j for i in 1:n, j in 1:n]
+
+    qv = zeros(n*n)
+
+    add_qpterms!(model::Model, qr[:], qc[:], qv)
+end
+
+
+
 
 function getq(model::Model)
     nnz = num_qnzs(model)
@@ -164,7 +178,7 @@ end
 # add_qconstr!
 
 function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, qv::FVec, rel::Cchar, rhs::Float64)
-    # in XPRESS quadratic matrices are added over existing inear constraints
+    # in XPRESS quadratic matrices are added over existing linear constraints
     # ------------------------
 
     qnnz = length(qr)

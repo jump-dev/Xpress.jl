@@ -98,16 +98,12 @@ is_qcp(model::Model) = num_qconstrs(model) > 0
 is_mip(model::Model) = num_intents(model)+num_sos(model) > 0
 is_qp(model::Model) = num_qnzs(model)>0
 
-#= 
-is_mip(model::Model) = get_intattr(model, "IsMIP") != 0
-is_qp(model::Model)  = get_intattr(model, "IsQP") != 0
-is_qcp(model::Model) = get_intattr(model, "IsQCP") != 0
 
 function model_type(model::Model) 
     is_qp(model)  ? (:QP)  :
     is_qcp(model) ? (:QCP) : (:LP)
 end
-=#
+
 function set_sense!(model::Model, sense::Symbol)
     v = sense == :maximize ? XPRS_OBJ_MAXIMIZE :
         sense == :minimize ? XPRS_OBJ_MINIMIZE : 
@@ -283,11 +279,35 @@ function get_rowtype(model::Model)
 
     ret = @xprs_ccall(getrowtype, Cint, (
         Ptr{Void},    # model
-        Ptr{Float64},          
+        Ptr{Cchar},          
         Cint,
         Cint
         ), 
         model.ptr_model, out, 0, rows-1)
+        
+    if ret != 0
+        throw(XpressError(model))
+    end 
+
+    return out
+end
+
+int XPRS_CC XPRSgetcoltype(XPRSprob prob, char coltype[], int first, int
+      last);
+
+function get_coltype(model::Model)
+
+    cols = num_vars(model)
+
+    out = Array(Cchar,rows)
+
+    ret = @xprs_ccall(getcoltype, Cint, (
+        Ptr{Void},    # model
+        Ptr{Cchar},          
+        Cint,
+        Cint
+        ), 
+        model.ptr_model, out, 0, cols-1)
         
     if ret != 0
         throw(XpressError(model))
