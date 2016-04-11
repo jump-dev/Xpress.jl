@@ -7,7 +7,7 @@ Reference at:
 
 ## High priority:
 
-* Create wrapper for: Solve, Callbacks and MathProg interface.
+* Create wrapper for: Callbacks.
 * XPRSinit issue, environment is harder to keep track of. And to finalize.
 * Create deps.jl to automatically load the instalation PATH.
 * Perform license check.
@@ -17,6 +17,6 @@ Reference at:
 
 * Verify differences from gurobi/cplex wrappers.
 * Prepare specific tests for  the library.
-
 * deal with presolve state
+* polish quadratic models
 
