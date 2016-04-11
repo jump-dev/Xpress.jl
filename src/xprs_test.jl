@@ -1,8 +1,7 @@
 include("Xpress.jl")
 println(version)
-env = Env()
 
-m = Model(env)
+m = Model()
 
 println(pwd())
 #read_model(m, "testeMod.mps")
@@ -43,6 +42,7 @@ add_sos!(m,:SOS1,[1,2],[1.1,1.2])
 write_model(m, "teste_withcstr_Out.mps")
 
 show(STDOUT,m)
+
 #out=get_intattr(m,XPRS_COLS)
 #out=get_intattr(m,XPRS_MATRIXNAME)
 #println(out)

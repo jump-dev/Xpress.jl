@@ -292,8 +292,7 @@ function get_rowtype(model::Model)
     return out
 end
 
-int XPRS_CC XPRSgetcoltype(XPRSprob prob, char coltype[], int first, int
-      last);
+
 
 function get_coltype(model::Model)
 
