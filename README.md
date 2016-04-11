@@ -8,7 +8,7 @@ Reference at:
 ## High priority:
 
 * Create wrapper for: Callbacks.
-* XPRSinit issue, environment is harder to keep track of. And to finalize.
+* XPRSinit issue, environment is harder to keep track of. And to finalize. (use `__init__()` and `atexit()`)
 * Create deps.jl to automatically load the instalation PATH.
 * Perform license check.
 * Test on UNIX .
