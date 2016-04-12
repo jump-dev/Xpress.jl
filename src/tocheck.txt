@@ -1,4 +1,9 @@
-1) verify behavioviour of XPRS_rows and XPRS_ORIGINALROWS mainly in xprs attributes
+SOCP borns from adding a special  Q matrix plus positiveness fo t1 and t2 or t
+autodetected at runtime
+
+primal ray and dual ray
+
+loadbasis
 
 2) SOS : msstart = newset+1
 
@@ -8,12 +13,7 @@
 
 5) high level
 
-
-
-
-
-
-
+#############################
 # solve:
 
 fazer um if pra entidaded inteiras...
@@ -57,6 +57,7 @@ getunbvec
 # algorithms
 DEFAULTALG
 
+##############################################
 # presolve problems
 PRESOLVE
 postsolve
@@ -80,5 +81,4 @@ int XPRS_CC XPRSloadbasis(XPRSprob prob, const int rstatus[], const int
 
 ############
 
-ask fico about quad status
 
