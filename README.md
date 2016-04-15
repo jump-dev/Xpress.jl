@@ -5,6 +5,10 @@ This is a package under construction. All the implementation was developed and t
 Reference at:
 [FICO optimizer manual](http://www.fico.com/en/node/8140?file=5097)
 
+## Install:
+
+`Pkg.clone("git://github.com/joaquimg/Xpress.jl.git")`
+
 ## High priority:
 
 * Create wrapper for: Callbacks.
