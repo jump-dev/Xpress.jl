@@ -42,21 +42,21 @@ function add_var!(model::Model, newnz::Int, mrwind::Vector{Int},dmatval::Vector{
     nothing
 end
 
-function chgcoltype!(model::Model,colnum::Int,vtype::Cchar)
+function chgcoltype!(model::Model,colnum::Int,vtype)
     ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Ptr{Cchar}),
         model.ptr_model,1,Int[colnum-1],Cchar[XPRS_INTEGER])
     if  0 != ret
         throw(XpressError(model))
     end
 end
-function chgcoltypes!(model::Model,colnums::Vector{Int},vtypes::Vector{Cchar})
+function chgcoltypes!(model::Model,colnums::Vector{Int},vtypes::Vector)
     n=length(colnums)
     ret = @xprs_ccall(chgcoltype,Cint,(
         Ptr{Void},
         Cint,
         Ptr{Cint},
         Ptr{Cchar}),
-        model.ptr_model,n,colnums-1,vtypes)
+        model.ptr_model,n,colnums-1,cvec(vtypes) )
     if 0 != ret
         throw(XpressError(model))
     end
