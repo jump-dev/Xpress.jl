@@ -290,7 +290,8 @@ function setvartype!(m::XpressMathProgModel, vartype::Vector{Symbol})
     ind = ivec(collect( 1:num_vars(m.inner) ))
 
     nvartype = map(x->rev_var_type_map[x], vartype)
-    chgcoltype!(m.inner, ind, nvartype )
+
+    chgcoltypes!(m.inner, ind, nvartype )
 end
 
 function getvartype(m::XpressMathProgModel)

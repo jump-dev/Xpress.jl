@@ -147,4 +147,4 @@ function linprogsolvertest(solver::AbstractMathProgSolver)
 
 end
 
-linprogsolvertest(XpressSolver())
+linprogsolvertest( XpressSolver() )
