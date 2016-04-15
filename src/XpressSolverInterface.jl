@@ -183,6 +183,7 @@ function optimize!(m::XpressMathProgModel)
 end
 
 #fix status
+# add mip outputs
 function status(m::XpressMathProgModel)
   s = get_lp_status(m.inner)
   if s == :optimal

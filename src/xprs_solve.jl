@@ -1,5 +1,12 @@
 # Optimization and solution query
+#
+#
+# OBS: in xpress all functions with LP in name
+#      actually refer to CONTINUOUS optimization
+#      LP, QP, QCQP, SOCP
+#      as opposed to Integer programming
 
+# use here ismip!
 function optimize(model::Model)
     @assert model.ptr_model != C_NULL
     ret = @xprs_ccall(:global, Cint, (Ptr{Void},), model.ptr_model)

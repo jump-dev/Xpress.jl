@@ -3,11 +3,16 @@ autodetected at runtime
 
 primal ray and dual ray
 
+fix dual variable from SOCP
+
 loadbasis
+
+check solution getters in solver interface for quadprog
+maybe need to use: XPRSgetqrows to find QCs
 
 2) SOS : msstart = newset+1
 
-3) change xpress erro to include ret
+3) change xpress error to include ret
 
 4) Test xprs_quad
 
@@ -16,9 +21,6 @@ loadbasis
 #############################
 # solve:
 
-fazer um if pra entidaded inteiras...
-(obs contar numero de sets SOS)
-
 global
 minim
 maxim
@@ -26,10 +28,6 @@ maxim
 lpoptimize
 mipoptimize
 
-#get solve
-getbasis
-getlpsol
-getmipsol
 
 # IIS
 iisall
@@ -37,9 +35,6 @@ iisfirst
 iisnext
 MAXIIS
 
-# status
-MIPSTATUS
-LPSTATUS
 
 ###########################
 
