@@ -7,11 +7,28 @@
 #      as opposed to Integer programming
 
 # use here ismip!
+# function optimize(model::Model)
+#     @assert model.ptr_model != C_NULL
+#     ret = @xprs_ccall(:global, Cint, (Ptr{Void},), model.ptr_model)
+#     if ret != 0
+#         throw(XpressError(model))
+#     end
+#     nothing
+# end
 function optimize(model::Model)
     @assert model.ptr_model != C_NULL
-    ret = @xprs_ccall(:global, Cint, (Ptr{Void},), model.ptr_model)
-    if ret != 0
-        throw(XpressError(model))
+    if is_mip(model)
+        ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{Cchar}), 
+            model.ptr_model,C_NULL)
+        if ret != 0
+            throw(XpressError(model))
+        end
+    else
+        ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{Cchar}), 
+            model.ptr_model,C_NULL)
+        if ret != 0
+            throw(XpressError(model))
+        end
     end
     nothing
 end
@@ -56,29 +73,29 @@ const status_symbols_mip = Dict(
 )
 
 
-@xprs_int_attr get_mip_status_code MIPSTATUS
-@xprs_int_attr get_lp_status_code LPSTATUS
+@xprs_int_attr get_mip_status_code XPRS_MIPSTATUS
+@xprs_int_attr get_lp_status_code XPRS_LPSTATUS
 
 get_mip_status(model::Model) = status_symbols_mip[get_mip_status_code(model)]::Symbol
 get_lp_status(model::Model) = status_symbols_lp[get_lp_status_code(model)]::Symbol
 
-@xprs_int_attr get_sol_count MIPSOLS
-@xprs_int_attr get_node_count NODES
+@xprs_int_attr get_sol_count XPRS_MIPSOLS
+@xprs_int_attr get_node_count XPRS_NODES
 
-@xprs_int_attr get_simplex_iter_count SIMPLEXITER
-@xprs_int_attr get_barrier_iter_count BARITER
+@xprs_int_attr get_simplex_iter_count XPRS_SIMPLEXITER
+@xprs_int_attr get_barrier_iter_count XPRS_BARITER
 
 # objective
-@xprs_dbl_attr get_lp_objval LPOBJVAL
-@xprs_dbl_attr get_mip_objval MIPOBJVAL
+@xprs_dbl_attr get_lp_objval XPRS_LPOBJVAL
+@xprs_dbl_attr get_mip_objval XPRS_MIPOBJVAL
 
-@xprs_dbl_attr get_bardualobj BARDUALOBJ
-@xprs_dbl_attr get_barprimalobj BARPRIMALOBJ
+@xprs_dbl_attr get_bardualobj XPRS_BARDUALOBJ
+@xprs_dbl_attr get_barprimalobj XPRS_BARPRIMALOBJ
 
-@xprs_dbl_attr get_bestbound BESTBOUND
+@xprs_dbl_attr get_bestbound XPRS_BESTBOUND
 
 #iis
-@xprs_int_attr num_iis NUMIIS
+@xprs_int_attr num_iis XPRS_NUMIIS
 
 function get_objval(model::Model)
     if num_intents(model)+num_sos(model) > 0
@@ -119,7 +136,7 @@ function get_optiminfo(model::Model)
 end
 
 function show(io::IO, s::OptimInfo)
-    println(io, "Gurobi Optimization Info")
+    println(io, "Xpress Optimization Info")
     println(io, "    lp status    = $(s.status_lp)")
     println(io, "    mip status   = $(s.status_mip)")
     #println(io, "    runtime  = $(s.runtime)")
@@ -259,29 +276,29 @@ function get_mip_slack(model::Model)
 end
 
 function get_solution(model::Model)
-    if num_intents(model)+num_sos(model) > 0
+    if is_mip(model)
         return get_mip_solution(model)
     else
         return get_lp_solution(model)
     end
 end
 function get_slack(model::Model)
-    if num_intents(model)+num_sos(model) > 0
+    if is_mip(model)
         return get_mip_slack(model)
     else
         return get_lp_slack(model)
     end
 end
 function get_dual(model::Model)
-    if num_intents(model)+num_sos(model) > 0
+    if is_mip(model)
         error("Not possible to get MIP duals")
         return Float64[]
     else
-        return get_lp_slack(model)
+        return get_lp_dual(model)
     end
 end
 function get_reducedcost(model::Model)
-    if num_intents(model)+num_sos(model) > 0
+    if is_mip(model)
         error("Not possible to get MIP reduced costs")
         return Float64[]
     else

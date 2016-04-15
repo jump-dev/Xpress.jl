@@ -89,8 +89,9 @@ end
 @xprs_int_attr num_originalvars     XPRS_ORIGINALCOLS
 @xprs_int_attr num_originalconstrs  XPRS_ORIGINALROWS
 
-
 # derived attribute functions
+
+num_linconstrs(model::Model) = num_constrs(model) - num_qconstrs(model)
 
 model_sense(model::Model) = obj_sense(model) == XPRS_OBJ_MINIMIZE ? (:minimize) : (:maximize)
 
@@ -104,49 +105,6 @@ function model_type(model::Model)
     is_qcp(model) ? (:QCP) : (:LP)
 end
 
-function set_sense!(model::Model, sense::Symbol)
-    v = sense == :maximize ? XPRS_OBJ_MAXIMIZE :
-        sense == :minimize ? XPRS_OBJ_MINIMIZE : 
-        throw(ArgumentError("Invalid model sense."))
-
-    ret = @xprs_ccall(chgobjsense, Cint, (
-            Ptr{Void},    # model
-            Cint          # sense
-            ), 
-            model.ptr_model, v)
-            
-    if ret != 0
-        throw(XpressError(model))
-    end 
-    
-end
-
-# note: this takes effect only after update_model! is called:
-function set_objcoeffs!(model::Model, ind::Vector{Int}, c::Vector)
-    n = num_vars(model)
-    length(c) == length(inds) || error("Inconsistent argument dimensions.")
-    n >= maximum(ind) || error("Inconsistent argument dimensions.")
-
-        ret = @xprs_ccall(chgobj, Cint, (
-            Ptr{Void},    # model
-            Cint,          # sense
-            Ptr{Cint},
-            Ptr{Float64}
-            ), 
-            model.ptr_model, inds, fvec(c) )
-            
-        if ret != 0
-            throw(XpressError(model))
-        end 
-
-end
-function set_objcoeffs!(model::Model,c::Vector)
-    n = num_vars(model)
-    length(c) == n || error("Inconsistent argument dimensions.")
-
-    set_objcoeffs!(model, cvec(0:(n-1)), c)
-end
-set_obj!(model::Model,c::Vector) = set_objcoeffs!(model,c)
 
 ############################################
 #
@@ -159,11 +117,11 @@ set_obj!(model::Model,c::Vector) = set_objcoeffs!(model,c)
 function show(io::IO, model::Model)
     if model.ptr_model != C_NULL
         println(io, "Xpress Model:"     )# $(model_name(model))")
-        #if is_mip(model)
-        #    println(io, "    type   : $(model_type(model)) (MIP)")
-        #else
-        #    println(io, "    type   : $(model_type(model))")
-        #end
+        if is_mip(model)
+            println(io, "    type   : $(model_type(model)) (MIP)")
+        else
+            println(io, "    type   : $(model_type(model))")
+        end
         println(io, "    sense  : $(model_sense(model))")
         println(io, "    number of variables             = $(num_vars(model))")
         println(io, "    number of linear constraints    = $(num_constrs(model))")
@@ -184,6 +142,49 @@ end
 #   more setters and getters
 #
 ############################################
+function set_sense!(model::Model, sense::Symbol)
+    v = sense == :maximize ? XPRS_OBJ_MAXIMIZE :
+        sense == :minimize ? XPRS_OBJ_MINIMIZE : 
+        throw(ArgumentError("Invalid model sense."))
+
+    ret = @xprs_ccall(chgobjsense, Cint, (
+            Ptr{Void},    # model
+            Cint          # sense
+            ), 
+            model.ptr_model, v)
+            
+    if ret != 0
+        throw(XpressError(model))
+    end 
+    
+end
+
+# note: this takes effect only after update_model! is called:
+function set_objcoeffs!(model::Model, inds::Vector{Int}, c::Vector)
+    n = num_vars(model)
+    length(c) == length(inds) || error("Inconsistent argument dimensions.")
+    n >= maximum(inds) || error("Inconsistent argument dimensions.")
+
+        ret = @xprs_ccall(chgobj, Cint, (
+            Ptr{Void},    # model
+            Cint,          # sense
+            Ptr{Cint},
+            Ptr{Float64}
+            ), 
+            model.ptr_model, Cint( length(c) ), ivec(inds)-1, fvec(c) )
+            
+        if ret != 0
+            throw(XpressError(model))
+        end 
+
+end
+function set_objcoeffs!(model::Model,c::Vector)
+    n = num_vars(model)
+    length(c) == n || error("Inconsistent argument dimensions.")
+
+    set_objcoeffs!(model,  collect(1:(n)) , c)
+end
+set_obj!(model::Model,c::Vector) = set_objcoeffs!(model,c)
 
 
 function get_lb(model::Model)
@@ -315,7 +316,7 @@ function get_coltype(model::Model)
     return out
 end
 
-function set_lb!(model::Model,ind::Vector{Int},lb::Vector{Real})
+function set_lb!(model::Model,ind::Vector{Int},lb::Vector)
 
     nbnds = length(ind)
 
@@ -332,16 +333,16 @@ function set_lb!(model::Model,ind::Vector{Int},lb::Vector{Real})
         throw(XpressError(model))
     end 
 end
-function set_lb!(model::Model,lb::Vector{Real})
+function set_lb!(model::Model,lb::Vector)
     
     cols = num_vars(model)
     ( cols == length(lb) ) || error("wrong size of LB vector")
     
     ind = ivec(collect(1:cols))
     
-    set_lb!(model,ind-1,lb)
+    set_lb!(model,ind,lb)
 end
-function set_ub!(model::Model,ind::Vector{Int},ub::Vector{Real})
+function set_ub!(model::Model,ind::Vector{Int},ub::Vector)
 
     nbnds = length(ind)
 
@@ -358,17 +359,17 @@ function set_ub!(model::Model,ind::Vector{Int},ub::Vector{Real})
         throw(XpressError(model))
     end 
 end
-function set_ub!(model::Model,ub::Vector{Real})
+function set_ub!(model::Model,ub::Vector)
     
     cols = num_vars(model)
-    ( cols == length(lb) ) || error("wrong size of UB vector")
+    ( cols == length(ub) ) || error("wrong size of UB vector")
     
     ind = ivec(collect(1:cols))
     
-    set_lb!(model,ind-1,ub)
+    set_ub!(model,ind,ub)
 end
 
-function set_rhs!(model::Model,ind::Vector{Int},rhs::Vector{Real})
+function set_rhs!(model::Model,ind::Vector{Int},rhs::Vector)
 
     nels = length(ind)
 
@@ -386,7 +387,7 @@ function set_rhs!(model::Model,ind::Vector{Int},rhs::Vector{Real})
 end
 function set_rhs!(model::Model, rhs::Vector)
     rows = num_constrs(model)
-    set_rhs!(model, ivec( collect(0:rows-1) ) ,fvec(rhs) )
+    set_rhs!(model, ivec( collect(1:rows) ) ,fvec(rhs) )
 end
 
 function set_rowtype!(model::Model,senses::Vector)
@@ -399,7 +400,7 @@ function set_rowtype!(model::Model,senses::Vector)
         Ptr{Cint},
         Ptr{Cchar}
         ), 
-        model.ptr_model, Cint(nels) , ivec(ind)-1, cvec(senses) )
+        model.ptr_model, Cint(rows) , ivec(ind)-1, cvec(senses) )
         
     if ret != 0
         throw(XpressError(model))
@@ -410,7 +411,7 @@ function set_constrLB!(model::Model, lb)
     senses = get_rowtype(model)
     rhs    = get_rhs(model)
     sense_changed = false
-    for i = 1:num_constr(model)
+    for i = 1:num_constrs(model)
         if senses[i] == XPRS_GEQ || senses[i] == XPRS_EQ
             # Do nothing
         elseif senses[i] == XPRS_LEQ
@@ -438,7 +439,7 @@ function set_constrUB!(model::Model, ub)
     senses = get_rowtype(model)
     rhs    = get_rhs(model)
     sense_changed = false
-    for i = 1:num_constr(model)
+    for i = 1:num_constrs(model)
         if senses[i] == XPRS_LEQ || senses[i] == XPRS_EQ
             # Do nothing
         elseif senses[i] == XPRS_GEQ

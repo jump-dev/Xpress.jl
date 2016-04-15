@@ -1,8 +1,8 @@
-#__precompile__()
+__precompile__()
 
-const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
+#const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
 #const xprs = "/opt/xpressmp/lib/libxprs"
-#module Xpress
+module Xpress
     # println("../deps/deps.jl")
     # if isfile(joinpath(dirname(@__FILE__),"..","deps","deps.jl"))
     #     println("../deps/deps.jl")
@@ -10,54 +10,55 @@ const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
     # else
     #     error("Xpress not properly installed. Please run Pkg.build(\"Xpress\")")
     # end
+    const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
 
     ### imports
 
-    #import Base.show, Base.copy
+    import Base.show, Base.copy
 
     # Standard LP interface
-    #importall MathProgBase.SolverInterface
+    importall MathProgBase.SolverInterface
 
     ### exports
-    #export 
+    export 
 
     ## xprs_env
-    #free_env,
+    free_env,
 
     ## xprs_params
-    #getparam, setparam!, setparams!,
+    getparam, setparam!, setparams!,
 
     ## xprs_model
-    #set_sense!, update_model!, reset_model!, get_tune_result!,
-    #read_model, write_model, tune_model, presolve_model, fixed_model,
+    set_sense!, update_model!, reset_model!, get_tune_result!,
+    read_model, write_model, #tune_model, presolve_model, fixed_model,
 
     ## xprs_attrs
-    #model_name, model_sense, model_type,
-    #num_vars, num_constrs, num_sos, num_qconstrs,
-    #num_cnzs, num_qnzs, num_qcnzs,
-    #is_qp, is_qcp, is_mip,
+    model_name, model_sense, model_type,
+    num_vars, num_constrs, num_sos, num_qconstrs,
+    num_cnzs, num_qnzs, num_qcnzs,
+    is_qp, is_qcp, is_mip,
 
-    #lowerbounds, upperbounds, objcoeffs, set_objcoeffs!,
+    lowerbounds, upperbounds, objcoeffs, set_objcoeffs!,
 
     ## xprs_vars
-    #XPRS_CONTINUOUS, XPRS_BINARY, XPRS_INTEGER,
-    #add_var!, add_vars!, add_cvar!, add_cvars!,
-    #add_bvar!, add_bvars!, add_ivar!, add_ivars!,
+    XPRS_CONTINUOUS, XPRS_BINARY, XPRS_INTEGER,
+    add_var!, add_vars!, add_cvar!, add_cvars!,
+    add_bvar!, add_bvars!, add_ivar!, add_ivars!,
 
     ## xprs_constrs
-    #add_constr!, add_constrs!, add_constrs_t!, 
-    #add_rangeconstr!, add_rangeconstrs!, add_rangeconstrs_t!,
-    #get_constrmatrix, add_sos!,
+    add_constr!, add_constrs!, add_constrs_t!, 
+    add_rangeconstr!, add_rangeconstrs!, add_rangeconstrs_t!,
+    get_constrmatrix, add_sos!,
 
     ## xprs_quad
-    #add_qpterms!, add_qconstr!,
+    add_qpterms!, add_qconstr!,
 
     ## higher level
-    #xpress_model,
+    xpress_model,
 
     ## xprs_solve
-    #optimize, computeIIS, get_solution,
-    #get_status, OptimInfo, get_optiminfo, get_objval
+    optimize, computeIIS, get_solution,
+    get_status, OptimInfo, get_optiminfo, get_objval
     
 
     ### include source files
@@ -80,5 +81,7 @@ const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
     include("xprs_solve.jl")
     #include("xprs_callbacks.jl")
 
-    #include("XpressSolverInterface.jl")
-#end
+    include("XpressSolverInterface.jl")
+
+
+end

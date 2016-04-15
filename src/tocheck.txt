@@ -18,23 +18,6 @@ maybe need to use: XPRSgetqrows to find QCs
 
 5) high level
 
-#############################
-# solve:
-
-global
-minim
-maxim
-
-lpoptimize
-mipoptimize
-
-
-# IIS
-iisall
-iisfirst
-iisnext
-MAXIIS
-
 
 ###########################
 

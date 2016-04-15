@@ -12,9 +12,8 @@ type XpressMathProgModel <: AbstractLinearQuadraticModel
     infocb
 end
 function XpressMathProgModel(;options...)
-   env = Env()
 
-   m = XpressMathProgModel(Model(env; finalize_env=false), nothing, nothing, nothing, nothing)
+   m = XpressMathProgModel(Model(; finalize_env=false), nothing, nothing, nothing, nothing)
    return m
 end
 
@@ -30,12 +29,15 @@ supportedcones(::XpressSolver) = [:Free]#,:Zero,:NonNeg,:NonPos,:SOC,:SOCRotated
 
 loadproblem!(m::XpressMathProgModel, filename::AbstractString) = read_model(m.inner, filename)
 
+updatemodel!(m::XpressMathProgModel) = Base.warn_once("Model update not necessary for Xpress.")
+
 function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub, sense)
   # throw away old model
   env = m.inner.env
   m.inner.finalize_env = false
   free_model(m.inner)
-  m.inner = Model(env, finalize_env=false)
+
+  m.inner = Model( finalize_env=false)
 
   add_cvars!(m.inner, float(obj), float(collb), float(colub))
 
@@ -75,7 +77,7 @@ writeproblem(m::XpressMathProgModel, filename::AbstractString) = write_model(m.i
 
 
 
-getvarLB(m::XpressMathProgModel)     = gel_lb(m.inner)
+getvarLB(m::XpressMathProgModel)     = get_lb(m.inner)
 setvarLB!(m::XpressMathProgModel, l) = set_lb!(m.inner,l)
 
 getvarUB(m::XpressMathProgModel)     = get_ub(m.inner)
@@ -126,10 +128,7 @@ function addvar!(m::XpressMathProgModel, l, u, objcoef)
 end
 
 function addconstr!(m::XpressMathProgModel, varidx, coef, lb, ub)
-    if m.last_op_type == :Var
-        updatemodel!(m)
-        m.last_op_type = :Con
-    end
+
     if lb == -Inf
         # <= constraint
         add_constr!(m.inner, varidx, coef, XPRS_LEQ, ub)
