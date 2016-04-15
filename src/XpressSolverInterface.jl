@@ -118,7 +118,7 @@ setobj!(m::XpressMathProgModel, c) = set_obj!(m.inner,c)
 
 function addvar!(m::XpressMathProgModel, constridx, constrcoef, l, u, objcoef)
 
-    add_var!(m.inner, length(constridx), constridx-1, float(constrcoef), float(objcoef), float(l), float(u))
+    add_var!(m.inner, length(constridx), constridx, float(constrcoef), float(objcoef), float(l), float(u))
 end
 function addvar!(m::XpressMathProgModel, l, u, objcoef)
 
@@ -290,7 +290,7 @@ function setvartype!(m::XpressMathProgModel, vartype::Vector{Symbol})
     ind = ivec(collect( 1:num_vars(m.inner) ))
 
     nvartype = map(x->rev_var_type_map[x], vartype)
-    chgcoltype!(m.inner, ind-1, nvartype )
+    chgcoltype!(m.inner, ind, nvartype )
 end
 
 function getvartype(m::XpressMathProgModel)

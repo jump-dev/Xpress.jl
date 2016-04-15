@@ -34,7 +34,7 @@ function add_var!(model::Model, newnz::Int, mrwind::Vector{Int},dmatval::Vector{
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub
         ), 
-        model.ptr_model, 1, newnz, fvec(Float64[objx]), ivec(Int[0]), ivec(mrwind), fvec(dmatval), fvec(Float64[lb]), fvec(Float64[ub]))
+        model.ptr_model, 1, newnz, fvec(Float64[objx]), ivec(Int[0]), ivec(mrwind)-1, fvec(dmatval), fvec(Float64[lb]), fvec(Float64[ub]))
         
     if ret != 0
         throw(XpressError(model))
@@ -44,7 +44,7 @@ end
 
 function chgcoltype!(model::Model,colnum::Int,vtype::Cchar)
     ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Ptr{Cchar}),
-        model.ptr_model,1,Int[colnum],Cchar[XPRS_INTEGER])
+        model.ptr_model,1,Int[colnum-1],Cchar[XPRS_INTEGER])
     if  0 != ret
         throw(XpressError(model))
     end
@@ -56,7 +56,7 @@ function chgcoltypes!(model::Model,colnums::Vector{Int},vtypes::Vector{Cchar})
         Cint,
         Ptr{Cint},
         Ptr{Cchar}),
-        model.ptr_model,n,colnums,vtypes)
+        model.ptr_model,n,colnums-1,vtypes)
     if 0 != ret
         throw(XpressError(model))
     end
@@ -83,9 +83,9 @@ function add_var!(model::Model, vtype::Cchar, c::Float64, lb::Float64, ub::Float
     end
 
     if vtype == XPRS_INTEGER
-        chgcoltype!(model,get_intattr(model,XPRS_COLS)-1,XPRS_INTEGER)
+        chgcoltype!(model,get_intattr(model,XPRS_COLS),XPRS_INTEGER)
     elseif vtype ==XPRS_BINARY
-        chgcoltype!(model,get_intattr(model,XPRS_COLS)-1,XPRS_BINARY)
+        chgcoltype!(model,get_intattr(model,XPRS_COLS),XPRS_BINARY)
     end        
 
     nothing  
@@ -132,7 +132,7 @@ function add_vars!(model::Model, vtypes::CVec, c::FVec, lb::FVec, ub::FVec)
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub
         ), 
-        model.ptr_model, n, 0, c, ivec(collect(0:(n-1))), C_NULL, C_NULL, lb, ub)
+        model.ptr_model, n, 0, c, ivec( collect(0:(n-1)) ), C_NULL, C_NULL, lb, ub)
                                 #check
     if ret != 0
         throw(XpressError(model))
@@ -141,9 +141,9 @@ function add_vars!(model::Model, vtypes::CVec, c::FVec, lb::FVec, ub::FVec)
     #vtypes = cvecx(vtypes, n)
     for i in 1:n
         if vtypes[i] == XPRS_INTEGER
-            chgcoltype!(model,prev_cols+i-1,XPRS_INTEGER)
+            chgcoltype!(model,prev_cols+i,XPRS_INTEGER)
         elseif vtypes[i] ==XPRS_BINARY
-            chgcoltype!(model,prev_cols+i-1,XPRS_BINARY)
+            chgcoltype!(model,prev_cols+i,XPRS_BINARY)
         end
     end
     nothing

@@ -1,5 +1,6 @@
 # Quadratic terms (in objective) & constraints
 #
+#defini explicitelly SOCP?
 
 function add_qpterms!(model::Model, qr::IVec, qc::IVec, qv::FVec)
     nnz = length(qr)

@@ -1,7 +1,7 @@
 #__precompile__()
 
 const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
-
+#const xprs = "/opt/xpressmp/lib/libxprs"
 #module Xpress
     # println("../deps/deps.jl")
     # if isfile(joinpath(dirname(@__FILE__),"..","deps","deps.jl"))
