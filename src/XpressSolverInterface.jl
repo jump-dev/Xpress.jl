@@ -14,6 +14,10 @@ end
 function XpressMathProgModel(;options...)
 
    m = XpressMathProgModel(Model(; finalize_env=false), nothing, nothing, nothing, nothing)
+
+   for (name,value) in options
+       setparam!(m, XPRS_CONTROLS_DICT[name], value)
+   end
    return m
 end
 

@@ -113,6 +113,6 @@ end
 
 function setparams!(m::Model;args...)
 	for (param,val) in args
-		setparam!(m,param,val)
+		setparam!(m,XPRS_CONTROLS_DICT[param],val)
 	end
 end
