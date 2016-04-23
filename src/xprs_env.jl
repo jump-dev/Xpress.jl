@@ -2,17 +2,17 @@
 
 
 
-    function Env()
-        ret = @xprs_ccall(init, Cint, (Ptr{Cchar},), C_NULL)
-        if ret != 0
-            if ret == :number
-                error("Invalid Xpress license")
-            else
-                error("Failed to create environment (error $ret).")
-            end
+function Env()
+    ret = @xprs_ccall(init, Cint, (Ptr{Cchar},), C_NULL)
+    if ret != 0
+        if ret == :number
+            error("Invalid Xpress license")
+        else
+            error("Failed to create environment (error $ret).")
         end
-        # finalizer(env, free_env)  ## temporary disable: which tends to sometimes caused warnings
     end
+    # finalizer(env, free_env)  ## temporary disable: which tends to sometimes caused warnings
+end
 
 
 #Base.unsafe_convert(ty::Type{Ptr{Void}}, env::Env) = env.ptr_env::Ptr{Void}
