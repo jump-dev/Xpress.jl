@@ -5,6 +5,7 @@ end
 
 function write_depsfile(path)
     f = open(depsfile,"w")
+    path = replace(path, "\\", "\\\\")
     println(f,"const xprs = \"$(path)\"")
     close(f)
 end
