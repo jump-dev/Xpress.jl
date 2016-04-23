@@ -12,7 +12,7 @@ type Model
     finalize_env::Bool
     
     function Model(p::Ptr{Void}; finalize_env::Bool=false)
-        model = new(env, p, nothing, finalize_env)
+        model = new(p, nothing, finalize_env)
         finalizer(model, m -> (free_model(m)) )
         model
     end
