@@ -84,5 +84,10 @@ module Xpress
 
     include("XpressSolverInterface.jl")
 
+    function __init__()
+        Env()
+        #atexit(free_env)
+    end
+
 
 end

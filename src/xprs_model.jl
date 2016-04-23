@@ -7,14 +7,13 @@
 #################################################
 
 type Model
-    env::Env
     ptr_model::Ptr{Void}
     callback::Any
     finalize_env::Bool
     
-    function Model(env::Env, p::Ptr{Void}; finalize_env::Bool=false)
+    function Model(p::Ptr{Void}; finalize_env::Bool=false)
         model = new(env, p, nothing, finalize_env)
-        finalizer(model, m -> (free_model(m); if m.finalize_env; free_env(m.env); end))
+        finalizer(model, m -> (free_model(m)) )
         model
     end
 end
@@ -24,9 +23,9 @@ end
 #function Model(env::Env; finalize_env::Bool=false)
 function Model(; finalize_env::Bool=false)
     
-    env = Env()
+    #env = Env()
 
-    @assert is_valid(env)
+    #@assert is_valid(env)
     
     a = Array(Ptr{Void}, 1)
     ret = @xprs_ccall(createprob, Cint, ( Ptr{Ptr{Void}},), a )
@@ -36,7 +35,7 @@ function Model(; finalize_env::Bool=false)
         #throw(XpressError(env, ret))
     end
     
-    m = Model(env, a[1]; finalize_env = finalize_env)
+    m = Model(a[1]; finalize_env = finalize_env)
 
     load_empty(m)
 
@@ -160,7 +159,7 @@ function load_empty(model::Model)
     nothing
 end
 function read_model(model::Model, filename::ASCIIString)
-    @assert is_valid(model.env)
+    #@assert is_valid(model.env)
     flags = ""
     ret = @xprs_ccall(readprob, Cint, 
         (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}), 
