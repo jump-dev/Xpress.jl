@@ -30,15 +30,15 @@ Here is the procedure to setup this package:
 
 2. Install this package using `Pkg.clone("git://github.com/joaquimg/Xpress.jl.git")`
 
-3. Make sure the XPRESSDIR environmental variable is set to the path of the Xpress directory. This is part of a standard installation. The Xpress library will be searched for in XPRESSDIR/lib on unix platforms and XPRESSDIR/bin on Windows. 
+4. Run `Pkg.build("Xpress")` 
 
-4. Now, you can start using it.
+5. Make sure the XPRESSDIR environmental variable is set to the path of the Xpress directory. This is part of a standard installation. The Xpress library will be searched for in XPRESSDIR/lib on unix platforms and XPRESSDIR/bin on Windows. 
+
+6. Now, you can start using it.
 
 ## High priority:
 
 * Create wrapper for: Callbacks.
-* XPRSinit issue, environment is harder to keep track of. And to finalize. (use `__init__()` and `atexit()`)
-* Create deps.jl to automatically load the instalation PATH.
 * Perform license check.
 * Test on UNIX .
 
