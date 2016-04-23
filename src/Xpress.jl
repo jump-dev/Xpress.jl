@@ -4,14 +4,14 @@ __precompile__()
 #const xprs = "/opt/xpressmp/lib/libxprs"
 module Xpress
     println("v0.0.1")
-    # println("../deps/deps.jl")
-    # if isfile(joinpath(dirname(@__FILE__),"..","deps","deps.jl"))
-    #     println("../deps/deps.jl")
-    #     include("../deps/deps.jl")
-    # else
-    #     error("Xpress not properly installed. Please run Pkg.build(\"Xpress\")")
-    # end
-    const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
+    println("../deps/deps.jl")
+    if isfile(joinpath(dirname(@__FILE__),"..","deps","deps.jl"))
+        println("../deps/deps.jl")
+        include("../deps/deps.jl")
+    else
+        error("Xpress not properly installed. Please run Pkg.build(\"Xpress\")")
+    end
+    #const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
 
     ### imports
 

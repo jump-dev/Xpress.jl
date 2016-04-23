@@ -26,7 +26,7 @@ for l in paths_to_try[2:end]
     d = Libdl.dlopen_e(l)
     if d != C_NULL
         found = true
-        print($(l))
+        #print($(l))
         write_depsfile(l)
         break
     end
