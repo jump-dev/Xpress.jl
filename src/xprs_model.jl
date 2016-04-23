@@ -44,13 +44,13 @@ function Model(; finalize_env::Bool=false)
 end
 
 
-# function Model(env::Env, name::ASCIIString, sense::Symbol)
-#     model = Model(env, name)
-#     if sense != :minimize
-#         set_sense!(model, sense)
-#     end
-#     model 
-# end
+function Model(name::ASCIIString, sense::Symbol)
+    model = Model()
+    if sense != :minimize
+        set_sense!(model, sense)
+    end
+    model 
+end
 
 
 #################################################

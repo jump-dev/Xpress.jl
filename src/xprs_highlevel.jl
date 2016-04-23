@@ -1,6 +1,6 @@
 # High level model construction
 
-function gurobi_model(env::Env;    # solver environment
+function xpress_model(;    # solver environment
 	name::ASCIIString="", 	       # model name
     sense::Symbol=:minimize,       # :minimize or :maximize
     H::CoeffMat=emptyfmat,         # quadratic coefficient matrix 
