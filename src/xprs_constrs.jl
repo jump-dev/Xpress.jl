@@ -3,6 +3,14 @@
 # add single constraint
 
 function add_constr!(model::Model, inds::IVec, coeffs::FVec, rel::Cchar, rhs::Float64)
+    if rel == Cchar('>')
+        rel = XPRS_GEQ    
+    elseif rel == Cchar('<')
+        rel = XPRS_GEQ 
+    elseif rel == Cchar('=')
+        rel = XPRS_EQ
+    end
+
     length(inds) == length(coeffs) || error("Inconsistent argument dimensions.")
    
     ret = @xprs_ccall(addrows, Cint,(
@@ -38,6 +46,17 @@ end
 # add multiple constraints
 
 function add_constrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec, rel::CVec, rhs::FVec)
+
+    for i in 1:length(rel)
+        if rel[i] == Cchar('>')
+            rel[i] = XPRS_GEQ    
+        elseif rel[i] == Cchar('<')
+            rel[i] = XPRS_GEQ 
+        elseif rel[i] == Cchar('=')
+            rel[i] = XPRS_EQ
+        end
+    end
+
     m = length(cbegins)
     nnz = length(inds)
     (m == length(rel) == length(rhs) && nnz == length(coeffs)) || error("Inconsistent argument dimensions.")
