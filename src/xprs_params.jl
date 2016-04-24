@@ -1,7 +1,7 @@
 
 #get
 
-function get_int_control(m::Model,param::Int)
+function get_int_param(m::Model,param::Int)
 
 	ipar = convert(Cint,param)
 	igval = Array(Cint,1)
@@ -14,7 +14,7 @@ function get_int_control(m::Model,param::Int)
 	convert(Int, igval[1])
 end
 
-function get_dbl_control(m::Model,param::Int)
+function get_dbl_param(m::Model,param::Int)
 
 	ipar = convert(Cint,param)
 	dgval = Array(Cdouble,1)
@@ -27,7 +27,7 @@ function get_dbl_control(m::Model,param::Int)
 	convert(Float64, dgval[1])
 end
 
-function get_str_control(m::Model,param::Int)
+function get_str_param(m::Model,param::Int)
 
 	ipar = convert(Cint,param)
 	cgval = Array(Cchar, 256)
@@ -43,7 +43,7 @@ end
 
 #set
 
-function set_int_control(m::Model,ipar::Int,isval::Int)
+function set_int_param(m::Model,ipar::Int,isval::Int)
 
 	ipar = convert(Cint,ipar)
 	isval = convert(Cint,isval)
@@ -57,7 +57,7 @@ function set_int_control(m::Model,ipar::Int,isval::Int)
 	nothing
 end
 
-function set_dbl_control(m::Model,ipar::Int,dsval::Float64)
+function set_dbl_param(m::Model,ipar::Int,dsval::Float64)
 
 	ipar = convert(Cint,ipar)
 	dsval = convert(Cdouble,dsval)
@@ -71,7 +71,7 @@ function set_dbl_control(m::Model,ipar::Int,dsval::Float64)
 	nothing
 end
 
-function set_str_control(m::Model,ipar::Int,csval::AbstractString)
+function set_str_param(m::Model,ipar::Int,csval::AbstractString)
 
 	ipar = convert(Cint,ipar)
 	csval = convert(ASCIIString,csval)
