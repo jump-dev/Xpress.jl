@@ -3,11 +3,11 @@
 # add single constraint
 
 function add_constr!(model::Model, inds::IVec, coeffs::FVec, rel::Cchar, rhs::Float64)
-    if rel == Cchar('>')
+    if rel == convert(Cchar,'>')
         rel = XPRS_GEQ    
-    elseif rel == Cchar('<')
+    elseif rel == convert(Cchar,'<')
         rel = XPRS_GEQ 
-    elseif rel == Cchar('=')
+    elseif rel == convert(Cchar,'=')
         rel = XPRS_EQ
     end
 
@@ -48,11 +48,11 @@ end
 function add_constrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec, rel::CVec, rhs::FVec)
 
     for i in 1:length(rel)
-        if rel[i] == Cchar('>')
+        if rel[i] == convert(Cchar,'>')
             rel[i] = XPRS_GEQ    
-        elseif rel[i] == Cchar('<')
+        elseif rel[i] == convert(Cchar,'<')
             rel[i] = XPRS_GEQ 
-        elseif rel[i] == Cchar('=')
+        elseif rel[i] == convert(Cchar,'=')
             rel[i] = XPRS_EQ
         end
     end
