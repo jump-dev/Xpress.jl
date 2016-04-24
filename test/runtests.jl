@@ -3,10 +3,10 @@ tests = ["lp_01a",
          "lp_02", 
          "lp_03",
          "mip_01", 
-         #"qp_01",
-         #"qp_02",
-         #"qcqp_01",
-         "mathprog"]
+         "qp_01",
+         #"qp_02", #fails queryin results
+         "qcqp_01",
+         "mathprog"] #fails partially
 
 for t in tests
     fp = "$(t).jl"

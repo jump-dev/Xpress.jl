@@ -11,11 +11,11 @@ using Xpress
 model = Xpress.Model( "qcqp_01", :maximize)
 
 add_cvars!(model, [1., 1.], 0., Inf)
-update_model!(model)
+#update_model!(model)
 
  # add_qpterms!(model, linearindices, linearcoeffs, qrowinds, qcolinds, qcoeffs, sense, rhs)
 add_qconstr!(model, [], [], [1, 2], [1, 2], [1, 1.], '<', 1.0)
-update_model!(model)
+#update_model!(model)
 
 println(model)
 

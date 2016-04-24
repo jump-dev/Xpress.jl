@@ -173,7 +173,7 @@ function getq(model::Model)
             V[j] = dobjval[j]
         end
     end
-    return sparse(I, J, V, m, n)
+    return sparse(I, J, V, n, n)
 end
 
 # add_qconstr!

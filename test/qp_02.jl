@@ -8,7 +8,7 @@
 
 using Xpress
 
-model = xpress_model(env; 
+model = xpress_model( 
 	name = "qp_02", 
 	f = [0., 0., 0.],
 	H = [2. 1. 0.; 1. 2. 1.; 0. 1. 2.],
@@ -16,6 +16,9 @@ model = xpress_model(env;
 	b = -[4., 1.])
 
 optimize(model)
+
+println(Xpress.get_lp_status(model))
+Xpress.getq(model)
 
 println("sol = $(get_solution(model))")
 println("obj = $(get_objval(model))")
