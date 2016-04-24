@@ -62,7 +62,7 @@ function set_dbl_param(m::Model,ipar::Int,dsval::Float64)
 	ipar = convert(Cint,ipar)
 	dsval = convert(Cdouble,dsval)
 
-	ret = @xprs_ccall(getdblcontrol, Cint, (Ptr{Void},Cint,Cdouble), 
+	ret = @xprs_ccall(setdblcontrol, Cint, (Ptr{Void},Cint,Cdouble), 
 		m.ptr_model, ipar, dsval)
 	if ret != 0
 		throw(XpressError(m))
@@ -76,7 +76,7 @@ function set_str_param(m::Model,ipar::Int,csval::AbstractString)
 	ipar = convert(Cint,ipar)
 	csval = convert(ASCIIString,csval)
 
-	ret = @xprs_ccall(getstrcontrol, Cint, (Ptr{Void},Cint,Ptr{Cchar}), 
+	ret = @xprs_ccall(setstrcontrol, Cint, (Ptr{Void},Cint,Ptr{Cchar}), 
 		m.ptr_model, ipar, csval)
 	if ret != 0
 		throw(XpressError(m))

@@ -16,7 +16,7 @@ function XpressMathProgModel(;options...)
    m = XpressMathProgModel(Model(), nothing, nothing, nothing, nothing)
 
    for (name,value) in options
-       setparam!(m, XPRS_CONTROLS_DICT[name], value)
+       setparam!(m.inner, XPRS_CONTROLS_DICT[name], value)
    end
    return m
 end
@@ -339,6 +339,17 @@ addsos2!(m::XpressMathProgModel, idx, weight) = add_sos!(m.inner, :SOS2, idx, we
 function setquadobj!(m::XpressMathProgModel, rowidx, colidx, quadval)
     delq!(m.inner)
 
+    # xpress only accept one input per matrix slot
+    k = ones(Bool,length(rowidx)) #replicates holder (they are falses)
+    for i in 1:length(rowidx), j in (i+1):length(rowidx)
+      if rowidx[i] == rowidx[j] && colidx[i] == colidx[j]
+        quadval[i] += quadval[j]
+        quadval[j] = 0.0
+        rowidx[j] = -1
+        colidx[j] = -1
+        k[j] = false
+      end
+    end
     scaledvals = similar(quadval)
     for i in 1:length(rowidx)
       if rowidx[i] == colidx[i]
@@ -348,7 +359,7 @@ function setquadobj!(m::XpressMathProgModel, rowidx, colidx, quadval)
         scaledvals[i] = quadval[i]
       end
     end
-    add_qpterms!(m.inner, rowidx, colidx, scaledvals)
+    add_qpterms!(m.inner, rowidx[k], colidx[k], scaledvals[k])
 
 end
 

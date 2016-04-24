@@ -41,4 +41,4 @@ function quadprogtest(solver=MathProgBase.defaultQPsolver)
     end
     println("Done")
 end
-quadprogtest(XpressSolver()) 
+quadprogtest(XpressSolver(OPTIMALITYTOL = 1e-8)) 

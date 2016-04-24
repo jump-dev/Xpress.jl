@@ -253,6 +253,7 @@ function get_obj(model::Model)
 
     return out
 end
+objcoeffs(model::Model) = get_obj(model)
 
 function get_rhs(model::Model)
 
