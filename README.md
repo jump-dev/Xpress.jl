@@ -39,13 +39,12 @@ Here is the procedure to setup this package:
 ## High priority:
 
 * Create wrapper for: Callbacks.
+* Test on UNIX.
 * Perform license check.
-* Test on UNIX .
 
 ## TODO list:
 
-* Verify differences from gurobi/cplex wrappers.
-* Prepare specific tests for  the library.
-* deal with presolve state
+* set warmstart
 * polish quadratic models
+* deal with presolve state
 
