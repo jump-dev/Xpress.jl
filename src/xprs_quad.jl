@@ -13,7 +13,7 @@ function add_qpterms!(model::Model, qr::IVec, qc::IVec, qv::FVec)
             Ptr{Cint},    # qcol
             Ptr{Float64} # qval
             ), 
-            model.ptr_model, nnz, qr.-1, qc.-1, qv)
+            model.ptr_model, nnz, qr-1, qc-1, qv)
             
         if ret != 0
             throw(XpressError(model))
@@ -125,12 +125,22 @@ function delq!(model::Model)
 
     n = num_vars(model)
 
-    qr = [i for i in 1:n, j in 1:n]
-    qc = [j for i in 1:n, j in 1:n]
+    k = n*(n+1)÷2
+ 
+    qr = zeros(Int, k)
+    qc = zeros(Int, k)
+    qv = zeros(k)
 
-    qv = zeros(n*n)
+    cont = 1
+    for i in 1:n
+        for j in i:n
+            qr[cont] = i
+            qc[cont] = j
+            cont += 1
+        end
+    end
 
-    add_qpterms!(model::Model, qr[:], qc[:], qv)
+    add_qpterms!(model, qr, qc, qv)
 end
 
 

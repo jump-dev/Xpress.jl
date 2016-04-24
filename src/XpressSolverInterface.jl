@@ -280,7 +280,7 @@ function getquadconstrduals(m::XpressMathProgModel)
     if is_qcp(m.inner) #&& get_int_param(m.inner.env, "QCPDual") == 0
         return fill(NaN, num_qconstrs(m.inner))
     else
-        return get_dblattrarray(m.inner, "QCPi", 1, num_qconstrs(m.inner))
+        return get_dual(m.inner)
     end
 end
 =#
