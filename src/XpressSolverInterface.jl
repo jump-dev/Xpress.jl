@@ -343,7 +343,7 @@ function setquadobj!(m::XpressMathProgModel, rowidx, colidx, quadval)
     for i in 1:length(rowidx)
       if rowidx[i] == colidx[i]
         # rescale from matrix format to "terms" format
-        scaledvals[i] = quadval[i] / 2
+        scaledvals[i] = quadval[i] #/ 2
       else
         scaledvals[i] = quadval[i]
       end

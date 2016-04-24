@@ -4,7 +4,7 @@ tests = ["lp_01a",
          "lp_03",
          "mip_01", 
          "qp_01",
-         #"qp_02", #fails queryin results
+         "qp_02", 
          "qcqp_01",
          "mathprog"] #fails partially
 

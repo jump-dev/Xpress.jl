@@ -10,7 +10,7 @@ mixintprogtest(XpressSolver())
 
 
 include(joinpath(Pkg.dir("MathProgBase"),"test","quadprog.jl"))
-#quadprogtest(XpressSolver()) #fails
+quadprogtest(XpressSolver()) #fails
 socptest(XpressSolver())
 #qpdualtest(XpressSolver()) #fails
 
