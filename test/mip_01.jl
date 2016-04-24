@@ -17,7 +17,7 @@ model = Xpress.Model( "mip_01", :maximize)
 add_cvar!(model, 1., 0., 5.)  # x
 add_ivar!(model, 2., 0, 10)   # y
 add_bvar!(model, 5.)          # z
-update_model!(model)
+#update_model!(model)
 
 add_constr!(model, ones(3), '<', 10.)
 add_constr!(model, [1., 2., 1.], '<', 15.)

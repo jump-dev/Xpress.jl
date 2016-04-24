@@ -18,7 +18,7 @@ function xpress_model(;    # solver environment
 	end
 
     # create model
-    model = Model(env, name)
+    model = Model(name)
     
     # set sense
     if sense != :minimize

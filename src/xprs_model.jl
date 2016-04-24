@@ -50,6 +50,11 @@ function Model(name::ASCIIString, sense::Symbol)
     end
     model 
 end
+function Model(name::ASCIIString)
+    model = Model()
+    set_sense!(model, :minimize)
+    model 
+end
 
 
 #################################################
