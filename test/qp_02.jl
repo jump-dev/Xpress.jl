@@ -18,7 +18,7 @@ model = xpress_model(
 optimize(model)
 
 println(Xpress.get_lp_status(model))
-Xpress.getq(model)
+println(Xpress.getq(model))
 
 println("sol = $(get_solution(model))")
 println("obj = $(get_objval(model))")

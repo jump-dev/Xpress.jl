@@ -1,6 +1,6 @@
 # Quadratic terms (in objective) & constraints
 #
-#defini explicitelly SOCP?
+# defini explicitelly SOCP?
 
 function add_qpterms!(model::Model, qr::IVec, qc::IVec, qv::FVec)
     nnz = length(qr)
@@ -54,7 +54,7 @@ function add_qpterms!(model, H::SparseMatrixCSC{Float64}) # H must be symmetric
                 k += 1
                 qr[k] = qi
                 qc[k] = qj
-                qv[k] = nzval[j] * 0.5
+                qv[k] = nzval[j] #* 0.5
             end
         end
     end
@@ -80,7 +80,7 @@ function add_qpterms!(model, H::Matrix{Float64}) # H must be symmetric
             k += 1
             qr[k] = qi
             qc[k] = qi
-            qv[k] = v * 0.5
+            qv[k] = v #* 0.5
         end
         
         for j = i+1 : n
@@ -137,6 +137,7 @@ end
 
 
 function getq(model::Model)
+    Base.warn_once("getq retuns only lower triangular")
     nnz = num_qnzs(model)
     n = num_vars(model)
     nels = Array(Cint, nnz)
@@ -176,7 +177,6 @@ function getq(model::Model)
     return sparse(I, J, V, n, n)
 end
 
-# add_qconstr!
 
 function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, qv::FVec, rel::Cchar, rhs::Float64)
     # in XPRESS quadratic matrices are added over existing linear constraints
