@@ -13,7 +13,7 @@ type XpressMathProgModel <: AbstractLinearQuadraticModel
 end
 function XpressMathProgModel(;options...)
 
-   m = XpressMathProgModel(Model(; finalize_env=false), nothing, nothing, nothing, nothing)
+   m = XpressMathProgModel(Model(), nothing, nothing, nothing, nothing)
 
    for (name,value) in options
        setparam!(m, XPRS_CONTROLS_DICT[name], value)
@@ -38,11 +38,11 @@ update_model!(m::XpressMathProgModel) = Base.warn_once("Model update not necessa
 
 function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub, sense)
   # throw away old model
-  env = m.inner.env
-  m.inner.finalize_env = false
+  #env = m.inner.env
+  #m.inner.finalize_env = false
   free_model(m.inner)
 
-  m.inner = Model( finalize_env=false)
+  m.inner = Model()
 
   add_cvars!(m.inner, float(obj), float(collb), float(colub))
 
