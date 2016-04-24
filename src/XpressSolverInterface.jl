@@ -189,7 +189,8 @@ end
 #fix status
 # add mip outputs
 function status(m::XpressMathProgModel)
-  s = get_lp_status(m.inner)
+  is_mip(m.inner) ? s = get_mip_status(m.inner) : s = get_lp_status(m.inner)
+  
   if s == :optimal
     return :Optimal
   elseif s == :infeasible
@@ -201,11 +202,28 @@ function status(m::XpressMathProgModel)
   elseif s == :unfinished
     return :Unfinished
   elseif s == :cutoff_in_dual
-    return :cutoff_in_dual
+    return :CutOff_In_Dual
   elseif s == :unsolved
-    return :unsolved
+    return :Unsolved
   elseif s == :nonconvex
-    return :nonconvex
+    return :Nonconvex
+  #mip
+  elseif s == :mip_optimal
+    return :Optimal
+  elseif s == :mip_infeasible
+    return :Infeasible
+  elseif s == :mip_unbounded
+    return :Unbounded
+  elseif s == :mip_not_loaded
+    return :Unfinished
+  elseif s == :mip_lp_not_optimal
+    return :Unfinished
+  elseif s == :mip_lp_optimal
+    return :Unfinished
+  elseif s == :mip_no_sol_found
+    return :Unfinished
+  elseif s == :mip_suboptimal
+    return :Unfinished
 #old
   elseif s == :iteration_limit || s == :node_limit || s == :time_limit || s == :solution_limit
     return :UserLimit
