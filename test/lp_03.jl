@@ -43,7 +43,7 @@ println("objv = $(get_objval(model))")
 #
 
 set_objcoeffs!(model, [1, -1])
-update_model!(model)
+#update_model!(model)
 
 c_ = objcoeffs(model)
 @test c_ == [1.0, -1.0]
