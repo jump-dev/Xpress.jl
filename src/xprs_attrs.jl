@@ -207,6 +207,8 @@ function get_lb(model::Model)
 
     return out
 end
+lowerbounds(model::Model) = get_lb(model)
+
 function get_ub(model::Model)
 
     cols = num_vars(model)
@@ -227,7 +229,7 @@ function get_ub(model::Model)
 
     return out
 end
-
+upperbounds(model::Model) = get_ub(model)
 
 
 
