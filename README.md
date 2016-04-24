@@ -51,6 +51,6 @@ Here is the procedure to setup this package:
 ## Failing testes:
 
 * linprogtest: fails due to not returning rays
-* quadprogtest: returns `:nonconvex` status
+* quadprogtest: precision problem, passes if epsilon is smaller
 * qpdualtest: lacks of `getquadconstrdual`
 
