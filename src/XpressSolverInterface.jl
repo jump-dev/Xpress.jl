@@ -266,10 +266,10 @@ function getquadconstrduals(m::XpressMathProgModel)
     end
 end
 =#
-#=
-getinfeasibilityray(m::XpressMathProgModel) = -get_dblattrarray(m.inner, "FarkasDual", 1, num_constrs(m.inner)) # note sign is flipped
-getunboundedray(m::XpressMathProgModel) = get_dblattrarray(m.inner, "UnbdRay", 1, num_vars(m.inner))
-=#
+
+getinfeasibilityray(m::XpressMathProgModel) = getdualray(m.inner)
+getunboundedray(m::XpressMathProgModel) = getprimalray(m.inner)
+
 getbasis(m::XpressMathProgModel) = get_basis(m.inner)
 
 getrawsolver(m::XpressMathProgModel) = m.inner

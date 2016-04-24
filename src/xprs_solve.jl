@@ -408,13 +408,59 @@ end
 
 
 
+#################################################
+#
+#  infeasibility & unboundedness
+#
+#################################################
 
 
+function getdualray(model::Model)
 
 
+    dray = Array(Float64, num_constrs(model))
+
+    hasray = Array(Cint, 1)
+
+    ret = @xprs_ccall(getdualray, Cint, 
+        (Ptr{Void},
+         Ptr{Float64},
+         Ptr{Cint}
+            ), model.ptr_model, dray, hasray)
+    if ret != 0
+        throw(XpressError(model))
+    end
+
+    if hasray[1] == 0
+        Base.warn("Xpress solver was unable to provide an infeasibility ray")
+        return dray
+    end
+
+    return dray
+end
+
+function getprimalray(model::Model)
 
 
+    pray = Array(Float64, num_vars(model))
 
+    hasray = Array(Cint, 1)
 
+    ret = @xprs_ccall(getprimalray, Cint, 
+        (Ptr{Void},
+         Ptr{Float64},
+         Ptr{Cint}
+            ), model.ptr_model, pray, hasray)
+    if ret != 0
+        throw(XpressError(model))
+    end
+
+    if hasray[1] == 0
+        Base.warn("Xpress solver was unable to provide an unboundedness ray")
+        return pray
+    end
+
+    return pray
+end
 
 
