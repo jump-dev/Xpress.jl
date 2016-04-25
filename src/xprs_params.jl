@@ -87,7 +87,7 @@ end
 
 
 
-function getparam(m::Model,param::Cint)
+function getparam(m::Model,param::Int)
     if convert(Int,param) in XPRS_INT_CONTROLS
         return get_int_param(m, param)
     elseif convert(Int,param) in XPRS_DBL_CONTROLS
@@ -99,7 +99,7 @@ function getparam(m::Model,param::Cint)
     end
 end
 
-function setparam!(m::Model,param::Cint,val::Any)
+function setparam!(m::Model,param::Int,val::Any)
     if convert(Int,param) in XPRS_INT_CONTROLS
         set_int_param(m, param, val)
     elseif convert(Int,param) in XPRS_DBL_CONTROLS
