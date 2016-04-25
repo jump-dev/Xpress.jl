@@ -5,18 +5,14 @@ println("Testing linproginterface with solver Xpress.XpressSolver")
 linprogsolvertest(XpressSolver())
 println("Done")
 
+include(joinpath(Pkg.dir("MathProgBase"),"test","linprog.jl"))
+linprogtest(XpressSolver(PRESOLVE = 0))
+
 include(joinpath(Pkg.dir("MathProgBase"),"test","mixintprog.jl"))
 mixintprogtest(XpressSolver())
 
-
 include(joinpath(Pkg.dir("MathProgBase"),"test","quadprog.jl"))
-#quadprogtest(XpressSolver(OPTIMALITYTOL = 1e-8,
-#CROSSOVERACCURACYTOL = 1e-8,
-#BARDUALSTOP = 1e-8,
-#BARPRIMALSTOP = 1e-8,
-#BARGAPTARGET = 1e-9,
-#BARGAPSTOP = 1e-9,
-#DEFAULTALG = 4)) #fails due to precision
+quadprogtest(XpressSolver(BARGAPSTOP = 1e-9))
 socptest(XpressSolver())
 #qpdualtest(XpressSolver()) #fails
 
@@ -28,5 +24,3 @@ println("Testing conicSOCtest with solver Xpress.XpressSolver")
 conicSOCtest(XpressSolver())
 println("Done")
 
-include(joinpath(Pkg.dir("MathProgBase"),"test","linprog.jl"))
-linprogtest(XpressSolver(PRESOLVE = 0)) #fails on rays

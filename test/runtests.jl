@@ -6,7 +6,6 @@ tests = ["lp_01a",
          "qp_01",
          "qp_02", #instability here du to returning small zero
          "qcqp_01",
-         "xprs_test03",
          "mathprog"] #fails partially
 
 for t in tests
