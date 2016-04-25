@@ -2,3 +2,5 @@
 *.mps
 *.lp
 *.sublime-workspace
+*.bat
+*.sublime-project
