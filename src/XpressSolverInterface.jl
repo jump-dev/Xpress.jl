@@ -316,7 +316,7 @@ const rev_var_type_map = Dict(
 
 function setvartype!(m::XpressMathProgModel, vartype::Vector{Symbol})
     # do this to make sure we deal with new columns
-    ind = ivec(collect( 1:num_vars(m.inner) ))
+    ind = collect( 1:num_vars(m.inner) )
 
     nvartype = map(x->Cchar(rev_var_type_map[x]), vartype)
 

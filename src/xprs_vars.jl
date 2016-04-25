@@ -28,13 +28,13 @@ function add_var!(model::Model, newnz::Int, mrwind::Vector{Int},dmatval::Vector{
         Cint,         # number of new cols
         Cint,         # number of nonzeros in added cols
         Ptr{Float64}, # coefs in objective
-        Ptr{Int},     # mstart ????
-        Ptr{Int},     # mrwind: row indexes of each col
+        Ptr{Cint},     # mstart ????
+        Ptr{Cint},     # mrwind: row indexes of each col
         Ptr{Float64},      # elemnts values
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub
         ), 
-        model.ptr_model, 1, newnz, fvec(Float64[objx]), ivec(Int[0]), ivec(mrwind)-1, fvec(dmatval), fvec(Float64[lb]), fvec(Float64[ub]))
+        model.ptr_model, 1, newnz, fvec(objx), ivec(0), ivec(mrwind)-1, fvec(dmatval), fvec(lb), fvec(ub))
         
     if ret != 0
         throw(XpressError(model))
@@ -44,7 +44,7 @@ end
 
 function chgcoltype!(model::Model,colnum::Int,vtype)
     ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Ptr{Cchar}),
-        model.ptr_model,1,Int[colnum-1],Cchar[XPRS_INTEGER])
+        model.ptr_model,1,Cint[colnum-1],Cchar[XPRS_INTEGER])
     if  0 != ret
         throw(XpressError(model))
     end
@@ -56,7 +56,7 @@ function chgcoltypes!(model::Model,colnums::Vector{Int},vtypes::Vector)
         Cint,
         Ptr{Cint},
         Ptr{Cchar}),
-        model.ptr_model,n,colnums-1,cvec(vtypes) )
+        model.ptr_model,n,ivec(colnums-1),cvec(vtypes) )
     if 0 != ret
         throw(XpressError(model))
     end
@@ -71,13 +71,13 @@ function add_var!(model::Model, vtype::Cchar, c::Float64, lb::Float64, ub::Float
         Cint,         # number of new cols
         Cint,         # number of nonzeros in added cols
         Ptr{Float64}, # coefs in objective
-        Ptr{Int},     # mstart ????
-        Ptr{Int},     # mrwind: row indexes of each col
+        Ptr{Cint},     # mstart ????
+        Ptr{Cint},     # mrwind: row indexes of each col
         Ptr{Float64},      # elemnts values
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub
         ), 
-        model.ptr_model, 1, 0, fvec(Float64[c]), ivec(Int[0]), C_NULL, C_NULL, fvec(Float64[lb]), fvec(Float64[ub]))
+        model.ptr_model, 1, 0, fvec(c), ivec(0), C_NULL, C_NULL, fvec(lb), fvec(ub))
     if ret != 0
         throw(XpressError(model))
     end
@@ -126,8 +126,8 @@ function add_vars!(model::Model, vtypes::CVec, c::FVec, lb::FVec, ub::FVec)
         Cint,         # number of new cols
         Cint,         # number of nonzeros in added cols
         Ptr{Float64}, # coefs in objective
-        Ptr{Int},     # mstart ????
-        Ptr{Int},     # mrwind: row indexes of each col
+        Ptr{Cint},     # mstart ????
+        Ptr{Cint},     # mrwind: row indexes of each col
         Ptr{Float64},      # elemnts values
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub

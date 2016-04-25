@@ -14,8 +14,8 @@ const XPRS_SOS_TYPE2 = convert(Cchar, '2')
 #***************************************************************************\
 # * useful constants                                                        *
 #***************************************************************************/
-const XPRS_PLUSINFINITY  = convert(Cdouble,     1.0e+20 )
-const XPRS_MINUSINFINITY = convert(Cdouble,    -1.0e+20 )
+const XPRS_PLUSINFINITY  = convert(Float64,     1.0e+20 )
+const XPRS_MINUSINFINITY = convert(Float64,    -1.0e+20 )
 const XPRS_MAXINT        = convert(Cint,  2147483647 )
 const XPVERSION          = convert(Cint,          27 )
 
@@ -23,11 +23,11 @@ const XPVERSION          = convert(Cint,          27 )
 # * control parameters for XPRSprob                                         *
 #***************************************************************************/
 # String control parameters */
-const XPRS_MPSRHSNAME    = convert(Int ,                          6001)
-const XPRS_MPSOBJNAME    = convert(Int ,                          6002)
-const XPRS_MPSRANGENAME  = convert(Int ,                          6003)
-const XPRS_MPSBOUNDNAME  = convert(Int ,                          6004)
-const XPRS_OUTPUTMASK    = convert(Int ,                          6005)
+const XPRS_MPSRHSNAME                 = convert(Int ,             6001)
+const XPRS_MPSOBJNAME                 = convert(Int ,             6002)
+const XPRS_MPSRANGENAME               = convert(Int ,             6003)
+const XPRS_MPSBOUNDNAME               = convert(Int ,             6004)
+const XPRS_OUTPUTMASK                 = convert(Int ,             6005)
 #/* Double control parameters */
 const XPRS_MATRIXTOL                  =convert(Int,               7001 )
 const XPRS_PIVOTTOL                   =convert(Int,               7002 )

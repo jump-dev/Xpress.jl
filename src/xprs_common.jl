@@ -22,7 +22,7 @@ ivec(v::Vector) = convert(IVec, v)
 fvec(v::Vector) = convert(FVec, v)
 cvec(v::Vector) = convert(CVec, v)
 
-ivec(v::Int) = Int[v]
+ivec(v::Int) = Cint[v]
 fvec(v::Float64) = Float64[v]
 #cvec(v::Vector) = convert(CVec, v)
 

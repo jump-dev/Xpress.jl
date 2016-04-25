@@ -344,7 +344,7 @@ function set_lb!(model::Model,lb::Vector)
     cols = num_vars(model)
     ( cols == length(lb) ) || error("wrong size of LB vector")
     
-    ind = ivec(collect(1:cols))
+    ind = collect(1:cols)
     
     set_lb!(model,ind,lb)
 end
@@ -370,7 +370,7 @@ function set_ub!(model::Model,ub::Vector)
     cols = num_vars(model)
     ( cols == length(ub) ) || error("wrong size of UB vector")
     
-    ind = ivec(collect(1:cols))
+    ind = collect(1:cols)
     
     set_ub!(model,ind,ub)
 end
@@ -393,7 +393,7 @@ function set_rhs!(model::Model,ind::Vector{Int},rhs::Vector)
 end
 function set_rhs!(model::Model, rhs::Vector)
     rows = num_constrs(model)
-    set_rhs!(model, ivec( collect(1:rows) ) ,fvec(rhs) )
+    set_rhs!(model, collect(1:rows) ,fvec(rhs) )
 end
 
 function set_rowtype!(model::Model,senses::Vector)
