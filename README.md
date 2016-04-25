@@ -48,9 +48,7 @@ Here is the procedure to setup this package:
 * polish quadratic models
 * deal with presolve state
 
-## Failing testes:
+## Failing tests:
 
-* linprogtest: fails due to not returning rays
-* quadprogtest: precision problem, passes if epsilon is smaller
 * qpdualtest: lacks of `getquadconstrdual`
 
