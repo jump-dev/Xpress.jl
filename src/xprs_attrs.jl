@@ -6,8 +6,9 @@
 #
 ############################################
 
-function get_intattr(model::Model, ipar::Cint)
+function get_intattr(model::Model, ipar::Int)
     a = Array(Cint, 1)
+    ipar = convert(Cint,ipar)
     ret = @xprs_ccall(getintattrib, Cint, 
         (Ptr{Void}, Cint, Ptr{Cint}),
         model.ptr_model, ipar, a);
@@ -17,8 +18,9 @@ function get_intattr(model::Model, ipar::Cint)
     convert(Int, a[1])
 end
 
-function get_dblattr(model::Model, ipar::Cint)
+function get_dblattr(model::Model, ipar::Int)
     a = Array(Float64, 1)
+    ipar = convert(Cint,ipar)
     ret = @xprs_ccall(getdblattrib, Cint, 
         (Ptr{Void}, Cint, Ptr{Float64}),
         model.ptr_model, ipar, a);
@@ -28,8 +30,9 @@ function get_dblattr(model::Model, ipar::Cint)
     a[1]::Float64
 end
 
-function get_strattr(model::Model, ipar::Cint)
+function get_strattr(model::Model, ipar::Int)
     a = Array(Cchar, 256)
+    ipar = convert(Cint,ipar)
     ret = @xprs_ccall(getstrattrib, Cint, 
         (Ptr{Void}, Cint, Ptr{Cchar}), 
         model.ptr_model, ipar, a)
