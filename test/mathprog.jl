@@ -29,4 +29,4 @@ conicSOCtest(XpressSolver())
 println("Done")
 
 include(joinpath(Pkg.dir("MathProgBase"),"test","linprog.jl"))
-linprogtest(XpressSolver()) #fails on rays
+linprogtest(XpressSolver(PRESOLVE = 0)) #fails on rays

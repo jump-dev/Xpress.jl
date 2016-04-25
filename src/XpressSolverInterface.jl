@@ -10,10 +10,12 @@ type XpressMathProgModel <: AbstractLinearQuadraticModel
     cutcb
     heuristiccb
     infocb
+
+    options
 end
 function XpressMathProgModel(;options...)
 
-   m = XpressMathProgModel(Model(), nothing, nothing, nothing, nothing)
+   m = XpressMathProgModel(Model(), nothing, nothing, nothing, nothing, options)
 
    for (name,value) in options
        setparam!(m.inner, XPRS_CONTROLS_DICT[name], value)
@@ -29,7 +31,7 @@ XpressSolver(;kwargs...) = XpressSolver(kwargs)
 LinearQuadraticModel(s::XpressSolver) = XpressMathProgModel(;s.options...)
 ConicModel(s::XpressSolver) = LPQPtoConicBridge(LinearQuadraticModel(s))
 
-supportedcones(::XpressSolver) = [:Free]#,:Zero,:NonNeg,:NonPos,:SOC,:SOCRotated]
+supportedcones(m::XpressSolver) = [:Free]#,:Zero,:NonNeg,:NonPos,:SOC,:SOCRotated]
 
 loadproblem!(m::XpressMathProgModel, filename::AbstractString) = read_model(m.inner, filename)
 
@@ -43,6 +45,10 @@ function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub
   free_model(m.inner)
 
   m.inner = Model()
+
+  for (name,value) in m.options
+       setparam!(m.inner, XPRS_CONTROLS_DICT[name], value)
+  end
 
   add_cvars!(m.inner, float(obj), float(collb), float(colub))
 
