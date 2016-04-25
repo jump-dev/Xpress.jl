@@ -1,6 +1,6 @@
 # Xpress.jl
 
-This is a package under construction. All the implementation was developed and tested in Windows, thus it might run into linux issues.
+This is a package under construction. All the implementation was developed and tested in Windows(32 and 64bits), thus it might run into linux issues.
 
 Reference at:
 [FICO optimizer manual](http://www.fico.com/en/node/8140?file=5097)
@@ -35,6 +35,8 @@ Here is the procedure to setup this package:
 5. Make sure the XPRESSDIR environmental variable is set to the path of the Xpress directory. This is part of a standard installation. The Xpress library will be searched for in XPRESSDIR/lib on unix platforms and XPRESSDIR/bin on Windows. 
 
 6. Now, you can start using it.
+
+You should use the xpress version matching to your julia installation and vice-versa
 
 ## High priority:
 
