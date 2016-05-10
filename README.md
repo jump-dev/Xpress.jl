@@ -41,7 +41,7 @@ You should use the xpress version matching to your julia installation and vice-v
 ## High priority:
 
 * Create wrapper for: Callbacks.
-* Test on UNIX.
+* Test on linux.
 * Perform license check.
 
 ## TODO list:
