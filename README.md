@@ -1,6 +1,6 @@
 # Xpress.jl
 
-This is a package under construction. All the implementation was developed and tested in Windows(32 and 64bits), thus it might run into linux issues.
+This is a package under construction. All the implementation was developed and tested in Windows(32 and 64bits) and osx, never tested in linux.
 
 Reference at:
 [FICO optimizer manual](http://www.fico.com/en/node/8140?file=5097)
