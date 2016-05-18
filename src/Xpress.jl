@@ -3,14 +3,12 @@ __precompile__()
 #const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
 #const xprs = "/opt/xpressmp/lib/libxprs"
 module Xpress
-    println("v0.0.1")
 
     if isfile(joinpath(dirname(@__FILE__),"..","deps","deps.jl"))
         include("../deps/deps.jl")
     else
         error("Xpress not properly installed. Please run Pkg.build(\"Xpress\")")
     end
-    #const xprs = joinpath(ENV["XPRESSDIR"],"bin",string("xprs",".",Libdl.dlext))
 
     ### imports
 
@@ -83,9 +81,23 @@ module Xpress
 
     include("XpressSolverInterface.jl")
 
+    # license checker
+    # ---------------
+    include("xprs_userlic.jl")
+
     function __init__()
+
+        # some lics require special check
+        # -------------------------------
+        userlic()
+
+        # start Xpress with XPRSinit
+        # --------------------------
         Env()
-        atexit(free_env)
+
+        # XPRESS finalizer
+        # ----------------
+        #atexit(free_env)
     end
 
 
