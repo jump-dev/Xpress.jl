@@ -22,7 +22,7 @@ Here is the procedure to setup this package:
 
 1. Obtain a license of Xpress and install Xpress solver, following the instructions on FICO's website.
 
-2. Install this package using `Pkg.clone("git://github.com/joaquimg/Xpress.jl.git")`
+2. Install this package using `Pkg.clone("git://github.com/JuliaOpt/Xpress.jl.git")`
 
 4. Run `Pkg.build("Xpress")` 
 
