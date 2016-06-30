@@ -1,11 +1,5 @@
 # Xpress.jl
 
-This is a package under construction. All the implementation was developed and tested in Windows(32 and 64bits) and osx, never tested in linux.
-
-Reference at:
-[FICO optimizer manual](http://www.fico.com/en/node/8140?file=5097)
-
-## Xpress
 
 The Xpress Optimizer is a commercial optimization solver for a variety of mathematical programming problems, including linear programming (LP), quadratic programming (QP), quadratically constrained programming (QCP), mixed integer linear programming (MILP), mixed-integer quadratic programming (MIQP), and mixed-integer quadratically constrained programming (MIQCP).
 
@@ -53,4 +47,7 @@ You should use the xpress version matching to your julia installation and vice-v
 ## Failing tests:
 
 * qpdualtest: lacks of `getquadconstrdual`
+
+## Reference:
+[FICO optimizer manual](http://www.fico.com/en/node/8140?file=5097)
 
