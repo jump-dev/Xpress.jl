@@ -305,7 +305,7 @@ function get_coltype(model::Model)
 
     cols = num_vars(model)
 
-    out = Array(Cchar,rows)
+    out = Array(Cchar,cols)
 
     ret = @xprs_ccall(getcoltype, Cint, (
         Ptr{Void},    # model

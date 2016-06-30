@@ -20,6 +20,7 @@ for a in aliases
     end
     @unix_only if haskey(ENV, "XPRESS")
         push!(paths_to_try, joinpath(ENV["XPRESS"],"lib",string("lib",a,".",Libdl.dlext)))
+        push!(paths_to_try, joinpath(ENV["XPRESS"],"..","lib",string("lib",a,".",Libdl.dlext)))
     end
 end
 
