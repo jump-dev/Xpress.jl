@@ -6,7 +6,7 @@ function userlic()
 	# change directory to reach all libs
 	# ----------------------------------
     initdir = pwd()
-    libdir = replace(xprs, "\\xprs", "")
+    libdir = dirname(xprs)
     cd(libdir)
 
     # pre allocate vars

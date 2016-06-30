@@ -150,12 +150,12 @@ function getq(model::Model)
     Base.warn_once("getq retuns only lower triangular")
     nnz = num_qnzs(model)
     n = num_vars(model)
-    nels = Array(Cint, nnz)
+    nels = Array(Cint, 1)
+    nels[1] = nnz
 
     mstart = Array(Cint, n+1)
     mclind = Array(Cint, nnz)
     dobjval = Array(Float64, nnz)
-    nzout = Array(Cint,1)
 
     ret = @xprs_ccall(getmqobj, Cint, (
         Ptr{Void},  # model
@@ -172,11 +172,12 @@ function getq(model::Model)
     if ret != 0
         throw(XpressError(model))
     end
+    triangle_nnz = convert(Int,nels[1])
 
-    mstart[end] = nnz
-    I = Array(Int, nnz)
-    J = Array(Int, nnz)
-    V = Array(Float64, nnz)
+    mstart[end] = triangle_nnz
+    I = Array(Int, triangle_nnz)
+    J = Array(Int, triangle_nnz)
+    V = Array(Float64, triangle_nnz)
     for i in 1:length(mstart)-1
         for j in (mstart[i]+1):mstart[i+1]
             I[j] = i
