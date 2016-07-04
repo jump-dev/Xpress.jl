@@ -303,7 +303,7 @@ const var_type_map = Dict(
   'B' => :Bin,
   'I' => :Int,
   'S' => :SemiCont,
-  'N' => :SemiInt
+  'R' => :SemiInt
 )
 
 const rev_var_type_map = Dict(
@@ -311,7 +311,7 @@ const rev_var_type_map = Dict(
   :Bin => 'B',
   :Int => 'I',
   :SemiCont => 'S',
-  :SemiInt => 'N'
+  :SemiInt => 'R'
 )
 
 function setvartype!(m::XpressMathProgModel, vartype::Vector{Symbol})
