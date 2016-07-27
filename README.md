@@ -35,14 +35,11 @@ You should use the xpress version matching to your julia installation and vice-v
 ## High priority:
 
 * Create wrapper for: Callbacks.
-* Test on linux.
-* Perform license check.
 
 ## TODO list:
 
 * set warmstart
 * polish quadratic models
-* deal with presolve state
 
 ## Failing tests:
 
