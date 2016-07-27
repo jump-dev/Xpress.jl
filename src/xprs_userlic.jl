@@ -18,7 +18,7 @@ function userlic()
 
     # FIRST call do xprslicense to get BASE LIC
     # -----------------------------------------
-    ccall(("XPRSlicense",xprs), 
+    ccall(("XPRSlicense",xprs),
         stdcall, Cint, (Ptr{Cint},Ptr{Cchar}), lic,slicmsg)
 
     #println( ascii( bytestring(pointer(slicmsg))  ) )
@@ -29,28 +29,29 @@ function userlic()
 
     # Send GIVEN LIC to XPRESS lib
     # --------------------------
-    ierr = ccall(("XPRSlicense",xprs), 
+    ierr = ccall(("XPRSlicense",xprs),
         stdcall, Cint, (Ptr{Cint},Ptr{Cchar}), lic, slicmsg)
 
     # check LIC TYPE
     # --------------
-    if ierr == 16 
+    if ierr == 16
         # DEVELOPER
         # ---------
-        println("Xpress development software detected.")
-        println( ascii( bytestring(pointer(slicmsg))  ) )
-    elseif ierr != 0 
+        info("Xpress development software detected.")
+    elseif ierr != 0
         # FAIL
         # ----
-        ccall(("XPRSgetlicerrmsg",xprs), 
+        info("Failed to find working license.")
+
+        ccall(("XPRSgetlicerrmsg",xprs),
             stdcall, Cint, (Ptr{Cchar},Cint), errmsg, 512)
 
-        println( ascii( bytestring(pointer(errmsg))  ) )
-    else 
+        error(  bytestring(pointer(errmsg))   )
+    else
         # USER
         # ----
-        println("User license detected.")
-        println( ascii( bytestring(pointer(slicmsg))  ) )
+        info("User license detected.")
+        info(  bytestring(pointer(slicmsg))  )
     end
 
     cd(initdir)
