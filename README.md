@@ -22,13 +22,11 @@ Here is the procedure to setup this package:
 
 1. Obtain a license of Xpress and install Xpress solver, following the instructions on FICO's website.
 
-2. Install this package using `Pkg.clone("git://github.com/JuliaOpt/Xpress.jl.git")`
+2. Install this package using `Pkg.add("Xpress")`.
 
-4. Run `Pkg.build("Xpress")` 
+3. Make sure the XPRESSDIR environmental variable is set to the path of the Xpress directory. This is part of a standard installation. The Xpress library will be searched for in XPRESSDIR/lib on unix platforms and XPRESSDIR/bin on Windows. 
 
-5. Make sure the XPRESSDIR environmental variable is set to the path of the Xpress directory. This is part of a standard installation. The Xpress library will be searched for in XPRESSDIR/lib on unix platforms and XPRESSDIR/bin on Windows. 
-
-6. Now, you can start using it.
+4. Now, you can start using it.
 
 You should use the xpress version matching to your julia installation and vice-versa
 
