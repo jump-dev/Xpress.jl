@@ -177,7 +177,7 @@ function getsense(m::XpressMathProgModel)
 end
 
 numvar(m::XpressMathProgModel)    = num_vars(m.inner)
-numconstr(m::XpressMathProgModel) = num_constrs(m.inner) 
+numconstr(m::XpressMathProgModel) = num_constrs(m.inner)
 numlinconstr(m::XpressMathProgModel) = num_constrs(m.inner) - num_qconstrs(m.inner)
 numquadconstr(m::XpressMathProgModel) = num_qconstrs(m.inner)
 
@@ -196,7 +196,7 @@ end
 # add mip outputs
 function status(m::XpressMathProgModel)
   is_mip(m.inner) ? s = get_mip_status(m.inner) : s = get_lp_status(m.inner)
-  
+
   if s == :optimal
     return :Optimal
   elseif s == :infeasible
@@ -559,4 +559,3 @@ function setmathprogcallback!(model::XpressMathProgModel)
     nothing
 end
 =#
-

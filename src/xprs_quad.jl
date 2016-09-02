@@ -12,12 +12,12 @@ function add_qpterms!(model::Model, qr::IVec, qc::IVec, qv::FVec)
             Ptr{Cint},    # qrow
             Ptr{Cint},    # qcol
             Ptr{Float64} # qval
-            ), 
+            ),
             model.ptr_model, nnz, qr-1, qc-1, qv)
-            
+
         if ret != 0
             throw(XpressError(model))
-        end 
+        end
     end
     nothing
 end
@@ -30,21 +30,21 @@ end
 function add_qpterms!(model, H::SparseMatrixCSC{Float64}) # H must be symmetric
     n = num_vars(model)
     (H.m == n && H.n == n) || error("H must be an n-by-n symmetric matrix.")
-    
+
     nnz_h = nnz(H)
     qr = Array(Cint, nnz_h)
     qc = Array(Cint, nnz_h)
     qv = Array(Float64, nnz_h)
     k = 0
-    
+
     colptr::Vector{Int} = H.colptr
     nzval::Vector{Float64} = H.nzval
-    
+
     for i = 1 : n
         qi::Cint = convert(Cint, i)
         for j = colptr[i]:(colptr[i+1]-1)
             qj = convert(Cint, H.rowval[j])
-            
+
             if qi < qj
                 k += 1
                 qr[k] = qi
@@ -58,23 +58,23 @@ function add_qpterms!(model, H::SparseMatrixCSC{Float64}) # H must be symmetric
             end
         end
     end
-    
+
     add_qpterms!(model, qr[1:k], qc[1:k], qv[1:k])
 end
 
 function add_qpterms!(model, H::Matrix{Float64}) # H must be symmetric
     n = num_vars(model)
     size(H) == (n, n) || error("H must be an n-by-n symmetric matrix.")
-    
+
     nmax = round(Int,n * (n + 1) / 2)
     qr = Array(Cint, nmax)
     qc = Array(Cint, nmax)
     qv = Array(Float64, nmax)
     k::Int = 0
-    
+
     for i = 1 : n
         qi = convert(Cint, i)
-        
+
         v = H[i,i]
         if v != 0.
             k += 1
@@ -82,7 +82,7 @@ function add_qpterms!(model, H::Matrix{Float64}) # H must be symmetric
             qc[k] = qi
             qv[k] = v #* 0.5
         end
-        
+
         for j = i+1 : n
             v = H[j, i]
             if v != 0.
@@ -93,7 +93,7 @@ function add_qpterms!(model, H::Matrix{Float64}) # H must be symmetric
             end
         end
     end
-        
+
     add_qpterms!(model, qr[1:k], qc[1:k], qv[1:k])
 end
 
@@ -113,12 +113,12 @@ end
 function delq!(model::Model)
     ret = @grb_ccall(delq, Cint, (
         Ptr{Void},    # model
-        ), 
+        ),
         model)
-        
+
     if ret != 0
         throw(GurobiError(model.env, ret))
-    end 
+    end
 end
 =#
 function delq!(model::Model)
@@ -126,7 +126,7 @@ function delq!(model::Model)
     n = num_vars(model)
 
     k = n*(n+1)÷2
- 
+
     qr = zeros(Int, k)
     qc = zeros(Int, k)
     qv = zeros(k)
@@ -168,7 +168,7 @@ function getq(model::Model)
         Cint #last
         ),
         model.ptr_model,mstart,mclind,dobjval,nnz,nels,0,n-1)
-    
+
     if ret != 0
         throw(XpressError(model))
     end
@@ -198,7 +198,7 @@ function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, 
 
     lnnz = length(lind)
     lnnz == length(lval) || error("Inconsistent argument dimensions.")
-    
+
     add_constr!(model, lind, lval, rel, rhs)
     m = num_constrs(model)
 
@@ -210,12 +210,12 @@ function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, 
             Ptr{Cint},    # qrow
             Ptr{Cint},    # qcol
             Ptr{Float64} # qval
-            ), 
+            ),
             model, m-1, qnnz, qr.-1, qc.-1, qv)
-            
+
         if ret != 0
             throw(XpressError(model))
-        end 
+        end
     end
     nothing
 end

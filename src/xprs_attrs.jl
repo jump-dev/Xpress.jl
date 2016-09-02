@@ -9,7 +9,7 @@
 function get_intattr(model::Model, ipar::Int)
     a = Array(Cint, 1)
     ipar = convert(Cint,ipar)
-    ret = @xprs_ccall(getintattrib, Cint, 
+    ret = @xprs_ccall(getintattrib, Cint,
         (Ptr{Void}, Cint, Ptr{Cint}),
         model.ptr_model, ipar, a);
     if ret != 0
@@ -21,7 +21,7 @@ end
 function get_dblattr(model::Model, ipar::Int)
     a = Array(Float64, 1)
     ipar = convert(Cint,ipar)
-    ret = @xprs_ccall(getdblattrib, Cint, 
+    ret = @xprs_ccall(getdblattrib, Cint,
         (Ptr{Void}, Cint, Ptr{Float64}),
         model.ptr_model, ipar, a);
     if ret != 0
@@ -33,13 +33,13 @@ end
 function get_strattr(model::Model, ipar::Int)
     a = Array(Cchar, 256)
     ipar = convert(Cint,ipar)
-    ret = @xprs_ccall(getstrattrib, Cint, 
-        (Ptr{Void}, Cint, Ptr{Cchar}), 
+    ret = @xprs_ccall(getstrattrib, Cint,
+        (Ptr{Void}, Cint, Ptr{Cchar}),
         model.ptr_model, ipar, a)
     if ret != 0
         throw(XpressError(model,convert(Int, ret[1])))
     end
-    bytestring(pointer(a))
+    String(pointer(a))
 end
 
 
@@ -98,12 +98,12 @@ num_linconstrs(model::Model) = num_constrs(model) - num_qconstrs(model)
 
 model_sense(model::Model) = obj_sense(model) == XPRS_OBJ_MINIMIZE ? (:minimize) : (:maximize)
 
-is_qcp(model::Model) = num_qconstrs(model) > 0 
+is_qcp(model::Model) = num_qconstrs(model) > 0
 is_mip(model::Model) = num_intents(model)+num_sos(model) > 0
 is_qp(model::Model) = num_qnzs(model)>0
 
 
-function model_type(model::Model) 
+function model_type(model::Model)
     is_qp(model)  ? (:QP)  :
     is_qcp(model) ? (:QCP) : (:LP)
 end
@@ -147,19 +147,19 @@ end
 ############################################
 function set_sense!(model::Model, sense::Symbol)
     v = sense == :maximize ? XPRS_OBJ_MAXIMIZE :
-        sense == :minimize ? XPRS_OBJ_MINIMIZE : 
+        sense == :minimize ? XPRS_OBJ_MINIMIZE :
         throw(ArgumentError("Invalid model sense."))
 
     ret = @xprs_ccall(chgobjsense, Cint, (
             Ptr{Void},    # model
             Cint          # sense
-            ), 
+            ),
             model.ptr_model, v)
-            
+
     if ret != 0
         throw(XpressError(model))
-    end 
-    
+    end
+
 end
 
 # note: this takes effect only after update_model! is called:
@@ -173,12 +173,12 @@ function set_objcoeffs!(model::Model, inds::Vector{Int}, c::Vector)
             Cint,          # sense
             Ptr{Cint},
             Ptr{Float64}
-            ), 
+            ),
             model.ptr_model, Cint( length(c) ), ivec(inds)-1, fvec(c) )
-            
+
         if ret != 0
             throw(XpressError(model))
-        end 
+        end
 
 end
 function set_objcoeffs!(model::Model,c::Vector)
@@ -198,15 +198,15 @@ function get_lb(model::Model)
 
     ret = @xprs_ccall(getlb, Cint, (
         Ptr{Void},    # model
-        Ptr{Float64},          
+        Ptr{Float64},
         Cint,
         Cint
-        ), 
+        ),
         model.ptr_model, out, 0, cols-1)
-        
+
     if ret != 0
         throw(XpressError(model))
-    end 
+    end
 
     return out
 end
@@ -220,15 +220,15 @@ function get_ub(model::Model)
 
     ret = @xprs_ccall(getub, Cint, (
         Ptr{Void},    # model
-        Ptr{Float64},          
+        Ptr{Float64},
         Cint,
         Cint
-        ), 
+        ),
         model.ptr_model, out, 0, cols-1)
-        
+
     if ret != 0
         throw(XpressError(model))
-    end 
+    end
 
     return out
 end
@@ -244,15 +244,15 @@ function get_obj(model::Model)
 
     ret = @xprs_ccall(getobj, Cint, (
         Ptr{Void},    # model
-        Ptr{Float64},          
+        Ptr{Float64},
         Cint,
         Cint
-        ), 
+        ),
         model.ptr_model, out, 0, cols-1)
-        
+
     if ret != 0
         throw(XpressError(model))
-    end 
+    end
 
     return out
 end
@@ -266,15 +266,15 @@ function get_rhs(model::Model)
 
     ret = @xprs_ccall(getrhs, Cint, (
         Ptr{Void},    # model
-        Ptr{Float64},          
+        Ptr{Float64},
         Cint,
         Cint
-        ), 
+        ),
         model.ptr_model, out, 0, rows-1)
-        
+
     if ret != 0
         throw(XpressError(model))
-    end 
+    end
 
     return out
 end
@@ -286,15 +286,15 @@ function get_rowtype(model::Model)
 
     ret = @xprs_ccall(getrowtype, Cint, (
         Ptr{Void},    # model
-        Ptr{Cchar},          
+        Ptr{Cchar},
         Cint,
         Cint
-        ), 
+        ),
         model.ptr_model, out, 0, rows-1)
-        
+
     if ret != 0
         throw(XpressError(model))
-    end 
+    end
 
     return out
 end
@@ -309,15 +309,15 @@ function get_coltype(model::Model)
 
     ret = @xprs_ccall(getcoltype, Cint, (
         Ptr{Void},    # model
-        Ptr{Cchar},          
+        Ptr{Cchar},
         Cint,
         Cint
-        ), 
+        ),
         model.ptr_model, out, 0, cols-1)
-        
+
     if ret != 0
         throw(XpressError(model))
-    end 
+    end
 
     return out
 end
@@ -328,24 +328,24 @@ function set_lb!(model::Model,ind::Vector{Int},lb::Vector)
 
     ret = @xprs_ccall(chgbounds, Cint, (
         Ptr{Void},    # model
-        Cint,          
+        Cint,
         Ptr{Cint},
         Ptr{Cchar},
         Ptr{Float64}
-        ), 
+        ),
         model.ptr_model, Cint(nbnds) , ivec(ind)-1, cvecx('L',nbnds), fvec(lb) )
-        
+
     if ret != 0
         throw(XpressError(model))
-    end 
+    end
 end
 function set_lb!(model::Model,lb::Vector)
-    
+
     cols = num_vars(model)
     ( cols == length(lb) ) || error("wrong size of LB vector")
-    
+
     ind = collect(1:cols)
-    
+
     set_lb!(model,ind,lb)
 end
 function set_ub!(model::Model,ind::Vector{Int},ub::Vector)
@@ -354,24 +354,24 @@ function set_ub!(model::Model,ind::Vector{Int},ub::Vector)
 
     ret = @xprs_ccall(chgbounds, Cint, (
         Ptr{Void},    # model
-        Cint,          
+        Cint,
         Ptr{Cint},
         Ptr{Cchar},
         Ptr{Float64}
-        ), 
+        ),
         model.ptr_model, Cint(nbnds) , ivec(ind)-1, cvecx('U',nbnds), fvec(ub) )
-        
+
     if ret != 0
         throw(XpressError(model))
-    end 
+    end
 end
 function set_ub!(model::Model,ub::Vector)
-    
+
     cols = num_vars(model)
     ( cols == length(ub) ) || error("wrong size of UB vector")
-    
+
     ind = collect(1:cols)
-    
+
     set_ub!(model,ind,ub)
 end
 
@@ -381,15 +381,15 @@ function set_rhs!(model::Model,ind::Vector{Int},rhs::Vector)
 
     ret = @xprs_ccall(chgrhs, Cint, (
         Ptr{Void},    # model
-        Cint,          
+        Cint,
         Ptr{Cint},
         Ptr{Float64}
-        ), 
+        ),
         model.ptr_model, Cint(nels) , ivec(ind)-1, fvec(rhs) )
-        
+
     if ret != 0
         throw(XpressError(model))
-    end 
+    end
 end
 function set_rhs!(model::Model, rhs::Vector)
     rows = num_constrs(model)
@@ -402,15 +402,15 @@ function set_rowtype!(model::Model,senses::Vector)
     ind = collect(1:rows)
     ret = @xprs_ccall(chgrowtype, Cint, (
         Ptr{Void},    # model
-        Cint,          
+        Cint,
         Ptr{Cint},
         Ptr{Cchar}
-        ), 
+        ),
         model.ptr_model, Cint(rows) , ivec(ind)-1, cvec(senses) )
-        
+
     if ret != 0
         throw(XpressError(model))
-    end 
+    end
 end
 
 function set_constrLB!(model::Model, lb)
@@ -468,10 +468,3 @@ function set_constrUB!(model::Model, ub)
     end
     set_rhs!(model, ub)
 end
-
-
-
-
-
-
-

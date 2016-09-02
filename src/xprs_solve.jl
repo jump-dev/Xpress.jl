@@ -18,13 +18,13 @@
 function optimize(model::Model)
     @assert model.ptr_model != C_NULL
     if is_mip(model)
-        ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{Cchar}), 
+        ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{Cchar}),
             model.ptr_model,C_NULL)
         if ret != 0
             throw(XpressError(model))
         end
     else
-        ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{Cchar}), 
+        ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{Cchar}),
             model.ptr_model,C_NULL)
         if ret != 0
             throw(XpressError(model))
@@ -111,13 +111,13 @@ type OptimInfo
     status_mip::Symbol
 
     #time ??
-    
+
     sol_count::Int
     node_count::Int
 
     simplex_iter_count::Int
     barrier_iter_count::Int
-    
+
 end
 
 function get_optiminfo(model::Model)
@@ -126,7 +126,7 @@ function get_optiminfo(model::Model)
         get_mip_status(model),
 
         #get_runtime(model),
-        
+
         get_sol_count(model),
         get_node_count(model),
 
@@ -145,7 +145,7 @@ function show(io::IO, s::OptimInfo)
 
     println(io, "    # simplex iters = $(s.simplex_iter_count)")
     println(io, "    # barrier iters = $(s.barrier_iter_count)")
-end    
+end
 
 #################################################
 #
@@ -162,7 +162,7 @@ function get_complete_lp_solution(model::Model)
     dual = Vector{Float64}(rows)
     red = Vector{Float64}(cols)
 
-    ret = @xprs_ccall(getlpsol, Cint, 
+    ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
          Ptr{Float64},
@@ -179,7 +179,7 @@ function get_lp_solution(model::Model)
 
     x = Vector{Float64}(cols)
 
-    ret = @xprs_ccall(getlpsol, Cint, 
+    ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
          Ptr{Float64},
@@ -196,7 +196,7 @@ function get_lp_slack(model::Model)
 
     slack = Vector{Float64}(rows)
 
-    ret = @xprs_ccall(getlpsol, Cint, 
+    ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
          Ptr{Float64},
@@ -213,7 +213,7 @@ function get_lp_dual(model::Model)
 
     dual = Vector{Float64}(rows)
 
-    ret = @xprs_ccall(getlpsol, Cint, 
+    ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
          Ptr{Float64},
@@ -230,7 +230,7 @@ function get_lp_reducedcost(model::Model)
 
     red = Vector{Float64}(cols)
 
-    ret = @xprs_ccall(getlpsol, Cint, 
+    ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
          Ptr{Float64},
@@ -249,7 +249,7 @@ function get_mip_solution(model::Model)
 
     x = Vector{Float64}(cols)
 
-    ret = @xprs_ccall(getmipsol, Cint, 
+    ret = @xprs_ccall(getmipsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
          Ptr{Float64}
@@ -264,7 +264,7 @@ function get_mip_slack(model::Model)
 
     slack = Vector{Float64}(rows)
 
-    ret = @xprs_ccall(getmipsol, Cint, 
+    ret = @xprs_ccall(getmipsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
          Ptr{Float64}
@@ -326,7 +326,7 @@ function get_basis(model::Model)
     rval = Array(Cint, num_constrs(model))
     rbasis = Array(Symbol, num_constrs(model))
 
-    ret = @xprs_ccall(getbasis, Cint, 
+    ret = @xprs_ccall(getbasis, Cint,
         (Ptr{Void},
          Ptr{Cint},
          Ptr{Cint}
@@ -338,7 +338,7 @@ function get_basis(model::Model)
     for it in 1:length(cval)
         cbasis[it] = basicmap[cval[it]]
     end
-    
+
     for it in 1:length(rval)
         rbasis[it] = basicmap[rval[it]]
     end
@@ -356,7 +356,7 @@ function get_iisdata(model::Model, num::Int)
 
     rows = Array(Cint,1)
     cols = Array(Cint,1)
-    ret = @xprs_ccall(getbasis, Cint, 
+    ret = @xprs_ccall(getbasis, Cint,
         (Ptr{Void},
             Cint,# num
          Ptr{Cint},# #row
@@ -381,7 +381,7 @@ function get_iisdata(model::Model, num::Int)
     rows_set = Array(Cint, rows)
     cols_set = Array(Cint, cols)
 
-    ret = @xprs_ccall(getbasis, Cint, 
+    ret = @xprs_ccall(getbasis, Cint,
         (Ptr{Void},
             Cint,# num
          Ptr{Cint},# #row
@@ -422,7 +422,7 @@ function getdualray(model::Model)
 
     hasray = Array(Cint, 1)
 
-    ret = @xprs_ccall(getdualray, Cint, 
+    ret = @xprs_ccall(getdualray, Cint,
         (Ptr{Void},
          Ptr{Float64},
          Ptr{Cint}
@@ -446,7 +446,7 @@ function getprimalray(model::Model)
 
     hasray = Array(Cint, 1)
 
-    ret = @xprs_ccall(getprimalray, Cint, 
+    ret = @xprs_ccall(getprimalray, Cint,
         (Ptr{Void},
          Ptr{Float64},
          Ptr{Cint}
@@ -462,5 +462,3 @@ function getprimalray(model::Model)
 
     return pray
 end
-
-

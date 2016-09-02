@@ -4,15 +4,15 @@
 
 function add_constr!(model::Model, inds::IVec, coeffs::FVec, rel::Cchar, rhs::Float64)
     if rel == convert(Cchar,'>')
-        rel = XPRS_GEQ    
+        rel = XPRS_GEQ
     elseif rel == convert(Cchar,'<')
-        rel = XPRS_LEQ 
+        rel = XPRS_LEQ
     elseif rel == convert(Cchar,'=')
         rel = XPRS_EQ
     end
 
     length(inds) == length(coeffs) || error("Inconsistent argument dimensions.")
-   
+
     ret = @xprs_ccall(addrows, Cint,(
         Ptr{Void}, #prob
         Cint,    #number new rowws
@@ -49,9 +49,9 @@ function add_constrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec, rel
 
     for i in 1:length(rel)
         if rel[i] == convert(Cchar,'>')
-            rel[i] = XPRS_GEQ    
+            rel[i] = XPRS_GEQ
         elseif rel[i] == convert(Cchar,'<')
-            rel[i] = XPRS_LEQ 
+            rel[i] = XPRS_LEQ
         elseif rel[i] == convert(Cchar,'=')
             rel[i] = XPRS_EQ
         end
@@ -110,7 +110,7 @@ end
 
 function add_rangeconstr!(model::Model, inds::IVec, coeffs::FVec, lb::Float64, ub::Float64)
     # b = ub
-    r = ub - lb 
+    r = ub - lb
     ret = @xprs_ccall(addrows, Cint,(
         Ptr{Void}, #prob
         Cint,    #number new rowws
@@ -149,7 +149,7 @@ function add_rangeconstrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec
     (m == length(lb) == length(ub) && nnz == length(coeffs)) || error("Incompatible argument dimensions.")
 
     if m > 0
-        r = ub - lb 
+        r = ub - lb
         ret = @xprs_ccall(addrows, Cint,(
             Ptr{Void}, #prob
             Cint,    #number new rowws
@@ -211,12 +211,12 @@ function get_constrmatrix(model::Model)
                      Cint,
                      Cint
                      ),
-                     model.ptr_model, 
-                     cbeg, 
-                     cind, 
+                     model.ptr_model,
+                     cbeg,
+                     cind,
                      cval,
-                     nnz, 
-                     numnzP, 
+                     nnz,
+                     numnzP,
                      0,
                      m-1)
     if ret != 0
@@ -248,12 +248,12 @@ function add_sos!(model::Model, sostype::Symbol, idx::Vector{Int}, weight::Vecto
                      Ptr{Cint},
                      Ptr{Float64}
                      ),
-                     model.ptr_model, 
-                     convert(Cint, 1), 
-                     convert(Cint, nelem), 
-                     Cchar[typ], 
-                     Cint[0,0], 
-                     convert(Vector{Cint}, idx-1), 
+                     model.ptr_model,
+                     convert(Cint, 1),
+                     convert(Cint, nelem),
+                     Cchar[typ],
+                     Cint[0,0],
+                     convert(Vector{Cint}, idx-1),
                      weight)
     if ret != 0
         throw(XpressError(model))

@@ -33,9 +33,9 @@ function add_var!(model::Model, newnz::Int, mrwind::Vector{Int},dmatval::Vector{
         Ptr{Float64},      # elemnts values
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub
-        ), 
+        ),
         model.ptr_model, 1, newnz, fvec(objx), ivec(0), ivec(mrwind)-1, fvec(dmatval), fvec(lb), fvec(ub))
-        
+
     if ret != 0
         throw(XpressError(model))
     end
@@ -76,7 +76,7 @@ function add_var!(model::Model, vtype::Cchar, c::Float64, lb::Float64, ub::Float
         Ptr{Float64},      # elemnts values
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub
-        ), 
+        ),
         model.ptr_model, 1, 0, fvec(c), ivec(0), C_NULL, C_NULL, fvec(lb), fvec(ub))
     if ret != 0
         throw(XpressError(model))
@@ -86,9 +86,9 @@ function add_var!(model::Model, vtype::Cchar, c::Float64, lb::Float64, ub::Float
         chgcoltype!(model,get_intattr(model,XPRS_COLS),XPRS_INTEGER)
     elseif vtype ==XPRS_BINARY
         chgcoltype!(model,get_intattr(model,XPRS_COLS),XPRS_BINARY)
-    end        
+    end
 
-    nothing  
+    nothing
 end
 
 
@@ -109,9 +109,9 @@ add_ivar!(model::Model, c::Real) = add_ivar!(model, c, XPRS_MINUSINFINITY, XPRS_
 # add_vars!
 #multiple variables at once
 function add_vars!(model::Model, vtypes::CVec, c::FVec, lb::FVec, ub::FVec)
-    
+
     # check dimensions
-    n = length(vtypes)    
+    n = length(vtypes)
     _chklen(c, n)
     _chklen(lb, n)
     _chklen(ub, n)
@@ -131,13 +131,13 @@ function add_vars!(model::Model, vtypes::CVec, c::FVec, lb::FVec, ub::FVec)
         Ptr{Float64},      # elemnts values
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub
-        ), 
+        ),
         model.ptr_model, n, 0, c, ivec( collect(0:(n-1)) ), C_NULL, C_NULL, lb, ub)
                                 #check
     if ret != 0
         throw(XpressError(model))
     end
-    
+
     #vtypes = cvecx(vtypes, n)
     for i in 1:n
         if vtypes[i] == XPRS_INTEGER
@@ -160,5 +160,4 @@ add_cvars!(model::Model, c::Vector) = add_cvars!(model, c, XPRS_MINUSINFINITY, X
 add_bvars!(model::Model, c::Vector) = add_vars!(model, XPRS_BINARY, c, 0, 1)
 
 add_ivars!(model::Model, c::Vector, lb::Bounds, ub::Bounds) = add_vars!(model, XPRS_INTEGER, c, lb, ub)
-add_ivars!(model::Model, c::Vector) = add_ivars!(model, XPRS_INTEGER, c, XPRS_MINUSINFINITY, XPRS_PLUSINFINITY) # 
-
+add_ivars!(model::Model, c::Vector) = add_ivars!(model, XPRS_INTEGER, c, XPRS_MINUSINFINITY, XPRS_PLUSINFINITY) #

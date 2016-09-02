@@ -10,7 +10,7 @@ type Model
     ptr_model::Ptr{Void}
     callback::Any
     finalize_env::Bool
-    
+
     function Model(p::Ptr{Void}; finalize_env::Bool=false)
         model = new(p, nothing, finalize_env)
         finalizer(model, m -> (free_model(m)) )
@@ -22,11 +22,11 @@ end
 # both at the same time, working around the Julia GC.
 #function Model(env::Env; finalize_env::Bool=false)
 function Model(; finalize_env::Bool=false)
-    
+
     #env = Env()
 
     #@assert is_valid(env)
-    
+
     a = Array(Ptr{Void}, 1)
     ret = @xprs_ccall(createprob, Cint, ( Ptr{Ptr{Void}},), a )
     #println(a)
@@ -34,7 +34,7 @@ function Model(; finalize_env::Bool=false)
         error("could not create prob")
         #throw(XpressError(env, ret))
     end
-    
+
     m = Model(a[1]; finalize_env = finalize_env)
 
     load_empty(m)
@@ -48,12 +48,12 @@ function Model(name::ASCIIString, sense::Symbol)
     if sense != :minimize
         set_sense!(model, sense)
     end
-    model 
+    model
 end
 function Model(name::ASCIIString)
     model = Model()
     set_sense!(model, :minimize)
-    model 
+    model
 end
 
 
@@ -64,8 +64,8 @@ end
 #################################################
 function get_error_msg(m::Model)
     #@assert env.ptr_env == 1
-    out = Array(Cchar, 512) 
-    ret = @xprs_ccall(getlasterror, Cint, (Ptr{Void},Ptr{Cchar}), 
+    out = Array(Cchar, 512)
+    ret = @xprs_ccall(getlasterror, Cint, (Ptr{Void},Ptr{Cchar}),
         m.ptr_model, out)
     ascii( bytestring(pointer(out))  )
 end
@@ -76,12 +76,12 @@ function get_error_msg(m::Model,ret::Int)
         m.ptr_model, ret , out)
     #convert(Int,out[1])
 end
-# 
+#
 # # error
-# 
+#
 type XpressError
     code::Int
-    msg::ASCIIString 
+    msg::ASCIIString
 end
 #function XpressError(ret::Int,m::Model)#, code::Integer)
 #    XpressError( ret, get_error_msg(m) )#convert(Int, code), get_error_msg(env))
@@ -116,7 +116,7 @@ function copy(model_src::Model)
     # only copies problem not callbacks and controls
     if model_src.ptr_model != C_NULL
         model_dest = Model()#env)
-        ret = @xprs_ccall(copyprob, Cint, (Ptr{Void},Ptr{Void},Ptr{UInt8}), 
+        ret = @xprs_ccall(copyprob, Cint, (Ptr{Void},Ptr{Void},Ptr{UInt8}),
             model_dest.ptr_model, model_src.ptr_model, "")
         if ret != 0
             throw(XpressError(model_src))
@@ -166,8 +166,8 @@ end
 function read_model(model::Model, filename::ASCIIString)
     #@assert is_valid(model.env)
     flags = ""
-    ret = @xprs_ccall(readprob, Cint, 
-        (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}), 
+    ret = @xprs_ccall(readprob, Cint,
+        (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
     if ret != 0
         throw(XpressError(model))
@@ -177,7 +177,7 @@ end
 
 function write_model(model::Model, filename::ASCIIString)
     flags = ""
-    ret = @xprs_ccall(writeprob, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}), 
+    ret = @xprs_ccall(writeprob, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
     if ret != 0
         throw(XpressError(model))
@@ -195,9 +195,3 @@ end
 #     end
 #     return Model(model.env, ret)
 # end
-
-
-
-
-
-

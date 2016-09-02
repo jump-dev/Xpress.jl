@@ -49,10 +49,10 @@ const emptyfmat = Array(Float64, 0, 0)
 macro xprs_ccall(func, args...)
     f = "XPRS$(func)"
 
-    @unix_only return quote
+    is_unix() && return quote
         ccall(($f,xprs), $(args...))
     end
-    @windows_only return quote
+    is_windows() && return quote
         ccall(($f,xprs), stdcall, $(args...))
     end
 end
@@ -62,16 +62,15 @@ function getlibversion()
     out = Array(Cchar, 16)                                     # "                "
     ret = @xprs_ccall(getversion, Cint, ( Ptr{Cchar},), out)   # ( Cstring,), out)
 
-    numbers = split(bytestring(pointer(out)) ,".")
+    numbers = split(String(pointer(out)) ,".")
 
-    _major = parse(Int,numbers[1]) 
+    _major = parse(Int,numbers[1])
     _minor = parse(Int,numbers[2])
     _tech  = parse(Int,numbers[3])
 
-    return  VersionNumber(_major, _minor, _tech)    #bytestring(pointer(out))                            #    
+    return  VersionNumber(_major, _minor, _tech)    #bytestring(pointer(out))                            #
 end
 
 # version need not be export
 # one can write Xpress.version to get the version numbers
 const version = getlibversion()
-

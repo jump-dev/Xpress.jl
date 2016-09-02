@@ -13,12 +13,13 @@ module Xpress
     ### imports
 
     import Base.show, Base.copy
+    import Compat: unsafe_string, String, is_windows, is_unix
 
     # Standard LP interface
     importall MathProgBase.SolverInterface
 
     ### exports
-    export 
+    export
 
     ## xprs_env
     free_env,
@@ -44,7 +45,7 @@ module Xpress
     add_bvar!, add_bvars!, add_ivar!, add_ivars!,
 
     ## xprs_constrs
-    add_constr!, add_constrs!, add_constrs_t!, 
+    add_constr!, add_constrs!, add_constrs_t!,
     add_rangeconstr!, add_rangeconstrs!, add_rangeconstrs_t!,
     get_constrmatrix, add_sos!,
 
@@ -57,7 +58,7 @@ module Xpress
     ## xprs_solve
     optimize, computeIIS, get_solution,
     get_status, OptimInfo, get_optiminfo, get_objval
-    
+
 
     ### include source files
 
@@ -71,7 +72,7 @@ module Xpress
     include("xprs_attrs.jl")
 
     include("xprs_vars.jl")
-    
+
     include("xprs_constrs.jl")
     include("xprs_quad.jl")
     include("xprs_highlevel.jl")
