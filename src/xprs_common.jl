@@ -62,13 +62,13 @@ function getlibversion()
     out = Array(Cchar, 16)                                     # "                "
     ret = @xprs_ccall(getversion, Cint, ( Ptr{Cchar},), out)   # ( Cstring,), out)
 
-    numbers = split(String(pointer(out)) ,".")
+    numbers = split(unsafe_string(pointer(out)) ,".")
 
     _major = parse(Int,numbers[1])
     _minor = parse(Int,numbers[2])
     _tech  = parse(Int,numbers[3])
 
-    return  VersionNumber(_major, _minor, _tech)    #bytestring(pointer(out))                            #
+    return  VersionNumber(_major, _minor, _tech)   
 end
 
 # version need not be export

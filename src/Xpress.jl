@@ -11,8 +11,10 @@ module Xpress
     end
 
     ### imports
-
+    
     import Base.show, Base.copy
+
+    using Compat
     import Compat: unsafe_string, String, is_windows, is_unix
 
     # Standard LP interface

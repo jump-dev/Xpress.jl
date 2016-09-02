@@ -1,26 +1,35 @@
+using Compat
+import Compat: unsafe_string, String, is_windows, is_unix
+
 depsfile = joinpath(dirname(@__FILE__),"deps.jl")
+
 if isfile(depsfile)
     rm(depsfile)
 end
 
 function write_depsfile(path)
     f = open(depsfile,"w")
-    @windows_only path = replace(path, "\\", "\\\\")
+    if is_windows()
+        path = replace(path, "\\", "\\\\")
+    end
     println(f,"const xprs = \"$(path)\"")
     close(f)
 end
 
-aliases = ASCIIString["xprs"]
+aliases = Compat.ASCIIString["xprs"]
 
 paths_to_try = copy(aliases)
 
 for a in aliases
-    @windows_only  if haskey(ENV, "XPRESSDIR")
-        push!(paths_to_try, joinpath(ENV["XPRESSDIR"],"bin",string(a,".",Libdl.dlext)))
-    end
-    @unix_only if haskey(ENV, "XPRESS")
-        push!(paths_to_try, joinpath(ENV["XPRESS"],"lib",string("lib",a,".",Libdl.dlext)))
-        push!(paths_to_try, joinpath(ENV["XPRESS"],"..","lib",string("lib",a,".",Libdl.dlext)))
+    if is_windows()
+        if haskey(ENV, "XPRESSDIR")
+            push!(paths_to_try, joinpath(ENV["XPRESSDIR"],"bin",string(a,".",Libdl.dlext)))
+        end
+    elseif is_unix()
+        if haskey(ENV, "XPRESS")
+            push!(paths_to_try, joinpath(ENV["XPRESS"],"lib",string("lib",a,".",Libdl.dlext)))
+            push!(paths_to_try, joinpath(ENV["XPRESS"],"..","lib",string("lib",a,".",Libdl.dlext)))
+        end
     end
 end
 

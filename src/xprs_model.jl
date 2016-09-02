@@ -23,15 +23,13 @@ end
 #function Model(env::Env; finalize_env::Bool=false)
 function Model(; finalize_env::Bool=false)
 
-    #env = Env()
-
     #@assert is_valid(env)
 
     a = Array(Ptr{Void}, 1)
     ret = @xprs_ccall(createprob, Cint, ( Ptr{Ptr{Void}},), a )
     #println(a)
     if ret != 0
-        error("could not create prob")
+        error("It was not possible to create a model, try running Env() and then create the model again.")
         #throw(XpressError(env, ret))
     end
 
@@ -43,14 +41,14 @@ function Model(; finalize_env::Bool=false)
 end
 
 
-function Model(name::ASCIIString, sense::Symbol)
+function Model(name::Compat.ASCIIString, sense::Symbol)
     model = Model()
     if sense != :minimize
         set_sense!(model, sense)
     end
     model
 end
-function Model(name::ASCIIString)
+function Model(name::Compat.ASCIIString)
     model = Model()
     set_sense!(model, :minimize)
     model
@@ -67,21 +65,21 @@ function get_error_msg(m::Model)
     out = Array(Cchar, 512)
     ret = @xprs_ccall(getlasterror, Cint, (Ptr{Void},Ptr{Cchar}),
         m.ptr_model, out)
-    ascii( bytestring(pointer(out))  )
+
+    error( unsafe_string(pointer(out))  )
 end
 function get_error_msg(m::Model,ret::Int)
     #@assert env.ptr_env == 1
     out = Array(Cint,1)
     out2 = @xprs_ccall(getintattrib, Cint,(Ptr{Void}, Cint, Ptr{Cint}),
         m.ptr_model, ret , out)
-    #convert(Int,out[1])
 end
-#
-# # error
-#
+##############################################
+# Error handling
+##############################################
 type XpressError
     code::Int
-    msg::ASCIIString
+    msg::Compat.ASCIIString
 end
 #function XpressError(ret::Int,m::Model)#, code::Integer)
 #    XpressError( ret, get_error_msg(m) )#convert(Int, code), get_error_msg(env))
@@ -163,7 +161,7 @@ function load_empty(model::Model)
     end
     nothing
 end
-function read_model(model::Model, filename::ASCIIString)
+function read_model(model::Model, filename::Compat.ASCIIString)
     #@assert is_valid(model.env)
     flags = ""
     ret = @xprs_ccall(readprob, Cint,
@@ -175,7 +173,7 @@ function read_model(model::Model, filename::ASCIIString)
     nothing
 end
 
-function write_model(model::Model, filename::ASCIIString)
+function write_model(model::Model, filename::Compat.ASCIIString)
     flags = ""
     ret = @xprs_ccall(writeprob, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)

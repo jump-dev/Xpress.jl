@@ -11,7 +11,6 @@ function userlic()
 
     # pre allocate vars
     # ----------------
-    #ierr = Cint[1]
     lic = Cint[1]
     slicmsg = Array(Cchar,512)
     errmsg = Array(Cchar,512)
@@ -20,8 +19,6 @@ function userlic()
     # -----------------------------------------
     ccall(("XPRSlicense",xprs),
         stdcall, Cint, (Ptr{Cint},Ptr{Cchar}), lic,slicmsg)
-
-    #println( ascii( bytestring(pointer(slicmsg))  ) )
 
     # convert BASE LIC to GIVEN LIC
     # ---------------------------
@@ -46,13 +43,15 @@ function userlic()
         ccall(("XPRSgetlicerrmsg",xprs),
             stdcall, Cint, (Ptr{Cchar},Cint), errmsg, 512)
 
-        error(  bytestring(pointer(errmsg))   )
+        error(  unsafe_string(pointer(errmsg))   )
     else
         # USER
         # ----
         info("User license detected.")
-        info(  bytestring(pointer(slicmsg))  )
+        info(  unsafe_string(pointer(slicmsg))  )
     end
 
+    # go back to initial folder
+    # ------------------------
     cd(initdir)
 end

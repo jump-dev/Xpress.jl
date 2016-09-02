@@ -35,8 +35,12 @@ supportedcones(m::XpressSolver) = [:Free]#,:Zero,:NonNeg,:NonPos,:SOC,:SOCRotate
 
 loadproblem!(m::XpressMathProgModel, filename::AbstractString) = read_model(m.inner, filename)
 
-updatemodel!(m::XpressMathProgModel) = Base.warn_once("Model update not necessary for Xpress.")
-update_model!(m::XpressMathProgModel) = Base.warn_once("Model update not necessary for Xpress.")
+function updatemodel!(m::XpressMathProgModel)
+end
+# = Base.warn_once("Model update not necessary for Xpress.")
+function update_model!(m::XpressMathProgModel)
+end
+# = Base.warn_once("Model update not necessary for Xpress.")
 
 function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub, sense)
   # throw away old model

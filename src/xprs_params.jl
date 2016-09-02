@@ -38,7 +38,7 @@ function get_str_param(m::Model,param::Int)
 		throw(XpressError(m))
 	end
 
-	bytestring(pointer(out))
+	unsafe_string(pointer(out))
 end
 
 #set
