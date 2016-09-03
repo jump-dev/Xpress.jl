@@ -1,7 +1,15 @@
 # lic checking file
 # -----------------
 
-function userlic()
+# license check empty function
+# ----------------------------
+function emptyliccheck(lic::Vector{Cint})
+    return lic
+end
+
+# lic check routine
+# -----------------
+function userlic( liccheck::Function = emptyliccheck )
 
 	# change directory to reach all libs
 	# ----------------------------------
@@ -23,6 +31,7 @@ function userlic()
     # convert BASE LIC to GIVEN LIC
     # ---------------------------
     # change this line to the code given by  your FICO representative
+    lic = liccheck(lic)
 
     # Send GIVEN LIC to XPRESS lib
     # --------------------------
