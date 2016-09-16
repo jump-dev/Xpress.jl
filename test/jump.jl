@@ -1,4 +1,4 @@
-using Xpress, JuMP
+using Xpress, JuMP, MathProgBase
 
 include(Pkg.dir("JuMP","test","solvers.jl"))
 lp_solvers = [XpressSolver()]
