@@ -71,7 +71,7 @@ function set_dbl_param(m::Model,ipar::Int,dsval::Float64)
 	nothing
 end
 
-function set_str_param(m::Model,ipar::Int,csval::AbstractString)
+function set_str_param(m::Model,ipar::Int,csval::Compat.ASCIIString)
 
 	ipar = convert(Cint,ipar)
 	csval = convert(ASCIIString,csval)
