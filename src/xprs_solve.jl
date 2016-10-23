@@ -317,8 +317,88 @@ const basicmap = Dict(
     2 => :NonbasicAtUpper,
     3 => :Superbasic
 )
+const basicmap_rev = Dict(
+    :NonbasicAtLower => Cint(0),#_or_SuperbasicAtZero,
+    :Basic => Cint(1),
+    :NonbasicAtUpper => Cint(2),
+    :Superbasic => Cint(3)
+)
 
 
+function loadbasis(model::Model, x::Vector)#, status::Symbol = :unstarted, isnew::Vector{Bool} = [false])
+
+    ncols = num_vars(model)
+    nrows = num_constrs(model)
+
+    length(x) != ncols && error("solution candidate size is different from the number of columns")
+
+    cvals = Array(Cint, ncols)
+    rvals = Array(Cint, nrows)
+
+    # obtain situation of columns
+
+    lb = get_lb(model)
+    ub = get_ub(model)
+
+    for i in 1:ncols
+        if isapprox(x[i],lb[i])
+            cvals[i] = basicmap_rev[:NonbasicAtLower]
+        elseif isapprox(x[i],ub[i])
+            cvals[i] = basicmap_rev[:NonbasicAtUpper]
+        else
+            cvals[i] = basicmap_rev[:Basic]
+        end
+    end
+
+    # obtain situation of rows where: y = Ax
+
+    A = get_constrmatrix(model) #A is sparse
+
+    y = A*x
+
+    senses = get_rowtype(model)
+    rhs    = get_rhs(model)
+
+    for j in 1:nrows
+        if senses[j] == XPRS_EQ && isapprox(y[j], rhs[j])
+            rvals[j] = basicmap_rev[:NonbasicAtLower]
+        elseif senses[j] == XPRS_GEQ && isapprox(y[j], rhs[j])
+            rvals[j] = basicmap_rev[:NonbasicAtLower]
+        elseif senses[j] == XPRS_LEQ && isapprox(y[j], rhs[j])
+            rvals[j] = basicmap_rev[:NonbasicAtUpper]
+        else
+            rvals[j] = basicmap_rev[:Basic]
+        end
+    end
+
+    loadbasis(model, rvals, cvals)
+
+    return nothing
+end
+
+function loadbasis(model::Model, rval::Vector{Symbol}, cval::Vector{Symbol})
+
+    nrval = map(x->basicmap_rev[x], rval)
+    ncval = map(x->basicmap_rev[x], cval)
+
+    loadbasis(model, nrval, ncval)
+
+    return nothing
+end
+function loadbasis(model::Model, rval::Vector{Cint}, cval::Vector{Cint})
+# int XPRS_CC XPRSloadbasis(XPRSprob prob, const int rstatus[], const intcstatus[]);
+
+    ret = @xprs_ccall(loadbasis, Cint,
+        (Ptr{Void},
+         Ptr{Cint},
+         Ptr{Cint}
+            ), model.ptr_model, rval, cval)
+    if ret != 0
+        throw(XpressError(model))
+    end
+
+    return nothing
+end
 function get_basis(model::Model)
     cval = Array(Cint, num_vars(model))
     cbasis = Array(Symbol, num_vars(model))
