@@ -1,5 +1,5 @@
 include("Xpress.jl")
-println(version)
+println(Xpress.getlibversion())
 
 m = Model()
 
@@ -23,7 +23,7 @@ add_vars!(m, XPRS_INTEGER, [33, 43], 0.03, 1.03)
 chgcoltype!(m,1,XPRS_INTEGER)
 write_model(m, "testeModOut.mps")
 
-add_constr!(m,[1, 2, 3],Cchar('L'),4)
+add_constr!(m,[1, 2, 3], Cchar('L'),4)
 
 add_constrs!(m, eye(3), XPRS_EQ,ones(3))
 

@@ -3,7 +3,7 @@ include("Xpress.jl")
 
 using Xpress
 
-println(Xpress.version)
+println(Xpress.getlibversion())
 
 
 using Base.Test
@@ -58,9 +58,9 @@ function linprogsolvertest(solver::AbstractMathProgSolver)
 
     @test numvar(m) == 3
     @test numconstr(m) == 1
-    
+
     optimize!(m)
-    
+
     @test status(m) == :Optimal
     @test_approx_eq getobjval(m) 2
     @test_approx_eq getsolution(m) [0.0, 0.0, 1.0]
@@ -95,8 +95,8 @@ function linprogsolvertest(solver::AbstractMathProgSolver)
     optimize!(m)
     @test_approx_eq getobjval(m) 4
     @test_approx_eq getsolution(m) [0.0, 2.0, 0.0]
-    
-    
+
+
     # we now have:
     # max x+2y
     # s.t. x + y + z == 2

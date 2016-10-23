@@ -11,8 +11,6 @@
 using Xpress
 
 
-#method = getparam(env, "Method")
-#println("method = $method")
 
 model = Xpress.Model("lp_01", :maximize)
 
