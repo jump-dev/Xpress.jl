@@ -87,12 +87,15 @@ get_lp_status(model::Model) = status_symbols_lp[get_lp_status_code(model)]::Symb
 
 # objective
 @xprs_dbl_attr get_lp_objval XPRS_LPOBJVAL
-@xprs_dbl_attr get_mip_objval XPRS_MIPOBJVAL
+@xprs_dbl_attr get_mip_objval XPRS_MIPBESTOBJVAL
+@xprs_dbl_attr get_mip_objval_last XPRS_MIPOBJVAL
 
 @xprs_dbl_attr get_bardualobj XPRS_BARDUALOBJ
 @xprs_dbl_attr get_barprimalobj XPRS_BARPRIMALOBJ
 
 @xprs_dbl_attr get_bestbound XPRS_BESTBOUND
+
+@xprs_dbl_attr get_objrhs XPRS_OBJRHS
 
 #iis
 @xprs_int_attr num_iis XPRS_NUMIIS
