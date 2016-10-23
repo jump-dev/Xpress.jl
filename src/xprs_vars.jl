@@ -42,25 +42,45 @@ function add_var!(model::Model, newnz::Int, mrwind::Vector{Int},dmatval::Vector{
     nothing
 end
 
-function chgcoltype!(model::Model,colnum::Int,vtype)
+function chgcoltype!(model::Model, colnum::Int, vtype::Cchar)
     ret = @xprs_ccall(chgcoltype,Cint,(Ptr{Void},Cint,Ptr{Cint},Ptr{Cchar}),
-        model.ptr_model,1,Cint[colnum-1],Cchar[XPRS_INTEGER])
+        model.ptr_model,1,Cint[colnum-1],Cchar[vtype])
     if  0 != ret
         throw(XpressError(model))
     end
 end
-function chgcoltypes!(model::Model,colnums::Vector{Int},vtypes::Vector)
+
+
+function chgcoltypes!(model::Model, colnums::Vector{Int}, vtypes::Vector{Cchar})
+
     n=length(colnums)
     ret = @xprs_ccall(chgcoltype,Cint,(
         Ptr{Void},
         Cint,
         Ptr{Cint},
         Ptr{Cchar}),
-        model.ptr_model,n,ivec(colnums-1),cvec(vtypes) )
+        model.ptr_model, n, ivec(colnums-1), vtypes )
     if 0 != ret
         throw(XpressError(model))
     end
 end
+
+function chgsemilb!(model::Model, colnums::Vector{Int}, lb::Vector)
+#int XPRS_CC XPRSchgglblimit(XPRSprob prob, int ncols, const int mindex[], const double dlimit[]);
+
+    n=length(colnums)
+    ret = @xprs_ccall(chgglblimit,Cint,(
+        Ptr{Void},
+        Cint,
+        Ptr{Cint},
+        Ptr{Float64}),
+        model.ptr_model, n, ivec(colnums-1), lb )
+    if 0 != ret
+        throw(XpressError(model))
+    end
+
+end
+
 #only add in obj
 function add_var!(model::Model, vtype::Cchar, c::Float64, lb::Float64, ub::Float64)
     lb = fixInf(lb)
@@ -83,9 +103,9 @@ function add_var!(model::Model, vtype::Cchar, c::Float64, lb::Float64, ub::Float
     end
 
     if vtype == XPRS_INTEGER
-        chgcoltype!(model,get_intattr(model,XPRS_COLS),XPRS_INTEGER)
+        chgcoltype!(model, get_intattr(model,XPRS_COLS), XPRS_INTEGER)
     elseif vtype ==XPRS_BINARY
-        chgcoltype!(model,get_intattr(model,XPRS_COLS),XPRS_BINARY)
+        chgcoltype!(model, get_intattr(model,XPRS_COLS), XPRS_BINARY)
     end
 
     nothing
