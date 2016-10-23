@@ -29,8 +29,8 @@ soc_solvers = [XpressSolver()]
 rsoc_solvers = [XpressSolver()]
 conic_solvers_with_duals = Any[]#[XpressSolver()]
 
-quad_solvers = [XpressSolver()]
-quad_mip_solvers = [XpressSolver()]
+quad_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
+quad_mip_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
 
 include(Pkg.dir("JuMP","test","model.jl"))
 include(Pkg.dir("JuMP","test","probmod.jl"))
@@ -78,8 +78,8 @@ methods_test("Xpress", Xpress.XpressSolver(), supp)
 
 end
 
-#include(Pkg.dir("JuMP","test","qcqpmodel.jl"))
 include(Pkg.dir("JuMP","test","socduals.jl"))
+include(Pkg.dir("JuMP","test","qcqpmodel.jl"))
 
 
 
