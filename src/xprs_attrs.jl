@@ -127,7 +127,7 @@ function show(io::IO, model::Model)
         end
         println(io, "    sense  : $(model_sense(model))")
         println(io, "    number of variables             = $(num_vars(model))")
-        println(io, "    number of linear constraints    = $(num_constrs(model))")
+        println(io, "    number of linear constraints    = $(num_linconstrs(model))")
         println(io, "    number of quadratic constraints = $(num_qconstrs(model))")
         println(io, "    number of sos constraints       = $(num_sos(model))")
         println(io, "    number of non-zero coeffs       = $(num_cnzs(model))")
