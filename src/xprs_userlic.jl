@@ -19,8 +19,17 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
 
     # open and free xpauth.xpr (touches the file to release it)
     # ---------------------------------------------------------
-    if xpauth_path != ""
-        path_lic = xpauth_path*"\\xpauth.xpr"
+	path_lic = Array(Cchar,512)
+    if xpauth_path == ""
+        path_lic = libdir*"\\xpauth.xpr"
+        f = open(path_lic)
+        close(f)
+	elseif isdir(xpauth_path)
+		path_lic = xpauth_path*"\\xpauth.xpr"
+        f = open(path_lic)
+        close(f)
+	elseif isfile(xpauth_path)
+		path_lic = xpauth_path
         f = open(path_lic)
         close(f)
     end
@@ -28,8 +37,8 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
     # pre allocate vars
     # ----------------
     lic = Cint[1]
-    slicmsg = xpauth_path == "" ? Array(Cchar,512) : path_lic
-    errmsg = Array(Cchar,512)
+    slicmsg = path_lic #xpauth_path == "dh" ? Array(Cchar,512) :
+    errmsg = Array(Cchar,1024)
 
     # FIRST call do xprslicense to get BASE LIC
     # -----------------------------------------
@@ -55,7 +64,7 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
         # ----
         info("Failed to find working license.")
 
-        ret = @xprs_ccall(getlicerrmsg, Cint, (Ptr{Cchar},Cint), errmsg, 512)
+        ret = @xprs_ccall(getlicerrmsg, Cint, (Ptr{Cchar},Cint), errmsg, 1024)
 
         error(  unsafe_string(pointer(errmsg))   )
     else
