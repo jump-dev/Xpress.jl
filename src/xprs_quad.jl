@@ -5,6 +5,8 @@
 function add_qpterms!(model::Model, qr::IVec, qc::IVec, qv::FVec)
     nnz = length(qr)
     (nnz == length(qc) == length(qv)) || error("Inconsistent argument dimensions.")
+
+
     if nnz > 0
         ret = @xprs_ccall(chgmqobj, Cint, (
             Ptr{Void},    # model
@@ -49,12 +51,12 @@ function add_qpterms!(model, H::SparseMatrixCSC{Float64}) # H must be symmetric
                 k += 1
                 qr[k] = qi
                 qc[k] = qj
-                qv[k] = nzval[j]
+                qv[k] = nzval[j]#*2
             elseif qi == qj
                 k += 1
                 qr[k] = qi
                 qc[k] = qj
-                qv[k] = nzval[j] #* 0.5
+                qv[k] = nzval[j]# * 0.5
             end
         end
     end
@@ -80,7 +82,7 @@ function add_qpterms!(model, H::Matrix{Float64}) # H must be symmetric
             k += 1
             qr[k] = qi
             qc[k] = qi
-            qv[k] = v #* 0.5
+            qv[k] = v# * 0.5
         end
 
         for j = i+1 : n
@@ -89,7 +91,7 @@ function add_qpterms!(model, H::Matrix{Float64}) # H must be symmetric
                 k += 1
                 qr[k] = qi
                 qc[k] = convert(Cint, j)
-                qv[k] = v
+                qv[k] = v#*2
             end
         end
     end

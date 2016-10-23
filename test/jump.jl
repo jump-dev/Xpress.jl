@@ -19,18 +19,18 @@ grb, cpx, cbc, glp, mos = false, false, false, false, false
 
 #include(Pkg.dir("JuMP","test","solvers.jl"))
 lp_solvers = [XpressSolver()]
-ip_solvers = [XpressSolver()] #-> possible error in getvartype -leak MPB
+ip_solvers = [XpressSolver()]
 
 sos_solvers = [XpressSolver()]
 
-semi_solvers = [XpressSolver()] # 2 errors in semi-continuous
+semi_solvers = [XpressSolver()]
 
 soc_solvers = [XpressSolver()]
 rsoc_solvers = [XpressSolver()]
 conic_solvers_with_duals = [XpressSolver()]
 
-quad_solvers = [XpressSolver()]# -> "[model] Test MIQP vectorization" needs to check solution
-quad_mip_solvers = [XpressSolver()]# -> "[model] Test MIQP vectorization"
+quad_solvers = [XpressSolver()]
+quad_mip_solvers = [XpressSolver()]
 
 include(Pkg.dir("JuMP","test","model.jl"))
 include(Pkg.dir("JuMP","test","probmod.jl"))

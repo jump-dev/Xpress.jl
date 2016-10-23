@@ -449,8 +449,8 @@ function setquadobj!(m::XpressMathProgModel, rowidx, colidx, quadval)
       if rowidx[i] == rowidx[j] && colidx[i] == colidx[j]
         quadval[i] += quadval[j]
         quadval[j] = 0.0
-        rowidx[j] = -1
-        colidx[j] = -1
+        #rowidx[j] = -1
+        #colidx[j] = -1
         k[j] = false
       end
     end
@@ -460,7 +460,7 @@ function setquadobj!(m::XpressMathProgModel, rowidx, colidx, quadval)
         # rescale from matrix format to "terms" format
         scaledvals[i] = quadval[i] #/ 2
       else
-        scaledvals[i] = quadval[i]
+        scaledvals[i] = quadval[i]*2
       end
     end
     add_qpterms!(m.inner, rowidx[k], colidx[k], scaledvals[k])
