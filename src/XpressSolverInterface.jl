@@ -429,7 +429,7 @@ function getvartype(m::XpressMathProgModel)
     map(x->var_type_map[x], ret)
 end
 
-function setwarmstart!(m::XpressMathProgModel, v::Vector)
+function setwarmstart!(m::XpressMathProgModel, v)
 
     loadbasis(m.inner, v)
 

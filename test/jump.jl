@@ -73,7 +73,7 @@ const mpb_methods =
      (MathProgBase.getconstrduals, ()),
      (MathProgBase.setwarmstart!, ([1.0]))]
 
-supp = (true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false)
+supp = (true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true)
 methods_test("Xpress", Xpress.XpressSolver(), supp)
 
 end
