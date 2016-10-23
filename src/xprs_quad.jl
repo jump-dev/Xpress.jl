@@ -228,7 +228,7 @@ function get_qrows(model::Model)
 
     if qmn > 0
 
-        qcrows = Array(Float64, qmn)
+        qcrows = Array(Cint, qmn)
 
         ret = @xprs_ccall(getqrows, Cint, (
             Ptr{Void},    # model
@@ -241,18 +241,50 @@ function get_qrows(model::Model)
             throw(XpressError(model))
         end
 
-        return qcrows.+1
+        # for i in 1:length(qcrows)
+        #     qcrows += 1
+        # end
+        return qcrows+1
 
     end
 
     return Cint[]
 
 end
+function get_lrows(model::Model)
+
+    qrows = get_qrows(model)
+    nrows = num_constrs(model)
+    nlrows = num_linconstrs(model)
+    nqrows = num_qconstrs(model)
+
+    if nlrows == 0
+        return Int[]
+    end
+    if nqrows == 0
+        return collect(1:nlrows)
+    end
+
+    lrows = zeros(Int, nlrows)
+
+    pos_l = 1
+    pos_q = 1
+    for i in 1:nrows
+        if i != qrows[pos_q]
+            lrows[pos_l] = i
+            pos_l += 1
+        elseif pos_q < nqrows
+            pos_q += 1
+        end
+    end
+
+    return lrows
+end
 
 function get_qrowmatrix_triplets(model::Model, row::Int)
 #int XPRS_CC XPRSgetqrowqmatrixtriplets(XPRSprob prob, int irow, int *nqelem, int mqcol1[], int mqcol2[], double dqe[]);
     Base.warn_once("only inferior part of the matrix is represented")
-    @show qrows = get_qrows(model::Model)
+    qrows = get_qrows(model)
 
     if row in qrows
 
@@ -281,7 +313,7 @@ function get_qrowmatrix_triplets(model::Model, row::Int)
             Ptr{Cint},    # nqelem
             Ptr{Cint},    # mqcol1
             Ptr{Cint},    # mqcol2
-            Ptr{Cint}    # dqe
+            Ptr{Float64}    # dqe
             ),
             model.ptr_model, Cint(row-1), nqelem, mqcol1, mqcol2, dqe)
 
