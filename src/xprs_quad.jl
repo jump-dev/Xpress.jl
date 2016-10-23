@@ -225,3 +225,34 @@ function add_qconstr!(model::Model, lind::Vector, lval::Vector, qr::Vector, qc::
 
     add_qconstr!(model, ivec(lind), fvec(lval), ivec(qr), ivec(qc), fvec(qv), cchar(rel), Float64(rhs))
 end
+
+
+
+"indices of quadratic constraints rows"
+function get_qrows(model::Model)
+# int XPRS_CC XPRSgetqrows(XPRSprob prob, int * qmn, int qcrows[]);
+
+    qmn = num_qconstrs(model)
+
+    if qmn > 0
+
+        qcrows = Array(Float64, qmn)
+
+        ret = @xprs_ccall(getqrows, Cint, (
+            Ptr{Void},    # model
+            Ptr{Cint},    # qmn
+            Ptr{Cint}    # qcrows
+            ),
+            model, C_NULL, qcrows)
+
+        if ret != 0
+            throw(XpressError(model))
+        end
+
+        return qcrows.+1
+
+    end
+
+    return Cint[]
+
+end
