@@ -74,7 +74,7 @@ end
 function set_str_param(m::Model,ipar::Int,csval::Compat.ASCIIString)
 
 	ipar = convert(Cint,ipar)
-	csval = convert(ASCIIString,csval)
+	csval = convert(Compat.ASCIIString,csval)
 
 	ret = @xprs_ccall(setstrcontrol, Cint, (Ptr{Void},Cint,Ptr{Cchar}),
 		m.ptr_model, ipar, csval)
