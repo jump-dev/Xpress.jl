@@ -9,7 +9,7 @@ end
 
 # lic check routine
 # -----------------
-function userlic( liccheck::Function = emptyliccheck )
+function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCIIString = "" )
 
 	# change directory to reach all libs
 	# ----------------------------------
@@ -17,10 +17,18 @@ function userlic( liccheck::Function = emptyliccheck )
     libdir = dirname(xprs)
     cd(libdir)
 
+    # open and free xpauth.xpr (touches the file to release it)
+    # ---------------------------------------------------------
+    if xpauth_path != ""
+        path_lic = xpauth_path*"\\xpauth.xpr"
+        f = open(path_lic)
+        close(f)
+    end
+
     # pre allocate vars
     # ----------------
     lic = Cint[1]
-    slicmsg = Array(Cchar,512)
+    slicmsg = xpauth_path == "" ? Array(Cchar,512) : path_lic
     errmsg = Array(Cchar,512)
 
     # FIRST call do xprslicense to get BASE LIC
