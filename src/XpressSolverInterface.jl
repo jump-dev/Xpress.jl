@@ -471,7 +471,24 @@ end
 function addquadconstr!(m::XpressMathProgModel, linearidx, linearval, quadrowidx, quadcolidx, quadval, sense, rhs)
 
 
-    
+# xpress only accept one input per matrix slot
+k = ones(Bool,length(quadrowidx)) #replicates holder (they are falses)
+for i in 1:length(quadrowidx), j in (i+1):length(quadrowidx)
+  if ( quadrowidx[i] == quadrowidx[j] && quadcolidx[i] == quadcolidx[j] ) || ( quadrowidx[i] == quadcolidx[j] && quadcolidx[i] == quadrowidx[j] )
+    quadval[i] += quadval[j]
+    quadval[j] = 0.0
+    #rowidx[j] = -1
+    #colidx[j] = -1
+    k[j] = false
+  end
+end
+
+    for i in 1:length(quadrowidx)
+        if quadrowidx[i] != quadcolidx[i]
+            quadval[i] = quadval[i]/2
+        end
+    end
+
 
     add_qconstr!(m.inner, linearidx, linearval, quadrowidx, quadcolidx, quadval, sense, rhs)
 end
