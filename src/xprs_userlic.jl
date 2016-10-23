@@ -33,18 +33,16 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
 
     # FIRST call do xprslicense to get BASE LIC
     # -----------------------------------------
-    ccall(("XPRSlicense",xprs),
-        stdcall, Cint, (Ptr{Cint},Ptr{Cchar}), lic,slicmsg)
+    ierr = @xprs_ccall(license, Cint, (Ptr{Cint},Ptr{Cchar}), lic, slicmsg)
+
 
     # convert BASE LIC to GIVEN LIC
     # ---------------------------
-    # change this line to the code given by  your FICO representative
     lic = liccheck(lic)
 
     # Send GIVEN LIC to XPRESS lib
     # --------------------------
-    ierr = ccall(("XPRSlicense",xprs),
-        stdcall, Cint, (Ptr{Cint},Ptr{Cchar}), lic, slicmsg)
+    ierr = @xprs_ccall(license, Cint, (Ptr{Cint},Ptr{Cchar}), lic, slicmsg)
 
     # check LIC TYPE
     # --------------
@@ -57,8 +55,7 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
         # ----
         info("Failed to find working license.")
 
-        ccall(("XPRSgetlicerrmsg",xprs),
-            stdcall, Cint, (Ptr{Cchar},Cint), errmsg, 512)
+        ret = @xprs_ccall(getlicerrmsg, Cint, (Ptr{Cchar},Cint), errmsg, 512)
 
         error(  unsafe_string(pointer(errmsg))   )
     else
