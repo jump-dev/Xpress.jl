@@ -111,18 +111,8 @@ function add_diag_qpterms!(model, hv::Real)  # all diagonal elements are H
     q = [convert(Cint,1):convert(Cint,n)]
     add_qpterms!(model, q, q, fill(float64(hv), n))
 end
-#= no existent analog : mus add a zeros matrix
-function delq!(model::Model)
-    ret = @grb_ccall(delq, Cint, (
-        Ptr{Void},    # model
-        ),
-        model)
 
-    if ret != 0
-        throw(GurobiError(model.env, ret))
-    end
-end
-=#
+
 function delq!(model::Model)
 
     n = num_vars(model)
@@ -213,7 +203,7 @@ function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, 
             Ptr{Cint},    # qcol
             Ptr{Float64} # qval
             ),
-            model, m-1, qnnz, qr.-1, qc.-1, qv)
+            model.ptr_model, m-1, qnnz, qr.-1, qc.-1, qv)
 
         if ret != 0
             throw(XpressError(model))
@@ -245,7 +235,7 @@ function get_qrows(model::Model)
             Ptr{Cint},    # qmn
             Ptr{Cint}    # qcrows
             ),
-            model, C_NULL, qcrows)
+            model.ptr_model, C_NULL, qcrows)
 
         if ret != 0
             throw(XpressError(model))
@@ -257,4 +247,50 @@ function get_qrows(model::Model)
 
     return Cint[]
 
+end
+
+function get_qrowmatrix_triplets(model::Model, row::Int)
+#int XPRS_CC XPRSgetqrowqmatrixtriplets(XPRSprob prob, int irow, int *nqelem, int mqcol1[], int mqcol2[], double dqe[]);
+
+    qrows = get_qrows(model::Model)
+
+    if row in qrows
+
+        nqelem = Array(Cint,1)
+        ret = @xprs_ccall(getqrowqmatrixtriplets, Cint, (
+            Ptr{Void},    # model
+            Cint,
+            Ptr{Cint},    # nqelem
+            Ptr{Cint},    # mqcol1
+            Ptr{Cint},    # mqcol2
+            Ptr{Float64}    # dqe
+            ),
+            model.ptr_model, row, nqelem, C_NULL, C_NULL, C_NULL)
+
+        if ret != 0
+            throw(XpressError(model))
+        end
+
+        mqcol1 = Array(Cint, nqelem[1])
+        mqcol2 = Array(Cint, nqelem[1])
+        dqe = Array(Float64, nqelem[1])
+
+        ret = @xprs_ccall(getqrowqmatrixtriplets, Cint, (
+            Ptr{Void},    # model
+            Cint,
+            Ptr{Cint},    # nqelem
+            Ptr{Cint},    # mqcol1
+            Ptr{Cint},    # mqcol2
+            Ptr{Cint}    # dqe
+            ),
+            model.ptr_model, row, nqelem, mqcol1, mqcol2, dqe)
+
+        if ret != 0
+            throw(XpressError(model))
+        end
+
+        return mqcol1, mqcol2, dqe
+    end
+
+    return Cint[], Cint[], Float64[]
 end
