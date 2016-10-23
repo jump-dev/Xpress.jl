@@ -30,18 +30,9 @@ Here is the procedure to setup this package:
 
 You should use the xpress version matching to your julia installation and vice-versa
 
-## High priority:
+## TODO:
 
 * Create wrapper for: Callbacks.
-
-## TODO list:
-
-* set warmstart
-* polish quadratic models
-
-## Failing tests:
-
-* qpdualtest: lacks of `getquadconstrdual`
 
 ## Reference:
 [FICO optimizer manual](http://www.fico.com/en/node/8140?file=5097)
