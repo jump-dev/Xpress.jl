@@ -31,7 +31,7 @@ XpressSolver(;kwargs...) = XpressSolver(kwargs)
 LinearQuadraticModel(s::XpressSolver) = XpressMathProgModel(;s.options...)
 ConicModel(s::XpressSolver) = LPQPtoConicBridge(LinearQuadraticModel(s))
 
-supportedcones(m::XpressSolver) = [:Free]#,:Zero,:NonNeg,:NonPos,:SOC,:SOCRotated]
+supportedcones(m::XpressSolver) = [:Free, :Zero, :NonNeg, :NonPos, :SOC, :SOCRotated]
 
 loadproblem!(m::XpressMathProgModel, filename:: Compat.ASCIIString) = read_model(m.inner, filename)
 
@@ -41,6 +41,22 @@ end
 function update_model!(m::XpressMathProgModel)
 end
 # = Base.warn_once("Model update not necessary for Xpress.")
+
+function setparameters!(m::XpressMathProgModel; mpboptions...)
+    for (optname, optval) in mpboptions
+        if optname == :TimeLimit
+            setparam!(m.inner, XPRS_MAXTIME, round(Cint, optval) )
+        elseif optname == :Silent
+            if optval == true
+                setparam!(m.inner, XPRS_OUTPUTLOG, 0)
+            end
+        else
+            error("Unrecognized parameter $optname")
+        end
+    end
+end
+
+loadproblem!(m::Model, filename::Compat.ASCIIString) = read_model(m.inner, filename)
 
 function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub, sense)
   # throw away old model
@@ -272,7 +288,8 @@ end
 
 function getreducedcosts(m::XpressMathProgModel)
     if is_qcp(m.inner) #&& get_int_param(m.inner.env, "QCPDual") == 0
-        return fill(NaN, num_vars(m.inner))
+        return get_reducedcost(m.inner)
+        #return fill(NaN, num_vars(m.inner))
     else
         return get_reducedcost(m.inner)
     end
@@ -280,20 +297,68 @@ end
 
 function getconstrduals(m::XpressMathProgModel)
     if is_qcp(m.inner) #&& get_int_param(m.inner.env, "QCPDual") == 0
-        return fill(NaN, num_constrs(m.inner))
+
+        nlrows = num_linconstrs(m.inner)
+        nqrows = num_qconstrs(m.inner)
+
+        lduals = Array(Float64, nlrows)
+
+        qrows = get_qrows(m.inner)
+
+        duals = get_dual(m.inner)
+
+        pos_lr = 1
+        pos_qr = 1
+        for r = 1:length(duals)
+
+            if r != qrows[pos_qr]
+                lduals[pos_lr] = duals[r]
+                pos_lr += 1
+            else
+                if pos_qr < nqrows
+                    pos_qr += 1
+                end
+            end
+        end
+
+        return lduals
+        #return fill(NaN, num_constrs(m.inner))
     else
         return get_dual(m.inner)
     end
 end
-#=
+
 function getquadconstrduals(m::XpressMathProgModel)
     if is_qcp(m.inner) #&& get_int_param(m.inner.env, "QCPDual") == 0
-        return fill(NaN, num_qconstrs(m.inner))
+
+        #nlrows = num_linconstrs(m.inner)
+        nqrows = num_qconstrs(m.inner)
+
+        qduals = Array(Float64, nqrows)
+
+        qrows = get_qrows(m.inner)
+
+        duals = get_dual(m.inner)
+
+        pos_qr = 1
+        for r = 1:length(duals)
+
+            if r == qrows[pos_qr]
+                qduals[pos_qr] = duals[r]
+                pos_qr += 1
+            end
+            if pos_qr > nqrows
+                break
+            end
+        end
+
+        return qduals
+        #return fill(NaN, num_qconstrs(m.inner))
     else
-        return get_dual(m.inner)
+        return Float64[]
     end
 end
-=#
+
 
 getinfeasibilityray(m::XpressMathProgModel) = getdualray(m.inner)
 getunboundedray(m::XpressMathProgModel) = getprimalray(m.inner)
@@ -303,11 +368,11 @@ getbasis(m::XpressMathProgModel) = get_basis(m.inner)
 getrawsolver(m::XpressMathProgModel) = m.inner
 
 const var_type_map = Dict(
-  'C' => :Cont,
-  'B' => :Bin,
-  'I' => :Int,
-  'S' => :SemiCont,
-  'R' => :SemiInt
+  convert(Cchar, 'C') => :Cont,
+  convert(Cchar, 'B') => :Bin,
+  convert(Cchar, 'I') => :Int,
+  convert(Cchar, 'S') => :SemiCont,
+  convert(Cchar, 'R') => :SemiInt
 )
 
 const rev_var_type_map = Dict(
@@ -319,28 +384,57 @@ const rev_var_type_map = Dict(
 )
 
 function setvartype!(m::XpressMathProgModel, vartype::Vector{Symbol})
+
+    # dealing with semi continuous lower bounds
+    # see issue #2
+    semivars = false
+    if :SemiInt in vartype
+        semivars = true
+    end
+    if :SemiCont in vartype
+        semivars = true
+    end
+
+
     # do this to make sure we deal with new columns
-    ind = collect( 1:num_vars(m.inner) )
+    ind = collect( 1:length(vartype) )
 
     nvartype = map(x->Cchar(rev_var_type_map[x]), vartype)
 
+    lb = semivars ? getvarLB(m) : Float64[] # for semi vars
+
     chgcoltypes!(m.inner, ind, nvartype )
+
+    if semivars
+
+        semi_col = Int[]
+        semi_lb = Float64[]
+
+        for i in 1:length(vartype)
+            if vartype[i] == :SemiCont || vartype[i] == :SemiInt
+                push!(semi_col, i)
+                push!(semi_lb, lb[i])
+            end
+        end
+
+        chgsemilb!(m.inner, semi_col, semi_lb)
+    end
+
+    nothing
 end
 
 function getvartype(m::XpressMathProgModel)
     ret = get_coltype(m.inner)
+
     map(x->var_type_map[x], ret)
 end
-#=
-function setwarmstart!(m::XpressMathProgModel, v)
-    for j = 1:length(v)
-        if isnan(v[j])
-            v[j] = 1e101  # GRB_UNDEFINED
-        end
-    end
-    set_dblattrarray!(m.inner, "Start", 1, num_vars(m.inner), v)
+
+function setwarmstart!(m::XpressMathProgModel, v::Vector)
+
+    loadbasis(m.inner, v)
+
 end
-=#
+
 addsos1!(m::XpressMathProgModel, idx, weight) = add_sos!(m.inner, :SOS1, idx, weight)
 addsos2!(m::XpressMathProgModel, idx, weight) = add_sos!(m.inner, :SOS2, idx, weight)
 
