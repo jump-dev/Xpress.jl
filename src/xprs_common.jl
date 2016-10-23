@@ -68,9 +68,9 @@ function getlibversion()
     _minor = parse(Int,numbers[2])
     _tech  = parse(Int,numbers[3])
 
-    return  VersionNumber(_major, _minor, _tech)   
+    return  VersionNumber(_major, _minor, _tech)
 end
 
 # version need not be export
 # one can write Xpress.version to get the version numbers
-const version = getlibversion()
+#const version = getlibversion()
