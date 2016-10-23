@@ -27,7 +27,7 @@ semi_solvers = [XpressSolver()]
 
 soc_solvers = [XpressSolver()]
 rsoc_solvers = [XpressSolver()]
-conic_solvers_with_duals = [XpressSolver()]
+conic_solvers_with_duals = Any[]#[XpressSolver()]
 
 quad_solvers = [XpressSolver()]
 quad_mip_solvers = [XpressSolver()]
@@ -79,7 +79,7 @@ methods_test("Xpress", Xpress.XpressSolver(), supp)
 end
 
 #include(Pkg.dir("JuMP","test","qcqpmodel.jl"))
-#include(Pkg.dir("JuMP","test","socduals.jl"))
+include(Pkg.dir("JuMP","test","socduals.jl"))
 
 
 
