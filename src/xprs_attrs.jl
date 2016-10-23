@@ -414,57 +414,71 @@ function set_rowtype!(model::Model,senses::Vector)
 end
 
 function set_constrLB!(model::Model, lb)
+    # should only work for liner constraints
+
+    nlrows = num_linconstrs(model)
+    lrows = get_lrows(model)[1:length(lb)]
+
     senses = get_rowtype(model)
     rhs    = get_rhs(model)
     sense_changed = false
-    for i = 1:num_constrs(model)
-        if senses[i] == XPRS_GEQ || senses[i] == XPRS_EQ
+
+    for i = 1:length(lrows)
+        if senses[lrows[i]] == XPRS_GEQ || senses[lrows[i]] == XPRS_EQ
             # Do nothing
-        elseif senses[i] == XPRS_LEQ
+        elseif senses[lrows[i]] == XPRS_LEQ
             if lb[i] != -Inf
                 # LEQ constraint with non-NegInf LB implies a range
-                if isapprox(lb[i], rhs[i])
+                if isapprox(lb[i], rhs[lrows[i]])
                     # seems to be an equality
-                    senses[i] = XPRS_EQ
+                    senses[lrows[i]] = XPRS_EQ
                     sense_changed = true
                 else
                     error("Tried to set LB != -Inf on a LEQ constraint (index $i)")
                 end
             else
-                lb[i] = rhs[i]
+                lb[i] = rhs[lrows[i]]
             end
         end
     end
     if sense_changed
         set_rowtype!(model, senses)
     end
-    set_rhs!(model, lb)
+
+
+    set_rhs!(model, lrows, lb)
+    #set_rhs!(model, lb)
 end
 
 function set_constrUB!(model::Model, ub)
+
+    nlrows = num_linconstrs(model)
+    lrows = get_lrows(model)[1:length(ub)]
+
     senses = get_rowtype(model)
     rhs    = get_rhs(model)
     sense_changed = false
-    for i = 1:num_constrs(model)
-        if senses[i] == XPRS_LEQ || senses[i] == XPRS_EQ
+    for i = 1:length(lrows)
+        if senses[lrows[i]] == XPRS_LEQ || senses[lrows[i]] == XPRS_EQ
             # Do nothing
-        elseif senses[i] == XPRS_GEQ
+        elseif senses[lrows[i]] == XPRS_GEQ
             if ub[i] != Inf
                 # GEQ constraint with non-PosInf UB implies a range
-                if isapprox(ub[i], rhs[i])
+                if isapprox(ub[i], rhs[lrows[i]])
                     # seems to be an equality
-                    senses[i] = XPRS_EQ
+                    senses[lrows[i]] = XPRS_EQ
                     sense_changed = true
                 else
                     error("Tried to set UB != +Inf on a GEQ constraint (index $i)")
                 end
             else
-              ub[i] = rhs[i]
+              ub[i] = rhs[lrows[i]]
             end
         end
     end
     if sense_changed
         set_rowtype!(model, senses)
     end
-    set_rhs!(model, ub)
+    set_rhs!(model, lrows, ub)
+    #set_rhs!(model, ub)
 end
