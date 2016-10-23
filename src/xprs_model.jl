@@ -127,7 +127,7 @@ end
 # read / write file
 #=
 XPRSprob a-> Ptr{Void}
-const char *a -> Ptr{UInt8}  -> "" : ASCIIString
+const char *a -> Ptr{UInt8}  -> "" : Compat.ASCIIString
 int -> Cint
 const char a[] -> Ptr{Cchar} -> Cchar[]
 =#
@@ -183,7 +183,17 @@ function write_model(model::Model, filename::Compat.ASCIIString)
     nothing
 end
 
+function setlogfile(model::Model, filename::Compat.ASCIIString)
+    #int XPRS_CC XPRSsetlogfile(XPRSprob prob, const char *filename);
 
+    flags = ""
+    ret = @xprs_ccall(setlogfile, Cint, (Ptr{Void}, Ptr{UInt8}),
+        model.ptr_model, filename)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
 
 # function presolve_model(model::Model)
 #     ret = @grb_ccall(presolvemodel, Ptr{Void}, (Ptr{Void},), model.ptr_model)
