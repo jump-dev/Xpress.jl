@@ -446,21 +446,22 @@ function setquadobj!(m::XpressMathProgModel, rowidx, colidx, quadval)
     # xpress only accept one input per matrix slot
     k = ones(Bool,length(rowidx)) #replicates holder (they are falses)
     for i in 1:length(rowidx), j in (i+1):length(rowidx)
-      if rowidx[i] == rowidx[j] && colidx[i] == colidx[j]
+      if ( rowidx[i] == rowidx[j] && colidx[i] == colidx[j] ) || ( rowidx[i] == colidx[j] && colidx[i] == rowidx[j] )
         quadval[i] += quadval[j]
         quadval[j] = 0.0
-        #rowidx[j] = -1
-        #colidx[j] = -1
+        rowidx[j] = -1
+        colidx[j] = -1
         k[j] = false
       end
     end
+
     scaledvals = similar(quadval)
     for i in 1:length(rowidx)
       if rowidx[i] == colidx[i]
         # rescale from matrix format to "terms" format
         scaledvals[i] = quadval[i] #/ 2
       else
-        scaledvals[i] = quadval[i]*2
+        scaledvals[i] = quadval[i]#*2
       end
     end
     add_qpterms!(m.inner, rowidx[k], colidx[k], scaledvals[k])
@@ -468,6 +469,9 @@ function setquadobj!(m::XpressMathProgModel, rowidx, colidx, quadval)
 end
 
 function addquadconstr!(m::XpressMathProgModel, linearidx, linearval, quadrowidx, quadcolidx, quadval, sense, rhs)
+
+
+    
 
     add_qconstr!(m.inner, linearidx, linearval, quadrowidx, quadcolidx, quadval, sense, rhs)
 end
