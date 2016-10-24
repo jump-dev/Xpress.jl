@@ -27,7 +27,6 @@ semi_solvers = [XpressSolver()]
 
 soc_solvers = [XpressSolver()]
 rsoc_solvers = [XpressSolver()]
-conic_solvers_with_duals = Any[]#[XpressSolver()]
 
 quad_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
 quad_mip_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
