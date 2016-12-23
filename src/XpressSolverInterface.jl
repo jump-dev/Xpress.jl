@@ -24,7 +24,7 @@ function XpressMathProgModel(;options...)
 end
 
 function copy(m::XpressMathProgModel)
-     return GurobiMathProgModel(copy(m.inner), 
+     return XpressMathProgModel(copy(m.inner), 
                                 deepcopy(lazycb),
                                 deepcopy(cutcb),
                                 deepcopy(heuristiccb), 
