@@ -30,6 +30,7 @@ module Xpress
     ## xprs_model
     set_sense!, update_model!, reset_model!, get_tune_result!,
     read_model, write_model, #tune_model, presolve_model, fixed_model,
+    copy,
 
     ## xprs_attrs
     model_name, model_sense, model_type,
@@ -43,11 +44,12 @@ module Xpress
     XPRS_CONTINUOUS, XPRS_BINARY, XPRS_INTEGER,
     add_var!, add_vars!, add_cvar!, add_cvars!,
     add_bvar!, add_bvars!, add_ivar!, add_ivars!,
+    del_vars!,
 
     ## xprs_constrs
     add_constr!, add_constrs!, add_constrs_t!,
     add_rangeconstr!, add_rangeconstrs!, add_rangeconstrs_t!,
-    get_constrmatrix, add_sos!,
+    get_constrmatrix, add_sos!, del_constrs!, chg_coeffs!,
 
     ## xprs_quad
     add_qpterms!, add_qconstr!,

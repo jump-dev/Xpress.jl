@@ -23,6 +23,14 @@ function XpressMathProgModel(;options...)
    return m
 end
 
+function copy(m::XpressMathProgModel)
+     return GurobiMathProgModel(copy(m.inner), 
+                                deepcopy(lazycb),
+                                deepcopy(cutcb),
+                                deepcopy(heuristiccb), 
+                                deepcopy(infocb), 
+                                deepcopy(options))
+end
 
 immutable XpressSolver <: AbstractMathProgSolver
     options
@@ -158,6 +166,8 @@ function addvar!(m::XpressMathProgModel, l, u, objcoef)
     add_cvar!(m.inner, float(objcoef), float(l), float(u))
 end
 
+delvars!(m::XpressMathProgModel, idx) = del_vars!(m.inner, idx)
+
 function addconstr!(m::XpressMathProgModel, varidx, coef, lb, ub)
 
     if lb == -Inf
@@ -175,6 +185,8 @@ function addconstr!(m::XpressMathProgModel, varidx, coef, lb, ub)
     end
 end
 
+delconstrs!(m::XpressMathProgModel, idx) = del_constrs!(m.inner, idx)
+chgcoeffs!(m::XpressMathProgModel, cidx, vidx, val) = chg_coeffs!(m.inner, cidx, vidx, val)
 
 getconstrmatrix(m::XpressMathProgModel) = get_constrmatrix(m.inner)
 

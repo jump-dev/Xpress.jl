@@ -181,3 +181,18 @@ add_bvars!(model::Model, c::Vector) = add_vars!(model, XPRS_BINARY, c, 0, 1)
 
 add_ivars!(model::Model, c::Vector, lb::Bounds, ub::Bounds) = add_vars!(model, XPRS_INTEGER, c, lb, ub)
 add_ivars!(model::Model, c::Vector) = add_ivars!(model, XPRS_INTEGER, c, XPRS_MINUSINFINITY, XPRS_PLUSINFINITY) #
+
+
+del_vars!{T<:Real}(model::Model, idx::T) = del_vars!(model, Cint[idx])
+del_vars!{T<:Real}(model::Model, idx::Vector{T}) = del_vars!(model, convert(Vector{Cint},idx))
+function del_vars!(model::Model, idx::Vector{Cint})
+    numdel = length(idx)
+    ret = @xprs_ccall(delcols, Cint, (
+                     Ptr{Void},
+                     Cint,
+                     Ptr{Cint}),
+                     model, convert(Cint,numdel), idx-Cint(1))
+    if ret != 0
+        throw(XpressError(model))
+    end
+end 
