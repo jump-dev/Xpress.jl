@@ -25,11 +25,11 @@ end
 
 function copy(m::XpressMathProgModel)
      return XpressMathProgModel(copy(m.inner), 
-                                deepcopy(lazycb),
-                                deepcopy(cutcb),
-                                deepcopy(heuristiccb), 
-                                deepcopy(infocb), 
-                                deepcopy(options))
+                                deepcopy(m.lazycb),
+                                deepcopy(m.cutcb),
+                                deepcopy(m.heuristiccb), 
+                                deepcopy(m.infocb), 
+                                deepcopy(m.options))
 end
 
 immutable XpressSolver <: AbstractMathProgSolver
