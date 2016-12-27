@@ -24,11 +24,18 @@ function XpressMathProgModel(;options...)
 end
 
 function copy(m::XpressMathProgModel)
-     return XpressMathProgModel(copy(m.inner), 
-                                deepcopy(m.lazycb),
-                                deepcopy(m.cutcb),
-                                deepcopy(m.heuristiccb), 
-                                deepcopy(m.infocb), 
+
+    m.lazycb == nothing || Base.warn_once("Callbacks can't be copied, lazy callback ignored")
+    m.cutcb == nothing || Base.warn_once("Callbacks can't be copied, cut callback ignored")
+    m.heuristiccb == nothing || Base.warn_once("Callbacks can't be copied, heuristic callback ignored")
+    m.infocb == nothing || Base.warn_once("Callbacks can't be copied, info callback ignored")
+
+
+    return XpressMathProgModel(copy(m.inner), 
+                                nothing,
+                                nothing,
+                                nothing, 
+                                nothing, 
                                 deepcopy(m.options))
 end
 
