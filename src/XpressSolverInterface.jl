@@ -157,7 +157,7 @@ function getconstrUB(m::XpressMathProgModel)
     return ret
 end
 
-
+# Not loaded directely in gurobi (requiser update which is done prior to solving)
 setconstrLB!(m::XpressMathProgModel, lb) = set_constrLB!(m.inner,lb)
 setconstrUB!(m::XpressMathProgModel, ub) = set_constrUB!(m.inner,ub)
 
@@ -193,7 +193,7 @@ function addconstr!(m::XpressMathProgModel, varidx, coef, lb, ub)
 end
 
 delconstrs!(m::XpressMathProgModel, idx) = del_constrs!(m.inner, idx)
-chgcoeffs!(m::XpressMathProgModel, cidx, vidx, val) = chg_coeffs!(m.inner, cidx, vidx, val)
+changecoeffs!(m::XpressMathProgModel, cidx, vidx, val) = chg_coeffs!(m.inner, cidx, vidx, val)
 
 getconstrmatrix(m::XpressMathProgModel) = get_constrmatrix(m.inner)
 
