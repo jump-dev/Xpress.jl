@@ -173,8 +173,8 @@ function read_model(model::Model, filename::Compat.ASCIIString)
     nothing
 end
 
-function write_model(model::Model, filename::Compat.ASCIIString)
-    flags = ""
+write_model(model::Model, filename::Compat.ASCIIString) = write_model(model, filename, "")
+function write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString)
     ret = @xprs_ccall(writeprob, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
     if ret != 0
