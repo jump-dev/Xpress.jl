@@ -183,6 +183,19 @@ function write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.A
     nothing
 end
 
+function fixglobals(model::Model, round::Bool)
+    flag = 0
+    if round
+        flag = 1
+    end
+    ret = @xprs_ccall(fixglobals, Cint, (Ptr{Void}, Cint),
+        model.ptr_model, flag)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
+
 function setlogfile(model::Model, filename::Compat.ASCIIString)
     #int XPRS_CC XPRSsetlogfile(XPRSprob prob, const char *filename);
 
