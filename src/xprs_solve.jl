@@ -18,20 +18,32 @@
 function optimize(model::Model)
     @assert model.ptr_model != C_NULL
     if is_mip(model)
-        ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{Cchar}),
-            model.ptr_model,C_NULL)
-        if ret != 0
-            throw(XpressError(model))
-        end
+        mipoptimize(model)
     else
-        ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{Cchar}),
-            model.ptr_model,C_NULL)
-        if ret != 0
-            throw(XpressError(model))
-        end
+        lpoptimize(model)
     end
     nothing
 end
+
+function lpoptimize(model::Model)
+    @assert model.ptr_model != C_NULL
+    ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{Cchar}),
+        model.ptr_model,C_NULL)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
+function mipoptimize(model::Model)
+    @assert model.ptr_model != C_NULL
+    ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{Cchar}),
+        model.ptr_model,C_NULL)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
+
 
 function computeIIS(model::Model)
     @assert model.ptr_model != C_NULL
