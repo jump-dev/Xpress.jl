@@ -21,13 +21,13 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
     # ---------------------------------------------------------
 	path_lic = Array(Cchar,512)
     if xpauth_path == ""
-        path_lic = libdir*"\\xpauth.xpr"
+        path_lic = joinpath(libdir,"xpauth.xpr")
         if isfile(path_lic)
             f = open(path_lic)
             close(f)
         end
 	elseif isdir(xpauth_path)
-		path_lic = xpauth_path*"\\xpauth.xpr"
+		path_lic = joinpath(xpauth_path,"xpauth.xpr")
         f = open(path_lic)
         close(f)
 	elseif isfile(xpauth_path)
