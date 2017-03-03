@@ -34,6 +34,9 @@ function Model(; finalize_env::Bool=false)
     end
 
     m = Model(a[1]; finalize_env = finalize_env)
+    
+    # turn off default printing on unix
+    setparam!(m, XPRS_OUTPUTLOG, 0)
 
     load_empty(m)
 
