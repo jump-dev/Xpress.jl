@@ -60,11 +60,11 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
     if ierr == 16
         # DEVELOPER
         # ---------
-        info("Xpress development software detected.")
+        info("Xpress: Development license detected.")
     elseif ierr != 0
         # FAIL
         # ----
-        info("Failed to find working license.")
+        info("Xpress: Failed to find working license.")
 
         ret = @xprs_ccall(getlicerrmsg, Cint, (Ptr{Cchar},Cint), errmsg, 1024)
 
@@ -72,7 +72,7 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
     else
         # USER
         # ----
-        info("User license detected.")
+        info("Xpress: User license detected.")
         info(  unsafe_string(pointer(slicmsg))  )
     end
 
