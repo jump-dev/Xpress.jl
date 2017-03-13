@@ -47,14 +47,14 @@ const emptyfmat = Array(Float64, 0, 0)
 
 # macro to call a Xpress C functions
 macro xprs_ccall(func, args...)
-    args = [esc(ex) for ex in args]
     f = "XPRS$(func)"
+    args = map(esc,args)
 
     is_unix() && return quote
         ccall(($f,xprs), $(args...))
     end
     is_windows() && return quote
-        ccall(($f,xprs), stdcall, $(args...))
+        ccall(($f,xprs), $(esc(:stdcall)), $(args...))
     end
 end
 
