@@ -30,6 +30,22 @@ Here is the procedure to setup this package:
 
 You should use the xpress version matching to your julia installation and vice-versa
 
+## Use Other Packages
+
+We highly recommend that you use the *Xpress.jl* package with higher level packages such as [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl) or [MathProgBase.jl](https://github.com/JuliaOpt/MathProgBase.jl). 
+
+This can be done using the ``XpressSolver`` object. Here is how to create a *JuMP* model that uses Xpress as the solver. Parameters are passed as keyword arguments:
+```julia
+using JuMP, Xpress
+
+m = Model(solver=XpressSolver(DEFAULTALG = 2, PRESOLVE = 0))
+```
+For other parameters use Xpress Optimizer manual.
+
+## API Overview
+
+This package provides both APIs at different levels for constructing models and solving optimization problems just like *Gurobi.jl*, you can use the tests and examples in this package and *Gurobi.jl*'s [README.md](https://github.com/JuliaOpt/Gurobi.jl) basic for reference.
+
 ## TODO:
 
 * Create wrapper for: Callbacks.
