@@ -53,7 +53,10 @@ macro xprs_ccall(func, args...)
     is_unix() && return quote
         ccall(($f,xprs), $(args...))
     end
-    is_windows() && return quote
+    is_windows() && VERSION < v"0.6-" && return quote
+        ccall(($f,xprs), stdcall, $(args...))
+    end
+    is_windows() && VERSION >= v"0.6-" && return quote
         ccall(($f,xprs), $(esc(:stdcall)), $(args...))
     end
 end
