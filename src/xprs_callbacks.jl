@@ -2,13 +2,14 @@
 
 type CallbackData
     #cbdata::Ptr{Void} # data for solver
-    model::Model
+    model_root::Model # should not use operations here
     data::Any # data for user
+    model::Model# local model # ptr_model::Ptr{Void}
 end
 
 function setcbintsol_wrapper(ptr_model::Ptr{Void}, my_object::Ptr{Void})
     callback, model, data = unsafe_pointer_to_objref(my_object)#::(Function,Model,Any)
-    callback(CallbackData(model, data))
+    callback(CallbackData(model, data, Model(ptr_model)))
     return convert(Cint,0)
 end
 

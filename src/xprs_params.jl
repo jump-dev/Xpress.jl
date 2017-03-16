@@ -99,6 +99,8 @@ function getparam(m::Model,param::Int)
     end
 end
 
+
+setparam!(m::Model,param::Symbol,val::Any) = setparam!(m,XPRS_CONTROLS_DICT[param],val)
 function setparam!(m::Model,param::Int,val::Any)
     if convert(Int,param) in XPRS_INT_CONTROLS
         set_int_param(m, param, val)
