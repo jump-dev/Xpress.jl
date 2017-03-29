@@ -451,7 +451,7 @@ function get_iisdata(model::Model, num::Int)
 
     rows = Array(Cint,1)
     cols = Array(Cint,1)
-    ret = @xprs_ccall(getbasis, Cint,
+    ret = @xprs_ccall(getiisdata, Cint,
         (Ptr{Void},
             Cint,# num
          Ptr{Cint},# #row
@@ -473,10 +473,10 @@ function get_iisdata(model::Model, num::Int)
         throw(XpressError(model))
     end
 
-    rows_set = Array(Cint, rows)
-    cols_set = Array(Cint, cols)
+    rows_set = Array(Cint, rows[1])
+    cols_set = Array(Cint, cols[1])
 
-    ret = @xprs_ccall(getbasis, Cint,
+    ret = @xprs_ccall(getiisdata, Cint,
         (Ptr{Void},
             Cint,# num
          Ptr{Cint},# #row
@@ -498,7 +498,7 @@ function get_iisdata(model::Model, num::Int)
         throw(XpressError(model))
     end
 
-    return rows_set, cols_set
+    return rows_set + 1, cols_set + 1
 end
 
 
