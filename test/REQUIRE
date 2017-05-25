@@ -1,2 +1,3 @@
-MathProgBase 0.5.1 0.6
+MathProgBase
 JuMP 
+OffsetArrays 0.2.13
