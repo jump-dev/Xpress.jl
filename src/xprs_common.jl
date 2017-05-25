@@ -42,8 +42,8 @@ fvecx{T<:Real}(v::Vector{T}, n::Integer) = (_chklen(v, n); convert(Vector{Float6
 
 # empty vector & matrix (for the purpose of supplying default arguments)
 
-const emptyfvec = Array(Float64, 0)
-const emptyfmat = Array(Float64, 0, 0)
+const emptyfvec = Array{Float64}(0)
+const emptyfmat = Array{Float64}(0, 0)
 
 # macro to call a Xpress C functions
 macro xprs_ccall(func, args...)

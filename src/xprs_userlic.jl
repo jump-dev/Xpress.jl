@@ -19,7 +19,7 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
 
     # open and free xpauth.xpr (touches the file to release it)
     # ---------------------------------------------------------
-	path_lic = Array(Cchar,1024*8)
+	path_lic = Array{Cchar}(1024*8)
     if xpauth_path == ""
         path_lic = joinpath(libdir,"xpauth.xpr")
         if isfile(path_lic)
@@ -40,7 +40,7 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
     # ----------------
     lic = Cint[1]
     slicmsg =  path_lic #xpauth_path == "dh" ? Array(Cchar,1024*8) :
-    errmsg = Array(Cchar,1024*8)
+    errmsg = Array{Cchar}(1024*8)
 
     # FIRST call do xprslicense to get BASE LIC
     # -----------------------------------------
@@ -53,7 +53,7 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
 
     # Send GIVEN LIC to XPRESS lib
     # --------------------------
-    slicmsg = Array(Cchar,1024*8)
+    slicmsg = Array{Cchar}(1024*8)
     ierr = @xprs_ccall(license, Cint, (Ptr{Cint},Ptr{Cchar}), lic, slicmsg)
 
     # check LIC TYPE
