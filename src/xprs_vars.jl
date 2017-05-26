@@ -34,7 +34,7 @@ function add_var!(model::Model, newnz::Int, mrwind::Vector{Int},dmatval::Vector{
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub
         ),
-        model.ptr_model, 1, newnz, fvec(objx), ivec(0), ivec(mrwind)-1, fvec(dmatval), fvec(lb), fvec(ub))
+        model.ptr_model, 1, newnz, fvec(objx), ivec(0), ivec(mrwind)-Cint(1), fvec(dmatval), fvec(lb), fvec(ub))
 
     if ret != 0
         throw(XpressError(model))
@@ -59,7 +59,7 @@ function chgcoltypes!(model::Model, colnums::Vector{Int}, vtypes::Vector{Cchar})
         Cint,
         Ptr{Cint},
         Ptr{Cchar}),
-        model.ptr_model, n, ivec(colnums-1), vtypes )
+        model.ptr_model, n, ivec(colnums-Cint(1)), vtypes )
     if 0 != ret
         throw(XpressError(model))
     end

@@ -39,7 +39,7 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
     # pre allocate vars
     # ----------------
     lic = Cint[1]
-    slicmsg =  path_lic #xpauth_path == "dh" ? Array(Cchar,1024*8) :
+    slicmsg =  path_lic #xpauth_path == "dh" ? Array{Cchar}(1024*8) :
     errmsg = Array{Cchar}(1024*8)
 
     # FIRST call do xprslicense to get BASE LIC

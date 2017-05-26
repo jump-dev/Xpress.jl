@@ -63,7 +63,7 @@ end
 
 # Xpress library version
 function getlibversion()
-    out = Array(Cchar, 16)                                     # "                "
+    out = Array{Cchar}( 16)                                     # "                "
     ret = @xprs_ccall(getversion, Cint, ( Ptr{Cchar},), out)   # ( Cstring,), out)
 
     numbers = split(unsafe_string(pointer(out)) ,".")

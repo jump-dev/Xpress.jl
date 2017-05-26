@@ -24,7 +24,7 @@ function add_constr!(model::Model, inds::IVec, coeffs::FVec, rel::Cchar, rhs::Fl
         Ptr{Cint}, # ind (size new nz)
         Ptr{Float64} # val (size newnz)
         ),
-        model.ptr_model, 1, length(inds), Cchar[rel], Float64[rhs], C_NULL, Cint[0], inds-1, coeffs
+        model.ptr_model, 1, length(inds), Cchar[rel], Float64[rhs], C_NULL, Cint[0], inds-Cint(1), coeffs
     )
 
     if ret != 0
@@ -73,7 +73,7 @@ function add_constrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec, rel
             Ptr{Cint}, # ind (size new nz)
             Ptr{Float64} # val (size newnz)
             ),
-            model.ptr_model, m, nnz, rel, rhs, C_NULL, cbegins - 1, inds - 1, coeffs
+            model.ptr_model, m, nnz, rel, rhs, C_NULL, cbegins - Cint(1), inds - Cint(1), coeffs
         )
 
         if ret != 0
@@ -122,7 +122,7 @@ function add_rangeconstr!(model::Model, inds::IVec, coeffs::FVec, lb::Float64, u
         Ptr{Cint}, # ind (size new nz)
         Ptr{Float64} # val (size newnz)
         ),
-        model.ptr_model, 1, length(inds), Cchar['R'], Float64[ub], Float64[r], Cint[0], inds-1, coeffs
+        model.ptr_model, 1, length(inds), Cchar['R'], Float64[ub], Float64[r], Cint[0], inds-Cint(1), coeffs
     )
     if ret != 0
         throw(XpressError(model))
@@ -161,7 +161,7 @@ function add_rangeconstrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec
             Ptr{Cint}, # ind (size new nz)
             Ptr{Float64} # val (size newnz)
             ),
-            model.ptr_model, m, nnz, cvecx( convert(Cchar,'R') , m), ub, r, cbegins-1, inds-1, coeffs
+            model.ptr_model, m, nnz, cvecx( convert(Cchar,'R') , m), ub, r, cbegins-Cint(1), inds-Cint(1), coeffs
         )
 
         if ret != 0
@@ -197,10 +197,10 @@ function get_constrmatrix(model::Model)
     nnz = num_cnzs(model)
     m = num_constrs(model)
     n = num_vars(model)
-    numnzP = Array(Cint, 1)
-    cbeg = Array(Cint, m+1)
-    cind = Array(Cint, nnz)
-    cval = Array(Float64, nnz)
+    numnzP = Array{Cint}( 1)
+    cbeg = Array{Cint}( m+1)
+    cind = Array{Cint}( nnz)
+    cval = Array{Float64}( nnz)
     ret = @xprs_ccall(getrows, Cint, (
                      Ptr{Void},
                      Ptr{Cint},
@@ -218,14 +218,14 @@ function get_constrmatrix(model::Model)
                      nnz,
                      numnzP,
                      0,
-                     m-1)
+                     m-Cint(1))
     if ret != 0
         throw(XpressError(model))
     end
     cbeg[end] = nnz
-    I = Array(Int, nnz)
-    J = Array(Int, nnz)
-    V = Array(Float64, nnz)
+    I = Array{Int}( nnz)
+    J = Array{Int}( nnz)
+    V = Array{Float64}( nnz)
     for i in 1:length(cbeg)-1
         for j in (cbeg[i]+1):cbeg[i+1]
             I[j] = i
@@ -253,7 +253,7 @@ function add_sos!(model::Model, sostype::Symbol, idx::Vector{Int}, weight::Vecto
                      convert(Cint, nelem),
                      Cchar[typ],
                      Cint[0,0],
-                     convert(Vector{Cint}, idx-1),
+                     convert(Vector{Cint}, idx-Cint(1)),
                      weight)
     if ret != 0
         throw(XpressError(model))
@@ -268,7 +268,7 @@ function del_constrs!(model::Model, idx::Vector{Cint})
                      Ptr{Void},
                      Cint,
                      Ptr{Cint}),
-                     model.ptr_model, convert(Cint,numdel), idx.-1)
+                     model.ptr_model, convert(Cint,numdel), idx.-Cint(1))
     if ret != 0
         throw(XpressError(model))
     end

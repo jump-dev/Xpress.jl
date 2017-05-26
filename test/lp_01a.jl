@@ -10,19 +10,17 @@
 
 using Xpress
 
-
+ 
 
 model = Xpress.Model("lp_01", :maximize)
 
 # add variables
 add_cvar!(model, 1.0, 45., Inf)  # x
 add_cvar!(model, 1.0,  5., Inf)  # y
-#update_model!(model)
 
 # add constraints
 add_constr!(model, [50., 24.], '<', 2400.)
 add_constr!(model, [30., 33.], '<', 2100.)
-#update_model!(model)
 
 println(model)
 

@@ -4,7 +4,7 @@
 function get_int_param(m::Model,param::Int)
 
 	ipar = convert(Cint,param)
-	igval = Array(Cint,1)
+	igval = Array{Cint}(1)
 
 	ret = @xprs_ccall(getintcontrol, Cint, (Ptr{Void},Cint,Ptr{Cint}),
 		m.ptr_model, ipar, igval)
@@ -17,7 +17,7 @@ end
 function get_dbl_param(m::Model,param::Int)
 
 	ipar = convert(Cint,param)
-	dgval = Array(Cdouble,1)
+	dgval = Array{Float64}(1)
 
 	ret = @xprs_ccall(getdblcontrol, Cint, (Ptr{Void},Cint,Ptr{Cdouble}),
 		m.ptr_model, ipar, dgval)
@@ -30,7 +30,7 @@ end
 function get_str_param(m::Model,param::Int)
 
 	ipar = convert(Cint,param)
-	cgval = Array(Cchar, 256)
+	cgval = Array{Cchar}( 256)
 
 	ret = @xprs_ccall(getstrcontrol, Cint, (Ptr{Void},Cint,Ptr{Cchar}),
 		m.ptr_model, ipar, cgval)

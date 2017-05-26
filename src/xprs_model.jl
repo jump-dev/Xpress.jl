@@ -25,7 +25,7 @@ function Model(; finalize_env::Bool=false)
 
     #@assert is_valid(env)
 
-    a = Array(Ptr{Void}, 1)
+    a = Array{Ptr{Void}}( 1)
     ret = @xprs_ccall(createprob, Cint, ( Ptr{Ptr{Void}},), a )
     #println(a)
     if ret != 0
@@ -65,7 +65,7 @@ end
 #################################################
 function get_error_msg(m::Model)
     #@assert env.ptr_env == 1
-    out = Array(Cchar, 512)
+    out = Array{Cchar}( 512)
     ret = @xprs_ccall(getlasterror, Cint, (Ptr{Void},Ptr{Cchar}),
         m.ptr_model, out)
 
@@ -73,7 +73,7 @@ function get_error_msg(m::Model)
 end
 function get_error_msg(m::Model,ret::Int)
     #@assert env.ptr_env == 1
-    out = Array(Cint,1)
+    out = Array{Cint}(1)
     out2 = @xprs_ccall(getintattrib, Cint,(Ptr{Void}, Cint, Ptr{Cint}),
         m.ptr_model, ret , out)
 end

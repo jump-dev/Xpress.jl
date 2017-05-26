@@ -93,13 +93,13 @@ function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub
   # check if we have any range constraints
   # to properly support these, we will need to keep track of the
   # slack variables automatically added by gurobi.
-  rangeconstrs = any((rowlb .!= rowub) & (rowlb .> neginf) & (rowub .< posinf))
-  if rangeconstrs
+  rangeconstrs = sum((rowlb .!= rowub) .& (rowlb .> neginf) .& (rowub .< posinf))
+  if rangeconstrs > 0 
       warn("Julia Xpress interface doesn't properly support range (two-sided) constraints.")
       add_rangeconstrs!(m.inner, float(A), float(rowlb), float(rowub))
   else
-      b = Array(Float64,length(rowlb))
-      senses = Array(Cchar,length(rowlb))
+      b = Array{Float64}(length(rowlb))
+      senses = Array{Cchar}(length(rowlb))
       for i in 1:length(rowlb)
           if rowlb[i] == rowub[i]
               senses[i] = XPRS_EQ#'='
@@ -320,7 +320,7 @@ function getconstrduals(m::XpressMathProgModel)
         nlrows = num_linconstrs(m.inner)
         nqrows = num_qconstrs(m.inner)
 
-        lduals = Array(Float64, nlrows)
+        lduals = Array{Float64}( nlrows)
 
         qrows = get_qrows(m.inner)
 
@@ -353,7 +353,7 @@ function getquadconstrduals(m::XpressMathProgModel)
         #nlrows = num_linconstrs(m.inner)
         nqrows = num_qconstrs(m.inner)
 
-        qduals = Array(Float64, nqrows)
+        qduals = Array{Float64}( nqrows)
 
         qrows = get_qrows(m.inner)
 

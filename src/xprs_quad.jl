@@ -15,7 +15,7 @@ function add_qpterms!(model::Model, qr::IVec, qc::IVec, qv::FVec)
             Ptr{Cint},    # qcol
             Ptr{Float64} # qval
             ),
-            model.ptr_model, nnz, qr-1, qc-1, qv)
+            model.ptr_model, nnz, qr-Cint(1), qc-Cint(1), qv)
 
         if ret != 0
             throw(XpressError(model))
@@ -34,9 +34,9 @@ function add_qpterms!(model, H::SparseMatrixCSC{Float64}) # H must be symmetric
     (H.m == n && H.n == n) || error("H must be an n-by-n symmetric matrix.")
 
     nnz_h = nnz(H)
-    qr = Array(Cint, nnz_h)
-    qc = Array(Cint, nnz_h)
-    qv = Array(Float64, nnz_h)
+    qr = Array{Cint}( nnz_h)
+    qc = Array{Cint}( nnz_h)
+    qv = Array{Float64}( nnz_h)
     k = 0
 
     colptr::Vector{Int} = H.colptr
@@ -69,9 +69,9 @@ function add_qpterms!(model, H::Matrix{Float64}) # H must be symmetric
     size(H) == (n, n) || error("H must be an n-by-n symmetric matrix.")
 
     nmax = round(Int,n * (n + 1) / 2)
-    qr = Array(Cint, nmax)
-    qc = Array(Cint, nmax)
-    qv = Array(Float64, nmax)
+    qr = Array{Cint}( nmax)
+    qc = Array{Cint}( nmax)
+    qv = Array{Float64}( nmax)
     k::Int = 0
 
     for i = 1 : n
@@ -142,12 +142,12 @@ function getq(model::Model)
     Base.warn_once("getq retuns only lower triangular")
     nnz = num_qnzs(model)
     n = num_vars(model)
-    nels = Array(Cint, 1)
+    nels = Array{Cint}( 1)
     nels[1] = nnz
 
-    mstart = Array(Cint, n+1)
-    mclind = Array(Cint, nnz)
-    dobjval = Array(Float64, nnz)
+    mstart = Array{Cint}( n+1)
+    mclind = Array{Cint}( nnz)
+    dobjval = Array{Float64}( nnz)
 
     ret = @xprs_ccall(getmqobj, Cint, (
         Ptr{Void},  # model
@@ -159,7 +159,7 @@ function getq(model::Model)
         Cint, #first
         Cint #last
         ),
-        model.ptr_model,mstart,mclind,dobjval,nnz,nels,0,n-1)
+        model.ptr_model,mstart,mclind,dobjval,nnz,nels,0,n-Cint(1))
 
     if ret != 0
         throw(XpressError(model))
@@ -167,9 +167,9 @@ function getq(model::Model)
     triangle_nnz = convert(Int,nels[1])
 
     mstart[end] = triangle_nnz
-    I = Array(Int, triangle_nnz)
-    J = Array(Int, triangle_nnz)
-    V = Array(Float64, triangle_nnz)
+    I = Array{Int}( triangle_nnz)
+    J = Array{Int}( triangle_nnz)
+    V = Array{Float64}( triangle_nnz)
     for i in 1:length(mstart)-1
         for j in (mstart[i]+1):mstart[i+1]
             I[j] = i
@@ -203,7 +203,7 @@ function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, 
             Ptr{Cint},    # qcol
             Ptr{Float64} # qval
             ),
-            model.ptr_model, m-1, qnnz, qr.-1, qc.-1, qv)
+            model.ptr_model, m-Cint(1), qnnz, qr.-Cint(1), qc.-Cint(1), qv)
 
         if ret != 0
             throw(XpressError(model))
@@ -228,7 +228,7 @@ function get_qrows(model::Model)
 
     if qmn > 0
 
-        qcrows = Array(Cint, qmn)
+        qcrows = Array{Cint}( qmn)
 
         ret = @xprs_ccall(getqrows, Cint, (
             Ptr{Void},    # model
@@ -288,7 +288,7 @@ function get_qrowmatrix_triplets(model::Model, row::Int)
 
     if row in qrows
 
-        nqelem = Array(Cint,1)
+        nqelem = Array{Cint}(1)
         ret = @xprs_ccall(getqrowqmatrixtriplets, Cint, (
             Ptr{Void},    # model
             Cint,
@@ -297,15 +297,15 @@ function get_qrowmatrix_triplets(model::Model, row::Int)
             Ptr{Cint},    # mqcol2
             Ptr{Float64}    # dqe
             ),
-            model.ptr_model, Cint(row-1), nqelem, C_NULL, C_NULL, C_NULL)
+            model.ptr_model, Cint(row-Cint(1)), nqelem, C_NULL, C_NULL, C_NULL)
 
         if ret != 0
             throw(XpressError(model))
         end
 
-        mqcol1 = Array(Cint, nqelem[1])
-        mqcol2 = Array(Cint, nqelem[1])
-        dqe = Array(Float64, nqelem[1])
+        mqcol1 = Array{Cint}( nqelem[1])
+        mqcol2 = Array{Cint}( nqelem[1])
+        dqe = Array{Float64}( nqelem[1])
 
         ret = @xprs_ccall(getqrowqmatrixtriplets, Cint, (
             Ptr{Void},    # model
@@ -315,7 +315,7 @@ function get_qrowmatrix_triplets(model::Model, row::Int)
             Ptr{Cint},    # mqcol2
             Ptr{Float64}    # dqe
             ),
-            model.ptr_model, Cint(row-1), nqelem, mqcol1, mqcol2, dqe)
+            model.ptr_model, Cint(row-Cint(1)), nqelem, mqcol1, mqcol2, dqe)
 
         if ret != 0
             throw(XpressError(model))

@@ -7,7 +7,7 @@
 ############################################
 
 function get_intattr(model::Model, ipar::Int)
-    a = Array(Cint, 1)
+    a = Array{Cint}( 1)
     ipar = convert(Cint,ipar)
     ret = @xprs_ccall(getintattrib, Cint,
         (Ptr{Void}, Cint, Ptr{Cint}),
@@ -19,7 +19,7 @@ function get_intattr(model::Model, ipar::Int)
 end
 
 function get_dblattr(model::Model, ipar::Int)
-    a = Array(Float64, 1)
+    a = Array{Float64}( 1)
     ipar = convert(Cint,ipar)
     ret = @xprs_ccall(getdblattrib, Cint,
         (Ptr{Void}, Cint, Ptr{Float64}),
@@ -31,7 +31,7 @@ function get_dblattr(model::Model, ipar::Int)
 end
 
 function get_strattr(model::Model, ipar::Int)
-    a = Array(Cchar, 256)
+    a = Array{Cchar}( 256)
     ipar = convert(Cint,ipar)
     ret = @xprs_ccall(getstrattrib, Cint,
         (Ptr{Void}, Cint, Ptr{Cchar}),
@@ -174,7 +174,7 @@ function set_objcoeffs!(model::Model, inds::Vector{Int}, c::Vector)
             Ptr{Cint},
             Ptr{Float64}
             ),
-            model.ptr_model, Cint( length(c) ), ivec(inds)-1, fvec(c) )
+            model.ptr_model, Cint( length(c) ), ivec(inds)-Int32(1), fvec(c) )
 
         if ret != 0
             throw(XpressError(model))
@@ -194,7 +194,7 @@ function get_lb(model::Model)
 
     cols = num_vars(model)
 
-    out = Array(Float64,cols)
+    out = Array{Float64}(cols)
 
     ret = @xprs_ccall(getlb, Cint, (
         Ptr{Void},    # model
@@ -202,7 +202,7 @@ function get_lb(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, cols-1)
+        model.ptr_model, out, 0, cols-Int32(1))
 
     if ret != 0
         throw(XpressError(model))
@@ -216,7 +216,7 @@ function get_ub(model::Model)
 
     cols = num_vars(model)
 
-    out = Array(Float64,cols)
+    out = Array{Float64}(cols)
 
     ret = @xprs_ccall(getub, Cint, (
         Ptr{Void},    # model
@@ -224,7 +224,7 @@ function get_ub(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, cols-1)
+        model.ptr_model, out, 0, cols-Int32(1))
 
     if ret != 0
         throw(XpressError(model))
@@ -240,7 +240,7 @@ function get_obj(model::Model)
 
     cols = num_vars(model)
 
-    out = Array(Float64,cols)
+    out = Array{Float64}(cols)
 
     ret = @xprs_ccall(getobj, Cint, (
         Ptr{Void},    # model
@@ -248,7 +248,7 @@ function get_obj(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, cols-1)
+        model.ptr_model, out, 0, cols-Int32(1))
 
     if ret != 0
         throw(XpressError(model))
@@ -262,7 +262,7 @@ function get_rhs(model::Model)
 
     rows = num_constrs(model)
 
-    out = Array(Float64,rows)
+    out = Array{Float64}(rows)
 
     ret = @xprs_ccall(getrhs, Cint, (
         Ptr{Void},    # model
@@ -270,7 +270,7 @@ function get_rhs(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, rows-1)
+        model.ptr_model, out, 0, rows-Cint(1))
 
     if ret != 0
         throw(XpressError(model))
@@ -282,7 +282,7 @@ function get_rowtype(model::Model)
 
     rows = num_constrs(model)
 
-    out = Array(Cchar,rows)
+    out = Array{Cchar}(rows)
 
     ret = @xprs_ccall(getrowtype, Cint, (
         Ptr{Void},    # model
@@ -290,7 +290,7 @@ function get_rowtype(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, rows-1)
+        model.ptr_model, out, 0, rows-Cint(1))
 
     if ret != 0
         throw(XpressError(model))
@@ -305,7 +305,7 @@ function get_coltype(model::Model)
 
     cols = num_vars(model)
 
-    out = Array(Cchar,cols)
+    out = Array{Cchar}(cols)
 
     ret = @xprs_ccall(getcoltype, Cint, (
         Ptr{Void},    # model
@@ -313,7 +313,7 @@ function get_coltype(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, cols-1)
+        model.ptr_model, out, 0, cols-Cint(1))
 
     if ret != 0
         throw(XpressError(model))
@@ -333,7 +333,7 @@ function set_lb!(model::Model,ind::Vector{Int},lb::Vector)
         Ptr{Cchar},
         Ptr{Float64}
         ),
-        model.ptr_model, Cint(nbnds) , ivec(ind)-1, cvecx('L',nbnds), fvec(lb) )
+        model.ptr_model, Cint(nbnds) , ivec(ind)-Cint(1), cvecx('L',nbnds), fvec(lb) )
 
     if ret != 0
         throw(XpressError(model))
@@ -359,7 +359,7 @@ function set_ub!(model::Model,ind::Vector{Int},ub::Vector)
         Ptr{Cchar},
         Ptr{Float64}
         ),
-        model.ptr_model, Cint(nbnds) , ivec(ind)-1, cvecx('U',nbnds), fvec(ub) )
+        model.ptr_model, Cint(nbnds) , ivec(ind)-Cint(1), cvecx('U',nbnds), fvec(ub) )
 
     if ret != 0
         throw(XpressError(model))
@@ -385,7 +385,7 @@ function set_rhs!(model::Model,ind::Vector{Int},rhs::Vector)
         Ptr{Cint},
         Ptr{Float64}
         ),
-        model.ptr_model, Cint(nels) , ivec(ind)-1, fvec(rhs) )
+        model.ptr_model, Cint(nels) , ivec(ind)-Cint(1), fvec(rhs) )
 
     if ret != 0
         throw(XpressError(model))
@@ -406,7 +406,7 @@ function set_rowtype!(model::Model,senses::Vector)
         Ptr{Cint},
         Ptr{Cchar}
         ),
-        model.ptr_model, Cint(rows) , ivec(ind)-1, cvec(senses) )
+        model.ptr_model, Cint(rows) , ivec(ind)-Cint(1), cvec(senses) )
 
     if ret != 0
         throw(XpressError(model))

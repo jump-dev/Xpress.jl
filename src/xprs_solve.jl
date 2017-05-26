@@ -347,8 +347,8 @@ function loadbasis(model::Model, x::Vector)#, status::Symbol = :unstarted, isnew
 
     length(x) != ncols && error("solution candidate size is different from the number of columns")
 
-    cvals = Array(Cint, ncols)
-    rvals = Array(Cint, nrows)
+    cvals = Array{Cint}( ncols)
+    rvals = Array{Cint}( nrows)
 
     # obtain situation of columns
 
@@ -415,11 +415,11 @@ function loadbasis(model::Model, rval::Vector{Cint}, cval::Vector{Cint})
     return nothing
 end
 function get_basis(model::Model)
-    cval = Array(Cint, num_vars(model))
-    cbasis = Array(Symbol, num_vars(model))
+    cval = Array{Cint}( num_vars(model))
+    cbasis = Array{Symbol}( num_vars(model))
 
-    rval = Array(Cint, num_constrs(model))
-    rbasis = Array(Symbol, num_constrs(model))
+    rval = Array{Cint}( num_constrs(model))
+    rbasis = Array{Symbol}( num_constrs(model))
 
     ret = @xprs_ccall(getbasis, Cint,
         (Ptr{Void},
@@ -449,8 +449,8 @@ end
 function get_iisdata(model::Model, num::Int)
 # num is the number of THE IIS to be queried
 
-    rows = Array(Cint,1)
-    cols = Array(Cint,1)
+    rows = Array{Cint}(1)
+    cols = Array{Cint}(1)
     ret = @xprs_ccall(getiisdata, Cint,
         (Ptr{Void},
             Cint,# num
@@ -473,8 +473,8 @@ function get_iisdata(model::Model, num::Int)
         throw(XpressError(model))
     end
 
-    rows_set = Array(Cint, rows[1])
-    cols_set = Array(Cint, cols[1])
+    rows_set = Array{Cint}( rows[1])
+    cols_set = Array{Cint}( cols[1])
 
     ret = @xprs_ccall(getiisdata, Cint,
         (Ptr{Void},
@@ -513,9 +513,9 @@ end
 function getdualray(model::Model)
 
 
-    dray = Array(Float64, num_constrs(model))
+    dray = Array{Float64}( num_constrs(model))
 
-    hasray = Array(Cint, 1)
+    hasray = Array{Cint}( 1)
 
     ret = @xprs_ccall(getdualray, Cint,
         (Ptr{Void},
@@ -537,9 +537,9 @@ end
 function getprimalray(model::Model)
 
 
-    pray = Array(Float64, num_vars(model))
+    pray = Array{Float64}( num_vars(model))
 
-    hasray = Array(Cint, 1)
+    hasray = Array{Cint}( 1)
 
     ret = @xprs_ccall(getprimalray, Cint,
         (Ptr{Void},
