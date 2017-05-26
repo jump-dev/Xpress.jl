@@ -13,7 +13,9 @@ type Model
 
     function Model(p::Ptr{Void}; finalize_env::Bool=false)
         model = new(p, nothing, finalize_env)
-        finalizer(model, m -> (free_model(m)) )
+        if finalize_env
+            finalizer(model, m -> (free_model(m)) )
+        end
         model
     end
 end
@@ -37,6 +39,7 @@ function Model(; finalize_env::Bool=false)
     
     # turn off default printing on unix
     setparam!(m, XPRS_OUTPUTLOG, 0)
+    setparam!(m, XPRS_CALLBACKFROMMASTERTHREAD, 1)
 
     load_empty(m)
 

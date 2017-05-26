@@ -80,7 +80,7 @@ module Xpress
     include("xprs_highlevel.jl")
 
     include("xprs_solve.jl")
-    #include("xprs_callbacks.jl")
+    include("xprs_callbacks.jl")
 
     include("XpressSolverInterface.jl")
 

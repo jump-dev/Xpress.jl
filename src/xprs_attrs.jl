@@ -73,8 +73,8 @@ end
 
 #@xprs_str_attr model_name  XPRS_PROBNAME
 
-@xprs_int_attr num_vars     XPRS_COLS
-@xprs_int_attr num_constrs  XPRS_ROWS
+@xprs_int_attr num_presolvedvars     XPRS_COLS
+@xprs_int_attr num_presolvedconstrs  XPRS_ROWS
 @xprs_int_attr num_sos      XPRS_SETS
 @xprs_int_attr num_qconstrs XPRS_QCONSTRAINTS
 @xprs_int_attr num_cnzs     XPRS_ELEMS
@@ -90,7 +90,9 @@ end
 #@xprs_int_attr num_binvars  "NumBinVars"
 
 @xprs_int_attr num_originalvars     XPRS_ORIGINALCOLS
+@xprs_int_attr num_vars     XPRS_ORIGINALCOLS
 @xprs_int_attr num_originalconstrs  XPRS_ORIGINALROWS
+@xprs_int_attr num_constrs  XPRS_ORIGINALROWS
 
 # derived attribute functions
 
