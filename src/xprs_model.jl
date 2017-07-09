@@ -6,13 +6,20 @@
 #
 #################################################
 
+"""
+    Model
+
+Type to hold an Xpress model
+"""
 type Model
     ptr_model::Ptr{Void}
     callback::Any
     finalize_env::Bool
+    
+    time::Float64
 
-    function Model(p::Ptr{Void}; finalize_env::Bool=false)
-        model = new(p, nothing, finalize_env)
+    function Model(p::Ptr{Void}; finalize_env::Bool=true)
+        model = new(p, nothing, finalize_env, 0.0)
         if finalize_env
             finalizer(model, m -> (free_model(m)) )
         end
@@ -20,46 +27,36 @@ type Model
     end
 end
 
-# If environment is tied to this model, the, we can safely finalize
-# both at the same time, working around the Julia GC.
-#function Model(env::Env; finalize_env::Bool=false)
-function Model(; finalize_env::Bool=false)
+"""
+    Model(; finalize_env::Bool=false)
 
-    #@assert is_valid(env)
+Xpress model constructor (autimatically sets OUTPUTLOG = 1)
+"""
+function Model(; finalize_env::Bool=true)
 
     a = Array{Ptr{Void}}( 1)
     ret = @xprs_ccall(createprob, Cint, ( Ptr{Ptr{Void}},), a )
-    #println(a)
     if ret != 0
         error("It was not possible to create a model, try running Env() and then create the model again.")
-        #throw(XpressError(env, ret))
     end
 
     m = Model(a[1]; finalize_env = finalize_env)
     
     # turn off default printing on unix
     setparam!(m, XPRS_OUTPUTLOG, 0)
-    setparam!(m, XPRS_CALLBACKFROMMASTERTHREAD, 1)
+    setparam!(m, XPRS_CALLBACKFROMMASTERTHREAD, 1) #cannot be changed in julia
 
     load_empty(m)
 
     return m
 end
-
-
-function Model(name::Compat.ASCIIString, sense::Symbol)
+function Model(name::Compat.ASCIIString, sense::Symbol = :minimize)
     model = Model()
     if sense != :minimize
         set_sense!(model, sense)
     end
     model
 end
-function Model(name::Compat.ASCIIString)
-    model = Model()
-    set_sense!(model, :minimize)
-    model
-end
-
 
 #################################################
 #
@@ -74,12 +71,13 @@ function get_error_msg(m::Model)
 
     error( unsafe_string(pointer(out))  )
 end
-function get_error_msg(m::Model,ret::Int)
+function get_error_msg(m::Model, ret::Int)
     #@assert env.ptr_env == 1
     out = Array{Cint}(1)
     out2 = @xprs_ccall(getintattrib, Cint,(Ptr{Void}, Cint, Ptr{Cint}),
         m.ptr_model, ret , out)
 end
+
 ##############################################
 # Error handling
 ##############################################
@@ -87,14 +85,11 @@ type XpressError
     code::Int
     msg::Compat.ASCIIString
 end
-#function XpressError(ret::Int,m::Model)#, code::Integer)
-#    XpressError( ret, get_error_msg(m) )#convert(Int, code), get_error_msg(env))
-#end
 function XpressError(m::Model)#, code::Integer)
     XpressError( 0, get_error_msg(m) )#convert(Int, code), get_error_msg(env))
 end
-function XpressError(m::Model,ret::Int)
-    XpressError( get_error_msg(m,ret), "get message from optimizer manual" )
+function XpressError(m::Model, ret::Int)
+    XpressError( get_error_msg(m, ret), "get message from optimizer manual" )
 end
 
 #################################################
@@ -105,8 +100,12 @@ end
 
 Base.unsafe_convert(ty::Type{Ptr{Void}}, model::Model) = model.ptr_model::Ptr{Void}
 
-function free_model(model::Model)
+"""
+    free_model(model::Model)
 
+Free all memory allocated in C related to Model
+"""
+function free_model(model::Model)
     if model.ptr_model != C_NULL
         ret = @xprs_ccall(destroyprob, Cint, (Ptr{Void},), model.ptr_model)
         if ret != 0
@@ -114,8 +113,17 @@ function free_model(model::Model)
         end
         model.ptr_model = C_NULL
     end
+
+    return nothing
 end
 
+"""
+    copy(model_src::Model)
+
+Creates copy of the Xpress Model
+
+Callbacks and setting are not copied
+"""
 function copy(model_src::Model)
     # only copies problem not callbacks and controls
     if model_src.ptr_model != C_NULL
@@ -127,6 +135,14 @@ function copy(model_src::Model)
         end
     end
     model_dest
+end
+function copycontrols!(mdest::Xpress.Model, msrc::Xpress.Model)
+    ret = Xpress.@xprs_ccall(copycontrols, Cint, (Ptr{Void}, Ptr{Void}),
+    mdest.ptr_model, msrc.ptr_model)
+    if ret != 0
+        throw(Xpress.XpressError(mdest))
+    end
+    nothing
 end
 
 
@@ -144,7 +160,7 @@ function load_empty(model::Model)
       mrwind[], const double dmatval[], const double dlb[], const double
       dub[]);
 =#
-    ret = @xprs_ccall(loadlp,Cint,
+    ret = @xprs_ccall(loadlp, Cint,
         (Ptr{Void},
             Ptr{UInt8},
             Cint,
@@ -167,6 +183,12 @@ function load_empty(model::Model)
     end
     nothing
 end
+
+"""
+    read_model(model::Model, filename::Compat.ASCIIString)
+
+Read file and add its informationt o the model
+"""
 function read_model(model::Model, filename::Compat.ASCIIString)
     #@assert is_valid(model.env)
     flags = ""
@@ -179,6 +201,12 @@ function read_model(model::Model, filename::Compat.ASCIIString)
     nothing
 end
 
+"""
+    write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString)
+
+Writes a model into file.
+For flags setting see the manual (writeprob)
+"""
 write_model(model::Model, filename::Compat.ASCIIString) = write_model(model, filename, "")
 function write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString)
     ret = @xprs_ccall(writeprob, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
@@ -189,6 +217,11 @@ function write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.A
     nothing
 end
 
+"""
+    fixglobals(model::Model, round::Bool)
+
+Fix globals entities after a first Global search.
+"""
 function fixglobals(model::Model, round::Bool)
     flag = 0
     if round
@@ -202,6 +235,11 @@ function fixglobals(model::Model, round::Bool)
     nothing
 end
 
+"""
+    setlogfile(model::Model, filename::Compat.ASCIIString)
+
+Attach a log file to the model
+"""
 function setlogfile(model::Model, filename::Compat.ASCIIString)
     #int XPRS_CC XPRSsetlogfile(XPRSprob prob, const char *filename);
 
@@ -214,11 +252,28 @@ function setlogfile(model::Model, filename::Compat.ASCIIString)
     nothing
 end
 
-# function presolve_model(model::Model)
-#     ret = @grb_ccall(presolvemodel, Ptr{Void}, (Ptr{Void},), model.ptr_model)
-#     if ret == C_NULL
-#         # Presumably failed to return a model
-#         error("presolve_model did not return a model")
-#     end
-#     return Model(model.env, ret)
-# end
+
+addcolnames(m::Xpress.Model, names::Vector) = addnames(m, names, Int32(2))
+addrownames(m::Xpress.Model, names::Vector) = addnames(m, names, Int32(1))
+function addnames(m::Xpress.Model, names::Vector, nametype::Int32)
+    # XPRSaddnames(prob, int type, char name[], int first, int last)
+
+    NAMELENGTH = 64
+    
+    #nametype = 2
+    first = 0
+    last = length(names)-1
+
+    cnames = ""
+    for str in names  
+        cnames = string(cnames, join(take(str,NAMELENGTH)), "\0")
+    end
+	ret = Xpress.@xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
+		m.ptr_model, nametype, cnames, first, last)
+
+	if ret != 0
+		throw(Xpress.XpressError(m))
+	end
+
+    nothing
+end

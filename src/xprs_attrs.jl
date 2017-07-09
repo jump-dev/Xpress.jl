@@ -5,41 +5,58 @@
 #   Low level attribute getters
 #
 ############################################
+"""
+    get_intattr(model::Model, ipar::Integer)
 
-function get_intattr(model::Model, ipar::Int)
-    a = Array{Cint}( 1)
-    ipar = convert(Cint,ipar)
+Return integer value corresponding to attribute with number `ipar`  
+"""
+function get_intattr(model::Model, ipar::Integer)
+    out = Array{Cint}(1)
+
     ret = @xprs_ccall(getintattrib, Cint,
-        (Ptr{Void}, Cint, Ptr{Cint}),
-        model.ptr_model, ipar, a);
+                      (Ptr{Void}, Cint, Ptr{Cint}),
+                      model.ptr_model, Cint(ipar), out)
     if ret != 0
-        throw( XpressError(model,ret  ) )
+        throw(XpressError(model, ret))
     end
-    convert(Int, a[1])
+
+    return convert(Cint, out[1])
 end
 
-function get_dblattr(model::Model, ipar::Int)
-    a = Array{Float64}( 1)
-    ipar = convert(Cint,ipar)
+"""
+    get_dblattr(model::Model, ipar::Integer)
+
+Return double value corresponding to attribute with number `ipar`  
+"""
+function get_dblattr(model::Model, ipar::Integer)
+    out = Array{Float64}(1)
+
     ret = @xprs_ccall(getdblattrib, Cint,
-        (Ptr{Void}, Cint, Ptr{Float64}),
-        model.ptr_model, ipar, a);
+                      (Ptr{Void}, Cint, Ptr{Float64}),
+                      model.ptr_model, Cint(ipar), out)
     if ret != 0
-        throw(XpressError(model,convert(Int, ret[1])))
+        throw(XpressError(model, convert(Int, ret)))
     end
-    a[1]::Float64
+
+    return out[1]::Float64
 end
 
-function get_strattr(model::Model, ipar::Int)
-    a = Array{Cchar}( 256)
-    ipar = convert(Cint,ipar)
+"""
+    get_strattr(model::Model, ipar::Integer)
+
+Return string value corresponding to attribute with number `ipar`  
+"""
+function get_strattr(model::Model, ipar::Integer)
+    out = zeros(Cchar,256)
+
     ret = @xprs_ccall(getstrattrib, Cint,
-        (Ptr{Void}, Cint, Ptr{Cchar}),
-        model.ptr_model, ipar, a)
+                      (Ptr{Void}, Cint, Ptr{Cchar}),
+                      model.ptr_model, Cint(ipar), out)
     if ret != 0
-        throw(XpressError(model,convert(Int, ret[1])))
+        throw(XpressError(model, convert(Int, ret)))
     end
-    String(pointer(a))
+
+    return unsafe_string(pointer(out))
 end
 
 
@@ -71,8 +88,6 @@ end
 
 # basic attributes
 
-#@xprs_str_attr model_name  XPRS_PROBNAME
-
 @xprs_int_attr num_presolvedvars     XPRS_COLS
 @xprs_int_attr num_presolvedconstrs  XPRS_ROWS
 @xprs_int_attr num_sos      XPRS_SETS
@@ -85,9 +100,7 @@ end
 
 @xprs_int_attr num_setmembers SETMEMBERS
 
-
 @xprs_dbl_attr obj_sense    XPRS_OBJSENSE
-#@xprs_int_attr num_binvars  "NumBinVars"
 
 @xprs_int_attr num_originalvars     XPRS_ORIGINALCOLS
 @xprs_int_attr num_vars     XPRS_ORIGINALCOLS
@@ -96,15 +109,48 @@ end
 
 # derived attribute functions
 
+"""
+    num_linconstrs(model::Model)
+
+Return the number of purely linear contraints in the Model
+"""
 num_linconstrs(model::Model) = num_constrs(model) - num_qconstrs(model)
 
+"""
+    model_sense(model::Model)
+
+Return a symbol that encodes the objective function sense. 
+The output is either `:minimize` or `:maximize`
+"""
 model_sense(model::Model) = obj_sense(model) == XPRS_OBJ_MINIMIZE ? (:minimize) : (:maximize)
 
+"""
+    is_qcp(model::Model)
+
+Return `true` if there are quadratic  constraints in the Model
+"""
 is_qcp(model::Model) = num_qconstrs(model) > 0
+
+"""
+    is_mip(model::Model)
+
+Return `true` if there are integer entities in the Model
+"""
 is_mip(model::Model) = num_intents(model)+num_sos(model) > 0
-is_qp(model::Model) = num_qnzs(model)>0
 
+"""
+    is_qp(model::Model)
 
+Return `true` if there are quadratic terms inthe objective in the Model
+"""
+is_qp(model::Model) = num_qnzs(model) > 0
+
+"""
+    model_type(model::Model)
+
+Return a symbol enconding the type of the model.]
+Options are: `:LP`, `:QP` and `:QCP`
+"""
 function model_type(model::Model)
     is_qp(model)  ? (:QP)  :
     is_qcp(model) ? (:QCP) : (:LP)
@@ -119,7 +165,12 @@ end
 #
 ############################################
 
-function show(io::IO, model::Model)
+"""
+    show(io::IO, model::Model)
+
+Prints a simplified model description
+"""
+function Base.show(io::IO, model::Model)
     if model.ptr_model != C_NULL
         println(io, "Xpress Model:"     )# $(model_name(model))")
         if is_mip(model)
@@ -147,56 +198,78 @@ end
 #   more setters and getters
 #
 ############################################
+"""
+    set_sense!(model::Model, sense::Symbol)
+
+Set the sense of the model.
+Options are `:minimize` and `:maximize`
+"""
 function set_sense!(model::Model, sense::Symbol)
     v = sense == :maximize ? XPRS_OBJ_MAXIMIZE :
         sense == :minimize ? XPRS_OBJ_MINIMIZE :
         throw(ArgumentError("Invalid model sense."))
 
+    set_sense!(model, v)
+
+    return nothing
+end
+function set_sense!(model::Model, sense::Integer)
+
     ret = @xprs_ccall(chgobjsense, Cint, (
             Ptr{Void},    # model
             Cint          # sense
             ),
-            model.ptr_model, v)
+            model.ptr_model, Cint(sense))
 
     if ret != 0
         throw(XpressError(model))
     end
 
+    return nothing
 end
 
-# note: this takes effect only after update_model! is called:
-function set_objcoeffs!(model::Model, inds::Vector{Int}, c::Vector)
+
+"""
+    set_objcoeffs!{I<:Integer,R<:Real}(model::Model, inds::Vector{I}, c::Vector{R})
+
+Sets coefficients `c` given indices in `inds` in the objective function of `model`
+"""
+function set_objcoeffs!{I<:Integer,R<:Real}(model::Model, inds::Vector{I}, c::Vector{R})
     n = num_vars(model)
-    length(c) == length(inds) || error("Inconsistent argument dimensions.")
-    n >= maximum(inds) || error("Inconsistent argument dimensions.")
+    _chklen(c,n)
+    _chklen(inds,n)
 
-        ret = @xprs_ccall(chgobj, Cint, (
-            Ptr{Void},    # model
-            Cint,          # sense
-            Ptr{Cint},
-            Ptr{Float64}
-            ),
-            model.ptr_model, Cint( length(c) ), ivec(inds)-Int32(1), fvec(c) )
+    ret = @xprs_ccall(chgobj, Cint, (
+        Ptr{Void},     # model
+        Cint,          # nels
+        Ptr{Cint}, # inds
+        Ptr{Float64} # vals
+        ),
+        model.ptr_model, Cint(n), ivec(inds)-Cint(1), fvec(c))
 
-        if ret != 0
-            throw(XpressError(model))
-        end
+    if ret != 0
+        throw(XpressError(model))
+    end
 
+    return nothing
 end
-function set_objcoeffs!(model::Model,c::Vector)
-    n = num_vars(model)
-    length(c) == n || error("Inconsistent argument dimensions.")
+"""
+    set_objcoeffs!{R<:Real}(model::Model, c::Vector{R})
+    set_obj!(model, c)
 
-    set_objcoeffs!(model,  collect(1:(n)) , c)
-end
-set_obj!(model::Model,c::Vector) = set_objcoeffs!(model,c)
+Sets coefficients in the objective of the dirst `length(c)` all variables.
+"""
+set_objcoeffs!{R<:Real}(model::Model, c::Vector{R}) = set_objcoeffs!(model, collect(1:length(c)), c)
+set_obj!(model, c) = set_objcoeffs!(model,c)
 
+"""
+    get_lb!(model::Model, lb::Vector{Float64})
 
-function get_lb(model::Model)
-
+Return the lower bounds for all variables in the vector lb.
+"""
+function get_lb!(model::Model, lb::Vector{Float64})
     cols = num_vars(model)
-
-    out = Array{Float64}(cols)
+    _chklen(lb,cols)
 
     ret = @xprs_ccall(getlb, Cint, (
         Ptr{Void},    # model
@@ -204,21 +277,41 @@ function get_lb(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, cols-Int32(1))
+        model.ptr_model, lb, Cint(0), Cint(cols-1))
 
     if ret != 0
         throw(XpressError(model))
     end
 
+    return nothing
+end
+
+"""
+    get_lb(model::Model)
+    lowerbounds(model::Model)
+
+Return vector of lowebounds with length equals to the number of variables in the model.
+"""
+function get_lb(model::Model)
+
+    cols = num_vars(model)
+    out = Array{Float64}(cols)
+
+    get_lb!(model, out)
+
     return out
 end
 lowerbounds(model::Model) = get_lb(model)
 
-function get_ub(model::Model)
+"""
+    get_ub!(model::Model, ub::Vector{Float64})
+
+Return the upper bounds for all variables in the vector ub.
+"""
+function get_ub!(model::Model, ub::Vector{Float64})
 
     cols = num_vars(model)
-
-    out = Array{Float64}(cols)
+    _chklen(ub,cols)
 
     ret = @xprs_ccall(getub, Cint, (
         Ptr{Void},    # model
@@ -226,45 +319,84 @@ function get_ub(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, cols-Int32(1))
+        model.ptr_model, ub, Cint(0), Cint(cols-1))
 
     if ret != 0
         throw(XpressError(model))
     end
 
+    return nothing
+end
+
+"""
+    get_ub(model::Model)
+    upperbounds(model::Model)
+
+Return vector of upperbounds with length equals to the number of variables in the model.
+"""
+function get_ub(model::Model)
+
+    cols = num_vars(model)
+    out = Array{Float64}(cols)
+
+    get_ub!(model, out)
+
     return out
 end
 upperbounds(model::Model) = get_ub(model)
 
+"""
+    get_obj!(model::Model, obj::Vector{Float64})
 
-
-function get_obj(model::Model)
+Return the upper bounds for all variables in the vector obj.
+"""
+function get_obj!(model::Model, obj::Vector{Float64})
 
     cols = num_vars(model)
-
-    out = Array{Float64}(cols)
-
+    _chklen(obj,cols)
+    
     ret = @xprs_ccall(getobj, Cint, (
         Ptr{Void},    # model
         Ptr{Float64},
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, cols-Int32(1))
+        model.ptr_model, obj, Cint(0), Cint(cols-1))
 
     if ret != 0
         throw(XpressError(model))
     end
 
+    return nothing
+end
+
+"""
+    get_obj(model::Model)
+    upperbounds(model::Model)
+
+Return vector of objective coefficients with length equals to the number of variables in the model.
+"""
+function get_obj(model::Model)
+
+    cols = num_vars(model)
+    out = Array{Float64}(cols)
+
+    get_obj!(model, out)
+
     return out
 end
 objcoeffs(model::Model) = get_obj(model)
 
-function get_rhs(model::Model)
+
+"""
+    get_rhs!(model::Model, rhs::Vector{Float64})
+
+Return the rhs for all constraints in the vector obj.
+"""
+function get_rhs!(model::Model, rhs::Vector{Float64})
 
     rows = num_constrs(model)
-
-    out = Array{Float64}(rows)
+    _chklen(rhs,rows)
 
     ret = @xprs_ccall(getrhs, Cint, (
         Ptr{Void},    # model
@@ -272,19 +404,40 @@ function get_rhs(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, rows-Cint(1))
+        model.ptr_model, rhs, Cint(0), Cint(rows-1))
 
     if ret != 0
         throw(XpressError(model))
     end
 
-    return out
+    return nothing
 end
-function get_rowtype(model::Model)
+
+"""
+    get_rhs(model::Model)
+
+Return a vector of rhs with length equals to the number of variables in the model.
+"""
+function get_rhs(model::Model)
 
     rows = num_constrs(model)
+    out = Array{Float64}(rows)
 
-    out = Array{Cchar}(rows)
+    get_rhs!(model, out)
+
+    return out
+end
+
+"""
+    get_rowtype!(model::Model, sense::Vector{Cchar})
+
+Return the sense for all constraints in the vector sense of Cchar.
+Options are XPRS_LEQ = 'L', XPRS_GEQ = 'G', XPRS_EQ = 'E'.
+"""
+function get_rowtype!(model::Model, sense::Vector{Cchar})
+
+    rows = num_constrs(model)
+    _chklen(sense,rows)
 
     ret = @xprs_ccall(getrowtype, Cint, (
         Ptr{Void},    # model
@@ -292,22 +445,41 @@ function get_rowtype(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, rows-Cint(1))
+        model.ptr_model, sense, Cint(0), Cint(rows-1))
 
     if ret != 0
         throw(XpressError(model))
     end
 
+    return nothing
+end
+
+"""
+    get_rowtype(model::Model)
+
+Return a vector of senses with length equals to the number of constraints in the model.
+Options are XPRS_LEQ = 'L', XPRS_GEQ = 'G', XPRS_EQ = 'E'.
+"""
+function get_rowtype(model::Model)
+
+    rows = num_constrs(model)
+    out = Array{Cchar}(rows)
+
+    get_rowtype!(model, out)
+
     return out
 end
 
 
+"""
+    get_coltype!(model::Model, coltype::Vector{Cchar})
 
-function get_coltype(model::Model)
-
+Return the type for all constraints in the vector coltype of Cchar.
+Options are XPRS_CONTINUOUS = 'C', XPRS_INTEGER = 'I', XPRS_BINARY = 'B'.
+"""
+function get_coltype!(model::Model, coltype::Vector{Cchar})
     cols = num_vars(model)
-
-    out = Array{Cchar}(cols)
+    _chklen(coltype,cols)
 
     ret = @xprs_ccall(getcoltype, Cint, (
         Ptr{Void},    # model
@@ -315,18 +487,32 @@ function get_coltype(model::Model)
         Cint,
         Cint
         ),
-        model.ptr_model, out, 0, cols-Cint(1))
+        model.ptr_model, coltype, 0, cols-Cint(1))
 
     if ret != 0
         throw(XpressError(model))
     end
+
+    return nothing
+end
+
+"""
+    get_coltype(model::Model)
+
+Return a vector of type with length equals to the number of variables in the model.
+Options are XPRS_CONTINUOUS = 'C', XPRS_INTEGER = 'I', XPRS_BINARY = 'B'.
+"""
+function get_coltype(model::Model)
+
+    cols = num_vars(model)
+    out = Array{Cchar}(cols)
+
+    get_coltype!(model, out)
 
     return out
 end
 
-function set_lb!(model::Model,ind::Vector{Int},lb::Vector)
-
-    nbnds = length(ind)
+function unsafe_chgbounds!(model::Model, len::Cint, inds::Vector{Cint}, btype::Vector{Cchar},  lb::Vector{Float64})
 
     ret = @xprs_ccall(chgbounds, Cint, (
         Ptr{Void},    # model
@@ -335,87 +521,140 @@ function set_lb!(model::Model,ind::Vector{Int},lb::Vector)
         Ptr{Cchar},
         Ptr{Float64}
         ),
-        model.ptr_model, Cint(nbnds) , ivec(ind)-Cint(1), cvecx('L',nbnds), fvec(lb) )
+        model.ptr_model, len, inds, btype, lb)
 
     if ret != 0
         throw(XpressError(model))
     end
+    return nothing
 end
-function set_lb!(model::Model,lb::Vector)
+chgbounds!(model::Model, inds::Vector{Cint}, btype::Vector{Cchar},  lb::Vector{Float64}) = unsafe_chgbounds!(model, Cint(length(inds)), inds-Cint(1), btype,  lb)
 
+"""
+    set_lb!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, lb::Vector{R})
+
+Sets lower bounds `lb` given variable indices in `inds` of `model`
+
+    set_lb!{R<:Real}(model::Model, lb::Vector{R})
+
+Sets lower bounds to all variables up to `length(lb)`. 
+`length(lb)` must be smaller than the number of variables.
+"""
+function set_lb!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, lb::Vector{R})
+    nbnds = length(inds)
+    chgbounds!(model, ivec(inds), cvecx('L', nbnds),  fvec(lb))
+    return nothing
+end
+function set_lb!{R<:Real}(model::Model, lb::Vector{R})
     cols = num_vars(model)
-    ( cols == length(lb) ) || error("wrong size of LB vector")
-
-    ind = collect(1:cols)
-
-    set_lb!(model,ind,lb)
+    _chklen(lb,cols)
+    ind = inds32(cols)
+    set_lb!(model, ind, lb)
+    return nothing
 end
-function set_ub!(model::Model,ind::Vector{Int},ub::Vector)
 
-    nbnds = length(ind)
+"""
+    set_ub!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, ub::Vector{R})
 
-    ret = @xprs_ccall(chgbounds, Cint, (
-        Ptr{Void},    # model
-        Cint,
-        Ptr{Cint},
-        Ptr{Cchar},
-        Ptr{Float64}
-        ),
-        model.ptr_model, Cint(nbnds) , ivec(ind)-Cint(1), cvecx('U',nbnds), fvec(ub) )
+Sets upper bounds `ub` given variable indices in `inds` of `model`
 
-    if ret != 0
-        throw(XpressError(model))
-    end
+    set_ub!{R<:Real}(model::Model, ub::Vector{R})
+
+Sets upper bounds to all variables up to `length(ub)`. 
+`length(ub)` must be smaller than the number of variables.
+"""
+function set_ub!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, ub::Vector{R})
+    nbnds = length(inds)
+    chgbounds!(model, ivec(inds), cvecx('U', nbnds),  fvec(ub))
+    return nothing
 end
-function set_ub!(model::Model,ub::Vector)
-
+function set_ub!{R<:Real}(model::Model, ub::Vector{R})
     cols = num_vars(model)
-    ( cols == length(ub) ) || error("wrong size of UB vector")
-
-    ind = collect(1:cols)
-
+    _chklen(ub,cols)
+    ind = inds32(cols)
     set_ub!(model,ind,ub)
+    return nothing
 end
 
-function set_rhs!(model::Model,ind::Vector{Int},rhs::Vector)
 
-    nels = length(ind)
-
+function unsafe_chgrhs!(model::Model, nels::Cint, inds::Vector{Cint}, rhs::Vector{Float64})
     ret = @xprs_ccall(chgrhs, Cint, (
         Ptr{Void},    # model
         Cint,
         Ptr{Cint},
         Ptr{Float64}
         ),
-        model.ptr_model, Cint(nels) , ivec(ind)-Cint(1), fvec(rhs) )
+        model.ptr_model, nels, inds, rhs)
 
     if ret != 0
         throw(XpressError(model))
     end
+    return nothing
 end
-function set_rhs!(model::Model, rhs::Vector)
-    rows = num_constrs(model)
-    set_rhs!(model, collect(1:rows) ,fvec(rhs) )
+chgrhs!(model::Model, inds::Vector{Cint}, rhs::Vector{Float64}) = unsafe_chgrhs!(model, Cint(length(inds)), inds-Cint(1), rhs)
+
+"""
+    set_rhs!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, rhs::Vector{R})
+
+Sets coefficients `rhs` given indices in `inds` in the rhs of `model`
+
+    set_rhs!{R<:Real}(model::Model, lb::Vector{R})
+
+Sets coefficients in the rhs of all constraints up to `length(rhs)`. 
+`length(rhs)` must be smaller than the number of constraints.
+"""
+function set_rhs!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, rhs::Vector{R})
+    nels = length(inds)
+    chgrhs!(model, ivec(inds), fvec(rhs))
+    return nothing
+end
+function set_rhs!{R<:Real}(model::Model, rhs::Vector{R})
+    rows = length(rhs)
+    set_rhs!(model, inds32(rows), rhs)
 end
 
-function set_rowtype!(model::Model,senses::Vector)
+"""
+    set_rowtype!{I<:Integer}(model::Model, inds::Vector{I}, senses::Vector{Cchar})
 
-    rows = num_constrs(model)
-    ind = collect(1:rows)
+Sets row type `senses` for given indices in `inds`
+
+    set_rowtype!(model::Model, senses::Vector{Cchar})
+
+Sets row type in all constraints up to `length(senses)`. 
+`length(senses)` must be smaller than the number of constraints.
+"""
+function set_rowtype!{I<:Integer}(model::Model, inds::Vector{I}, senses::Vector{Cchar})
+    
+    rows = length(senses)
     ret = @xprs_ccall(chgrowtype, Cint, (
         Ptr{Void},    # model
         Cint,
         Ptr{Cint},
         Ptr{Cchar}
         ),
-        model.ptr_model, Cint(rows) , ivec(ind)-Cint(1), cvec(senses) )
+        model.ptr_model, Cint(rows) , ivec(inds)-Cint(1), cvec(senses) )
 
     if ret != 0
         throw(XpressError(model))
     end
+
+    return nothing
+end
+function set_rowtype!(model::Model, senses::Vector{Cchar})
+
+    rows = length(senses)
+    inds = inds32(rows)
+    set_rowtype!(model, inds, senses)
+
+    return nothing
 end
 
-function set_constrLB!(model::Model, lb)
+"""
+    set_constrLB!{R<:Real}(model::Model, lb::Vector{R})
+
+Change constraints lower bounds up to `length(lb)`
+"""
+function set_constrLB!{R<:Real}(model::Model, lb::Vector{R})
     # should only work for liner constraints
 
     nlrows = num_linconstrs(model)
@@ -426,9 +665,9 @@ function set_constrLB!(model::Model, lb)
     sense_changed = false
 
     for i = 1:length(lrows)
-        if senses[lrows[i]] == XPRS_GEQ || senses[lrows[i]] == XPRS_EQ
+        #if senses[lrows[i]] == XPRS_GEQ || senses[lrows[i]] == XPRS_EQ
             # Do nothing
-        elseif senses[lrows[i]] == XPRS_LEQ
+        if senses[lrows[i]] == XPRS_LEQ
             if lb[i] != -Inf
                 # LEQ constraint with non-NegInf LB implies a range
                 if isapprox(lb[i], rhs[lrows[i]])
@@ -446,13 +685,15 @@ function set_constrLB!(model::Model, lb)
     if sense_changed
         set_rowtype!(model, senses)
     end
-
-
     set_rhs!(model, lrows, lb)
-    #set_rhs!(model, lb)
 end
 
-function set_constrUB!(model::Model, ub)
+"""
+    set_constrUB!{R<:Real}(model::Model, ub::Vector{R})
+
+Change constraints upper bounds up to `length(ub)`
+"""
+function set_constrUB!{R<:Real}(model::Model, ub::Vector{R})
 
     nlrows = num_linconstrs(model)
     lrows = get_lrows(model)[1:length(ub)]
@@ -461,9 +702,9 @@ function set_constrUB!(model::Model, ub)
     rhs    = get_rhs(model)
     sense_changed = false
     for i = 1:length(lrows)
-        if senses[lrows[i]] == XPRS_LEQ || senses[lrows[i]] == XPRS_EQ
+        #if senses[lrows[i]] == XPRS_LEQ || senses[lrows[i]] == XPRS_EQ
             # Do nothing
-        elseif senses[lrows[i]] == XPRS_GEQ
+        if senses[lrows[i]] == XPRS_GEQ
             if ub[i] != Inf
                 # GEQ constraint with non-PosInf UB implies a range
                 if isapprox(ub[i], rhs[lrows[i]])
@@ -482,5 +723,4 @@ function set_constrUB!(model::Model, ub)
         set_rowtype!(model, senses)
     end
     set_rhs!(model, lrows, ub)
-    #set_rhs!(model, ub)
 end

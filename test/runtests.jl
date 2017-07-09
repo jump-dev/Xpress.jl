@@ -1,3 +1,5 @@
+using Xpress, Base.Test
+
 tests = ["lp_01a", 
          "lp_01b", 
          "lp_02", 

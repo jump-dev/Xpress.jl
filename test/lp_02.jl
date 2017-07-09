@@ -24,6 +24,8 @@ model = xpress_model(
 
 println(model)
 
+write_model(model, "out.lp", "l")
+
 optimize(model)
 
 println()

@@ -10,6 +10,7 @@ lazy_solvers, lazylocal_solvers, cut_solvers, cutlocal_solvers, heur_solvers, in
 quad_solvers = Any[]
 quad_mip_solvers = copy(quad_solvers)
 soc_solvers = copy(quad_solvers)
+quad_soc_solvers = copy(quad_solvers)
 rsoc_solvers = Any[]
 nlp_solvers = Any[]
 convex_nlp_solvers = copy(nlp_solvers)
@@ -30,6 +31,7 @@ soc_solvers = [XpressSolver()]
 rsoc_solvers = [XpressSolver()]
 
 quad_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
+quad_soc_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
 quad_mip_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
 
 include(Pkg.dir("JuMP","test","model.jl"))

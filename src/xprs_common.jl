@@ -24,13 +24,16 @@ cvec(v::Vector) = convert(CVec, v)
 
 ivec(v::Int) = Cint[v]
 fvec(v::Float64) = Float64[v]
+fvec(v::Integer) = Float64[v]
 #cvec(v::Vector) = convert(CVec, v)
 
 # cvecx(v, n) and fvecx(v, n)
 # converts v into a vector of Cchar or Float64 of length n,
 # where v can be either a scalar or a vector of length n.
 
+_chklen(n::Integer, v::Vector) = _chklen(v, n::Integer) 
 _chklen(v, n::Integer) = (length(v) == n || error("Inconsistent argument dimensions."))
+_cmplen(v1::Vector, v2::Vector) = (length(v1) == length(v2) || error("Inconsistent argument dimensions."))
 
 cvecx(c::GChars, n::Integer) = fill(cchar(c), n)
 cvecx(c::Vector{Cchar}, n::Integer) = (_chklen(c, n); c)
@@ -39,6 +42,8 @@ cvecx(c::Vector{Char}, n::Integer) = (_chklen(c, n); convert(Vector{Cchar}, c))
 fvecx(v::Real, n::Integer) = fill(Float64(v), n)
 fvecx(v::Vector{Float64}, n::Integer) = (_chklen(v, n); v)
 fvecx{T<:Real}(v::Vector{T}, n::Integer) = (_chklen(v, n); convert(Vector{Float64}, v))
+
+inds32(n::Integer) = collect(Cint(1):Cint(n))
 
 # empty vector & matrix (for the purpose of supplying default arguments)
 
@@ -61,7 +66,11 @@ macro xprs_ccall(func, args...)
     end
 end
 
-# Xpress library version
+"""
+    getlibversion()
+
+Get Xpress optimizer version info
+"""
 function getlibversion()
     out = Array{Cchar}( 16)                                     # "                "
     ret = @xprs_ccall(getversion, Cint, ( Ptr{Cchar},), out)   # ( Cstring,), out)
@@ -74,7 +83,17 @@ function getlibversion()
 
     return  VersionNumber(_major, _minor, _tech)
 end
-
-# version need not be export
-# one can write Xpress.version to get the version numbers
 #const version = getlibversion()
+
+function fixinfinity(val::Float64)
+    if val == Inf
+        return XPRS_PLUSINFINITY
+    elseif val == -Inf
+        return XPRS_MINUSINFINITY
+    else
+        return val
+    end
+end
+function fixinfinity!(vals::Vector{Float64})
+    map!(fixinfinity, vals, vals)
+end

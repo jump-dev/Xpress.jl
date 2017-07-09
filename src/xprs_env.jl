@@ -1,5 +1,10 @@
 # Xpress environment and other supporting facilities
+"""
+    Env()
 
+Initialize Xpress environment.
+Need to do ir once and only once.
+"""
 function Env()
     ret = @xprs_ccall(init, Cint, (Ptr{Cchar},), C_NULL)
     if ret != 0
@@ -12,15 +17,16 @@ function Env()
     # finalizer(env, free_env)  ## temporary disable: which tends to sometimes caused warnings
 end
 
-#Base.unsafe_convert(ty::Type{Ptr{Void}}, env::Env) = env.ptr_env::Ptr{Void}
-
 function is_valid()
     #env.ptr_env == 1
     error("is_valid does not apply to xpress models")
 end
 
+"""
+    free_env()
+
+Finalize Xpress environment.
+"""
 function free_env()
     ret = @xprs_ccall(free, Cint, ())
 end
-
-## errors are handled in model level

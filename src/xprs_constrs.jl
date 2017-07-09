@@ -1,16 +1,19 @@
 ## Add Linear constraints
 
-# add single constraint
-
-function add_constr!(model::Model, inds::IVec, coeffs::FVec, rel::Cchar, rhs::Float64)
-    if rel == convert(Cchar,'>')
-        rel = XPRS_GEQ
-    elseif rel == convert(Cchar,'<')
-        rel = XPRS_LEQ
-    elseif rel == convert(Cchar,'=')
-        rel = XPRS_EQ
+function constrainttype(rel)
+    if rel == Cchar('>') || rel == XPRS_GEQ
+        return XPRS_GEQ
+    elseif rel == Cchar('<') || rel == XPRS_LEQ
+        return XPRS_LEQ
     end
+    # elseif rel == Cchar('=')
+    return XPRS_EQ
+end
 
+function add_constr!(model::Model, inds::Vector{Cint}, coeffs::Vector{Float64}, rel::Cchar, rhs::Float64)
+
+    rel = constrainttype(rel)
+    
     length(inds) == length(coeffs) || error("Inconsistent argument dimensions.")
 
     ret = @xprs_ccall(addrows, Cint,(
@@ -30,31 +33,43 @@ function add_constr!(model::Model, inds::IVec, coeffs::FVec, rel::Cchar, rhs::Fl
     if ret != 0
         throw(XpressError(model))
     end
-    nothing
+
+    return nothing
 end
 
-function add_constr!(model::Model, inds::Vector, coeffs::Vector, rel::GChars, rhs::Real)
+"""
+    add_constr!{I<:Integer,R<:Real}(model::Model, inds::Vector{I}, coeffs::Vector{R}, rel::GChars, rhs::Real)
+
+Adds a single constraint  to the model.
+"""
+function add_constr!{I<:Integer,R<:Real}(model::Model, inds::Vector{I}, coeffs::Vector{R}, rel::GChars, rhs::Real)
     add_constr!(model, ivec(inds), fvec(coeffs), cchar(rel), Float64(rhs))
 end
 
+"""
+    add_constr!(model::Model, coeffs::Vector, rel::GChars, rhs::Real)
+
+Adds a constraint based on a dense vector os coefficients `coeffs` 
+"""
 function add_constr!(model::Model, coeffs::Vector, rel::GChars, rhs::Real)
     inds = find(coeffs)
     vals = coeffs[inds]
     add_constr!(model, inds, vals, rel, rhs)
 end
 
-# add multiple constraints
+"""
+    add_constrs!(model::Model, cbeg::Vector, inds::Vector, coeffs::Vector, rel::GCharOrVec, rhs::Vector)
 
-function add_constrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec, rel::CVec, rhs::FVec)
+Adds multiple rows in sparse(not julia standard) form (see Xpress manual)
+
+    add_constrs!(model::Model, A::CoeffMat, rel::GCharOrVec, b::Vector{Float64})
+
+Adds multiple rows in dense or SparseMatrixCSC form (see Xpress manual)
+"""
+function add_constrs!(model::Model, cbegins::Vector{Cint}, inds::Vector{Cint}, coeffs::Vector{Float64}, rel::Vector{Cchar}, rhs::Vector{Float64})
 
     for i in 1:length(rel)
-        if rel[i] == convert(Cchar,'>')
-            rel[i] = XPRS_GEQ
-        elseif rel[i] == convert(Cchar,'<')
-            rel[i] = XPRS_LEQ
-        elseif rel[i] == convert(Cchar,'=')
-            rel[i] = XPRS_EQ
-        end
+        rel[i] = constrainttype(rel[i])
     end
 
     m = length(cbegins)
@@ -68,8 +83,8 @@ function add_constrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec, rel
             Cint, #number nonzeros
             Ptr{Cchar}, #cstr type
             Ptr{Float64}, # rhs
-            Ptr{Float64}, # range (size new row)
-            Ptr{Cint}, # start (size newrow)
+            Ptr{Float64}, # range (size new row) - no range constraints
+            Ptr{Cint}, # start (size newrow) - offsets of coefficientes by each new row
             Ptr{Cint}, # ind (size new nz)
             Ptr{Float64} # val (size newnz)
             ),
@@ -82,32 +97,45 @@ function add_constrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec, rel
     end
     nothing
 end
-
 function add_constrs!(model::Model, cbeg::Vector, inds::Vector, coeffs::Vector, rel::GCharOrVec, rhs::Vector)
     add_constrs!(model, ivec(cbeg), ivec(inds), fvec(coeffs), cvecx(rel, length(cbeg)), fvec(rhs))
 end
-
-function add_constrs_t!(model::Model, At::SparseMatrixCSC{Float64}, rel::GCharOrVec, b::Vector)
-    n, m = size(At)
-    (m == length(b) && n == num_vars(model)) || error("Incompatible argument dimensions.")
-    add_constrs!(model, At.colptr[1:At.n], At.rowval, At.nzval, rel, b)
-end
-
-function add_constrs_t!(model::Model, At::Matrix{Float64}, rel::GCharOrVec, b::Vector)
-    n, m = size(At)
-    (m == length(b) && n == num_vars(model)) || error("Incompatible argument dimensions.")
-    add_constrs_t!(model, sparse(At), rel, b)
-end
-
 function add_constrs!(model::Model, A::CoeffMat, rel::GCharOrVec, b::Vector{Float64})
     m, n = size(A)
     (m == length(b) && n == num_vars(model)) || error("Incompatible argument dimensions.")
     add_constrs_t!(model, transpose(A), rel, b)
 end
 
+"""
+    add_constrs_t!(model::Model, At::SparseMatrixCSC{Float64}, rel::GCharOrVec, b::Vector)
 
-# add single range constraint
+add multiple constrints given in transpose sparse form.
 
+    add_constrs_t!(model::Model, At::Matrix{Float64}, rel::GCharOrVec, b::Vector)
+
+
+add multiple constrints given in transpose dense form.
+"""
+function add_constrs_t!(model::Model, At::SparseMatrixCSC{Float64}, rel::GCharOrVec, b::Vector)
+    n, m = size(At)
+    (m == length(b) && n == num_vars(model)) || error("Incompatible argument dimensions.")
+    add_constrs!(model, At.colptr[1:At.n], At.rowval, At.nzval, rel, b)
+end
+function add_constrs_t!(model::Model, At::Matrix{Float64}, rel::GCharOrVec, b::Vector)
+    n, m = size(At)
+    (m == length(b) && n == num_vars(model)) || error("Incompatible argument dimensions.")
+    add_constrs_t!(model, sparse(At), rel, b)
+end
+
+"""
+    add_rangeconstr!(model::Model, inds::Vector, coeffs::Vector, lb::Real, ub::Real)
+    
+Adds single range constraint in sparse format
+
+    add_rangeconstr!(model::Model, coeffs::Vector, lb::Real, ub::Real)
+
+Adds single range constraint in dense format
+"""
 function add_rangeconstr!(model::Model, inds::IVec, coeffs::FVec, lb::Float64, ub::Float64)
     # b = ub
     r = ub - lb
@@ -129,20 +157,24 @@ function add_rangeconstr!(model::Model, inds::IVec, coeffs::FVec, lb::Float64, u
     end
     nothing
 end
-
 function add_rangeconstr!(model::Model, inds::Vector, coeffs::Vector, lb::Real, ub::Real)
     add_rangeconstr!(model, ivec(inds), fvec(coeffs), Float64(lb), Float64(ub))
 end
-
 function add_rangeconstr!(model::Model, coeffs::Vector, lb::Real, ub::Real)
     inds = find(coeffs)
     vals = coeffs[inds]
     add_rangeconstr!(model, inds, vals, lb, ub)
 end
 
+"""
+    add_rangeconstrs!(model::Model, cbeg::Vector, inds::Vector, coeffs::Vector, lb::Vector, ub::Vector)
 
-# add multiple range constraints
+Adds multiple rows in sparse(not julia standard) form (see Xpress manual)
 
+    add_rangeconstrs!(model::Model, A::CoeffMat, lb::Vector, ub::Vector)
+
+Adds multiple rows in dense or SparseMatrixCSC form (see Xpress manual)
+"""
 function add_rangeconstrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec, lb::FVec, ub::FVec)
     m = length(cbegins)
     nnz = length(inds)
@@ -170,11 +202,24 @@ function add_rangeconstrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec
     end
     nothing
 end
-
 function add_rangeconstrs!(model::Model, cbeg::Vector, inds::Vector, coeffs::Vector, lb::Vector, ub::Vector)
     add_rangeconstrs!(model, ivec(cbeg), ivec(inds), fvec(coeffs), fvec(lb), fvec(ub))
 end
+function add_rangeconstrs!(model::Model, A::CoeffMat, lb::Vector, ub::Vector)
+    m, n = size(A)
+    (m == length(lb) == length(ub) && n == num_vars(model)) || error("Incompatible argument dimensions.")
+    add_rangeconstrs_t!(model, transpose(A), lb, ub)
+end
 
+"""
+    add_rangeconstrs_t!(model::Model, At::SparseMatrixCSC{Float64}, lb::Vector, ub::Vector)
+
+add multiple constrints given in transpose sparse form.
+
+    add_rangeconstrs_t!(model::Model, At::Matrix{Float64}, lb::Vector, ub::Vector)
+
+add multiple constrints given in transpose dense form.
+"""
 function add_rangeconstrs_t!(model::Model, At::SparseMatrixCSC{Float64}, lb::Vector, ub::Vector)
     add_rangeconstrs!(model, At.colptr[1:At.n], At.rowval, At.nzval, lb, ub)
 end
@@ -183,16 +228,11 @@ function add_rangeconstrs_t!(model::Model, At::Matrix{Float64}, lb::Vector, ub::
     add_rangeconstrs_t!(model, sparse(At), lb, ub)
 end
 
-function add_rangeconstrs!(model::Model, A::CoeffMat, lb::Vector, ub::Vector)
-    m, n = size(A)
-    (m == length(lb) == length(ub) && n == num_vars(model)) || error("Incompatible argument dimensions.")
+"""
+    get_constrmatrix(model::Model)
 
-    add_rangeconstrs_t!(model, transpose(A), lb, ub)
-end
-
-# prepare macros for retrieving numvars and num cols and num NNZ
-
-
+Return constraint matrix (A) in SparseMatrixCSC form.
+"""
 function get_constrmatrix(model::Model)
     nnz = num_cnzs(model)
     m = num_constrs(model)
@@ -211,14 +251,7 @@ function get_constrmatrix(model::Model)
                      Cint,
                      Cint
                      ),
-                     model.ptr_model,
-                     cbeg,
-                     cind,
-                     cval,
-                     nnz,
-                     numnzP,
-                     0,
-                     m-Cint(1))
+                     model.ptr_model, cbeg, cind, cval, nnz, numnzP, 0, m-Cint(1))
     if ret != 0
         throw(XpressError(model))
     end
@@ -236,7 +269,14 @@ function get_constrmatrix(model::Model)
     return sparse(I, J, V, m, n)
 end
 
-function add_sos!(model::Model, sostype::Symbol, idx::Vector{Int}, weight::Vector{Cdouble})
+"""
+    add_sos!(model::Model, sostype::Symbol, idx::Vector{Cint}, weight::Vector{Float64})
+
+Add SOS constraint of type `sostype`
+Options are `:SOS1` and `:SOS2`
+"""
+add_sos!{I<:Integer, R<:Real}(model::Model, sostype::Symbol, idx::Vector{I}, weight::Vector{R}) = add_sos!(model, sostype, ivec(idx), fvec(weight))
+function add_sos!(model::Model, sostype::Symbol, idx::Vector{Cint}, weight::Vector{Float64})
     ((nelem = length(idx)) == length(weight)) || error("Index and weight vectors of unequal length")
     (sostype == :SOS1) ? (typ = XPRS_SOS_TYPE1) : ( (sostype == :SOS2) ? (typ = XPRS_SOS_TYPE2) : error("Invalid SOS constraint type") )
     ret = @xprs_ccall(addsets, Cint, (
@@ -260,6 +300,11 @@ function add_sos!(model::Model, sostype::Symbol, idx::Vector{Int}, weight::Vecto
     end
 end
 
+"""
+    del_constrs!{T<:Real}(model::Model, idx::Vector{T})
+
+Delete constraintes indexed in `idx`
+"""
 del_constrs!{T<:Real}(model::Model, idx::T) = del_constrs!(model, Cint[idx])
 del_constrs!{T<:Real}(model::Model, idx::Vector{T}) = del_constrs!(model, convert(Vector{Cint},idx))
 function del_constrs!(model::Model, idx::Vector{Cint})
@@ -274,7 +319,11 @@ function del_constrs!(model::Model, idx::Vector{Cint})
     end
 end
 
+"""
+    chg_coeffs!{T<:Real, S<:Real}(model::Model, cidx::Vector{T}, vidx::Vector{T}, val::Vector{S})
 
+Change multiple coefficients of the `A` matrix given constraints `cidx`, variables `vidx` and values `val` 
+"""
 chg_coeffs!{T<:Real, S<:Real}(model::Model, cidx::T, vidx::T, val::S) = chg_coeffs!(model, Cint[cidx], Cint[vidx], val)
 chg_coeffs!{T<:Real, S<:Real}(model::Model, cidx::Vector{T}, vidx::Vector{T}, val::Vector{S}) = chg_coeffs!(model, convert(Vector{Cint},cidx), convert(Vector{Cint},vidx), fvec(val))
 function chg_coeffs!(model::Model, cidx::Vector{Cint}, vidx::Vector{Cint}, val::FVec)
