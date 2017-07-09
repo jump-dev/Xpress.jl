@@ -235,8 +235,8 @@ Return constraint matrix (A) in SparseMatrixCSC form.
 """
 function get_constrmatrix(model::Model)
     nnz = num_cnzs(model)
-    m = num_constrs(model)
-    n = num_vars(model)
+    m = Cint(num_constrs(model))
+    n = Cint(num_vars(model))
     numnzP = Array{Cint}( 1)
     cbeg = Array{Cint}( m+1)
     cind = Array{Cint}( nnz)
@@ -251,7 +251,7 @@ function get_constrmatrix(model::Model)
                      Cint,
                      Cint
                      ),
-                     model.ptr_model, cbeg, cind, cval, nnz, numnzP, 0, m-Cint(1))
+                     model.ptr_model, cbeg, cind, cval, Cint(nnz), numnzP, Cint(0), m-Cint(1))
     if ret != 0
         throw(XpressError(model))
     end
