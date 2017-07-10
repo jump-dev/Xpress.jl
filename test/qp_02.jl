@@ -6,7 +6,7 @@
 #           x +   y       >= 1
 #
 
-using Xpress
+using Xpress, Base.Test
 @testset "QP 2" begin
     model = xpress_model( 
     name = "qp_02", 

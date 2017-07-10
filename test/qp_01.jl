@@ -7,7 +7,7 @@
 #
 #    solution: (0, 1), objv = 1.875
 #
-
+using Xpress, Base.Test
 @testset "QP 1" begin
     model = Xpress.Model("qp_02")
 

@@ -12,7 +12,7 @@
 #
 
 using MathProgBase
-using Xpress
+using Xpress, Base.Test
 @testset "Basics 2" begin
     model = xpress_model(
         name="lp_02", 

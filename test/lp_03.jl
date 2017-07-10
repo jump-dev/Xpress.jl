@@ -1,7 +1,6 @@
 # Test get/set objective coefficients in LP
 
-using Xpress
-using Base.Test
+using Xpress, Base.Test
 
 @testset "Basics 3" begin
     # original model

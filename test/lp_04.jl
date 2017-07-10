@@ -14,7 +14,7 @@
 #        x >= 0, y >= 0
 #
 #   solution: x = 1.3333333, y = 1.3333333, objv = 2.66666666
-
+using Xpress, Base.Test
 @testset "Basics 4" begin
 
     model = Xpress.Model("lp_04", :maximize)
