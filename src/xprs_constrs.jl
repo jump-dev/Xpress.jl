@@ -238,7 +238,7 @@ function get_constrmatrix(model::Model)
     m = Cint(num_constrs(model))
     n = Cint(num_vars(model))
     numnzP = Array{Cint}( 1)
-    cbeg = Array{Cint}( m+1)
+    cbeg = zeros(Cint, m+1)
     cind = Array{Cint}( nnz)
     cval = Array{Float64}( nnz)
     ret = @xprs_ccall(getrows, Cint, (

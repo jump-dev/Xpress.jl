@@ -470,6 +470,14 @@ function get_rowtype(model::Model)
     return out
 end
 
+const sense_map = Dict{Cchar, Symbol}(
+    XPRS_LEQ => :<=,
+    XPRS_GEQ => :>=,
+    XPRS_EQ => :(==),
+)
+
+get_sense(model::Model) = map(x->sense_map[x], get_rowtype(model))
+
 
 """
     get_coltype!(model::Model, coltype::Vector{Cchar})
