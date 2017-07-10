@@ -1,9 +1,11 @@
 using Xpress, Base.Test
 
-tests = ["lp_01a", 
+tests = ["xprs_attrs_test",
+         "lp_01a", 
          "lp_01b", 
          "lp_02", 
          "lp_03",
+         "lp_04",
          "mip_01", 
          "qp_01",
          "qp_02",

@@ -10,7 +10,7 @@ Xpress.setlogfile(model, NAME2)
 
 Xpress.read_model(model, NAME)
 
-#Xpress.setparam!(model, Xpress.XPRS_CONTROLS_DICT[:THREADS], 1)
+# Xpress.setparam!(model, Xpress.XPRS_CONTROLS_DICT[:THREADS], 1)
 # Xpress.setparam!(model, Xpress.XPRS_CONTROLS_DICT[:CALLBACKFROMMASTERTHREAD], 1)
 
 
