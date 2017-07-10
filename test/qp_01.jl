@@ -1,27 +1,35 @@
 # QP example
 #
-#    minimize 2 x^2 + y^2 + xy + x + y
+#    minimize 1/2*(2 x^2 + y^2 + xy) + x + y
 #
 #       s.t.  x, y >= 0
 #             x + y = 1
 #
-#    solution: (0.25, 0.75), objv = 1.875
+#    solution: (0, 1), objv = 1.875
 #
+using Xpress, Base.Test
+@testset "QP 1" begin
+    model = Xpress.Model("qp_02")
 
-using Xpress 
+    add_cvars!(model, [1., 1.], 0., Inf)
 
-model = Xpress.Model("qp_02")
+    add_qpterms!(model, [1, 1, 2], [1, 2, 2], [2., 1., 1.])
+    add_constr!(model, [1., 1.], '=', 1.)
 
-add_cvars!(model, [1., 1.], 0., Inf)
-#update_model!(model)
+    @test Xpress.getq(model) == triu(sparse([2. 1.; 1. 1.]))
+    @test Xpress.get_obj(model) == [1, 1]
+    @test Xpress.get_constrmatrix(model) == sparse([1 1])
+    @test Xpress.get_rhs(model) == [1]
+    @test Xpress.get_lb(model) == [0, 0]
+    @test Xpress.get_ub(model) == [1e20, 1e20]
+    @test Xpress.get_sense(model) == [:(==)]
 
-add_qpterms!(model, [1, 1, 2], [1, 2, 2], [2., 1., 1.])
-add_constr!(model, [1., 1.], '=', 1.)
-#update_model!(model)
+    optimize(model)
 
-println(model)
+    ans = get_optiminfo(model)
+    @test ans.status_lp == :optimal
 
-optimize(model)
+    @test isapprox(get_solution(model), [0.0, 1]; atol = 1e-3)
 
-println("sol = $(get_solution(model))")
-println("obj = $(get_objval(model))")
+    @test isapprox(get_objval(model), 1.5; atol = 1e-3)
+end

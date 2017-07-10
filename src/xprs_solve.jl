@@ -6,15 +6,11 @@
 #      LP, QP, QCQP, SOCP
 #      as opposed to Integer programming
 
-# use here ismip!
-# function optimize(model::Model)
-#     @assert model.ptr_model != C_NULL
-#     ret = @xprs_ccall(:global, Cint, (Ptr{Void},), model.ptr_model)
-#     if ret != 0
-#         throw(XpressError(model))
-#     end
-#     nothing
-# end
+"""
+    optimize(model::Model)
+
+Solve model
+"""
 function optimize(model::Model)
     @assert model.ptr_model != C_NULL
     if is_mip(model)
@@ -25,10 +21,18 @@ function optimize(model::Model)
     nothing
 end
 
+"""
+    lpoptimize(model::Model)
+
+Solve models ignoring integrality.
+Quadratic terms are NOT ignored.
+"""
 function lpoptimize(model::Model)
     @assert model.ptr_model != C_NULL
+    tic()
     ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{Cchar}),
         model.ptr_model,C_NULL)
+    model.time = toq()
     if ret != 0
         throw(XpressError(model))
     end
@@ -36,15 +40,21 @@ function lpoptimize(model::Model)
 end
 function mipoptimize(model::Model)
     @assert model.ptr_model != C_NULL
+    tic()
     ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{Cchar}),
         model.ptr_model,C_NULL)
+    model.time = toq()
     if ret != 0
         throw(XpressError(model))
     end
     nothing
 end
 
+"""
+    computeIIS(model::Model)
 
+compute all ISS
+"""
 function computeIIS(model::Model)
     @assert model.ptr_model != C_NULL
     ret = @xprs_ccall(iisall, Cint, (Ptr{Void},), model.ptr_model)
@@ -189,11 +199,26 @@ function get_complete_lp_solution(model::Model)
     end
     return x, slack, dual, red
 end
+
+"""
+    get_lp_solution(model::Model)
+
+return a vector with primal variable solutions
+"""
 function get_lp_solution(model::Model)
     cols = num_vars(model)
-
     x = Vector{Float64}(cols)
+    get_lp_solution!(model, x)
+    return x
+end
 
+"""
+    get_lp_solution!(model::Model, x::Vector{Float64})
+
+return a vector with primal variable solutions - inplace
+"""
+function get_lp_solution!(model::Model, x::Vector{Float64})
+    _chklen(x, num_vars(model))
     ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
@@ -204,13 +229,29 @@ function get_lp_solution(model::Model)
     if ret != 0
         throw(XpressError(model))
     end
-    return x
+    return nothing
 end
+
+
+"""
+    get_lp_slack(model::Model)
+
+return a vector of slack values for rows (some srt of constraint primal solution)
+"""
 function get_lp_slack(model::Model)
     rows = num_constrs(model)
-
     slack = Vector{Float64}(rows)
+    get_lp_slack!(model, slack)
+    return slack
+end
 
+"""
+    get_lp_slack!(model::Model, slack::Vector{Float64})
+
+return a vector of slack values for rows (some srt of constraint primal solution) - inplace
+"""
+function get_lp_slack!(model::Model, slack::Vector{Float64})
+    _chklen(slack, num_constrs(model))    
     ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
@@ -221,13 +262,31 @@ function get_lp_slack(model::Model)
     if ret != 0
         throw(XpressError(model))
     end
-    return slack
+    return nothing
 end
+
+"""
+    get_lp_dual(model::Model)
+
+Return a vector of constraint dual solution
+"""
 function get_lp_dual(model::Model)
     rows = num_constrs(model)
 
     dual = Vector{Float64}(rows)
 
+    get_lp_dual!(model, dual)
+    return dual
+end
+
+"""
+    get_lp_dual!(model::Model, dual::Vector{Float64})
+
+Return a vector of constraint dual solution - inplace
+"""
+function get_lp_dual!(model::Model, dual::Vector{Float64})
+    rows = num_constrs(model)
+    _chklen(dual, rows)
     ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
@@ -238,12 +297,32 @@ function get_lp_dual(model::Model)
     if ret != 0
         throw(XpressError(model))
     end
-    return dual
+    return nothing
 end
+
+"""
+    get_lp_reducedcost(model::Model)
+
+Return a vector of variable reduced cost (dual solution)
+"""
 function get_lp_reducedcost(model::Model)
     cols = num_vars(model)
 
     red = Vector{Float64}(cols)
+
+    get_lp_reducedcost!(model, red)
+    return red
+end
+
+"""
+    get_lp_reducedcost!(model::Model, red::Vector{Float64})
+
+Return a vector of variable reduced cost (dual solution) - inplace
+"""
+function get_lp_reducedcost!(model::Model, red::Vector{Float64})
+    cols = num_vars(model)
+
+    _chklen(red, cols)
 
     ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Void},
@@ -255,14 +334,33 @@ function get_lp_reducedcost(model::Model)
     if ret != 0
         throw(XpressError(model))
     end
-    return red
+    return nothing
 end
 
 ## mip sol
+"""
+    get_mip_solution(model::Model)
+
+Return a vector of variable primal solutions
+"""
 function get_mip_solution(model::Model)
     cols = num_vars(model)
 
     x = Vector{Float64}(cols)
+
+    get_mip_solution!(model, x)
+    return x
+end
+
+"""
+    get_mip_solution!(model::Model, x::Vector{Float64})
+
+Return a vector of variable primal solutions - inplace
+"""
+function get_mip_solution!(model::Model, x::Vector{Float64})
+    cols = num_vars(model)
+
+    _chklen(x, cols)
 
     ret = @xprs_ccall(getmipsol, Cint,
         (Ptr{Void},
@@ -272,13 +370,31 @@ function get_mip_solution(model::Model)
     if ret != 0
         throw(XpressError(model))
     end
-    return x
+    return nothing
 end
+
+"""
+    get_mip_slack(model::Model)
+
+Return a vector of constraint primal solutions (slacks)
+"""
 function get_mip_slack(model::Model)
     rows = num_constrs(model)
 
     slack = Vector{Float64}(rows)
 
+    get_mip_slack!(model, slack)
+    return slack
+end
+
+"""
+    get_mip_slack!(model::Model, slack::Vector{Float64})
+
+Return a vector of constraint primal solutions (slacks) - inplace
+"""
+function get_mip_slack!(model::Model, slack::Vector{Float64})
+    rows = num_constrs(model)
+    _chklen(slack, rows)
     ret = @xprs_ccall(getmipsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
@@ -290,6 +406,24 @@ function get_mip_slack(model::Model)
     return slack
 end
 
+"""
+    get_solution!(model::Model, x::Vector{Float64})
+
+Return a vector of variable primal solution - inplace
+"""
+function get_solution!(model::Model, x::Vector{Float64})
+    if is_mip(model)
+        return get_mip_solution!(model,x)
+    else
+        return get_lp_solution!(model,x)
+    end
+end
+
+"""
+    get_solution(model::Model)
+
+Return a vector of variable primal solution
+"""
 function get_solution(model::Model)
     if is_mip(model)
         return get_mip_solution(model)
@@ -297,6 +431,25 @@ function get_solution(model::Model)
         return get_lp_solution(model)
     end
 end
+
+"""
+    get_slack!(model::Model, slack::Vector{Float64})
+
+Return a vector of constraints slacks - inplace
+"""
+function get_slack!(model::Model, slack::Vector{Float64})
+    if is_mip(model)
+        return get_mip_slack!(model, slack)
+    else
+        return get_lp_slack!(model, slack)
+    end
+end
+
+"""
+    get_slack(model::Model)
+
+Return a vector of constraints slacks
+"""
 function get_slack(model::Model)
     if is_mip(model)
         return get_mip_slack(model)
@@ -304,6 +457,26 @@ function get_slack(model::Model)
         return get_lp_slack(model)
     end
 end
+
+"""
+    get_dual!(model::Model, dual::Vector{Float64})
+
+Return a vector of constraint dual solutions
+"""
+function get_dual!(model::Model, dual::Vector{Float64})
+    if is_mip(model)
+        error("Not possible to get MIP duals")
+        return Float64[]
+    else
+        return get_lp_dual!(model,dual)
+    end
+end
+
+"""
+    get_dual(model::Model)
+
+Return a vector of constraint dual solutions
+"""
 function get_dual(model::Model)
     if is_mip(model)
         error("Not possible to get MIP duals")
@@ -312,6 +485,26 @@ function get_dual(model::Model)
         return get_lp_dual(model)
     end
 end
+
+"""
+    get_reducedcost!(model::Model, red::Vector{Float64})
+
+Return a vector of variable dual solution
+"""
+function get_reducedcost!(model::Model, red::Vector{Float64})
+    if is_mip(model)
+        error("Not possible to get MIP reduced costs")
+        return Float64[]
+    else
+        return get_lp_reducedcost!(model, red)
+    end
+end
+
+"""
+    get_reducedcost(model::Model)
+
+Return a vector of variable dual solution
+"""
 function get_reducedcost(model::Model)
     if is_mip(model)
         error("Not possible to get MIP reduced costs")
@@ -339,7 +532,16 @@ const basicmap_rev = Dict(
     :Superbasic => Cint(3)
 )
 
+"""
+    loadbasis(model::Model, x::Vector)
 
+Load basis to a problem in form of primal solutions
+
+    loadbasis(model::Model, rval::Vector{Symbol}, cval::Vector{Symbol})
+
+Load basis to a problem in terms of basicness description
+Variables and constraints ca be: `Basic`, `NonBasicAtLower`, `NonBasicAtUpper` and `Superbasic`
+"""
 function loadbasis(model::Model, x::Vector)#, status::Symbol = :unstarted, isnew::Vector{Bool} = [false])
 
     ncols = num_vars(model)
@@ -390,7 +592,6 @@ function loadbasis(model::Model, x::Vector)#, status::Symbol = :unstarted, isnew
 
     return nothing
 end
-
 function loadbasis(model::Model, rval::Vector{Symbol}, cval::Vector{Symbol})
 
     nrval = map(x->basicmap_rev[x], rval)
@@ -414,6 +615,8 @@ function loadbasis(model::Model, rval::Vector{Cint}, cval::Vector{Cint})
 
     return nothing
 end
+
+
 function get_basis(model::Model)
     cval = Array{Cint}( num_vars(model))
     cbasis = Array{Symbol}( num_vars(model))

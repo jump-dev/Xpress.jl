@@ -1,12 +1,16 @@
 # Quadratic terms (in objective) & constraints
-#
-# defini explicitelly SOCP?
 
-function add_qpterms!(model::Model, qr::IVec, qc::IVec, qv::FVec)
+
+"""
+    add_qpterms!(model::Model, qr::Vector, qc::Vector, qv::Vector)
+    add_qpterms!(model, H::SparseMatrixCSC{Float64})
+    add_qpterms!(model, H::Matrix{Float64})
+
+Add quadratic terms to the obejctive function
+"""
+function add_qpterms!(model::Model, qr::Vector{Cint}, qc::Vector{Cint}, qv::Vector{Float64})
     nnz = length(qr)
     (nnz == length(qc) == length(qv)) || error("Inconsistent argument dimensions.")
-
-
     if nnz > 0
         ret = @xprs_ccall(chgmqobj, Cint, (
             Ptr{Void},    # model
@@ -23,12 +27,9 @@ function add_qpterms!(model::Model, qr::IVec, qc::IVec, qv::FVec)
     end
     nothing
 end
-
 function add_qpterms!(model::Model, qr::Vector, qc::Vector, qv::Vector)
     add_qpterms!(model, ivec(qr), ivec(qc), fvec(qv))
 end
-
-
 function add_qpterms!(model, H::SparseMatrixCSC{Float64}) # H must be symmetric
     n = num_vars(model)
     (H.m == n && H.n == n) || error("H must be an n-by-n symmetric matrix.")
@@ -63,7 +64,6 @@ function add_qpterms!(model, H::SparseMatrixCSC{Float64}) # H must be symmetric
 
     add_qpterms!(model, qr[1:k], qc[1:k], qv[1:k])
 end
-
 function add_qpterms!(model, H::Matrix{Float64}) # H must be symmetric
     n = num_vars(model)
     size(H) == (n, n) || error("H must be an n-by-n symmetric matrix.")
@@ -99,24 +99,32 @@ function add_qpterms!(model, H::Matrix{Float64}) # H must be symmetric
     add_qpterms!(model, qr[1:k], qc[1:k], qv[1:k])
 end
 
+"""
+    add_diag_qpterms!(model, H::Vector)
+    add_diag_qpterms!(model, hv::Real)
+
+Add quadratic diagonal terms to the objective
+"""
 function add_diag_qpterms!(model, H::Vector)  # H stores only the diagonal element
     n = num_vars(model)
     n == length(H) || error("Incompatible dimensions.")
     q = [convert(Cint,1):convert(Cint,n)]
     add_qpterms!(model, q, q, fvec(h))
 end
-
 function add_diag_qpterms!(model, hv::Real)  # all diagonal elements are H
     n = num_vars(model)
     q = [convert(Cint,1):convert(Cint,n)]
     add_qpterms!(model, q, q, fill(float64(hv), n))
 end
 
+"""
+    delq!(model::Model)
 
+delete all quadritic terms formthe objective
+"""
 function delq!(model::Model)
 
     n = num_vars(model)
-
     k = n*(n+1)÷2
 
     qr = zeros(Int, k)
@@ -135,9 +143,11 @@ function delq!(model::Model)
     add_qpterms!(model, qr, qc, qv)
 end
 
+"""
+    getq(model::Model)
 
-
-
+Get quadratic terms form the objective function
+"""
 function getq(model::Model)
     Base.warn_once("getq retuns only lower triangular")
     nnz = num_qnzs(model)
@@ -180,7 +190,12 @@ function getq(model::Model)
     return sparse(I, J, V, n, n)
 end
 
+"""
+    add_qconstr!(model::Model, lind::Vector, lval::Vector, qr::Vector, qc::Vector,
+    qv::Vector{Float64}, rel::GChars, rhs::Real)
 
+Add quadratic contraint to the model
+"""
 function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, qv::FVec, rel::Cchar, rhs::Float64)
     # in XPRESS quadratic matrices are added over existing linear constraints
     # ------------------------
@@ -211,7 +226,6 @@ function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, 
     end
     nothing
 end
-
 function add_qconstr!(model::Model, lind::Vector, lval::Vector, qr::Vector, qc::Vector,
     qv::Vector{Float64}, rel::GChars, rhs::Real)
 
@@ -220,7 +234,11 @@ end
 
 
 
-"indices of quadratic constraints rows"
+"""
+    get_qrows(model::Model)
+
+get indices of quadratic rows
+"""
 function get_qrows(model::Model)
 # int XPRS_CC XPRSgetqrows(XPRSprob prob, int * qmn, int qcrows[]);
 
@@ -251,6 +269,12 @@ function get_qrows(model::Model)
     return Cint[]
 
 end
+
+"""
+    get_lrows(model::Model)
+
+get indices of purely linear rows
+"""
 function get_lrows(model::Model)
 
     qrows = get_qrows(model)
@@ -281,6 +305,11 @@ function get_lrows(model::Model)
     return lrows
 end
 
+"""
+    get_qrowmatrix_triplets(model::Model, row::Int)
+
+Get matrix from quadratic row in triplets form
+"""
 function get_qrowmatrix_triplets(model::Model, row::Int)
 #int XPRS_CC XPRSgetqrowqmatrixtriplets(XPRSprob prob, int irow, int *nqelem, int mqcol1[], int mqcol2[], double dqe[]);
     Base.warn_once("only inferior part of the matrix is represented")

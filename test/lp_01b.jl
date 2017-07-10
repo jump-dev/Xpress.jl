@@ -8,33 +8,31 @@
 #
 #   solution: x = 45, y = 6.25, objv = 51.25
 
-using Xpress
+using Xpress, Base.Test
+@testset "Basics 1b" begin
+    model = Xpress.Model("lp_01", :maximize)
 
-model = Xpress.Model("lp_01", :maximize)
+    # add variables
+    add_cvars!(model, [1., 1.], [45., 5.], Inf)
 
-# add variables
-add_cvars!(model, [1., 1.], [45., 5.], Inf)
-#update_model!(model)
+    # add constraints
+    add_constrs!(model, Cint[1, 3], Cint[1, 2, 1, 2],
+        [50., 24., 30., 33.], '<', [2400., 2100.])
 
-# add constraints
-add_constrs!(model, Cint[1, 3], Cint[1, 2, 1, 2],
-    [50., 24., 30., 33.], '<', [2400., 2100.])
-#update_model!(model)
+    @test Xpress.get_obj(model) == [1, 1]
+    @test Xpress.get_constrmatrix(model) == sparse([50 24; 30 33])
+    @test Xpress.get_rhs(model) == [2400, 2100]
+    @test Xpress.get_lb(model) == [45, 5]
+    @test Xpress.get_ub(model) == [1e20, 1e20]
+    @test Xpress.get_sense(model) == [:<=,:<=]
 
-println(model)
+    # perform optimization
+    optimize(model)
 
-# perform optimization
-optimize(model)
+    ans = get_optiminfo(model)
+    @test ans.status_lp == :optimal
 
-# show results
-info = get_optiminfo(model)
-println()
-println(info)
+    @test get_solution(model) == [45.0 , 6.25]
 
-sol = get_solution(model)
-println("soln = $(sol)")
-
-objv = get_objval(model)
-println("objv = $(objv)")
-
-gc()  # test finalizers
+    @test get_objval(model) == 51.25
+end

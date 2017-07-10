@@ -6,19 +6,29 @@
 #           x +   y       >= 1
 #
 
-using Xpress
+using Xpress, Base.Test
+@testset "QP 2" begin
+    model = xpress_model( 
+    name = "qp_02", 
+    f = [0., 0., 0.],
+    H = [2. 1. 0.; 1. 2. 1.; 0. 1. 2.],
+    A = -[1. 2. 3.; 1. 1. 0.], 
+    b = -[4., 1.])
 
-model = xpress_model( 
-	name = "qp_02", 
-	f = [0., 0., 0.],
-	H = [2. 1. 0.; 1. 2. 1.; 0. 1. 2.],
-	A = -[1. 2. 3.; 1. 1. 0.], 
-	b = -[4., 1.])
+    @test Xpress.getq(model) == triu(sparse([2. 1. 0.; 1. 2. 1.; 0. 1. 2.]))
+    @test Xpress.get_obj(model) == [0,0,0]
+    @test Xpress.get_constrmatrix(model) == sparse([-1 -2 -3; -1 -1 0])
+    @test Xpress.get_rhs(model) == [-4,-1]
+    @test Xpress.get_lb(model) == [-1e20, -1e20, -1e20]
+    @test Xpress.get_ub(model) == [1e20, 1e20, 1e20]
+    @test Xpress.get_sense(model) == [:(<=),:(<=)]
 
-optimize(model)
+    optimize(model)
 
-println(Xpress.get_lp_status(model))
-println(Xpress.getq(model))
+    ans = get_optiminfo(model)
+    @test ans.status_lp == :optimal
 
-println("sol = $(get_solution(model))")
-println("obj = $(get_objval(model))")
+    @test isapprox(get_solution(model), [0.5714, .4285, .8571]; atol = 1e-3)
+
+    @test isapprox(get_objval(model), 1.857; atol = 1e-3)
+end

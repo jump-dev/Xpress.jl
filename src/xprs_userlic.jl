@@ -7,8 +7,11 @@ function emptyliccheck(lic::Vector{Cint})
     return lic
 end
 
-# lic check routine
-# -----------------
+"""
+    userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCIIString = "" )
+
+Performs license chhecking with `liccheck` validation function on dir `xpauth_path`
+"""
 function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCIIString = "" )
 
 	# change directory to reach all libs

@@ -1,7 +1,10 @@
+"""
+	get_int_param(m::Model, param::Integer)
 
-#get
-
-function get_int_param(m::Model,param::Int)
+get the value of some integer valued parameter
+"""
+get_int_param(m::Model, param::Integer) = get_int_param(m::Model, Cint(param))
+function get_int_param(m::Model, param::Cint)
 
 	ipar = convert(Cint,param)
 	igval = Array{Cint}(1)
@@ -14,7 +17,13 @@ function get_int_param(m::Model,param::Int)
 	convert(Int, igval[1])
 end
 
-function get_dbl_param(m::Model,param::Int)
+"""
+	get_dbl_param(m::Model, param::Integer)
+
+get the value of some double valued parameter
+"""
+get_dbl_param(m::Model, param::Integer) = get_dbl_param(m::Model, Cint(param))
+function get_dbl_param(m::Model, param::Cint)
 
 	ipar = convert(Cint,param)
 	dgval = Array{Float64}(1)
@@ -27,7 +36,13 @@ function get_dbl_param(m::Model,param::Int)
 	convert(Float64, dgval[1])
 end
 
-function get_str_param(m::Model,param::Int)
+"""
+	get_str_param(m::Model, param::Integer)
+
+get the value of some string valued parameter
+"""
+get_str_param(m::Model, param::Integer) = get_str_param(m::Model, Cint(param))
+function get_str_param(m::Model, param::Cint)
 
 	ipar = convert(Cint,param)
 	cgval = Array{Cchar}( 256)
@@ -41,53 +56,66 @@ function get_str_param(m::Model,param::Int)
 	unsafe_string(pointer(out))
 end
 
-#set
+"""
+	set_int_param(m::Model, ipar::Integer, isval::Integer)
 
-function set_int_param(m::Model,ipar::Int,isval::Int)
+set intger valued parameter
+"""
+set_int_param(m::Model, ipar::Integer, isval::Integer) = set_int_param(m::Model, Cint(ipar), Cint(isval)) 
+function set_int_param(m::Model, ipar::Cint, isval::Cint)
 
 	ipar = convert(Cint,ipar)
 	isval = convert(Cint,isval)
-
 	ret = @xprs_ccall(setintcontrol, Cint, (Ptr{Void},Cint,Cint),
 		m.ptr_model, ipar, isval)
 	if ret != 0
 		throw(XpressError(m))
 	end
-
-	nothing
+	return nothing
 end
 
-function set_dbl_param(m::Model,ipar::Int,dsval::Float64)
+"""
+	set_dbl_param(m::Model, ipar::Int, dsval::Float64)
+
+set double valued parameter
+"""
+set_dbl_param(m::Model, ipar::Int, dsval::Float64) = set_dbl_param(m::Model, Cint(ipa), Float64(dsval))
+function set_dbl_param(m::Model, ipar::Cint, dsval::Float64)
 
 	ipar = convert(Cint,ipar)
 	dsval = convert(Cdouble,dsval)
-
 	ret = @xprs_ccall(setdblcontrol, Cint, (Ptr{Void},Cint,Cdouble),
 		m.ptr_model, ipar, dsval)
 	if ret != 0
 		throw(XpressError(m))
 	end
-
-	nothing
+	return nothing
 end
 
-function set_str_param(m::Model,ipar::Int,csval::Compat.ASCIIString)
+"""
+	set_str_param(m::Model, ipar::Integer, csval::Compat.ASCIIString)
+
+Set string valued parameter
+"""
+set_str_param(m::Model, ipar::Integer, csval::Compat.ASCIIString) = set_str_param(m::Model, Cint(ipar), csval)
+function set_str_param(m::Model, ipar::Cint, csval::Compat.ASCIIString)
 
 	ipar = convert(Cint,ipar)
 	csval = convert(Compat.ASCIIString,csval)
-
 	ret = @xprs_ccall(setstrcontrol, Cint, (Ptr{Void},Cint,Ptr{Cchar}),
 		m.ptr_model, ipar, csval)
 	if ret != 0
 		throw(XpressError(m))
 	end
-
-	nothing
+	return nothing
 end
 
+"""
+	getparam(m::Model, param::Integer)
 
-
-function getparam(m::Model,param::Int)
+get parameter of any type
+"""
+function getparam(m::Model, param::Integer)
     if convert(Int,param) in XPRS_INT_CONTROLS
         return get_int_param(m, param)
     elseif convert(Int,param) in XPRS_DBL_CONTROLS
@@ -99,9 +127,15 @@ function getparam(m::Model,param::Int)
     end
 end
 
+"""
+	setparam!(m::Model, param::Symbol, val::Any)
+	setparam!(m::Model, param::Integer, val::Any)
 
-setparam!(m::Model,param::Symbol,val::Any) = setparam!(m,XPRS_CONTROLS_DICT[param],val)
-function setparam!(m::Model,param::Int,val::Any)
+set parameter of any type
+"""
+setparam!(m::Model, param::Symbol, val::Any) = setparam!(m,Cint(XPRS_CONTROLS_DICT[param]),val)
+setparam!(m::Model, param::Integer, val::Any) = setparam!(m::Model, Cint(param), val::Any)
+function setparam!(m::Model, param::Cint, val::Any)
     if convert(Int,param) in XPRS_INT_CONTROLS
         set_int_param(m, param, val)
     elseif convert(Int,param) in XPRS_DBL_CONTROLS
@@ -113,6 +147,11 @@ function setparam!(m::Model,param::Int,val::Any)
     end
 end
 
+"""
+	setparams!(m::Model;args...)
+
+set multiple parameters of any type
+"""
 function setparams!(m::Model;args...)
 	for (param,val) in args
 		setparam!(m,XPRS_CONTROLS_DICT[param],val)

@@ -9,22 +9,32 @@
 #         y is integer: 0 <= y <= 10
 #         z is binary
 #
+# z = 1, y= 7, x = 0
+using Xpress, Base.Test
+@testset "MIP 4" begin
 
-using Xpress
+    model = Xpress.Model( "mip_01", :maximize)
 
-model = Xpress.Model( "mip_01", :maximize)
+    add_cvar!(model, 1., 0., 5.)  # x
+    add_ivar!(model, 2., 0, 10)   # y
+    add_bvar!(model, 5.)          # z
 
-add_cvar!(model, 1., 0., 5.)  # x
-add_ivar!(model, 2., 0, 10)   # y
-add_bvar!(model, 5.)          # z
-#update_model!(model)
+    add_constr!(model, ones(3), '<', 10.)
+    add_constr!(model, [1., 2., 1.], '<', 15.)
 
-add_constr!(model, ones(3), '<', 10.)
-add_constr!(model, [1., 2., 1.], '<', 15.)
+    @test Xpress.get_obj(model) == [1, 2, 5]
+    @test Xpress.get_constrmatrix(model) == sparse([1. 1. 1.; 1. 2. 1.])
+    @test Xpress.get_rhs(model) == [10, 15]
+    @test Xpress.get_lb(model) == [0, 0, 0]
+    @test Xpress.get_ub(model) == [5, 10, 1]
+    @test Xpress.get_sense(model) == [:<=,:<=]
 
-println(model)
+    optimize(model)
 
-optimize(model)
+    ans = get_optiminfo(model)
+    @test ans.status_mip == :mip_optimal
 
-println("sol = $(get_solution(model))")
-println("objv = $(get_objval(model))")
+    @test isapprox(get_solution(model), [0, 7, 1]; atol = 1e-3)
+
+    @test isapprox(get_objval(model), 19; atol = 1e-3)
+end

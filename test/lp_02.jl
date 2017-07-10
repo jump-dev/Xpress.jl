@@ -12,20 +12,29 @@
 #
 
 using MathProgBase
-using Xpress
+using Xpress, Base.Test
+@testset "Basics 2" begin
+    model = xpress_model(
+        name="lp_02", 
+        sense=:maximize, 
+        f = [1000., 350.],
+        A = [-1. 1.5; 12. 8.; 1000. 300.], 
+        b = [0., 1000., 70000.], 
+        lb = [0., 30.])
 
-model = xpress_model( 
-	name="lp_02", 
-	sense=:maximize, 
-	f = [1000., 350.],
-	A = [-1. 1.5; 12. 8.; 1000. 300.], 
-	b = [0., 1000., 70000.], 
-	lb = [0., 30.])
+    @test Xpress.get_obj(model) == [1000, 350]
+    @test Xpress.get_constrmatrix(model) == sparse([-1 1.5; 12 8; 1000 300])
+    @test Xpress.get_rhs(model) == [0, 1000, 70000]
+    @test Xpress.get_lb(model) == [0, 30]
+    @test Xpress.get_ub(model) == [1e20, 1e20]
+    @test Xpress.get_sense(model) == [:<=,:<=,:<=]
 
-println(model)
+    optimize(model)
 
-optimize(model)
+    ans = get_optiminfo(model)
+    @test ans.status_lp == :optimal
 
-println()
-println("soln = $(get_solution(model))")
-println("objv = $(get_objval(model))")
+    @test isapprox(get_solution(model), [59.0909 , 36.3636]; atol = 1e-3)
+
+    @test isapprox(get_objval(model), 71818.1818181818; atol = 1e-3)
+end
