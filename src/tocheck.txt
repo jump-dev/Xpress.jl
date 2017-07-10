@@ -1,4 +1,0 @@
-
-# getters
-
-getglobal: binary, integer, SOS1, SOS2...
