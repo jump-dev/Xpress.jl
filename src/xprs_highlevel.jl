@@ -10,20 +10,18 @@ function xpress_model(;    # solver environment
     Aeq::CoeffMat=emptyfmat,       # LHS of equality constraints
     beq::FVec=emptyfvec,           # RHS of equality constraints
     lb::Bounds=-Inf,               # upper bounds
-    ub::Bounds=Inf)                # lower bounds
-
+    ub::Bounds=Inf,                # lower bounds
+    finalize_env = true)
 	# check f
 	if isempty(f)
 		error("f must be specified.")
 	end
 
     # create model
-    model = Model(name)
+    model = Model(finalize_env=finalize_env)
 
     # set sense
-    if sense != :minimize
-        set_sense!(model, sense)
-    end
+    set_sense!(model, sense)
 
     # add variables
     add_cvars!(model, f, lb, ub)

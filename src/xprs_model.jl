@@ -217,6 +217,10 @@ function write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.A
     nothing
 end
 
+# int XPRS_CC XPRSwritesol(XPRSprob prob, const char *filename, const char *flags)
+# int XPRS_CC XPRSwriteptrsol(XPRSprob prob, const char *filename, const char *flags)
+
+
 """
     fixglobals(model::Model, round::Bool)
 

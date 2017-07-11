@@ -27,22 +27,22 @@ end
 Solve models ignoring integrality.
 Quadratic terms are NOT ignored.
 """
-function lpoptimize(model::Model)
+function lpoptimize(model::Model, flags::Compat.ASCIIString="")
     @assert model.ptr_model != C_NULL
     tic()
-    ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{Cchar}),
-        model.ptr_model,C_NULL)
+    ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{UInt8}),
+        model.ptr_model, flags)
     model.time = toq()
     if ret != 0
         throw(XpressError(model))
     end
     nothing
 end
-function mipoptimize(model::Model)
+function mipoptimize(model::Model, flags::Compat.ASCIIString="")
     @assert model.ptr_model != C_NULL
     tic()
-    ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{Cchar}),
-        model.ptr_model,C_NULL)
+    ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{UInt8}),
+        model.ptr_model, flags)
     model.time = toq()
     if ret != 0
         throw(XpressError(model))
@@ -759,4 +759,41 @@ function getprimalray(model::Model)
     end
 
     return pray
+end
+
+function repairweightedinfeasibility(model::Model, scode::Vector{Cint}, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="")
+# int XPRS_CC XPRSrepairweightedinfeas(XPRSprob prob, int *scode, const double lrp[], const double grp[], const double lbp[], const double ubp[], char phase2, double delta, const char *optflags)
+    ret = @xprs_ccall(repairweightedinfeas, Cint, 
+        (Ptr{Void}, 
+         Ptr{Cint}, 
+         Ptr{Float64}, 
+         Ptr{Float64}, 
+         Ptr{Float64}, 
+         Ptr{Float64}, 
+         Cchar, 
+         Float64, 
+         Ptr{UInt8}),
+        model.ptr_model, scode, lrp, grp, lbp, ubp, phase2, delta, flags)
+    if ret != 0
+        throw(XpressError(model))
+    end
+
+    return nothing
+end
+
+function repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}; phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="")
+
+    cols = num_vars(model)
+    rows = num_constrs(model)
+
+    _chklen(rows, lrp)
+    _chklen(rows, grp)
+    _chklen(cols, lbp)
+    _chklen(cols, ubp)
+
+    scode = zeros(Cint,1)
+
+    repairweightedinfeasibility(model, scode, lrp, grp, lbp, ubp, phase2, delta, flags)
+
+    return scode[1]
 end
