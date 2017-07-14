@@ -202,13 +202,12 @@ function read_model(model::Model, filename::Compat.ASCIIString)
 end
 
 """
-    write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString)
+    write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
 
 Writes a model into file.
 For flags setting see the manual (writeprob)
 """
-write_model(model::Model, filename::Compat.ASCIIString) = write_model(model, filename, "")
-function write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString)
+function write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
     ret = @xprs_ccall(writeprob, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
     if ret != 0
@@ -217,8 +216,37 @@ function write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.A
     nothing
 end
 
-# int XPRS_CC XPRSwritesol(XPRSprob prob, const char *filename, const char *flags)
-# int XPRS_CC XPRSwriteptrsol(XPRSprob prob, const char *filename, const char *flags)
+"""
+    writesol(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
+
+Writes solution into file.
+For flags setting see the manual (writesol)
+"""
+function writesol(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
+    # int XPRS_CC XPRSwritesol(XPRSprob prob, const char *filename, const char *flags)
+    ret = @xprs_ccall(writesol, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
+        model.ptr_model, filename, flags)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
+
+"""
+    writeptrsol(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
+
+Writes solution into a ptr file.
+For flags setting see the manual (writeptrsol)
+"""
+function writeptrsol(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
+    # int XPRS_CC XPRSwriteptrsol(XPRSprob prob, const char *filename, const char *flags)
+    ret = @xprs_ccall(writeptrsol, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
+        model.ptr_model, filename, flags)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
 
 
 """

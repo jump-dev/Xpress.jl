@@ -781,7 +781,15 @@ function repairweightedinfeasibility(model::Model, scode::Vector{Cint}, lrp::Vec
     return nothing
 end
 
-function repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}; phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="")
+"""
+    repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}; phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="")
+    repairweightedinfeasibility(model::Model, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="")
+
+Repair infeasibility tool
+"""
+repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}; phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="") = repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2, delta, flags)
+
+function repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2::Cchar, delta::Float64, flags::Compat.ASCIIString)
 
     cols = num_vars(model)
     rows = num_constrs(model)
@@ -797,3 +805,15 @@ function repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Ve
 
     return scode[1]
 end
+
+function repairweightedinfeasibility(model::Model, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="")
+    cols = num_vars(model)
+    rows = num_constrs(model)
+    lrp = ones(rows)
+    grp = ones(rows)
+    lbp = ones(cols)
+    ubp = ones(cols)
+
+    return repairweightedinfeasibility(model, lrp, grp, lbp, ubp, phase2, delta, flags)
+end
+
