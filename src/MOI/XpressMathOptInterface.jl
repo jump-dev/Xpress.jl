@@ -11,21 +11,52 @@ XpressSolver(;kwargs...) = XpressSolver(kwargs)
 mutable struct XpressSolverInstance <: MOI.AbstractSolverInstance
     inner::Model
 
+    loaded::Bool
+
+    # Variables
+
     last_variable_reference::UInt64
-    variable_mapping::Dict{MOI.VariableReference, Int}
+    variable_mapping::Vector{Int}
+    # to be added
+    newvariables::Vector{MOI.VariableReference}
+    # to be removed
+    deadvariables::Vector{MOI.VariableReference}
+
+    # Constraints
 
     last_constraint_reference::UInt64
+    constraint_mapping::Dict{Tuple{DataType,DataType}, Vector{MOI.ConstraintRef}}
+    # to be added
+    newconstraints::Dict{Tuple{DataType,DataType},Vector{Tuple{MOI.ConstraintRef, AbstractFunction, AbstractSet}}}
+    # new_SA_LE::Vector{MOI.ConstraintRef}
+    # new_SA_GE::Vector{MOI.ConstraintRef}
+    # new_SA_EQ::Vector{MOI.ConstraintRef}
+  
+    # to be removed
+    deadconstraints::Vector{MOI.ConstraintRef}
+
+    # modification
+
+
+
+    # CPLEX
+    last_variable_reference::UInt64
+    variable_mapping::Dict{MOI.VariableReference, Int}
+    last_constraint_reference::UInt64
     constraint_mapping::Dict{MOI.ConstraintRef, Any}
+
+    # Callbacks
 
     # lazycb
     # cutcb
     # heuristiccb
     # infocb
 
+    # Options
     options
 end
 function XpressSolverInstance(;options...)
-   m = XpressSolverInstance(Model(),  0, Dict{MOI.VariableReference, Int}(), 0, Dict{MOI.ConstraintRef, Any}(), options)
+   m = XpressSolverInstance(Model(), 0, Dict{MOI.VariableReference, Int}(), 0, Dict{MOI.ConstraintRef, Any}(), options)
    for (name,value) in options
        setparam!(m.inner, XPRS_CONTROLS_DICT[name], value)
    end
@@ -51,7 +82,7 @@ MOI.SolverInstance(s::Xpressolver) = XpressSolverInstance(s.options)
 const SUPPORTED_OBJECTIVES = [
     MOI.ScalarAffineFunction{Float64},
     MOI.ScalarQuadraticFunction{Float64}
-]
+    ]
 const SUPPORTED_CONSTRAINTS = [
     (MOI.ScalarAffineFunction{Float64}, MOI.EqualsTo{Float64}),
     (MOI.ScalarAffineFunction{Float64}, MOI.LessThan{Float64}),
@@ -80,7 +111,7 @@ const SUPPORTED_CONSTRAINTS = [
     # (MOI.SingleVariable, MOI.SemiInteger{Float64}),
     # (MOI.VectorOfVariables, MOI.SOS1{Float64}),
     # (MOI.VectorOfVariables, MOI.SOS2{Float64}),
-]
+    ]
 function MOI.supportsproblem(s::XpressSolver, objective_type, constraint_types)
     if !(objective_type in SUPPORTED_OBJECTIVES)
         return false
@@ -94,6 +125,35 @@ function MOI.supportsproblem(s::XpressSolver, objective_type, constraint_types)
 end
 
 function load!(m::XpressSolverInstance) 
+    # Variables
+
+    # a)delete
+    # verify vars to remove
+    # remove
+    # shift reference vector
+    # b) add
+    # add new variables and plug the refs (use sizehint)
+    # delete local variable data
+    # c) modify - technically is a constraint
+    # Variable bounds and types
+
+    # Constraints by type
+
+    # a) delete
+    # b) add
+    # build sparse matrix
+    # add a block of constraints
+    # c) modify
+    # Constrs RHS
+    # Constrs mods (coeffs)
+
+    # fix quadratics
+    # later...
+
+    # Not Lazy
+    # objective
+    # changes? -not supported
+    # other attributes
 end
 function optimize!(m::XpressSolverInstance) 
     load!(m)
@@ -110,8 +170,6 @@ Writes the current problem data to the given file.
 Supported file types are solver-dependent.
 """
 writeproblem(m::XpressSolverInstance, filename::Compat.ASCIIString, flags::Compat.ASCIIString="") = write_model(m.inner, filenameg, flags)
-
-
 
 
 #####################
