@@ -1,17 +1,30 @@
 # initial very simple interface
 
-# Variables
-
-function addvariables!(m::XpressSolverInstance, n::Int) 
-    add_cvars!(m.inner, zeros(n))
-    m.last_variable_reference += n
-    return VariableReference.(collect((m.last_variable_reference-n+1):m.last_variable_reference))
+function MOI.VariableReference(m::XpressSolverInstance)
+    m.last_variable_reference += 1
+    refs = MOI.VariableReference(m.last_variable_reference)
+    m.variable_mapping[m.last_variable_reference] = ref
+    return ref
+end
+function MOI.VariableReference(m::XpressSolverInstance, n::Int)
+    refs = MOI.VariableReference[]
+    sizehint!(refs, n)
+    for i in 1:n
+        push!(refs, MOI.VariableReference(m))
+    end
+    return refs
 end
 
-function addvariable!(m::XpressSolverInstance) 
+# Variables
+
+# TODO: lazy add?
+function addvariables!(m::XpressSolverInstance, n::Int) 
+    add_cvars!(m.inner, zeros(n))
+    return VariableReference(m, n)
+end
+function addvariable!(m::XpressSolverInstance)
     add_cvar!(m.inner, 0.0)
-    m.last_variable_reference += 1
-    return VariableReference(m.last_variable_reference)
+    return VariableReference(m)
 end
 
 
