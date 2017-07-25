@@ -2,7 +2,7 @@
 
 function MOI.VariableReference(m::XpressSolverInstance)
     m.last_variable_reference += 1
-    refs = MOI.VariableReference(m.last_variable_reference)
+    ref = MOI.VariableReference(m.last_variable_reference)
     m.variable_mapping[m.last_variable_reference] = ref
     return ref
 end

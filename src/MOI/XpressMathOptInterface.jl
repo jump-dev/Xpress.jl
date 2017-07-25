@@ -2,6 +2,13 @@
 # Standardized MILP interface
 const MOI = MathOptInterface
 
+const Linear = MOI.ScalarAffineFunction{Float64}
+const LE = MOI.LessThan{Float64}
+const GE = MOI.GreaterThan{Float64}
+const EQ = MOI.EqualTo{Float64}
+const LinConstrRef{T} = MOI.ConstraintReference{Linear, T}
+const SVConstrRef{T} = MOI.ConstraintReference{MOI.SingleVariable, T}
+
 export XpressSolver
 struct XpressSolver <: MOI.AbstractSolver
     options
@@ -16,34 +23,15 @@ mutable struct XpressSolverInstance <: MOI.AbstractSolverInstance
     # Variables
 
     last_variable_reference::UInt64
-    variable_mapping::Vector{Int}
-    # to be added
-    newvariables::Vector{MOI.VariableReference}
-    # to be removed
-    deadvariables::Vector{MOI.VariableReference}
+    # variable_mapping::Vector{Int}
+    variable_mapping::Dict{MOI.VariableReference, Int}
+
 
     # Constraints
 
     last_constraint_reference::UInt64
-    constraint_mapping::Dict{Tuple{DataType,DataType}, Vector{MOI.ConstraintRef}}
-    # to be added
-    newconstraints::Dict{Tuple{DataType,DataType},Vector{Tuple{MOI.ConstraintRef, AbstractFunction, AbstractSet}}}
-    # new_SA_LE::Vector{MOI.ConstraintRef}
-    # new_SA_GE::Vector{MOI.ConstraintRef}
-    # new_SA_EQ::Vector{MOI.ConstraintRef}
-  
-    # to be removed
-    deadconstraints::Vector{MOI.ConstraintRef}
+    constraint_mapping::ConstraintMapping
 
-    # modification
-
-
-
-    # CPLEX
-    last_variable_reference::UInt64
-    variable_mapping::Dict{MOI.VariableReference, Int}
-    last_constraint_reference::UInt64
-    constraint_mapping::Dict{MOI.ConstraintRef, Any}
 
     # Callbacks
 
@@ -88,17 +76,9 @@ const SUPPORTED_CONSTRAINTS = [
     (MOI.ScalarAffineFunction{Float64}, MOI.LessThan{Float64}),
     (MOI.ScalarAffineFunction{Float64}, MOI.GreaterThan{Float64}),
 
-    # (MOI.VectorAffineFunction{Float64}, MOI.Nonpositve),
-    # (MOI.VectorAffineFunction{Float64}, MOI.Nonnegative),
-    # (MOI.VectorAffineFunction{Float64}, MOI.EqualTo),
-
     # (MOI.ScalarQuadraticFunction{Float64}, MOI.EqualsTo{Float64}),
     # (MOI.ScalarQuadraticFunction{Float64}, MOI.LessThan{Float64}),
     # (MOI.ScalarQuadraticFunction{Float64}, MOI.GreaterThan{Float64}),
-
-    # (MOI.VectorQuadraticFunction{Float64}, MOI.Nonpositve),
-    # (MOI.VectorQuadraticFunction{Float64}, MOI.Nonnegative),
-    # (MOI.VectorQuadraticFunction{Float64}, MOI.EqualTo),
 
     (MOI.SingleVariable, MOI.EqualsTo{Float64}),
     (MOI.SingleVariable, MOI.LessThan{Float64}),
@@ -109,6 +89,7 @@ const SUPPORTED_CONSTRAINTS = [
     (MOI.SingleVariable, MOI.ZeroOne),
     # (MOI.SingleVariable, MOI.SemiContinous{Float64}),
     # (MOI.SingleVariable, MOI.SemiInteger{Float64}),
+
     # (MOI.VectorOfVariables, MOI.SOS1{Float64}),
     # (MOI.VectorOfVariables, MOI.SOS2{Float64}),
     ]
@@ -123,6 +104,38 @@ function MOI.supportsproblem(s::XpressSolver, objective_type, constraint_types)
     end
     return true
 end
+
+struct ConstraintMapping
+    # LINEAR rows in constraint matrix
+    less_than::Dict{LinConstrRef{LE}, Int}
+    greater_than::Dict{LinConstrRef{GE}, Int}
+    equal_to::Dict{LinConstrRef{EQ}, Int}
+
+    # QUADRATIC
+
+    # references to variable (vectors with lenght nvars)
+    # no_bounds::Vector{Bool}
+    lower_bound::Vector{Bool}
+    upper_bound::Vector{Bool}
+    # lower_and_upper_bound::Vector{Bool}
+    interval::Vector{Bool}
+    fixed::Vector{Bool}
+
+    integer::Vector{Bool}
+    binary::Vector{Bool}
+end
+
+constraint_storage(m::XpressSolverInstance, func::MOI.AbstractScalarFunction, set::MOI.AbstractSet) = constraint_storage(m, typeof(func), typeof(set))
+
+constraint_storage(m::XpressSolverInstance, ::Type{Linear}, ::Type{LE}) = m.constraint_mapping.less_than
+constraint_storage(m::XpressSolverInstance, ::Type{Linear}, ::Type{GE}) = m.constraint_mapping.greater_than
+constraint_storage(m::XpressSolverInstance, ::Type{Linear}, ::Type{EQ}) = m.constraint_mapping.equal_to
+
+# constraint_storage(m::XpressSolverInstance, ::Type{MOI.SingleVariable}, ::Type{LE}) = m.constraint_mapping.variable_upper_bound
+# constraint_storage(m::XpressSolverInstance, ::Type{MOI.SingleVariable}, ::Type{GE}) = m.constraint_mapping.variable_lower_bound
+# constraint_storage(m::XpressSolverInstance, ::Type{MOI.SingleVariable}, ::Type{EQ}) = m.constraint_mapping.fixed_variables
+# constraint_storage(m::XpressSolverInstance, ::Type{MOI.SingleVariable}, ::Type{MOI.Interval{Float64}}) = m.constraint_mapping.interval_variables
+
 
 function load!(m::XpressSolverInstance) 
     # Variables
