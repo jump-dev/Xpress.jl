@@ -99,13 +99,13 @@ getattribute(m::XpressSolverInstance, obj::MOI.NumberOfVariables) = num_vars(m.i
 
 
 # struct NumberOfConstraints{F,S} <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) = true
+cangetattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) where {F,S} = true
 function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) where {F<:MOI.ScalarAffineFunction{Float64}, S}
     length(constraint_storage(m, F, S))
 end
 
 # struct ListOfConstraints <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, ::ListOfConstraints) = true
+cangetattribute(m::XpressSolverInstance, ::MOI.ListOfConstraints) = true
 function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) where {F<:MOI.ScalarAffineFunction{Float64}, S}
     out = Tuple{DataType,DataType}[]
 
@@ -124,20 +124,20 @@ function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, 
     return out
 end
 
-"""
-    ObjectiveFunction()
-An `AbstractFunction` instance which represents the objective function.
-It is guaranteed to be equivalent but not necessarily identical to the function provided by the user.
-"""
-struct ObjectiveFunction <: AbstractSolverInstanceAttribute end
+# """
+#     ObjectiveFunction()
+# An `AbstractFunction` instance which represents the objective function.
+# It is guaranteed to be equivalent but not necessarily identical to the function provided by the user.
+# """
+# struct ObjectiveFunction <: AbstractSolverInstanceAttribute end
 
 
 ## Termination status
-"""
-    TerminationStatus()
-A `TerminationStatusCode` explaining why the solver stopped.
-"""
-struct TerminationStatus <: AbstractSolverInstanceAttribute end
+# """
+#     TerminationStatus()
+# A `TerminationStatusCode` explaining why the solver stopped.
+# """
+# struct TerminationStatus <: AbstractSolverInstanceAttribute end
 cangetattribute(m::XpressSolverInstance, obj::MOI.TerminationStatus) = true
 function getattribute(m::XpressSolverInstance, obj::MOI.TerminationStatus)
 
@@ -166,7 +166,7 @@ const terminationcode_mip = Dict(
     :mip_lp_not_optimal => MOI.OtherError, # TODO improve
     :mip_lp_optimal     => MOI.OtherError, # TODO improve
     :mip_no_sol_found   => MOI.InfeasibleNoResult, # TODO improve
-    :mip_suboptimal     => MOI.AlmostSuccess #TODO
+    :mip_suboptimal     => MOI.AlmostSuccess, #TODO
     :mip_infeasible     => MOI.InfeasibleNoResult, # TODO improve
     :mip_optimal        => MOI.Success,
     :mip_unbounded      => MOI.UnboundedNoResult # TODO improve
@@ -176,36 +176,36 @@ const terminationcode_mip = Dict(
 
 ## Result status
 
-"""
-    ResultStatusCode
-An Enum of possible values for the `PrimalStatus` and `DualStatus` attributes.
-The values indicate how to interpret the result vector.
-* `FeasiblePoint`
-* `InfeasiblePoint`
-* `InfeasibilityCertificate`
-* `UnknownResultStatus`
-* `OtherResultStatus`
-"""
-@enum ResultStatusCode FeasiblePoint NearlyFeasiblePoint InfeasiblePoint InfeasibilityCertificate NearlyInfeasibilityCertificate ReductionCertificate NearlyReductionCertificate UnknownResultStatus OtherResultStatus
+# """
+#     ResultStatusCode
+# An Enum of possible values for the `PrimalStatus` and `DualStatus` attributes.
+# The values indicate how to interpret the result vector.
+# * `FeasiblePoint`
+# * `InfeasiblePoint`
+# * `InfeasibilityCertificate`
+# * `UnknownResultStatus`
+# * `OtherResultStatus`
+# """
+# @enum ResultStatusCode FeasiblePoint NearlyFeasiblePoint InfeasiblePoint InfeasibilityCertificate NearlyInfeasibilityCertificate ReductionCertificate NearlyReductionCertificate UnknownResultStatus OtherResultStatus
 
-"""
-    PrimalStatus(N)
-    PrimalStatus()
-The `ResultStatusCode` of the primal result `N`.
-If `N` is omitted, it defaults to 1.
-"""
-struct PrimalStatus <: AbstractSolverInstanceAttribute
-    N::Int
-end
-PrimalStatus() = PrimalStatus(1)
+# """
+#     PrimalStatus(N)
+#     PrimalStatus()
+# The `ResultStatusCode` of the primal result `N`.
+# If `N` is omitted, it defaults to 1.
+# """
+# struct PrimalStatus <: AbstractSolverInstanceAttribute
+#     N::Int
+# end
+# PrimalStatus() = PrimalStatus(1)
 
-"""
-    DualStatus(N)
-    DualStatus()
-The `ResultStatusCode` of the dual result `N`.
-If `N` is omitted, it defaults to 1.
-"""
-struct DualStatus <: AbstractSolverInstanceAttribute
-    N::Int
-end
-DualStatus() = DualStatus(1)
+# """
+#     DualStatus(N)
+#     DualStatus()
+# The `ResultStatusCode` of the dual result `N`.
+# If `N` is omitted, it defaults to 1.
+# """
+# struct DualStatus <: MOI.AbstractSolverInstanceAttribute
+#     N::Int
+# end
+# DualStatus() = DualStatus(1)

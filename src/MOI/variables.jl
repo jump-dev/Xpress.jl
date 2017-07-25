@@ -42,7 +42,7 @@ end
 function MOI.isvalid(m::XpressSolverInstance, ref::MOI.VariableReference)
     if haskey(m.variable_mapping, ref.value)
         column = m.variable_mapping[ref.value]
-        if column > 0 && column <= length(.variable_bound)
+        if column > 0 && column <= length(m.variable_bound)
             return true
         end
     end

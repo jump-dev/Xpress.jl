@@ -268,6 +268,60 @@ function get_constrmatrix(model::Model)
     end
     return sparse(I, J, V, m, n)
 end
+function get_rows_nnz(model::Model, first::Integer, last::Integer)
+    numnzP = Array{Cint}( 1)
+    ret = @xprs_ccall(getrows, Cint, (
+                     Ptr{Void},
+                     Ptr{Cint},
+                     Ptr{Cint},
+                     Ptr{Float64},
+                     Cint,
+                     Ptr{Cint},
+                     Cint,
+                     Cint
+                     ),
+                     model.ptr_model, C_NULL, C_NULL, C_NULL, Cint(0), numnzP, Cint(first-1), Cint(last-1))
+
+    if ret != 0
+        throw(XpressError(model))
+    end
+    return Int(numnzP[1])
+end
+function get_rows(model::Model, first::Integer, last::Integer)
+    nnz = get_rows_nnz(model, first, last)
+    m = Cint(last-first+1) #nrows to get coefs
+    n = Cint(num_vars(model))
+    numnzP = Array{Cint}( 1)
+    cbeg = zeros(Cint, +1)
+    cind = Array{Cint}( nnz)
+    cval = Array{Float64}( nnz)
+    ret = @xprs_ccall(getrows, Cint, (
+                     Ptr{Void},
+                     Ptr{Cint},
+                     Ptr{Cint},
+                     Ptr{Float64},
+                     Cint,
+                     Ptr{Cint},
+                     Cint,
+                     Cint
+                     ),
+                     model.ptr_model, cbeg, cind, cval, Cint(nnz), numnzP, Cint(0), m-Cint(1))
+    if ret != 0
+        throw(XpressError(model))
+    end
+    cbeg[end] = nnz
+    I = Array{Int}( nnz)
+    J = Array{Int}( nnz)
+    V = Array{Float64}( nnz)
+    for i in 1:length(cbeg)-1
+        for j in (cbeg[i]+1):cbeg[i+1]
+            I[j] = i
+            J[j] = cind[j]+1
+            V[j] = cval[j]
+        end
+    end
+    return sparse(I, J, V, m, n)
+end
 
 """
     add_sos!(model::Model, sostype::Symbol, idx::Vector{Cint}, weight::Vector{Float64})
