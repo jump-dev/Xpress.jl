@@ -3,12 +3,20 @@
 function MOI.VariableReference(m::XpressSolverInstance)
     m.last_variable_reference += 1
     ref = MOI.VariableReference(m.last_variable_reference)
-    m.variable_mapping[m.last_variable_reference] = ref
+    m.variable_mapping[ref] = length(m.variable_mapping)+1
+    push!(m.variable_bound, None)
+    push!(m.variable_type, ConVar)
+    push!(m.variable_lb, -Inf)
+    push!(m.variable_ub,  Inf)
     return ref
 end
 function MOI.VariableReference(m::XpressSolverInstance, n::Int)
     refs = MOI.VariableReference[]
     sizehint!(refs, n)
+    addsizehint!(m.variable_bound, n)
+    addsizehint!(m.variable_type, n)
+    addsizehint!(m.variable_lb, n)
+    addsizehint!(m.variable_ub, n)
     for i in 1:n
         push!(refs, MOI.VariableReference(m))
     end
@@ -17,7 +25,6 @@ end
 
 # Variables
 
-# TODO: lazy add?
 function addvariables!(m::XpressSolverInstance, n::Int) 
     add_cvars!(m.inner, zeros(n))
     return VariableReference(m, n)
@@ -28,6 +35,22 @@ function addvariable!(m::XpressSolverInstance)
 end
 
 
+"""
+    We assume a VariableReference is valid if it exists in the mapping, and returns
+    a column between 1 and the number of variables in the model.
+"""
+function MOI.isvalid(m::XpressSolverInstance, ref::MOI.VariableReference)
+    if haskey(m.variable_mapping, ref.value)
+        column = m.variable_mapping[ref.value]
+        if column > 0 && column <= length(.variable_bound)
+            return true
+        end
+    end
+    return false
+end
+
+
+
 ## Variable attributes
 
 # """
@@ -36,16 +59,16 @@ end
 # """
 # struct VariablePrimalStart <: AbstractVariableAttribute end
 
-"""
-    VariablePrimal(N)
-    VariablePrimal()
-The assignment to the primal variables in result `N`.
-If `N` is omitted, it is 1 by default.
-"""
-struct VariablePrimal <: AbstractVariableAttribute
-    N::Int
-end
-VariablePrimal() = VariablePrimal(1)
+# """
+#     VariablePrimal(N)
+#     VariablePrimal()
+# The assignment to the primal variables in result `N`.
+# If `N` is omitted, it is 1 by default.
+# """
+# struct VariablePrimal <: AbstractVariableAttribute
+#     N::Int
+# end
+# VariablePrimal() = VariablePrimal(1)
 
 # """
 #     VariableBasisStatus()

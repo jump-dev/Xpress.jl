@@ -1,16 +1,16 @@
 ## Solver attributes
 
 # struct SupportsDuals <: AbstractSolverAttribute end
-getattribute(m::XpressSolver, ::MOI.SupportsDuals) = true
+getattribute(m::XpressSolver, ::MOI.SupportsDuals) = false
 
 # struct SupportsAddConstraintAfterSolve <: AbstractSolverAttribute end
 getattribute(m::XpressSolver, ::MOI.SupportsAddConstraintAfterSolve) = true
 
 # struct SupportsDeleteConstraint <: AbstractSolverAttribute end
-getattribute(m::XpressSolver, ::MOI.SupportsDeleteConstraint) = true
+getattribute(m::XpressSolver, ::MOI.SupportsDeleteConstraint) = false
 
 # struct SupportsDeleteVariable <: AbstractSolverAttribute end
-getattribute(m::XpressSolver, ::MOI.SupportsDeleteVariable) = true
+getattribute(m::XpressSolver, ::MOI.SupportsDeleteVariable) = false
 
 # struct SupportsAddVariableAfterSolve <: AbstractSolverAttribute end
 getattribute(m::XpressSolver, ::MOI.SupportsAddVariableAfterSolve) = true
@@ -97,19 +97,32 @@ end
 cangetattribute(m::XpressSolverInstance, obj::MOI.NumberOfVariables) = true
 getattribute(m::XpressSolverInstance, obj::MOI.NumberOfVariables) = num_vars(m.inner)
 
-"""
-    NumberOfConstraints{F,S}()
-The number of constraints of the type `F`-in-`S` present in the solver instance.
-"""
-struct NumberOfConstraints{F,S} <: AbstractSolverInstanceAttribute end
 
-"""
-    ListOfConstraints()
-A list of tuples of the form `(F,S)`, where `F` is a function type
-and `S` is a set type indicating that the attribute `NumberOfConstraints{F,S}()`
-has value greater than zero.
-"""
-struct ListOfConstraints <: AbstractSolverInstanceAttribute end
+# struct NumberOfConstraints{F,S} <: AbstractSolverInstanceAttribute end
+cangetattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) = true
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) where {F<:MOI.ScalarAffineFunction{Float64}, S}
+    length(constraint_storage(m, F, S))
+end
+
+# struct ListOfConstraints <: AbstractSolverInstanceAttribute end
+cangetattribute(m::XpressSolverInstance, ::ListOfConstraints) = true
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) where {F<:MOI.ScalarAffineFunction{Float64}, S}
+    out = Tuple{DataType,DataType}[]
+
+    if length(constraint_storage(m, MOI.ScalarAffineFunction{Float64}, MOI.LessThan{Float64})) > 0
+        push!(out, (MOI.ScalarAffineFunction{Float64}, MOI.LessThan{Float64}))
+    end
+    if length(constraint_storage(m, MOI.ScalarAffineFunction{Float64}, MOI.GreaterThan{Float64})) > 0
+        push!(out, (MOI.ScalarAffineFunction{Float64}, MOI.GreaterThan{Float64}))
+    end
+    if length(constraint_storage(m, MOI.ScalarAffineFunction{Float64}, MOI.EqualTo{Float64})) > 0
+        push!(out, (MOI.ScalarAffineFunction{Float64}, MOI.EqualTo{Float64}))
+    end
+
+    # TODO variablewise
+
+    return out
+end
 
 """
     ObjectiveFunction()
