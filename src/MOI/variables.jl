@@ -27,11 +27,11 @@ end
 
 function MOI.addvariables!(m::XpressSolverInstance, n::Int) 
     add_cvars!(m.inner, zeros(n))
-    return VariableReference(m, n)
+    return MOI.VariableReference(m, n)
 end
 function MOI.addvariable!(m::XpressSolverInstance)
     add_cvar!(m.inner, 0.0)
-    return VariableReference(m)
+    return MOI.VariableReference(m)
 end
 
 

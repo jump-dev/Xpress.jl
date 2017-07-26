@@ -33,7 +33,7 @@ function ConstraintMapping()
                       Dict{LinConstrRef{EQ}, Int}(),
     )
 end
-length(map::ConstraintMapping) = length(map.less_than)+length(map.greater_than)+length(equal_to)
+Base.length(map::ConstraintMapping) = length(map.less_than)+length(map.greater_than)+length(equal_to)
 
 mutable struct XpressSolverInstance <: MOI.AbstractSolverInstance
     inner::Model

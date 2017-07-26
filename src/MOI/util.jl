@@ -16,7 +16,7 @@ function getcol(m::XpressSolverInstance, v::MOI.ConstraintReference{MOI.SingleVa
 end
 
 function rejectnonzeroconstant(f::MOI.AbstractScalarFunction)
-    if abs(func.constant) > eps(Float64)
+    if abs(f.constant) > eps(Float64)
         return error("nope")
     end
 end

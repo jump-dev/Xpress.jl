@@ -94,8 +94,8 @@ function getattribute(m::XpressSolverInstance, obj::MOI.ResultCount)
 end
 
 # struct NumberOfVariables <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, obj::MOI.NumberOfVariables) = true
-getattribute(m::XpressSolverInstance, obj::MOI.NumberOfVariables) = num_vars(m.inner)
+cangetattribute(m::XpressSolverInstance, ::MOI.NumberOfVariables) = true
+getattribute(m::XpressSolverInstance, ::MOI.NumberOfVariables) = num_vars(m.inner)
 
 
 # struct NumberOfConstraints{F,S} <: AbstractSolverInstanceAttribute end
