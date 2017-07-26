@@ -1,12 +1,12 @@
 # Objectives
 
-function setobjective!(m::XpressSolverInstance, sense::MOI.OptimizationSense, func::MOI.ScalarAffineFunction{R}) where R<:Real
+function MOI.setobjective!(m::XpressSolverInstance, sense::MOI.OptimizationSense, func::MOI.ScalarAffineFunction{R}) where R<:Real
 
     if func.constant != 0.0
         return error("nope")
     end
 
-    v = refs2inds(m, func.variables)
+    v = getcols(m, func.variables)
     set_objcoeffs!(m.inner, v, func.coefficients)
 
     s = sense == MOI.MaxSense ? :maximize : :minimize

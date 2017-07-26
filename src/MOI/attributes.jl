@@ -1,27 +1,27 @@
 ## Solver attributes
 
 # struct SupportsDuals <: AbstractSolverAttribute end
-getattribute(m::XpressSolver, ::MOI.SupportsDuals) = false
+MOI.getattribute(m::XpressSolver, ::MOI.SupportsDuals) = false
 
 # struct SupportsAddConstraintAfterSolve <: AbstractSolverAttribute end
-getattribute(m::XpressSolver, ::MOI.SupportsAddConstraintAfterSolve) = true
+MOI.getattribute(m::XpressSolver, ::MOI.SupportsAddConstraintAfterSolve) = true
 
 # struct SupportsDeleteConstraint <: AbstractSolverAttribute end
-getattribute(m::XpressSolver, ::MOI.SupportsDeleteConstraint) = false
+MOI.getattribute(m::XpressSolver, ::MOI.SupportsDeleteConstraint) = false
 
 # struct SupportsDeleteVariable <: AbstractSolverAttribute end
-getattribute(m::XpressSolver, ::MOI.SupportsDeleteVariable) = false
+MOI.getattribute(m::XpressSolver, ::MOI.SupportsDeleteVariable) = false
 
 # struct SupportsAddVariableAfterSolve <: AbstractSolverAttribute end
-getattribute(m::XpressSolver, ::MOI.SupportsAddVariableAfterSolve) = true
+MOI.getattribute(m::XpressSolver, ::MOI.SupportsAddVariableAfterSolve) = true
 
 # struct SupportsConicThroughQuadratic <: AbstractSolverAttribute end
-getattribute(m::XpressSolver, ::MOI.SupportsConicThroughQuadratic) = true
+MOI.getattribute(m::XpressSolver, ::MOI.SupportsConicThroughQuadratic) = true
 
 ## Solver instance attributes
 
 # struct ObjectiveValue <: AbstractSolverInstanceAttribute
-function cangetattribute(m::XpressSolverInstance, obj::MOI.ObjectiveValue)
+function MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.ObjectiveValue)
     # TODO
     # if solved
     if obj.resultindex == 1
@@ -29,32 +29,32 @@ function cangetattribute(m::XpressSolverInstance, obj::MOI.ObjectiveValue)
     end
     return false
 end
-getattribute(m::XpressSolverInstance, obj::MOI.ObjectiveValue) = get_objval(m.inner)
+MOI.getattribute(m::XpressSolverInstance, obj::MOI.ObjectiveValue) = get_objval(m.inner)
 
 # struct ObjectiveBound <: AbstractSolverInstanceAttribute end
-function cangetattribute(m::XpressSolverInstance, obj::MOI.ObjectiveBound)
+function MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.ObjectiveBound)
     # TODO
     # if solved
 end
-getattribute(m::XpressSolverInstance, obj::MOI.ObjectiveBound) = get_bestbound(m.inner)
+MOI.getattribute(m::XpressSolverInstance, obj::MOI.ObjectiveBound) = get_bestbound(m.inner)
 
 # struct RelativeGap <: AbstractSolverInstanceAttribute  end
-function cangetattribute(m::XpressSolverInstance, obj::MOI.RelativeGap)
+function MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.RelativeGap)
     # TODO
     # if solved
 end
-getattribute(m::XpressSolverInstance, obj::MOI.RelativeGap) = abs(get_bestbound(m.inner)-get_objval(m.inner))/abs(get_objval)
+MOI.getattribute(m::XpressSolverInstance, obj::MOI.RelativeGap) = abs(get_bestbound(m.inner)-get_objval(m.inner))/abs(get_objval)
 
 # struct SolveTime <: AbstractSolverInstanceAttribute end
-function cangetattribute(m::XpressSolverInstance, obj::MOI.SolveTime)
+function MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.SolveTime)
     # TODO
     # if solved
 end
-getattribute(m::XpressSolverInstance, obj::MOI.SolveTime) = m.inner.time
+MOI.getattribute(m::XpressSolverInstance, obj::MOI.SolveTime) = m.inner.time
 
 # struct Sense <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, obj::MOI.Sense) = true
-function getattribute(m::XpressSolverInstance, obj::MOI.Sense)
+MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.Sense) = true
+function MOI.getattribute(m::XpressSolverInstance, obj::MOI.Sense)
     # TODO Feasibility
     if model_sense(m.inner) == :maximize
         return MOI.MaxSense
@@ -64,24 +64,24 @@ function getattribute(m::XpressSolverInstance, obj::MOI.Sense)
 end
 
 # struct SimplexIterations <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, obj::MOI.SimplexIterations) = true
-getattribute(m::XpressSolverInstance, obj::MOI.SimplexIterations) = get_int_param(m.inner, XPRS_SIMPLEXITER)
+MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.SimplexIterations) = true
+MOI.getattribute(m::XpressSolverInstance, obj::MOI.SimplexIterations) = get_int_param(m.inner, XPRS_SIMPLEXITER)
 
 # struct BarrierIterations <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, obj::MOI.BarrierIterations) = true
-getattribute(m::XpressSolverInstance, obj::MOI.BarrierIterations) = get_int_param(m.inner, XPRS_BARITER)
+MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.BarrierIterations) = true
+MOI.getattribute(m::XpressSolverInstance, obj::MOI.BarrierIterations) = get_int_param(m.inner, XPRS_BARITER)
 
 # struct NodeCount <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, obj::MOI.NodeCount) = true
-getattribute(m::XpressSolverInstance, obj::MOI.NodeCount) = get_int_param(m.inner, XPRS_NODES)
+MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.NodeCount) = true
+MOI.getattribute(m::XpressSolverInstance, obj::MOI.NodeCount) = get_int_param(m.inner, XPRS_NODES)
 
 # struct RawSolver <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, obj::MOI.RawSolver) = true
-getattribute(m::XpressSolverInstance, obj::MOI.RawSolver) = m.inner
+MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.RawSolver) = true
+MOI.getattribute(m::XpressSolverInstance, obj::MOI.RawSolver) = m.inner
 
 # struct ResultCount <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, obj::MOI.ResultCount) = true
-function getattribute(m::XpressSolverInstance, obj::MOI.ResultCount)
+MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.ResultCount) = true
+function MOI.getattribute(m::XpressSolverInstance, obj::MOI.ResultCount)
     # TODO
     # if solved
     # else
@@ -94,19 +94,56 @@ function getattribute(m::XpressSolverInstance, obj::MOI.ResultCount)
 end
 
 # struct NumberOfVariables <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, ::MOI.NumberOfVariables) = true
-getattribute(m::XpressSolverInstance, ::MOI.NumberOfVariables) = num_vars(m.inner)
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.NumberOfVariables) = true
+MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfVariables) = num_vars(m.inner)
 
 
 # struct NumberOfConstraints{F,S} <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) where {F,S} = true
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) where {F,S} = true
 function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) where {F<:MOI.ScalarAffineFunction{Float64}, S}
     length(constraint_storage(m, F, S))
 end
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{MOI.SingleVariable, MOI.LessThan{Float64}})
+    c = 0
+    for i in m.variable_bound
+        if i == Upper || i == LowerAndUpper
+            c += 1
+        end
+    end
+    return c 
+end
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{MOI.SingleVariable, MOI.GreaterThan{Float64}})
+    c = 0
+    for i in m.variable_bound
+        if i == Lower || i == LowerAndUpper
+            c += 1
+        end
+    end
+    return c 
+end
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{MOI.SingleVariable, MOI.EqualTo{Float64}})
+    c = 0
+    for i in m.variable_bound
+        if i == Fixed
+            c += 1
+        end
+    end
+    return c 
+end
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{MOI.SingleVariable, MOI.Interval{Float64}})
+    c = 0
+    for i in m.variable_bound
+        if i == Interval
+            c += 1
+        end
+    end
+    return c 
+end
+
 
 # struct ListOfConstraints <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, ::MOI.ListOfConstraints) = true
-function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{F, S}) where {F<:MOI.ScalarAffineFunction{Float64}, S}
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ListOfConstraints) = true
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.ListOfConstraints)
     out = Tuple{DataType,DataType}[]
 
     if length(constraint_storage(m, MOI.ScalarAffineFunction{Float64}, MOI.LessThan{Float64})) > 0
@@ -138,8 +175,8 @@ end
 # A `TerminationStatusCode` explaining why the solver stopped.
 # """
 # struct TerminationStatus <: AbstractSolverInstanceAttribute end
-cangetattribute(m::XpressSolverInstance, obj::MOI.TerminationStatus) = true
-function getattribute(m::XpressSolverInstance, obj::MOI.TerminationStatus)
+MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.TerminationStatus) = true
+function MOI.getattribute(m::XpressSolverInstance, obj::MOI.TerminationStatus)
 
     if !is_mip(m.inner)
         return terminationcode_lp[get_lp_status(model)]

@@ -33,7 +33,7 @@ function ConstraintMapping()
                       Dict{LinConstrRef{EQ}, Int}(),
     )
 end
-Base.length(map::ConstraintMapping) = length(map.less_than)+length(map.greater_than)+length(equal_to)
+Base.length(map::ConstraintMapping) = length(map.less_than)+length(map.greater_than)+length(map.equal_to)
 
 mutable struct XpressSolverInstance <: MOI.AbstractSolverInstance
     inner::Model
@@ -193,7 +193,7 @@ function load!(m::XpressSolverInstance)
     # changes? -not supported
     # other attributes
 end
-function optimize!(m::XpressSolverInstance) 
+function MOI.optimize!(m::XpressSolverInstance) 
     load!(m)
     optimize(m.inner)
 
@@ -205,12 +205,12 @@ function optimize!(m::XpressSolverInstance)
     return nothing
 end
 
-free!(m::XpressSolverInstance) = free_model(m.onner)
+MOI.free!(m::XpressSolverInstance) = free_model(m.onner)
 
 """
     writeproblem(m::AbstractSolverInstance, filename::String)
 Writes the current problem data to the given file.
 Supported file types are solver-dependent.
 """
-writeproblem(m::XpressSolverInstance, filename::Compat.ASCIIString, flags::Compat.ASCIIString="") = write_model(m.inner, filenameg, flags)
+MOI.writeproblem(m::XpressSolverInstance, filename::Compat.ASCIIString, flags::Compat.ASCIIString="") = write_model(m.inner, filenameg, flags)
 

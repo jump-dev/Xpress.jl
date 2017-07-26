@@ -12,7 +12,7 @@ getcol(m::XpressSolverInstance, v::MOI.SingleVariable) = getcol(m, v.variable)
 getcols(m::XpressSolverInstance, ref::Vector{MOI.VariableReference}) = getcol.(m, ref)
 
 function getcol(m::XpressSolverInstance, v::MOI.ConstraintReference{MOI.SingleVariable,S}) where S
-    m.variable_mapping[VariableReference(v.value)]
+    m.variable_mapping[MOI.VariableReference(v.value)]
 end
 
 function rejectnonzeroconstant(f::MOI.AbstractScalarFunction)
@@ -20,6 +20,10 @@ function rejectnonzeroconstant(f::MOI.AbstractScalarFunction)
         return error("nope")
     end
 end
+
+value(set::MOI.LessThan{Float64})::Float64 = set.upper
+value(set::MOI.GreaterThan{Float64})::Float64 = set.lower
+value(set::MOI.EqualTo{Float64})::Float64 = set.value
 
 
 function key_from_value(map::Dict{A,B}, val::B)::A where A where B
