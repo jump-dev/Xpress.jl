@@ -28,9 +28,9 @@ struct ConstraintMapping
     # QUADRATIC
 end
 function ConstraintMapping()
-    ConstraintMapping(Dict{LinConstrRef{LE}, Int}[],
-                      Dict{LinConstrRef{GE}, Int}[],
-                      Dict{LinConstrRef{EQ}, Int}[],
+    ConstraintMapping(Dict{LinConstrRef{LE}, Int}(),
+                      Dict{LinConstrRef{GE}, Int}(),
+                      Dict{LinConstrRef{EQ}, Int}(),
     )
 end
 length(map::ConstraintMapping) = length(map.less_than)+length(map.greater_than)+length(equal_to)
@@ -79,7 +79,7 @@ mutable struct XpressSolverInstance <: MOI.AbstractSolverInstance
     # Options
     options
 end
-function XpressSolverInstance(;options...)
+function XpressSolverInstance(s::XpressSolver)
    m = XpressSolverInstance(
        Model(), 
        false,
@@ -96,17 +96,19 @@ function XpressSolverInstance(;options...)
        Float64[],
        Float64[],
        Float64[],
-       options
+       s.options
        )
 
-   for (name,value) in options
+   for (name,value) in s.options
        setparam!(m.inner, XPRS_CONTROLS_DICT[name], value)
    end
    return m
 end
 
-MOI.SolverInstance(s::XpressSolver) = XpressSolverInstance(s.options)
-
+# MOI.SolverInstance(s::XpressSolver) = XpressSolverInstance(s.options)
+function MOI.SolverInstance(s::XpressSolver) 
+    XpressSolverInstance(s)
+end
 
 constraint_storage(m::XpressSolverInstance, func::MOI.AbstractScalarFunction, set::MOI.AbstractSet) = constraint_storage(m, typeof(func), typeof(set))
 

@@ -25,11 +25,11 @@ end
 
 # Variables
 
-function addvariables!(m::XpressSolverInstance, n::Int) 
+function MOI.addvariables!(m::XpressSolverInstance, n::Int) 
     add_cvars!(m.inner, zeros(n))
     return VariableReference(m, n)
 end
-function addvariable!(m::XpressSolverInstance)
+function MOI.addvariable!(m::XpressSolverInstance)
     add_cvar!(m.inner, 0.0)
     return VariableReference(m)
 end
