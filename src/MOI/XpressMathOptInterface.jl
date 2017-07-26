@@ -201,6 +201,7 @@ function MOI.optimize!(m::XpressSolverInstance)
     m.variable_solution = get_solution(m.inner)
     # m.variable_redcost
     # m.constraint_dual = 
+    m.constraint_slack = get_slack(m.inner)
 
     return nothing
 end

@@ -28,23 +28,9 @@ include(joinpath("D:\\Repositories\\MathOptInterface", "test", "contlinear.jl"))
 
 linear1test(XpressSolver())
 
-# include("constants.jl")
-# include("low_level_api.jl")
-# @testset "LP" begin
-#     include("lp_01.jl")
-#     include("lp_02.jl")
-#     include("lp_03.jl")
-# end
-# include("mip_01.jl")
-# @testset "QP" begin
-#     include("qp_01.jl")
-#     include("qp_02.jl")
-# end
-# include("qcqp_01.jl")
-# include("env.jl")
-# include("sos.jl")
-# include("problemtype.jl")
-# include("miqcp.jl")
-# @testset "MathProgBase" begin
-#     include("mathprog.jl")
-# end
+# linear2test(XpressSolver())
+# linear3test(XpressSolver())
+# linear4test(XpressSolver())
+# linear5test(XpressSolver())
+# linear6test(XpressSolver())
+# linear7test(XpressSolver())

@@ -48,7 +48,10 @@ end
 
 # TODO
 # function modifyconstraint! end
-
+function MOI.modifyconstraint!(m::XpressSolverInstance, c::MOI.ConstraintReference{F,S}, mod::MOI.ScalarCoefficientChange{Float64}) where {F<:MOI.ScalarAffineFunction{Float64},S}
+    idx = constraint_storage(m, F, S)[c]
+    chg_coeffs!(m.inner, idx, getcol(m, mod.variable), mod.new_coefficient)
+end
 
 # Variable bounds
 
@@ -74,7 +77,7 @@ function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, set:
     end
     m.variable_lb[var] = value(set)
 end
-function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, ::MOI.LessThan{Float64})
+function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, set::MOI.LessThan{Float64})
     var = m.variable_mapping[v.variable]
     if m.variable_bound[var] == Lower
         m.variable_bound[var] = LowerAndUpper
@@ -83,13 +86,13 @@ function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, ::MO
     end
     m.variable_ub[var] = value(set)
 end
-function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, ::MOI.Interval{Float64})
+function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, set::MOI.Interval{Float64})
     var = m.variable_mapping[v.variable]
     m.variable_bound[var] = Interval
     m.variable_lb[var] = set.lower
     m.variable_ub[var] = set.upper
 end
-function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, ::MOI.EqualTo{Float64})
+function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, set::MOI.EqualTo{Float64})
     var = m.variable_mapping[v.variable]
     m.variable_bound[var] = Fixed
     m.variable_lb[var] = value(set)
@@ -146,7 +149,11 @@ MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.Constraint
 # struct ConstraintDualStart <: AbstractConstraintAttribute end
 
 # ConstraintPrimal() = ConstraintPrimal(1)
-MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintPrimal, ::MOI.ConstraintReference{F,S}) where {F,S} = false
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintPrimal, ::MOI.ConstraintReference{F,S}) where {F<:MOI.ScalarAffineFunction,S} = true
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintPrimal, c::MOI.ConstraintReference{F,S}) where {F<:MOI.ScalarAffineFunction{Float64},S}
+    idx = constraint_storage(m, F, S)[c]
+    return -m.constraint_slack[idx]+m.constraint_rhs[idx]
+end
 
 # """
 #     ConstraintDual(N)

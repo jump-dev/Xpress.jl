@@ -378,7 +378,7 @@ end
 
 Change multiple coefficients of the `A` matrix given constraints `cidx`, variables `vidx` and values `val` 
 """
-chg_coeffs!{T<:Real, S<:Real}(model::Model, cidx::T, vidx::T, val::S) = chg_coeffs!(model, Cint[cidx], Cint[vidx], val)
+chg_coeffs!{T<:Real, S<:Real}(model::Model, cidx::T, vidx::T, val::S) = chg_coeffs!(model, Cint[cidx], Cint[vidx], Float64[val])
 chg_coeffs!{T<:Real, S<:Real}(model::Model, cidx::Vector{T}, vidx::Vector{T}, val::Vector{S}) = chg_coeffs!(model, convert(Vector{Cint},cidx), convert(Vector{Cint},vidx), fvec(val))
 function chg_coeffs!(model::Model, cidx::Vector{Cint}, vidx::Vector{Cint}, val::FVec)
 

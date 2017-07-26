@@ -64,24 +64,24 @@ function MOI.getattribute(m::XpressSolverInstance, obj::MOI.Sense)
 end
 
 # struct SimplexIterations <: AbstractSolverInstanceAttribute end
-MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.SimplexIterations) = true
-MOI.getattribute(m::XpressSolverInstance, obj::MOI.SimplexIterations) = get_int_param(m.inner, XPRS_SIMPLEXITER)
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.SimplexIterations) = true
+MOI.getattribute(m::XpressSolverInstance, ::MOI.SimplexIterations) = get_int_param(m.inner, XPRS_SIMPLEXITER)
 
 # struct BarrierIterations <: AbstractSolverInstanceAttribute end
-MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.BarrierIterations) = true
-MOI.getattribute(m::XpressSolverInstance, obj::MOI.BarrierIterations) = get_int_param(m.inner, XPRS_BARITER)
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.BarrierIterations) = true
+MOI.getattribute(m::XpressSolverInstance, ::MOI.BarrierIterations) = get_int_param(m.inner, XPRS_BARITER)
 
 # struct NodeCount <: AbstractSolverInstanceAttribute end
-MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.NodeCount) = true
-MOI.getattribute(m::XpressSolverInstance, obj::MOI.NodeCount) = get_int_param(m.inner, XPRS_NODES)
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.NodeCount) = true
+MOI.getattribute(m::XpressSolverInstance, ::MOI.NodeCount) = get_int_param(m.inner, XPRS_NODES)
 
 # struct RawSolver <: AbstractSolverInstanceAttribute end
-MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.RawSolver) = true
-MOI.getattribute(m::XpressSolverInstance, obj::MOI.RawSolver) = m.inner
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.RawSolver) = true
+MOI.getattribute(m::XpressSolverInstance, ::MOI.RawSolver) = m.inner
 
 # struct ResultCount <: AbstractSolverInstanceAttribute end
-MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.ResultCount) = true
-function MOI.getattribute(m::XpressSolverInstance, obj::MOI.ResultCount)
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ResultCount) = true
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.ResultCount)
     # TODO
     # if solved
     # else
