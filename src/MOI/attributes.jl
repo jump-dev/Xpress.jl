@@ -175,15 +175,13 @@ end
 # A `TerminationStatusCode` explaining why the solver stopped.
 # """
 # struct TerminationStatus <: AbstractSolverInstanceAttribute end
-MOI.cangetattribute(m::XpressSolverInstance, obj::MOI.TerminationStatus) = true
-function MOI.getattribute(m::XpressSolverInstance, obj::MOI.TerminationStatus)
-
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.TerminationStatus) = true
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.TerminationStatus)
     if !is_mip(m.inner)
-        return terminationcode_lp[get_lp_status(model)]
+        return terminationcode_lp[get_lp_status(m.inner)]
     else
-        return terminationcode_mip[get_mip_status(model)]
+        return terminationcode_mip[get_mip_status(m.inner)]
     end
-
 end
 
 # see STOPSTATUS
@@ -213,36 +211,31 @@ const terminationcode_mip = Dict(
 
 ## Result status
 
-# """
-#     ResultStatusCode
-# An Enum of possible values for the `PrimalStatus` and `DualStatus` attributes.
-# The values indicate how to interpret the result vector.
-# * `FeasiblePoint`
-# * `InfeasiblePoint`
-# * `InfeasibilityCertificate`
-# * `UnknownResultStatus`
-# * `OtherResultStatus`
-# """
-# @enum ResultStatusCode FeasiblePoint NearlyFeasiblePoint InfeasiblePoint InfeasibilityCertificate NearlyInfeasibilityCertificate ReductionCertificate NearlyReductionCertificate UnknownResultStatus OtherResultStatus
-
-# """
-#     PrimalStatus(N)
-#     PrimalStatus()
-# The `ResultStatusCode` of the primal result `N`.
-# If `N` is omitted, it defaults to 1.
-# """
 # struct PrimalStatus <: AbstractSolverInstanceAttribute
-#     N::Int
-# end
-# PrimalStatus() = PrimalStatus(1)
+function MOI.cangetattribute(m::XpressSolverInstance, primal::MOI.PrimalStatus)
+    if primal.N != 1
+        return false
+    end
+    return true
+end
+function MOI.getattribute(m::XpressSolverInstance, primal::MOI.PrimalStatus)
+    if !is_mip(m.inner)
+        return MOI.FeasiblePoint
+    else
+        return MOI.FeasiblePoint
+    end
+end
 
-# """
-#     DualStatus(N)
-#     DualStatus()
-# The `ResultStatusCode` of the dual result `N`.
-# If `N` is omitted, it defaults to 1.
-# """
-# struct DualStatus <: MOI.AbstractSolverInstanceAttribute
-#     N::Int
-# end
-# DualStatus() = DualStatus(1)
+function MOI.cangetattribute(m::XpressSolverInstance, primal::MOI.DualStatus)
+    if primal.N != 1
+        return false
+    end
+    return true
+end
+function MOI.getattribute(m::XpressSolverInstance, primal::MOI.DualStatus)
+    if !is_mip(m.inner)
+        return MOI.FeasiblePoint
+    else
+        return MOI.FeasiblePoint
+    end
+end

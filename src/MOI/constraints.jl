@@ -65,13 +65,14 @@ function MOI.addconstraint!(m::XpressSolverInstance, v::MOI.SingleVariable, set:
     ref
 end
 
-function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, ::MOI.GreaterThan{Float64})
+function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, set::MOI.GreaterThan{Float64})
     var = m.variable_mapping[v.variable]
     if m.variable_bound[var] == Upper
         m.variable_bound[var] = LowerAndUpper
     else
         m.variable_bound[var] = Lower
     end
+    m.variable_lb[var] = value(set)
 end
 function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, ::MOI.LessThan{Float64})
     var = m.variable_mapping[v.variable]
@@ -80,12 +81,19 @@ function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, ::MO
     else
         m.variable_bound[var] = Upper
     end
+    m.variable_ub[var] = value(set)
 end
 function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, ::MOI.Interval{Float64})
-    m.variable_bound[m.variable_mapping[v.variable]] = Interval
+    var = m.variable_mapping[v.variable]
+    m.variable_bound[var] = Interval
+    m.variable_lb[var] = set.lower
+    m.variable_ub[var] = set.upper
 end
 function savevariablebound!(m::XpressSolverInstance, v::MOI.SingleVariable, ::MOI.EqualTo{Float64})
-    m.variable_bound[m.variable_mapping[v.variable]] = Fixed
+    var = m.variable_mapping[v.variable]
+    m.variable_bound[var] = Fixed
+    m.variable_lb[var] = value(set)
+    m.variable_ub[var] = value(set)
 end
 
 addboundconstraint!(m::XpressSolverInstance, v::MOI.SingleVariable, set::MOI.GreaterThan{Float64}) = set_lb!(m.inner, Int32[getcol(m,v)], Float64[value(set)])
@@ -107,13 +115,13 @@ end
 
 # struct ConstraintSet <: AbstractConstraintAttribute end
 MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, ::MOI.ConstraintReference{MOI.SingleVariable,MOI.GreaterThan{Float64}}) = true
-MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.ConstraintReference{MOI.SingleVariable,MOI.GreaterThan{Float64}}) = m.variable_lb[getcol(m,c)]
+MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.ConstraintReference{MOI.SingleVariable,MOI.GreaterThan{Float64}}) = MOI.GreaterThan(m.variable_lb[getcol(m,c)])
 MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, ::MOI.ConstraintReference{MOI.SingleVariable,MOI.LessThan{Float64}}) = true
-MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.ConstraintReference{MOI.SingleVariable,MOI.LessThan{Float64}}) = m.variable_ub[getcol(m,c)]
+MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.ConstraintReference{MOI.SingleVariable,MOI.LessThan{Float64}}) = MOI.LessThan(m.variable_ub[getcol(m,c)])
 MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, ::MOI.ConstraintReference{MOI.SingleVariable,MOI.Interval{Float64}}) = true
-MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.ConstraintReference{MOI.SingleVariable,MOI.Interval{Float64}}) = m.variable_ub[getcol(m,c)]
+MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.ConstraintReference{MOI.SingleVariable,MOI.Interval{Float64}}) = MOI.Interval(m.variable_lb[getcol(m,c)],m.variable_ub[getcol(m,c)])
 MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, ::MOI.ConstraintReference{MOI.SingleVariable,MOI.EqualTo{Float64}}) = true
-MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.ConstraintReference{MOI.SingleVariable,MOI.EqualTo{Float64}}) = m.variable_ub[getcol(m,c)]
+MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.ConstraintReference{MOI.SingleVariable,MOI.EqualTo{Float64}}) = MOI.Interval(m.variable_ub[getcol(m,c)])
 
 # TODO
 # function addconstraints! end
@@ -137,16 +145,8 @@ MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.Constraint
 # """
 # struct ConstraintDualStart <: AbstractConstraintAttribute end
 
-# """
-#     ConstraintPrimal(N)
-#     ConstraintPrimal()
-# The assignment to the constraint primal values in result `N`.
-# If `N` is omitted, it is 1 by default.
-# """
-# struct ConstraintPrimal <: AbstractConstraintAttribute
-#     N::Int
-# end
 # ConstraintPrimal() = ConstraintPrimal(1)
+MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintPrimal, ::MOI.ConstraintReference{F,S}) where {F,S} = false
 
 # """
 #     ConstraintDual(N)
@@ -161,17 +161,16 @@ MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.Constraint
 MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintDual, ::MOI.ConstraintReference{MOI.SingleVariable,S}) where S = false
 MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintDual, ::Vector{MOI.ConstraintReference{MOI.SingleVariable,S}}) where S = false
 MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintDual, ::Vector{MOI.ConstraintReference{MOI.ScalarAffineFunction,S}}) where S = false
-function MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintDual, c::MOI.ConstraintReference{F,S}) where {F<:MOI.ScalarAffineFunction,S}
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintDual, c::MOI.ConstraintReference{MOI.ScalarAffineFunction,S}) where S
     idx = constraint_storage(m, F, S)[c]
     return m.constraint_dual[idx]
 end
-function MOI.getattribute(m::XpressSolverInstance, T::MOI.ConstraintDual, c::Vector{MOI.ConstraintReference{F,S}}) where {F,S}#where F<:MOI.ScalarAffineFunction
-    return MOI.getattribute.(m,T,c)
-end
-
-function MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintDual, c::MOI.ConstraintReference{F,S}) where {F<:MOI.SingleVariable,S}
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintDual, c::MOI.ConstraintReference{MOI.SingleVariable,S}) where S
     idx = getcol(c)
     return m.variable_redcost[idx]
+end
+function MOI.getattribute(m::XpressSolverInstance, T::MOI.ConstraintDual, c::Vector{MOI.ConstraintReference{F,S}}) where {F,S}#where F<:MOI.ScalarAffineFunction
+    return MOI.getattribute.(m,T,c)
 end
 
 

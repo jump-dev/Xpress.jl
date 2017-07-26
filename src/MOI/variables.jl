@@ -69,6 +69,26 @@ end
 #     N::Int
 # end
 # VariablePrimal() = VariablePrimal(1)
+function MOI.cangetattribute(m::XpressSolverInstance, primal::MOI.VariablePrimal, ::MOI.VariableReference)
+    if primal.N != 1
+        return false
+    end
+    return true
+end
+function MOI.cangetattribute(m::XpressSolverInstance, primal::MOI.VariablePrimal, ::Vector{MOI.VariableReference})
+    if primal.N != 1
+        return false
+    end
+    return true
+end
+function MOI.getattribute(m::XpressSolverInstance, primal::MOI.VariablePrimal, v::MOI.VariableReference)
+    var = getcol(m,v)
+    return m.variable_solution[var]
+end
+function MOI.getattribute(m::XpressSolverInstance, primal::MOI.VariablePrimal, v::Vector{MOI.VariableReference})
+    vars = getcols(m,v)
+    return m.variable_solution[vars]
+end
 
 # """
 #     VariableBasisStatus()
