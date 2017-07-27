@@ -24,10 +24,11 @@ using Xpress, Base.Test
 
 using MathOptInterface
 include(joinpath("D:\\Repositories\\MathOptInterface", "test", "contlinear.jl"))
+include(joinpath("D:\\Repositories\\MathOptInterface", "test", "intlinear.jl"))
 # include(joinpath(Pkg.dir("MathOptInterface"), "test", "contlinear.jl"))
 
+# contlinear
 linear1test(XpressSolver())
-
 linear2test(XpressSolver())
 linear3test(XpressSolver())
 linear4test(XpressSolver())
@@ -35,3 +36,6 @@ linear5test(XpressSolver())
 linear6test(XpressSolver())
 # wont pass - vector affine
 # linear7test(XpressSolver())
+
+# intlinear
+knapsacktest(XpressSolver())

@@ -139,6 +139,24 @@ function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{MOI
     end
     return c 
 end
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{MOI.SingleVariable, MOI.Integer})
+    c = 0
+    for i in m.variable_type
+        if i == IntVar
+            c += 1
+        end
+    end
+    return c 
+end
+function MOI.getattribute(m::XpressSolverInstance, ::MOI.NumberOfConstraints{MOI.SingleVariable, MOI.ZeroOne})
+    c = 0
+    for i in m.variable_type
+        if i == BinVar
+            c += 1
+        end
+    end
+    return c 
+end
 
 
 # struct ListOfConstraints <: AbstractSolverInstanceAttribute end

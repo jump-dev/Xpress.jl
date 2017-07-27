@@ -57,7 +57,6 @@ function MOI.delete!(m::XpressSolverInstance, c::MOI.ConstraintReference{F,S}) w
     deleteat!(m.constraint_rhs, idx)
     # deleteat!(m.constraint_slack, idx)
     # deleteat!(m.constraint_dual, idx)
-    @show constraint_storage(m, F, S),c
     delete!(constraint_storage(m, F, S),c)
     shiftconstraints!(m.constraint_mapping, idx)
     del_constrs!(m.inner, idx)
@@ -82,7 +81,7 @@ end
 
 # Variable bounds
 
-function MOI.ConstraintReference(m::XpressSolverInstance, v::F, set::S) where {F<:MOI.SingleVariable, S}
+function MOI.ConstraintReference(m::XpressSolverInstance, v::F, set::S) where {F<:MOI.SingleVariable, S<:ConvexScalarSet}
     # bound ref number is the variable number
     ref = MOI.ConstraintReference{F, S}(v.variable.value)
     savevariablebound!(m, v, set)
@@ -90,7 +89,7 @@ function MOI.ConstraintReference(m::XpressSolverInstance, v::F, set::S) where {F
     return ref
 end
 
-function MOI.addconstraint!(m::XpressSolverInstance, v::MOI.SingleVariable, set::S) where S
+function MOI.addconstraint!(m::XpressSolverInstance, v::MOI.SingleVariable, set::S) where S<:ConvexScalarSet
     ref = MOI.ConstraintReference(m,v,set)
     ref
 end
@@ -217,6 +216,36 @@ end
 
 # TODO
 # function modifyconstraints! end
+
+# Variable Types
+
+
+function MOI.addconstraint!(m::XpressSolverInstance, v::F, ::S) where {F<:MOI.SingleVariable, S<:Union{MOI.Integer}}
+    var = getcol(m,v)
+    if m.variable_type[var] == ConVar
+        m.variable_type[var] = IntVar
+    else
+        error("cant have two integrality constraints")
+    end
+    chgcoltype!(m.inner, var, XPRS_INTEGER)
+    return MOI.ConstraintReference{F, S}(v.variable.value)
+end
+function MOI.addconstraint!(m::XpressSolverInstance, v::F, ::S) where {F<:MOI.SingleVariable, S<:Union{MOI.ZeroOne}}
+    var = getcol(m,v)
+    if m.variable_type[var] == ConVar
+        m.variable_type[var] = BinVar
+    else
+        error("cant have two integrality constraints")
+    end
+    chgcoltype!(m.inner, var, XPRS_BINARY)
+    return MOI.ConstraintReference{F, S}(v.variable.value)
+end
+function MOI.delete!(m::XpressSolverInstance, c::MOI.ConstraintReference{F, S}) where {F<:MOI.SingleVariable, S<:Union{MOI.Integer,MOI.ZeroOne}}
+    var = getcol(m,c)
+    m.variable_type[var] = ConVar
+    chgcoltype!(m.inner, var, XPRS_CONTINUOUS)
+end
+
 
 
 # TODO

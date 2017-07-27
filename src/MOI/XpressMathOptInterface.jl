@@ -9,6 +9,8 @@ const EQ = MOI.EqualTo{Float64}
 const LinConstrRef{T} = MOI.ConstraintReference{Linear, T}
 const SVConstrRef{T} = MOI.ConstraintReference{MOI.SingleVariable, T}
 
+const ConvexScalarSet = Union{MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.EqualTo{Float64}}
+
 export XpressSolver
 struct XpressSolver <: MOI.AbstractSolver
     options
