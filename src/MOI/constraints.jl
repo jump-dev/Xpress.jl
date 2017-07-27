@@ -57,6 +57,7 @@ function MOI.delete!(m::XpressSolverInstance, c::MOI.ConstraintReference{F,S}) w
     deleteat!(m.constraint_rhs, idx)
     # deleteat!(m.constraint_slack, idx)
     # deleteat!(m.constraint_dual, idx)
+    @show constraint_storage(m, F, S),c
     delete!(constraint_storage(m, F, S),c)
     shiftconstraints!(m.constraint_mapping, idx)
     del_constrs!(m.inner, idx)
@@ -69,7 +70,7 @@ function shiftconstraints!(map::ConstraintMapping, idx::Int)
     nothing
 end
 function shiftdict!(d::Dict{A,B}, idx::B) where {A,B}
-    for i in d
+    for i in keys(d)
         if d[i] > idx
             d[i] -= 1
         end

@@ -49,6 +49,16 @@ function MOI.isvalid(m::XpressSolverInstance, ref::MOI.VariableReference)
     return false
 end
 
+function MOI.delete!(m::XpressSolverInstance, ref::MOI.VariableReference)
+    var = getcol(m,ref)
+    deleteat!(m.variable_bound, var)
+    deleteat!(m.variable_type, var)
+    deleteat!(m.variable_lb, var)
+    deleteat!(m.variable_ub, var)
+    delete!(m.variable_mapping, ref)
+    shiftdict!(m.variable_mapping, var)
+    del_vars!(m.inner, var)
+end
 
 
 ## Variable attributes

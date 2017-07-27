@@ -28,9 +28,10 @@ include(joinpath("D:\\Repositories\\MathOptInterface", "test", "contlinear.jl"))
 
 linear1test(XpressSolver())
 
-# linear2test(XpressSolver())
-# linear3test(XpressSolver())
-# linear4test(XpressSolver())
-# linear5test(XpressSolver())
-# linear6test(XpressSolver())
+linear2test(XpressSolver())
+linear3test(XpressSolver())
+linear4test(XpressSolver())
+linear5test(XpressSolver())
+linear6test(XpressSolver())
+# wont pass - vector affine
 # linear7test(XpressSolver())
