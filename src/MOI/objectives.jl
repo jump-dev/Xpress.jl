@@ -6,8 +6,16 @@ function MOI.setobjective!(m::XpressSolverInstance, sense::MOI.OptimizationSense
         return error("nope")
     end
 
+    nvars = num_vars(m.inner)
+    obj = zeros(Float64, nvars)
+
     v = getcols(m, func.variables)
-    set_objcoeffs!(m.inner, v, func.coefficients)
+
+    for i in eachindex(v)
+        obj[i] = func.coefficients[i]
+    end
+
+    set_obj!(m.inner, obj)
 
     s = sense == MOI.MaxSense ? :maximize : :minimize
     if sense == MOI.FeasibilitySense
@@ -16,6 +24,10 @@ function MOI.setobjective!(m::XpressSolverInstance, sense::MOI.OptimizationSense
     set_sense!(m.inner, s)
 
     return nothing
+end
+
+function MOI.modifyobjective!(m::XpressSolverInstance, mod::MOI.ScalarCoefficientChange{Float64})
+    set_objcoeffs!(m.inner, Cint[getcol(m, mod.variable)], Float64[mod.new_coefficient])
 end
 
 # """

@@ -235,9 +235,9 @@ end
 Sets coefficients `c` given indices in `inds` in the objective function of `model`
 """
 function set_objcoeffs!{I<:Integer,R<:Real}(model::Model, inds::Vector{I}, c::Vector{R})
-    n = num_vars(model)
-    _chklen(c,n)
-    _chklen(inds,n)
+    # n = num_vars(model)
+    # _chklen(c,n)
+    _chklen(inds, length(c))
 
     ret = @xprs_ccall(chgobj, Cint, (
         Ptr{Void},     # model
@@ -245,7 +245,7 @@ function set_objcoeffs!{I<:Integer,R<:Real}(model::Model, inds::Vector{I}, c::Ve
         Ptr{Cint}, # inds
         Ptr{Float64} # vals
         ),
-        model.ptr_model, Cint(n), ivec(inds)-Cint(1), fvec(c))
+        model.ptr_model, Cint(length(c)), ivec(inds)-Cint(1), fvec(c))
 
     if ret != 0
         throw(XpressError(model))
