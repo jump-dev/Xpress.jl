@@ -54,6 +54,7 @@ function MOI.modifyconstraint!(m::XpressSolverInstance, c::MOI.ConstraintReferen
 end
 function MOI.modifyconstraint!(m::XpressSolverInstance, c::MOI.ConstraintReference{F,S}, mod::S) where {F<:MOI.ScalarAffineFunction{Float64},S}
     idx = constraint_storage(m, F, S)[c]
+    m.constraint_rhs[idx] = value(mod)
     set_rhs!(m.inner, Cint[idx], Float64[value(mod)])
 end
 
@@ -152,12 +153,48 @@ function MOI.modifyconstraint!(m::XpressSolverInstance, c::MOI.ConstraintReferen
     set_lb!(m.inner, Int32[var], Float64[val])
 end
 
+function MOI.delete!(m::XpressSolverInstance, c::MOI.ConstraintReference{MOI.SingleVariable, MOI.EqualTo{Float64}})
+    var = getcol(m,c)
+    m.variable_lb[var] = -Inf
+    m.variable_ub[var] = +Inf
+    m.variable_bound[var] = None
+    set_lb!(m.inner, Int32[var], Float64[-Inf])
+    set_ub!(m.inner, Int32[var], Float64[+Inf])
+end
+function MOI.delete!(m::XpressSolverInstance, c::MOI.ConstraintReference{MOI.SingleVariable, MOI.Interval{Float64}})
+    var = getcol(m,c)
+    m.variable_lb[var] = -Inf
+    m.variable_ub[var] = +Inf
+    m.variable_bound[var] = None
+    set_lb!(m.inner, Int32[var], Float64[-Inf])
+    set_ub!(m.inner, Int32[var], Float64[+Inf])
+end
+function MOI.delete!(m::XpressSolverInstance, c::MOI.ConstraintReference{MOI.SingleVariable, MOI.LessThan{Float64}})
+    var = getcol(m,c)
+    m.variable_ub[var] = +Inf
+    if m.variable_bound[var] == Upper
+        m.variable_bound[var] = None
+    elseif m.variable_bound[var] == LowerAndUpper
+        m.variable_bound[var] = Lower
+    end
+    set_ub!(m.inner, Int32[var], Float64[+Inf])
+end
+function MOI.delete!(m::XpressSolverInstance, c::MOI.ConstraintReference{MOI.SingleVariable, MOI.GreaterThan{Float64}})
+    var = getcol(m,c)
+    m.variable_lb[var] = -Inf
+    if m.variable_bound[var] == Lower
+        m.variable_bound[var] = None
+    elseif m.variable_bound[var] == LowerAndUpper
+        m.variable_bound[var] = Upper
+    end
+    set_lb!(m.inner, Int32[var], Float64[-Inf])
+end
 
 # TODO
 # function addconstraints! end
 
 # TODO
-# function modifyconstraint! end
+# function modifyconstraints! end
 
 
 # TODO
