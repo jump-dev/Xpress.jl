@@ -23,9 +23,6 @@ function addlinearconstraint!(m::XpressSolverInstance, func::MOI.ScalarAffineFun
     add_constr!(m.inner, getcols(m,func.variables), func.coefficients, '<', value(set))
 end
 
-# TODO
-# getters
-
 # struct ConstraintFunction <: AbstractConstraintAttribute end
 MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintFunction, ::MOI.ConstraintReference{MOI.ScalarQuadraticFunction{Float64},S}) where S = false
 MOI.cangetattribute(m::XpressSolverInstance, ::MOI.ConstraintFunction, ::MOI.ConstraintReference{MOI.ScalarAffineFunction{Float64},S}) where S = false
@@ -43,10 +40,6 @@ function MOI.getattribute(m::XpressSolverInstance, ::MOI.ConstraintSet, c::MOI.C
     return S(m.constraint_rhs[idx])
 end
 
-# TODO
-# function addconstraints! end
-
-# TODO
 # function modifyconstraint! end
 function MOI.modifyconstraint!(m::XpressSolverInstance, c::MOI.ConstraintReference{F,S}, mod::MOI.ScalarCoefficientChange{Float64}) where {F<:MOI.ScalarAffineFunction{Float64},S}
     idx = constraint_storage(m, F, S)[c]
@@ -57,6 +50,34 @@ function MOI.modifyconstraint!(m::XpressSolverInstance, c::MOI.ConstraintReferen
     m.constraint_rhs[idx] = value(mod)
     set_rhs!(m.inner, Cint[idx], Float64[value(mod)])
 end
+
+# function delete1 end
+function MOI.delete!(m::XpressSolverInstance, c::MOI.ConstraintReference{F,S}) where {F<:MOI.ScalarAffineFunction{Float64},S}
+    idx = constraint_storage(m, F, S)[c]
+    deleteat!(m.constraint_rhs, idx)
+    # deleteat!(m.constraint_slack, idx)
+    # deleteat!(m.constraint_dual, idx)
+    delete!(constraint_storage(m, F, S),c)
+    shiftconstraints!(m.constraint_mapping, idx)
+    del_constrs!(m.inner, idx)
+end
+
+function shiftconstraints!(map::ConstraintMapping, idx::Int)
+    shiftdict!(map.less_than,idx)
+    shiftdict!(map.greater_than,idx)
+    shiftdict!(map.equal_to,idx)
+    nothing
+end
+function shiftdict!(d::Dict{A,B}, idx::B) where {A,B}
+    for i in d
+        if d[i] > idx
+            d[i] -= 1
+        end
+    end
+end
+
+# TODO
+# plurals
 
 # Variable bounds
 
