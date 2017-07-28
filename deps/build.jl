@@ -35,5 +35,5 @@ for l in paths_to_try
 end
 
 if !found
-    error("Unable to locate Xpress installation, please check your enviromental variable (XPRESSDIR in windows and XPRESS in unix). Note that this must be downloaded separately from fico.com")
+    error("Unable to locate Xpress installation, please check your enviroment variable XPRESSDIR . Note that Xpress must be obtained separately from fico.com")
 end
