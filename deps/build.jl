@@ -16,29 +16,19 @@ function write_depsfile(path)
     close(f)
 end
 
-aliases = Compat.ASCIIString["xprs"]
 
-paths_to_try = copy(aliases)
-
-for a in aliases
-    if is_windows()
-        if haskey(ENV, "XPRESSDIR")
-            push!(paths_to_try, joinpath(ENV["XPRESSDIR"],"bin",string(a,".",Libdl.dlext)))
-        end
-    elseif is_unix()
-        if haskey(ENV, "XPRESS")
-            push!(paths_to_try, joinpath(ENV["XPRESS"],"lib",string("lib",a,".",Libdl.dlext)))
-            push!(paths_to_try, joinpath(ENV["XPRESS"],"..","lib",string("lib",a,".",Libdl.dlext)))
-        end
-    end
+libname = string(is_windows() ? "" : "lib", "xprs", ".", Libdl.dlext)
+paths_to_try = String[]
+if haskey(ENV, "XPRESSDIR")
+  push!(paths_to_try, joinpath(ENV["XPRESSDIR"], is_windows() ? "bin" : "lib", libname))
 end
 
-println(paths_to_try)
 found = false
-for l in paths_to_try[2:end]
+for l in paths_to_try
     d = Libdl.dlopen_e(l)
     if d != C_NULL
         found = true
+        info("found $l")
         write_depsfile(l)
         break
     end
