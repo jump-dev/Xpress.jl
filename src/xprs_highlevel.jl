@@ -9,8 +9,8 @@ function xpress_model(;    # solver environment
     b::FVec=emptyfvec,             # RHS of inequality constraints
     Aeq::CoeffMat=emptyfmat,       # LHS of equality constraints
     beq::FVec=emptyfvec,           # RHS of equality constraints
-    lb::Bounds=-Inf,               # upper bounds
-    ub::Bounds=Inf)                # lower bounds
+    lb::Union{Real,Vector}=-Inf,               # upper bounds
+    ub::Union{Real,Vector}=Inf)                # lower bounds
 
 	# check f
 	if isempty(f)
