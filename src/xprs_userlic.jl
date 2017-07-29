@@ -7,6 +7,47 @@ function emptyliccheck(lic::Vector{Cint})
     return lic
 end
 
+function touchlic(path)
+    f = open(path)
+    close(f)
+end
+
+
+function get_xpauthpath(xpauth_path = "")
+    XPAUTH = "xpauth.xpr"
+
+    candidates = []
+
+    # user sent the complete path
+    push!(candidates, xpauth_path)
+
+    # user sent directory
+    push!(candidates, joinpath(xpauth_path, XPAUTH))
+
+    # default env (not metioned in manual)
+    if haskey(ENV, "XPAUTH_PATH")
+        push!(candidates, joinpath(ENV["XPAUTH_PATH"], XPAUTH))
+    end
+
+    # default lib dir
+    if haskey(ENV, "XPRESSDIR")
+        push!(candidates, joinpath(ENV["XPRESSDIR"], "bin", XPAUTH))
+    end
+
+    # user´s lib dir
+    push!(candidates, joinpath(dirname(dirname(xprs)), "bin", XPAUTH))
+
+    for i in candidates
+        if isfile(i)
+            info("Xpress: Found license file $i")
+            return i
+        end
+    end
+
+    error("Could not find xpauth.xpr license file")
+end
+
+
 """
     userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCIIString = "" )
 
@@ -14,30 +55,17 @@ Performs license chhecking with `liccheck` validation function on dir `xpauth_pa
 """
 function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCIIString = "" )
 
-	# change directory to reach all libs
-	# ----------------------------------
+
+    # change directory to reach all libs
+    # ----------------------------------
     initdir = pwd()
     libdir = dirname(xprs)
     cd(libdir)
 
     # open and free xpauth.xpr (touches the file to release it)
     # ---------------------------------------------------------
-	path_lic = Array{Cchar}(1024*8)
-    if xpauth_path == ""
-        path_lic = joinpath(libdir,"xpauth.xpr")
-        if isfile(path_lic)
-            f = open(path_lic)
-            close(f)
-        end
-	elseif isdir(xpauth_path)
-		path_lic = joinpath(xpauth_path,"xpauth.xpr")
-        f = open(path_lic)
-        close(f)
-	elseif isfile(xpauth_path)
-		path_lic = xpauth_path
-        f = open(path_lic)
-        close(f)
-    end
+    path_lic = get_xpauthpath(xpauth_path)
+    touchlic(path_lic)
 
     # pre allocate vars
     # ----------------
@@ -48,7 +76,6 @@ function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCII
     # FIRST call do xprslicense to get BASE LIC
     # -----------------------------------------
     ierr = @xprs_ccall(license, Cint, (Ptr{Cint},Ptr{Cchar}), lic, slicmsg)
-
 
     # convert BASE LIC to GIVEN LIC
     # ---------------------------
