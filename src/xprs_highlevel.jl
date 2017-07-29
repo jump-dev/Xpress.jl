@@ -12,10 +12,10 @@ function xpress_model(;    # solver environment
     lb::Union{Real,Vector}=-Inf,               # upper bounds
     ub::Union{Real,Vector}=Inf)                # lower bounds
 
-	# check f
-	if isempty(f)
-		error("f must be specified.")
-	end
+    # check f
+    if isempty(f)
+        error("f must be specified.")
+    end
 
     # create model
     model = Model(name)
