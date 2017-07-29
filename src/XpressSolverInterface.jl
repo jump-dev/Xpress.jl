@@ -48,7 +48,7 @@ ConicModel(s::XpressSolver) = LPQPtoConicBridge(LinearQuadraticModel(s))
 
 supportedcones(m::XpressSolver) = [:Free, :Zero, :NonNeg, :NonPos, :SOC, :SOCRotated]
 
-loadproblem!(m::XpressMathProgModel, filename:: Compat.ASCIIString) = read_model(m.inner, filename)
+loadproblem!(m::XpressMathProgModel, filename:: String) = read_model(m.inner, filename)
 
 function updatemodel!(m::XpressMathProgModel)
 end
@@ -69,7 +69,7 @@ function setparameters!(m::XpressMathProgModel; mpboptions...)
     end
 end
 
-loadproblem!(m::Model, filename::Compat.ASCIIString) = read_model(m.inner, filename)
+loadproblem!(m::Model, filename::String) = read_model(m.inner, filename)
 
 function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub, sense)
     # throw away old model
@@ -118,7 +118,7 @@ function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub
     return nothing
 end
 
-writeproblem(m::XpressMathProgModel, filename:: Compat.ASCIIString) = write_model(m.inner, filename)
+writeproblem(m::XpressMathProgModel, filename:: String) = write_model(m.inner, filename)
 
 getvarLB(m::XpressMathProgModel)     = get_lb(m.inner)
 setvarLB!(m::XpressMathProgModel, l) = set_lb!(m.inner,l)

@@ -1,7 +1,7 @@
 # High level model construction
 
 function xpress_model(;    # solver environment
-	name::Compat.ASCIIString="", 	       # model name
+    name::String="",               # model name
     sense::Symbol=:minimize,       # :minimize or :maximize
     H::CoeffMat=emptyfmat,         # quadratic coefficient matrix
     f::FVec=emptyfvec,             # linear coefficient vector
