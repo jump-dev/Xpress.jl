@@ -8,7 +8,6 @@ const CVec = Vector{Cchar}
 
 const GCharOrVec = Union{Cchar, Char, Vector{Cchar}, Vector{Char}}
 
-@compat const Bounds{T<:Real} = Union{T, Vector{T}}
 const CoeffMat = Union{Matrix{Float64}, SparseMatrixCSC{Float64}}
 
 cchar(c::Cchar) = c
