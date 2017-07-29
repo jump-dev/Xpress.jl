@@ -49,11 +49,11 @@ end
 
 
 """
-    userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCIIString = "" )
+    userlic(; liccheck::Function = emptyliccheck, xpauth_path::String = "" )
 
 Performs license chhecking with `liccheck` validation function on dir `xpauth_path`
 """
-function userlic(; liccheck::Function = emptyliccheck, xpauth_path::Compat.ASCIIString = "" )
+function userlic(; liccheck::Function = emptyliccheck, xpauth_path::String = "" )
 
 
     # change directory to reach all libs

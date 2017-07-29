@@ -93,15 +93,15 @@ function set_dbl_param(m::Model, ipar::Cint, dsval::Float64)
 end
 
 """
-	set_str_param(m::Model, ipar::Integer, csval::Compat.ASCIIString)
+	set_str_param(m::Model, ipar::Integer, csval::String)
 
 Set string valued parameter
 """
-set_str_param(m::Model, ipar::Integer, csval::Compat.ASCIIString) = set_str_param(m::Model, Cint(ipar), csval)
-function set_str_param(m::Model, ipar::Cint, csval::Compat.ASCIIString)
+set_str_param(m::Model, ipar::Integer, csval::String) = set_str_param(m::Model, Cint(ipar), csval)
+function set_str_param(m::Model, ipar::Cint, csval::String)
 
 	ipar = convert(Cint,ipar)
-	csval = convert(Compat.ASCIIString,csval)
+	csval = convert(String,csval)
 	ret = @xprs_ccall(setstrcontrol, Cint, (Ptr{Void},Cint,Ptr{Cchar}),
 		m.ptr_model, ipar, csval)
 	if ret != 0
