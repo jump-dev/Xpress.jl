@@ -1,6 +1,3 @@
-using Compat
-import Compat: unsafe_string, String, is_windows, is_unix
-
 depsfile = joinpath(dirname(@__FILE__),"deps.jl")
 
 if isfile(depsfile)
