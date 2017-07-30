@@ -268,12 +268,12 @@ function addnames(m::Xpress.Model, names::Vector, nametype::Int32)
     for str in names  
         cnames = string(cnames, join(take(str,NAMELENGTH)), "\0")
     end
-	ret = Xpress.@xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
-		m.ptr_model, nametype, cnames, first, last)
+    ret = Xpress.@xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
+        m.ptr_model, nametype, cnames, first, last)
 
-	if ret != 0
-		throw(Xpress.XpressError(m))
-	end
+    if ret != 0
+        throw(Xpress.XpressError(m))
+    end
 
     nothing
 end
