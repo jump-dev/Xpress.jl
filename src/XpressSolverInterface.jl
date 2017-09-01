@@ -90,9 +90,15 @@ function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub
 
     # check if we have any range constraints
     # to properly support these, we will need to keep track of the
-    # slack variables automatically added by gurobi.
-    rangeconstrs = sum((rowlb .!= rowub) .& (rowlb .> neginf) .& (rowub .< posinf))
-    if rangeconstrs > 0 
+    # slack variables automatically added by xpress.
+    rangeconstrs = false#sum((rowlb .!= rowub) .& (rowlb .> neginf) .& (rowub .< posinf))
+    for i in eachindex(rowlb)
+        if rowlb[i] != rowub[i] && rowlb[i] > neginf && rowub[i] < posinf
+            rangeconstrs = true
+            break
+        end
+    end
+    if rangeconstrs
         warn("Julia Xpress interface doesn't properly support range (two-sided) constraints.")
         add_rangeconstrs!(m.inner, float(A), float(rowlb), float(rowub))
     else
