@@ -49,11 +49,11 @@ mutable struct XpressSolverInstance <: LQOI.LinQuadSolverInstance
     solvetime::Float64
 end
 
-function XpressSolverInstance(s::XpressSolver)
+function MOI.SolverInstance(s::XpressSolver)
     # env = Env()
-    # lqs_setparam!(env, lqs_PARAM_SCRIND, 1) # output logs to stdout by default
+    # LQOI.lqs_setparam!(env, LQOI.lqs_PARAM_SCRIND, 1) # output logs to stdout by default
     # for (name,value) in s.options
-    #     lqs_setparam!(env, string(name), value)
+    #     LQOI.lqs_setparam!(env, string(name), value)
     # end
     csi = XpressSolverInstance(
         Model(), #TODO
@@ -64,7 +64,7 @@ function XpressSolverInstance(s::XpressSolver)
         Float64[],
         Float64[],
         0,
-        ConstraintMapping(),
+        LQOI.ConstraintMapping(),
         Float64[],
         Float64[],
         Float64[],
@@ -82,7 +82,7 @@ function XpressSolverInstance(s::XpressSolver)
     # end
     # csi.inner.mipstart_effort = s.mipstart_effortlevel
     # if s.logfile != ""
-    #     lqs_setlogfile!(env, s.logfile)
+    #     LQOI.lqs_setlogfile!(env, s.logfile)
     # end
     return csi
 end
@@ -98,15 +98,15 @@ end
 # LinQuadSolver # Abstract type
 # done above
 
-# lqs_setparam!(env, name, val)
+# LQOI.lqs_setparam!(env, name, val)
 # TODO fix this one
-lqs_setparam!(m::XpressSolverInstance, name, val) = setparam!(m.inner, XPRS_CONTROLS_DICT[name], val)
+LQOI.lqs_setparam!(m::XpressSolverInstance, name, val) = setparam!(m.inner, XPRS_CONTROLS_DICT[name], val)
 
-# lqs_setlogfile!(env, path)
+# LQOI.lqs_setlogfile!(env, path)
 # TODO fix this one
-lqs_setlogfile!(m::XpressSolverInstance, path) = setlogfile(m.inner, filename::Compat.ASCIIString)
+LQOI.lqs_setlogfile!(m::XpressSolverInstance, path) = setlogfile(m.inner, filename::Compat.ASCIIString)
 
-# lqs_getprobtype(m)
+# LQOI.lqs_getprobtype(m)
 # TODO - consider removing, apparently useless
 
 #=
@@ -116,34 +116,34 @@ lqs_setlogfile!(m::XpressSolverInstance, path) = setlogfile(m.inner, filename::C
 cintvec(v::Vector) = convert(Vector{Int32}, v)
 cdoublevec(v::Vector) = convert(Vector{Float64}, v)
 
-# lqs_chgbds!(m, colvec, valvec, sensevec)
-lqs_chgbds!(m::Model, colvec, valvec, sensevec) = chgbounds!(m, colvec, sensevec, valvec)
+# LQOI.lqs_chgbds!(m, colvec, valvec, sensevec)
+LQOI.lqs_chgbds!(m::Model, colvec, valvec, sensevec) = chgbounds!(m, cintvec(colvec), sensevec, valvec)
 
-# lqs_getlb(m, col)
-lqs_getlb(m::Model, col) = get_lb(m, col, col)[1]
-# lqs_getub(m, col)
-lqs_getub(m::Model, col) = get_ub(m, col, col)[1]
+# LQOI.lqs_getlb(m, col)
+LQOI.lqs_getlb(m::Model, col) = get_lb(m, col, col)[1]
+# LQOI.lqs_getub(m, col)
+LQOI.lqs_getub(m::Model, col) = get_ub(m, col, col)[1]
 
-# lqs_getnumrows(m)
-lqs_getnumrows(m::Model) = num_linconstrs(m)
+# LQOI.lqs_getnumrows(m)
+LQOI.lqs_getnumrows(m::Model) = num_linconstrs(m)
 
-# lqs_addrows!(m, rowvec, colvec, coefvec, sensevec, rhsvec)
-lqs_addrows!(m::Model, rowvec, colvec, coefvec, sensevec, rhsvec) = add_constrs!(model::Model, rowvec, colvec, coefvec, sensevec, rhsvec)
+# LQOI.lqs_addrows!(m, rowvec, colvec, coefvec, sensevec, rhsvec)
+LQOI.lqs_addrows!(m::Model, rowvec, colvec, coefvec, sensevec, rhsvec) = add_constrs!(m::Model, rowvec, colvec, coefvec, sensevec, rhsvec)
 
-# lqs_getrhs(m, rowvec)
-lqs_getrhs(m::Model, row) = get_rhs(m, row, row)
+# LQOI.lqs_getrhs(m, rowvec)
+LQOI.lqs_getrhs(m::Model, row) = get_rhs(m, row, row)[1]  
 
-# colvec, coef = lqs_getrows(m, rowvec)
+# colvec, coef = LQOI.lqs_getrows(m, rowvec)
 # TODO improve
-function lqs_getrows(m::Model, idx)
-    A = get_rows(m.inner, idx, idx)'
+function LQOI.lqs_getrows(m::Model, idx)
+    A = get_rows(m, idx, idx)'
     return A.rowval, A.nzval
 end
 
-# lqs_getcoef(m, row, col) #??
+# LQOI.lqs_getcoef(m, row, col) #??
 # TODO improve
-function lqs_getcoef(m::Model, row, col) #??
-    A = get_rows(m.inner, row, row)'
+function LQOI.lqs_getcoef(m::Model, row, col) #??
+    A = get_rows(m, row, row)'
     cols = A.rowval
     vals = A.nzval
 
@@ -155,131 +155,161 @@ function lqs_getcoef(m::Model, row, col) #??
     end
 end
 
-# lqs_chgcoef!(m, row, col, coef)
-lqs_chgcoef!(m::Model, row, col, coef) = chg_coeffs!(m, row, col, coef)
+# LQOI.lqs_chgcoef!(m, row, col, coef)
+# TODO SPLIT THIS ONE
+function LQOI.lqs_chgcoef!(m::Model, row, col, coef) 
+    if row == 0
+        set_objcoeffs!(m, Int32[col], Float64[coef])
+    else
+        chg_coeffs!(m, row, col, coef)
+    end
+end
 
-# lqs_delrows!(m, row, row)
-lqs_delrows!(m::Model, rowbeg, rowend) = del_constrs!(m, cintvec(collect(rowbeg:rowend))) 
+# LQOI.lqs_delrows!(m, row, row)
+LQOI.lqs_delrows!(m::Model, rowbeg, rowend) = del_constrs!(m, cintvec(collect(rowbeg:rowend))) 
 
-# lqs_chgctype!(m, colvec, typevec)
+# LQOI.lqs_chgctype!(m, colvec, typevec)
 # TODO fix types
-lqs_chgctype!(m::Model, colvec, typevec) = chgcoltypes!(m, colvec, typevec)
+LQOI.lqs_chgctype!(m::Model, colvec, typevec) = chgcoltypes!(m, colvec, typevec)
 
-# lqs_chgsense!(m, rowvec, sensevec)
+# LQOI.lqs_chgsense!(m, rowvec, sensevec)
 # TODO fix types
-lqs_chgsense!(m::Model, rowvec, sensevec) = set_rowtype!(m, rowvec, sensevec)
+LQOI.lqs_chgsense!(m::Model, rowvec, sensevec) = set_rowtype!(m, rowvec, sensevec)
 
 # TODO - later
-# lqs_addsos(m, colvec, valvec, typ)
-# lqs_delsos(m, idx, idx)
-# lqs_getsos(m, idx)
+# LQOI.lqs_addsos(m, colvec, valvec, typ)
+# LQOI.lqs_delsos(m, idx, idx)
+# LQOI.lqs_getsos(m, idx)
 
 # TODO - later
-# lqs_getnumqconstrs(m)
-# lqs_addqconstr(m, cols,coefs,rhs,sense, I,J,V)
+# LQOI.lqs_getnumqconstrs(m)
+# LQOI.lqs_addqconstr(m, cols,coefs,rhs,sense, I,J,V)
 
 # TODO - later
-# lqs_chgrngval # later
+# LQOI.lqs_chgrngval # later
 
 #=
     Objective
 =#
 
-# lqs_copyquad(m, intvec,intvec, floatvec) #?
-function lqs_copyquad(m::Model, intvec, intvec2, floatvec) end
+# LQOI.lqs_copyquad(m, intvec,intvec, floatvec) #?
+function LQOI.lqs_copyquad(m::Model, intvec, intvec2, floatvec) end
 
-# lqs_chgobj(m, colvec,coefvec)
-lqs_chgobj!(m::Model, colvec, coefvec) = set_objcoeffs!(m, colvec, coefvec)
+# LQOI.lqs_chgobj(m, colvec,coefvec)
+function LQOI.lqs_chgobj!(m::Model, colvec, coefvec) 
+    nvars = num_vars(m)
+    obj = zeros(Float64, nvars)
 
-# lqs_chgobjsen(m, symbol)
-lqs_chgobjsen!(m::Model, symbol) = set_sense!(m, s) 
+    for i in eachindex(colvec)
+        obj[i] = coefvec[i]
+    end
 
-# lqs_getobj(m)
-lqs_getobj(m::Model) = get_obj(m)
+    set_obj!(m, obj)
+    nothing
+end
+
+# LQOI.lqs_chgobjsen(m, symbol)
+LQOI.lqs_chgobjsen!(m::Model, symbol) = set_sense!(m, symbol) 
+
+# LQOI.lqs_getobj(m)
+LQOI.lqs_getobj(m::Model) = get_obj(m)
+
+# lqs_getobjsen(m)
+function LQOI.lqs_getobjsen(m)
+    s = model_sense(m)
+    if s == :maximize
+        return MOI.MaxSense
+    else
+        return MOI.MinSense
+    end
+end
 
 #=
     Variables
 =#
 
-# lqs_getnumcols(m)
-lqs_getnumcols(m::Model) = num_vars(m)
+# LQOI.lqs_getnumcols(m)
+LQOI.lqs_getnumcols(m::Model) = num_vars(m)
 
-# lqs_newcols!(m, int)
-lqs_newcols!(m::Model, int) = add_cvars!(m, zeros(int))
+# LQOI.lqs_newcols!(m, int)
+LQOI.lqs_newcols!(m::Model, int) = add_cvars!(m, zeros(int))
 
-# lqs_delcols!(m, col, col)
-lqs_delcols!(m::Model, col, col2) = del_vars!(m, col)
+# LQOI.lqs_delcols!(m, col, col)
+LQOI.lqs_delcols!(m::Model, col, col2) = del_vars!(m, col)
 
 # TODO - later
-# lqs_addmipstarts(m, colvec, valvec)
+# LQOI.lqs_addmipstarts(m, colvec, valvec)
 
 
 #=
     Solve
 =#
 
-# lqs_mipopt!(m)
-lqs_mipopt!(m::Model) = mipoptimize(m)
+# LQOI.lqs_mipopt!(m)
+LQOI.lqs_mipopt!(m::Model) = mipoptimize(m)
 
-# lqs_qpopt!(m)
-lqs_qpopt!(m::Model) = lqs_lpopt!(m)
+# LQOI.lqs_qpopt!(m)
+LQOI.lqs_qpopt!(m::Model) = LQOI.lqs_lpopt!(m)
 
-# lqs_lpopt!(m)
-lqs_lpopt!(m::Model) = lpoptimize(m)
+# LQOI.lqs_lpopt!(m)
+LQOI.lqs_lpopt!(m::Model) = lpoptimize(m)
 
-# lqs_getstat(m)
+# LQOI.lqs_getstat(m)
 # complex TODO
-function lqs_getstat(m::Model) 
+function LQOI.lqs_getstat(m::Model) 
     if is_mip(m)
-        return get_lp_status(m)
-    else
         return get_mip_status(m)
+    else
+        return get_lp_status(m)
     end
 end
 
-# lqs_solninfo(m) # complex
+# LQOI.lqs_solninfo(m) # complex
 # complex TODO
-function lqs_solninfo(m::Model) 
-    warn("Fix lqs_solninfo")
-    return :what, :basic, 1, 0
+function LQOI.lqs_solninfo(m::Model) 
+    warn("Fix LQOI.lqs_solninfo")
+    return :what, :basic, 1, 1
 end
 
-# lqs_getx!(m, place)
-lqs_getx!(m::Model, place) = get_solution!(m, place)
+# LQOI.lqs_getx!(m, place)
+LQOI.lqs_getx!(m::Model, place) = get_solution!(m, place)
 
-# lqs_getax!(m, place)
-lqs_getax!(m::Model, place) = get_slack!(m, place)
+# LQOI.lqs_getax!(m, place)
+function LQOI.lqs_getax!(m::Model, place)
+    get_slack!(m, place)
+    rhs = get_rhs(m)
+    for i in eachindex(place)
+        place[i] = -place[i]+rhs[i]
+    end
+    nothing
+end
+# LQOI.lqs_getdj!(m, place)
+LQOI.lqs_getdj!(m::Model, place) = get_reducedcost!(m, place)
 
-# lqs_getdj!(m, place)
-lqs_getdj!(m::Model, place) = get_reducedcost!(m, place)
+# LQOI.lqs_getpi!(m, place)
+LQOI.lqs_getpi!(m::Model, place) = get_dual!(m, place)
 
-# lqs_getpi!(m, place)
-lqs_getpi!(m::Model, place) = get_dual!(m, place)
+# LQOI.lqs_getobjval(m)
+LQOI.lqs_getobjval(m::Model) = get_objval(m)
 
-# lqs_getobjval(m)
-lqs_getobjval(m::Model) = get_objval(m)
+# LQOI.lqs_getbestobjval(m)
+LQOI.lqs_getbestobjval(m::Model) = get_mip_objval(m)
 
-# lqs_getbestobjval(m)
-lqs_getbestobjval(m::Model) = get_mip_objval(m)
-
-# lqs_getmiprelgap(m)
-function lqs_getmiprelgap(m::Model)
+# LQOI.lqs_getmiprelgap(m)
+function LQOI.lqs_getmiprelgap(m::Model)
     L = get_mip_objval(m)
     U = get_bestbound(m)
     return abs(U-L)/U
 end
 
-# lqs_getitcnt(m)
-lqs_getitcnt(m::Model)  = get_simplex_iter_count(m)
+# LQOI.lqs_getitcnt(m)
+LQOI.lqs_getitcnt(m::Model)  = get_simplex_iter_count(m)
 
-# lqs_getbaritcnt(m)
-lqs_getbaritcnt(m::Model) = get_barrier_iter_count(m)
+# LQOI.lqs_getbaritcnt(m)
+LQOI.lqs_getbaritcnt(m::Model) = get_barrier_iter_count(m)
 
-# lqs_getnodecnt(m)
-lqs_getnodecnt(m::Model) = get_node_count(m)
-
-# lqs_termination_status_map(m) # = TERMINATION_STATUS_MAP
-lqs_termination_status_map(m::Model) = TERMINATION_STATUS_MAP
+# LQOI.lqs_getnodecnt(m)
+LQOI.lqs_getnodecnt(m::Model) = get_node_count(m)
 
 const TERMINATION_STATUS_MAP = Dict(
     :unstarted        => MOI.OtherError, # TODO
@@ -300,21 +330,23 @@ const TERMINATION_STATUS_MAP = Dict(
     :mip_optimal        => MOI.Success,
     :mip_unbounded      => MOI.UnboundedNoResult # TODO improve
 )
+# LQOI.lqs_termination_status_map(m) # = TERMINATION_STATUS_MAP
+LQOI.lqs_termination_status_map(m::XpressSolverInstance) = TERMINATION_STATUS_MAP
 
-# lqs_sol_basic(m) #
-lqs_sol_basic(m::Model) = :basic
+# LQOI.lqs_sol_basic(m) #
+LQOI.lqs_sol_basic(m::XpressSolverInstance) = :basic
 
-# lqs_sol_nonbasic(m)
-lqs_sol_nonbasic(m::Model) = :nonbasic
+# LQOI.lqs_sol_nonbasic(m)
+LQOI.lqs_sol_nonbasic(m::XpressSolverInstance) = :nonbasic
 
-# lqs_sol_primal(m)
-lqs_sol_primal(m::Model) = :primal
+# LQOI.lqs_sol_primal(m)
+LQOI.lqs_sol_primal(m::XpressSolverInstance) = :primal
 
-# lqs_sol_none(m)
-lqs_sol_none(m::Model) = :none
+# LQOI.lqs_sol_none(m)
+LQOI.lqs_sol_none(m::XpressSolverInstance) = :none
 
 # TODO - later
-# lqs_dualopt(m)
-# lqs_dualfarkas(m, place)
-# lqs_getray(m, place)
+# LQOI.lqs_dualopt(m)
+# LQOI.lqs_dualfarkas(m, place)
+# LQOI.lqs_getray(m, place)
 
