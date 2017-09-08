@@ -137,7 +137,7 @@ LQOI.lqs_getrhs(m::Model, row) = get_rhs(m, row, row)[1]
 # TODO improve
 function LQOI.lqs_getrows(m::Model, idx)
     A = get_rows(m, idx, idx)'
-    return A.rowval, A.nzval
+    return A.rowval-1, A.nzval
 end
 
 # LQOI.lqs_getcoef(m, row, col) #??
@@ -160,6 +160,8 @@ end
 function LQOI.lqs_chgcoef!(m::Model, row, col, coef) 
     if row == 0
         set_objcoeffs!(m, Int32[col], Float64[coef])
+    elseif col == 0
+        set_rhs!(m, Int32[row], Float64[coef])
     else
         chg_coeffs!(m, row, col, coef)
     end
