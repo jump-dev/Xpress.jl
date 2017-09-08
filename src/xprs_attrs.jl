@@ -267,9 +267,9 @@ set_obj!(model, c) = set_objcoeffs!(model,c)
 
 Return the lower bounds for all variables in the vector lb.
 """
-function get_lb!(model::Model, lb::Vector{Float64})
-    cols = num_vars(model)
-    _chklen(lb,cols)
+function get_lb!(model::Model, lb::Vector{Float64}, colb::Integer, cole::Integer)
+    
+    _chklen(lb,cole-colb+1)
 
     ret = @xprs_ccall(getlb, Cint, (
         Ptr{Void},    # model
@@ -277,11 +277,18 @@ function get_lb!(model::Model, lb::Vector{Float64})
         Cint,
         Cint
         ),
-        model.ptr_model, lb, Cint(0), Cint(cols-1))
+        model.ptr_model, lb, Cint(colb-1), Cint(cole-1))
 
     if ret != 0
         throw(XpressError(model))
     end
+
+    return nothing
+end
+function get_lb!(model::Model, lb::Vector{Float64})
+
+    cols = num_vars(model)
+    get_lb!(model, lb, 1, cols)
 
     return nothing
 end
@@ -292,6 +299,14 @@ end
 
 Return vector of lowebounds with length equals to the number of variables in the model.
 """
+function get_lb(model::Model, colb::Integer, cole::Integer)
+    
+    out = Array{Float64}(cole-colb+1)
+
+    get_lb!(model, out, colb, cole)
+
+    return out
+end
 function get_lb(model::Model)
 
     cols = num_vars(model)
@@ -304,14 +319,13 @@ end
 lowerbounds(model::Model) = get_lb(model)
 
 """
-    get_ub!(model::Model, ub::Vector{Float64})
+    get_ub!(model::Model, out::Vector{Float64})
 
-Return the upper bounds for all variables in the vector ub.
+Return the upper bounds for all variables in the vector out.
 """
-function get_ub!(model::Model, ub::Vector{Float64})
-
-    cols = num_vars(model)
-    _chklen(ub,cols)
+function get_ub!(model::Model, out::Vector{Float64}, colb::Integer, cole::Integer)
+    
+    _chklen(out, cole-colb+1)
 
     ret = @xprs_ccall(getub, Cint, (
         Ptr{Void},    # model
@@ -319,7 +333,7 @@ function get_ub!(model::Model, ub::Vector{Float64})
         Cint,
         Cint
         ),
-        model.ptr_model, ub, Cint(0), Cint(cols-1))
+        model.ptr_model, out, Cint(colb-1), Cint(cole-1))
 
     if ret != 0
         throw(XpressError(model))
@@ -327,13 +341,30 @@ function get_ub!(model::Model, ub::Vector{Float64})
 
     return nothing
 end
+function get_ub!(model::Model, ub::Vector{Float64})
+
+    cols = num_vars(model)
+    get_ub!(model, ub, 1, cols)
+
+    return nothing
+end
+
 
 """
     get_ub(model::Model)
     upperbounds(model::Model)
+    get_ub(model::Model, colb::Integer, cole::Integer)
 
 Return vector of upperbounds with length equals to the number of variables in the model.
 """
+function get_ub(model::Model, colb::Integer, cole::Integer)
+    
+    out = Array{Float64}(cole-colb+1)
+
+    get_ub!(model, out, colb, cole)
+
+    return out
+end
 function get_ub(model::Model)
 
     cols = num_vars(model)
@@ -393,10 +424,9 @@ objcoeffs(model::Model) = get_obj(model)
 
 Return the rhs for all constraints in the vector obj.
 """
-function get_rhs!(model::Model, rhs::Vector{Float64})
-
-    rows = num_constrs(model)
-    _chklen(rhs,rows)
+function get_rhs!(model::Model, out::Vector{Float64}, colb::Integer, cole::Integer)
+    
+    _chklen(out, cole-colb+1)
 
     ret = @xprs_ccall(getrhs, Cint, (
         Ptr{Void},    # model
@@ -404,11 +434,18 @@ function get_rhs!(model::Model, rhs::Vector{Float64})
         Cint,
         Cint
         ),
-        model.ptr_model, rhs, Cint(0), Cint(rows-1))
+        model.ptr_model, out, Cint(colb-1), Cint(cole-1))
 
     if ret != 0
         throw(XpressError(model))
     end
+
+    return nothing
+end
+function get_rhs!(model::Model, ub::Vector{Float64})
+
+    cols = num_vars(model)
+    get_ub!(model, ub, 1, cols)
 
     return nothing
 end
@@ -418,6 +455,14 @@ end
 
 Return a vector of rhs with length equals to the number of variables in the model.
 """
+function get_rhs(model::Model, colb::Integer, cole::Integer)
+    
+    out = Array{Float64}(cole-colb+1)
+
+    get_rhs!(model, out, colb, cole)
+
+    return out
+end
 function get_rhs(model::Model)
 
     rows = num_constrs(model)
