@@ -1,6 +1,3 @@
-const LQOI = LinQuadOptInterface
-const MOI = MathOptInterface
-
 # abstract type LinQuadSolver <: MOI.AbstractSolver end
 # struct LinQuadSolver <: MOI.AbstractSolver
 #     mipstart_effortlevel::Cint

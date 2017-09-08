@@ -90,13 +90,17 @@ module Xpress
 
     using MathOptInterface
     const MOI = MathOptInterface
+    using LinQuadOptInterface
+    const LQOI = LinQuadOptInterface
 
-    include("MOI/XpressMathOptInterface.jl")
-    include("MOI/attributes.jl")
-    include("MOI/constraints.jl")
-    include("MOI/objectives.jl")
-    include("MOI/util.jl")
-    include("MOI/variables.jl")
+    # include("MOI/XpressMathOptInterface.jl")
+    # include("MOI/attributes.jl")
+    # include("MOI/constraints.jl")
+    # include("MOI/objectives.jl")
+    # include("MOI/util.jl")
+    # include("MOI/variables.jl")
+
+    include("LQOI/XpressLinQuadOptInterface.jl")
 
     function __init__()
 
