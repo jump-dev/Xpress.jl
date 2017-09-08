@@ -292,7 +292,7 @@ function get_rows(model::Model, first::Integer, last::Integer)
     m = Cint(last-first+1) #nrows to get coefs
     n = Cint(num_vars(model))
     numnzP = Array{Cint}( 1)
-    cbeg = zeros(Cint, +1)
+    cbeg = zeros(Cint, m+1)
     cind = Array{Cint}( nnz)
     cval = Array{Float64}( nnz)
     ret = @xprs_ccall(getrows, Cint, (
@@ -305,7 +305,7 @@ function get_rows(model::Model, first::Integer, last::Integer)
                      Cint,
                      Cint
                      ),
-                     model.ptr_model, cbeg, cind, cval, Cint(nnz), numnzP, Cint(0), m-Cint(1))
+                     model.ptr_model, cbeg, cind, cval, Cint(nnz), numnzP, Cint(first-1), Cint(last-1))
     if ret != 0
         throw(XpressError(model))
     end
@@ -320,6 +320,7 @@ function get_rows(model::Model, first::Integer, last::Integer)
             V[j] = cval[j]
         end
     end
+    # @show (I, J, V, m, n)
     return sparse(I, J, V, m, n)
 end
 
