@@ -30,7 +30,7 @@ mutable struct XpressSolverInstance <: LQOI.LinQuadSolverInstance
     variable_dual_solution::Vector{Float64}
 
     last_constraint_reference::UInt64
-    constraint_mapping::ConstraintMapping
+    constraint_mapping::LQOI.ConstraintMapping
 
     constraint_primal_solution::Vector{Float64}
     constraint_dual_solution::Vector{Float64}
@@ -49,7 +49,7 @@ mutable struct XpressSolverInstance <: LQOI.LinQuadSolverInstance
     solvetime::Float64
 end
 
-function MOI.XpressSolverInstance(s::XpressSolver)
+function XpressSolverInstance(s::XpressSolver)
     # env = Env()
     # lqs_setparam!(env, lqs_PARAM_SCRIND, 1) # output logs to stdout by default
     # for (name,value) in s.options
@@ -186,7 +186,7 @@ lqs_chgsense!(m::Model, rowvec, sensevec) = set_rowtype!(m, rowvec, sensevec)
 =#
 
 # lqs_copyquad(m, intvec,intvec, floatvec) #?
-function lqs_copyquad(m::Model, intvec, intvec, floatvec) end
+function lqs_copyquad(m::Model, intvec, intvec2, floatvec) end
 
 # lqs_chgobj(m, colvec,coefvec)
 lqs_chgobj!(m::Model, colvec, coefvec) = set_objcoeffs!(m, colvec, coefvec)
@@ -290,7 +290,7 @@ const TERMINATION_STATUS_MAP = Dict(
     :unbounded        => MOI.UnboundedNoResult, # TODO improve
     :cutoff_in_dual   => MOI.OtherError, # TODO
     :unsolved         => MOI.OtherError, # TODO
-    :nonconvex        => MOI.InvalidSolverInstance # TODO
+    :nonconvex        => MOI.InvalidSolverInstance, # TODO
     :mip_not_loaded     => MOI.OtherError, # TODO
     :mip_lp_not_optimal => MOI.OtherError, # TODO improve
     :mip_lp_optimal     => MOI.OtherError, # TODO improve
