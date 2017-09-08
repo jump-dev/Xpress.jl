@@ -205,8 +205,8 @@ Set the sense of the model.
 Options are `:minimize` and `:maximize`
 """
 function set_sense!(model::Model, sense::Symbol)
-    v = sense == :maximize ? XPRS_OBJ_MAXIMIZE :
-        sense == :minimize ? XPRS_OBJ_MINIMIZE :
+    v = sense == :maximize || sense == :Max ? XPRS_OBJ_MAXIMIZE :
+        sense == :minimize || sense == :Min ? XPRS_OBJ_MINIMIZE :
         throw(ArgumentError("Invalid model sense."))
 
     set_sense!(model, v)
@@ -424,9 +424,9 @@ objcoeffs(model::Model) = get_obj(model)
 
 Return the rhs for all constraints in the vector obj.
 """
-function get_rhs!(model::Model, out::Vector{Float64}, colb::Integer, cole::Integer)
+function get_rhs!(model::Model, out::Vector{Float64}, rowb::Integer, rowe::Integer)
     
-    _chklen(out, cole-colb+1)
+    _chklen(out, rowe-rowb+1)
 
     ret = @xprs_ccall(getrhs, Cint, (
         Ptr{Void},    # model
@@ -434,7 +434,7 @@ function get_rhs!(model::Model, out::Vector{Float64}, colb::Integer, cole::Integ
         Cint,
         Cint
         ),
-        model.ptr_model, out, Cint(colb-1), Cint(cole-1))
+        model.ptr_model, out, Cint(rowb-1), Cint(rowe-1))
 
     if ret != 0
         throw(XpressError(model))
@@ -442,10 +442,10 @@ function get_rhs!(model::Model, out::Vector{Float64}, colb::Integer, cole::Integ
 
     return nothing
 end
-function get_rhs!(model::Model, ub::Vector{Float64})
+function get_rhs!(model::Model, out::Vector{Float64})
 
-    cols = num_vars(model)
-    get_ub!(model, ub, 1, cols)
+    rows = num_constrs(model)
+    get_rhs!(model, out, 1, rows)
 
     return nothing
 end
@@ -455,11 +455,11 @@ end
 
 Return a vector of rhs with length equals to the number of variables in the model.
 """
-function get_rhs(model::Model, colb::Integer, cole::Integer)
+function get_rhs(model::Model, rowb::Integer, rowe::Integer)
     
-    out = Array{Float64}(cole-colb+1)
+    out = Array{Float64}(rowe-rowb+1)
 
-    get_rhs!(model, out, colb, cole)
+    get_rhs!(model, out, rowb, rowe)
 
     return out
 end
