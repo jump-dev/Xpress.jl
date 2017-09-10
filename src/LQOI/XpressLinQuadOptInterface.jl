@@ -178,6 +178,14 @@ LQOI.lqs_chgctype!(m::Model, colvec, typevec) = chgcoltypes!(m, colvec, typevec)
 # TODO fix types
 LQOI.lqs_chgsense!(m::Model, rowvec, sensevec) = set_rowtype!(m, rowvec, sensevec)
 
+const VAR_TYPE_MAP = Dict{Symbol,Cchar}(
+    :CONTINUOUS => Cchar('C'),
+    :INTEGER => Cchar('I'),
+    :BINARY => Cchar('B')
+)
+
+LQOI.lqs_vartype_map(m::XpressSolverInstance) = VAR_TYPE_MAP
+
 # TODO - later
 # LQOI.lqs_addsos(m, colvec, valvec, typ)
 # LQOI.lqs_delsos(m, idx, idx)
@@ -270,7 +278,11 @@ end
 # complex TODO
 function LQOI.lqs_solninfo(m::Model) 
     warn("Fix LQOI.lqs_solninfo")
-    return :what, :basic, 1, 1
+    if is_mip(m)
+        return :what, :primal, 1, 0
+    else
+        return :what, :basic, 1, 1
+    end
 end
 
 # LQOI.lqs_getx!(m, place)
