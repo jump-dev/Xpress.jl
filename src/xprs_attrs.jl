@@ -98,7 +98,7 @@ end
 
 @xprs_int_attr num_intents  XPRS_MIPENTS
 
-@xprs_int_attr num_setmembers SETMEMBERS
+@xprs_int_attr num_setmembers XPRS_SETMEMBERS
 
 @xprs_dbl_attr obj_sense    XPRS_OBJSENSE
 
@@ -136,7 +136,7 @@ is_qcp(model::Model) = num_qconstrs(model) > 0
 
 Return `true` if there are integer entities in the Model
 """
-is_mip(model::Model) = num_intents(model)+num_sos(model) > 0
+is_mip(model::Model) = (num_intents(model)+num_sos(model)) > 0
 
 """
     is_qp(model::Model)

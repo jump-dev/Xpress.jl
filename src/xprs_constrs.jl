@@ -354,6 +354,68 @@ function add_sos!(model::Model, sostype::Symbol, idx::Vector{Cint}, weight::Vect
         throw(XpressError(model))
     end
 end
+function del_sos!(model::Model, idx::Vector{Cint})
+    # int XPRS_CC XPRSdelsets(XPRSprob prob, int ndelsets, const int mindex[])
+    numdel = length(idx)
+    ret = @xprs_ccall(delsets, Cint, (
+                     Ptr{Void},
+                     Cint,
+                     Ptr{Cint}),
+                     model.ptr_model, convert(Cint,numdel), idx.-Cint(1))
+    if ret != 0
+        throw(XpressError(model))
+    end
+end
+
+function get_sos_matrix(m::Model)
+    @show nnz = num_setmembers(m)
+    @show sets = num_sos(m)
+
+    n = Cint(num_vars(m))
+
+    settypes = Array{Cchar}(sets)
+    setstart = Array{Cint}(sets+1)
+    setcols = Array{Cint}(nnz)
+    setvals = Array{Float64}(nnz)
+
+    intents = Array{Cint}(1)
+    nsets = Array{Cint}(1)
+
+    # int XPRS_CC XPRSgetglobal(XPRSprob prob, int*nglents, int*sets, 
+    #char qgtype[], int mgcols[], double dlim[], char qstype[], 
+    #int msstart[],int mscols[], double dref[]);
+    ret = @xprs_ccall(getglobal, Cint, (
+        Ptr{Void},
+        Ptr{Cint}, # nglents
+        Ptr{Cint}, # sets
+        Ptr{Cchar}, # qgtype
+        Ptr{Cint}, # mgcols
+        Ptr{Float64}, # dlim
+        Ptr{Cchar}, # qstype
+        Ptr{Cint}, # msstart
+        Ptr{Cint}, # mscols
+        Ptr{Float64}, # dref
+        ),
+        m.ptr_model, intents, nsets, C_NULL, C_NULL, C_NULL, 
+        settypes, setstart, setcols, setvals)
+
+    if ret != 0
+        throw(XpressError(m))
+    end
+    setstart[end] = nnz
+    I = Array{Int}( nnz)
+    J = Array{Int}( nnz)
+    V = Array{Float64}( nnz)
+    for i in 1:length(setstart)-1
+        for j in (setstart[i]+1):setstart[i+1]
+            I[j] = i
+            J[j] = setcols[j]+1
+            V[j] = setvals[j]
+        end
+    end
+    @show (I, J, V, sets, n)
+    return sparse(I, J, V, sets, n), settypes
+end
 
 """
     del_constrs!{T<:Real}(model::Model, idx::Vector{T})
@@ -393,6 +455,24 @@ function chg_coeffs!(model::Model, cidx::Vector{Cint}, vidx::Vector{Cint}, val::
                      Ptr{Cint},
                      Ptr{Float64}),
                      model, convert(Cint,numchgs), cidx-Cint(1), vidx-Cint(1), val)
+    if ret != 0
+        throw(XpressError(model))
+    end
+end 
+
+
+function chg_rhsrange!(model::Model, cidx::Vector{Cint}, val::FVec)
+    # XPRSchgrhsrange(XPRSprob prob, int nels, const int mindex[], const double rng[])
+    
+    (length(cidx) == length(val)) || error("Inconsistent argument dimensions.")
+
+    numchgs = length(cidx)
+    ret = @xprs_ccall(chgrhsrange, Cint, (
+                        Ptr{Void},
+                        Cint,
+                        Ptr{Cint},
+                        Ptr{Float64}),
+                        model, convert(Cint,numchgs), cidx-Cint(1), val)
     if ret != 0
         throw(XpressError(model))
     end

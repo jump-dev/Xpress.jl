@@ -183,20 +183,44 @@ const VAR_TYPE_MAP = Dict{Symbol,Cchar}(
     :INTEGER => Cchar('I'),
     :BINARY => Cchar('B')
 )
-
 LQOI.lqs_vartype_map(m::XpressSolverInstance) = VAR_TYPE_MAP
 
-# TODO - later
 # LQOI.lqs_addsos(m, colvec, valvec, typ)
+LQOI.lqs_addsos!(m::Model, colvec, valvec, typ) = add_sos!(m, typ, colvec, valvec)
 # LQOI.lqs_delsos(m, idx, idx)
-# LQOI.lqs_getsos(m, idx)
+LQOI.lqs_delsos!(m::Model, idx1, idx2) = del_sos!(m, cintvec(collect(idx1:idx2)))
 
+const SOS_TYPE_MAP = Dict{Symbol,Symbol}(
+    :SOS1 => :SOS1,#Cchar('1'),
+    :SOS2 => :SOS2#Cchar('2')
+)
+LQOI.lqs_sertype_map(m::XpressSolverInstance) = SOS_TYPE_MAP
+
+# TODO - later
+# LQOI.lqs_getsos(m, idx)
+function LQOI.lqs_getsos(m::Model, idx)
+    A, types = get_sos_matrix(m::Model)
+    @show A
+    @show line = A[idx,:] #sparse vec
+    @show cols = line.nzind
+    @show vals = line.nzval
+    @show typ = types[idx] == Cchar('1') ? :SOS1 : :SOS2
+    return cols, vals, typ
+end
 # TODO - later
 # LQOI.lqs_getnumqconstrs(m)
 # LQOI.lqs_addqconstr(m, cols,coefs,rhs,sense, I,J,V)
 
-# TODO - later
-# LQOI.lqs_chgrngval # later
+# LQOI.lqs_chgrngval
+LQOI.lqs_chgrngval!(m::Model, rows, vals) = chg_rhsrange!(m, cintvec(rows), -vals)
+
+const CTR_TYPE_MAP = Dict{Symbol,Cchar}(
+    :RANGE => Cchar('R'),
+    :LOWER => Cchar('L'),
+    :UPPER => Cchar('U'),
+    :EQUALITY => Cchar('E')
+)
+LQOI.lqs_ctrtype_map(m::XpressSolverInstance) = CTR_TYPE_MAP
 
 #=
     Objective
@@ -219,13 +243,21 @@ function LQOI.lqs_chgobj!(m::Model, colvec, coefvec)
 end
 
 # LQOI.lqs_chgobjsen(m, symbol)
-LQOI.lqs_chgobjsen!(m::Model, symbol) = set_sense!(m, symbol) 
+# TODO improve minimax
+function LQOI.lqs_chgobjsen!(m::Model, symbol)
+    if symbol == :Min
+        set_sense!(m, :minimize)
+    else
+        set_sense!(m, :maximize)
+    end
+end
+    
 
 # LQOI.lqs_getobj(m)
 LQOI.lqs_getobj(m::Model) = get_obj(m)
 
 # lqs_getobjsen(m)
-function LQOI.lqs_getobjsen(m)
+function LQOI.lqs_getobjsen(m::Model)
     s = model_sense(m)
     if s == :maximize
         return MOI.MaxSense
