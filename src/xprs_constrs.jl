@@ -368,8 +368,8 @@ function del_sos!(model::Model, idx::Vector{Cint})
 end
 
 function get_sos_matrix(m::Model)
-    @show nnz = num_setmembers(m)
-    @show sets = num_sos(m)
+    nnz = num_setmembers(m)
+    sets = num_sos(m)
 
     n = Cint(num_vars(m))
 
@@ -413,7 +413,7 @@ function get_sos_matrix(m::Model)
             V[j] = setvals[j]
         end
     end
-    @show (I, J, V, sets, n)
+    # @show (I, J, V, sets, n)
     return sparse(I, J, V, sets, n), settypes
 end
 

@@ -200,11 +200,10 @@ LQOI.lqs_sertype_map(m::XpressSolverInstance) = SOS_TYPE_MAP
 # LQOI.lqs_getsos(m, idx)
 function LQOI.lqs_getsos(m::Model, idx)
     A, types = get_sos_matrix(m::Model)
-    @show A
-    @show line = A[idx,:] #sparse vec
-    @show cols = line.nzind
-    @show vals = line.nzval
-    @show typ = types[idx] == Cchar('1') ? :SOS1 : :SOS2
+    line = A[idx,:] #sparse vec
+    cols = line.nzind
+    vals = line.nzval
+    typ = types[idx] == Cchar('1') ? :SOS1 : :SOS2
     return cols, vals, typ
 end
 # TODO - later
@@ -235,7 +234,7 @@ function LQOI.lqs_chgobj!(m::Model, colvec, coefvec)
     obj = zeros(Float64, nvars)
 
     for i in eachindex(colvec)
-        obj[i] = coefvec[i]
+        obj[colvec[i]] = coefvec[i]
     end
 
     set_obj!(m, obj)
@@ -396,3 +395,12 @@ LQOI.lqs_sol_none(m::XpressSolverInstance) = :none
 # LQOI.lqs_dualfarkas(m, place)
 # LQOI.lqs_getray(m, place)
 
+
+MOI.free!(m::XpressSolverInstance) = free_model(m.onner)
+
+"""
+    writeproblem(m::AbstractSolverInstance, filename::String)
+Writes the current problem data to the given file.
+Supported file types are solver-dependent.
+"""
+MOI.writeproblem(m::XpressSolverInstance, filename::Compat.ASCIIString, flags::Compat.ASCIIString="") = write_model(m.inner, filename, flags)
