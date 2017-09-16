@@ -50,6 +50,8 @@ function Model(; finalize_env::Bool=true)
 
     return m
 end
+Model(env; finalize_env::Bool=true) = Model(finalize_env=true)
+
 function Model(name::Compat.ASCIIString, sense::Symbol = :minimize)
     model = Model()
     if sense != :minimize

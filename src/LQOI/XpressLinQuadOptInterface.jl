@@ -15,67 +15,15 @@ end
 
 mutable struct XpressSolverInstance <: LQOI.LinQuadSolverInstance
 
-    # TODO
-    # env
-
-    inner::Model
-
-    obj_is_quad::Bool
-
-    last_variable_reference::UInt64
-    variable_mapping::Dict{MOI.VariableReference, Int}
-    variable_references::Vector{MOI.VariableReference}
-
-    variable_primal_solution::Vector{Float64}
-    variable_dual_solution::Vector{Float64}
-
-    last_constraint_reference::UInt64
-    constraint_mapping::LQOI.ConstraintMapping
-
-    constraint_primal_solution::Vector{Float64}
-    constraint_dual_solution::Vector{Float64}
-
-    qconstraint_primal_solution::Vector{Float64}
-    qconstraint_dual_solution::Vector{Float64}
-
-    objective_constant::Float64
-
-    termination_status::MOI.TerminationStatusCode
-    primal_status::MOI.ResultStatusCode
-    dual_status::MOI.ResultStatusCode
-    primal_result_count::Int
-    dual_result_count::Int
-
-    solvetime::Float64
+    LQOI.@LinQuadSolverInstanceBase
+    
 end
 
 function MOI.SolverInstance(s::XpressSolver)
-    # env = Env()
-    # LQOI.lqs_setparam!(env, LQOI.lqs_PARAM_SCRIND, 1) # output logs to stdout by default
-    # for (name,value) in s.options
-    #     LQOI.lqs_setparam!(env, string(name), value)
-    # end
+
+    env = nothing
     m = XpressSolverInstance(
-        Model(), #TODO
-        false,
-        0,
-        Dict{MOI.VariableReference, Int}(),
-        MOI.VariableReference[],
-        Float64[],
-        Float64[],
-        0,
-        LQOI.ConstraintMapping(),
-        Float64[],
-        Float64[],
-        Float64[],
-        Float64[],
-        0.0,
-        MOI.OtherError, # not solved
-        MOI.UnknownResultStatus,
-        MOI.UnknownResultStatus,
-        0,
-        0,
-        0.0
+        (LQOI.@LinQuadSolverInstanceBaseInit)...,
     )
     for (name,value) in s.options
         setparam!(m.inner, XPRS_CONTROLS_DICT[name], value)
