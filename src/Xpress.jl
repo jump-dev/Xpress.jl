@@ -82,25 +82,11 @@ module Xpress
     include("xprs_solve.jl")
     include("xprs_callbacks.jl")
 
-    # include("XpressSolverInterface.jl")
+    include("XpressSolverInterface.jl")
 
     # license checker
     # ---------------
     include("xprs_userlic.jl")
-
-    using MathOptInterface
-    const MOI = MathOptInterface
-    using LinQuadOptInterface
-    const LQOI = LinQuadOptInterface
-
-    # include("MOI/XpressMathOptInterface.jl")
-    # include("MOI/attributes.jl")
-    # include("MOI/constraints.jl")
-    # include("MOI/objectives.jl")
-    # include("MOI/util.jl")
-    # include("MOI/variables.jl")
-
-    include("LQOI/XpressLinQuadOptInterface.jl")
 
     function __init__()
 
