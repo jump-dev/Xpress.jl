@@ -1,7 +1,7 @@
 # High level model construction
 
 function xpress_model(;    # solver environment
-	name::Compat.ASCIIString="", 	       # model name
+    name::String="",               # model name
     sense::Symbol=:minimize,       # :minimize or :maximize
     H::CoeffMat=emptyfmat,         # quadratic coefficient matrix
     f::FVec=emptyfvec,             # linear coefficient vector
@@ -9,19 +9,21 @@ function xpress_model(;    # solver environment
     b::FVec=emptyfvec,             # RHS of inequality constraints
     Aeq::CoeffMat=emptyfmat,       # LHS of equality constraints
     beq::FVec=emptyfvec,           # RHS of equality constraints
-    lb::Bounds=-Inf,               # upper bounds
-    ub::Bounds=Inf,                # lower bounds
-    finalize_env = true)
-	# check f
-	if isempty(f)
-		error("f must be specified.")
-	end
+    lb::Union{Real,Vector}=-Inf,               # upper bounds
+    ub::Union{Real,Vector}=Inf)                # lower bounds
+
+    # check f
+    if isempty(f)
+        error("f must be specified.")
+    end
 
     # create model
-    model = Model(finalize_env=finalize_env)
+    model = Model(name)
 
     # set sense
-    set_sense!(model, sense)
+    if sense != :minimize
+        set_sense!(model, sense)
+    end
 
     # add variables
     add_cvars!(model, f, lb, ub)

@@ -12,9 +12,6 @@ module Xpress
 
     import Base.show, Base.copy
 
-    using Compat
-    import Compat: unsafe_string, String, is_windows, is_unix
-
     # Standard LP interface
     importall MathProgBase.SolverInterface
 
@@ -85,21 +82,14 @@ module Xpress
     include("XpressSolverInterface.jl")
 
     # license checker
-    # ---------------
     include("xprs_userlic.jl")
 
     function __init__()
 
         # some lics require special check
-        # -------------------------------
         userlic()
 
         # start Xpress with XPRSinit
-        # --------------------------
         Env()
-
-        # XPRESS finalizer
-        # ----------------
-        #atexit(free_env)
     end
 end

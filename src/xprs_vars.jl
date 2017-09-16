@@ -113,7 +113,7 @@ add_ivar!(model::Model, c::Real) = add_ivar!(model, c, XPRS_MINUSINFINITY, XPRS_
 
 """
     add_vars!(model::Model, vtypes::Vector{Cchar}, c::Vector, lb::Vector, ub::Vector)
-    add_vars!(model::Model, vtypes::GCharOrVec, c::Vector, lb::Bounds, ub::Bounds)
+    add_vars!(model::Model, vtypes::GCharOrVec, c::Vector, lb::Union{T,Vector{T}}, ub::Union{T,Vector{T}})
 
 Add multiple variables at once
 """
@@ -133,18 +133,18 @@ function add_vars!(model::Model, vtypes::Vector{Cchar}, c::Vector, lb::Vector, u
     end
     nothing
 end
-function add_vars!(model::Model, vtypes::GChars, c::Vector, lb::Bounds, ub::Bounds)
+function add_vars!{T<:Real}(model::Model, vtypes::GChars, c::Vector, lb::Union{T,Vector{T}}, ub::Union{T,Vector{T}})
     n = length(c)
     add_vars!(model, cvecx(vtypes, n), fvec(c), fvecx(lb, n), fvecx(ub, n))
 end
 
 """
-    add_cvars!(model::Model, c::Vector, lb::Bounds, ub::Bounds)
+    add_cvars!(model::Model, c::Vector, lb::Union{T,Vector{T}}, ub::Union{T,Vector{T}})
     add_cvars!(model::Model, c::Vector)
 
 Add multiple continuous variables at once.
 """
-add_cvars!(model::Model, c::Vector, lb::Bounds, ub::Bounds) = add_vars!(model, XPRS_CONTINUOUS, c, lb, ub)
+add_cvars!{T<:Real}(model::Model, c::Vector, lb::Union{T,Vector{T}}, ub::Union{T,Vector{T}}) = add_vars!(model, XPRS_CONTINUOUS, c, lb, ub)
 add_cvars!(model::Model, c::Vector) = add_cvars!(model, c, XPRS_MINUSINFINITY, XPRS_PLUSINFINITY)
 
 """
@@ -155,12 +155,12 @@ Add multiple binary variables at once.
 add_bvars!(model::Model, c::Vector) = add_vars!(model, XPRS_BINARY, c, 0, 1)
 
 """
-    add_ivars!(model::Model, c::Vector, lb::Bounds, ub::Bounds)
+    add_ivars!(model::Model, c::Vector, lb::Union{T,Vector{T}}, ub::Union{T,Vector{T}})
     add_ivars!(model::Model, c::Vector)
 
 Add multiple integer variables at once.
 """
-add_ivars!(model::Model, c::Vector, lb::Bounds, ub::Bounds) = add_vars!(model, XPRS_INTEGER, c, lb, ub)
+add_ivars!{T<:Real}(model::Model, c::Vector, lb::Union{T,Vector{T}}, ub::Union{T,Vector{T}}) = add_vars!(model, XPRS_INTEGER, c, lb, ub)
 add_ivars!(model::Model, c::Vector) = add_ivars!(model, XPRS_INTEGER, c, XPRS_MINUSINFINITY, XPRS_PLUSINFINITY) #
 
 """

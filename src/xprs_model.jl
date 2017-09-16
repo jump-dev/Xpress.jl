@@ -52,7 +52,7 @@ function Model(; finalize_env::Bool=true)
 end
 Model(env; finalize_env::Bool=true) = Model(finalize_env=true)
 
-function Model(name::Compat.ASCIIString, sense::Symbol = :minimize)
+function Model(name::String, sense::Symbol = :minimize)
     model = Model()
     if sense != :minimize
         set_sense!(model, sense)
@@ -85,7 +85,7 @@ end
 ##############################################
 type XpressError
     code::Int
-    msg::Compat.ASCIIString
+    msg::String
 end
 function XpressError(m::Model)#, code::Integer)
     XpressError( 0, get_error_msg(m) )#convert(Int, code), get_error_msg(env))
@@ -151,7 +151,7 @@ end
 # read / write file
 #=
 XPRSprob a-> Ptr{Void}
-const char *a -> Ptr{UInt8}  -> "" : Compat.ASCIIString
+const char *a -> Ptr{UInt8}  -> "" : String
 int -> Cint
 const char a[] -> Ptr{Cchar} -> Cchar[]
 =#
@@ -187,11 +187,11 @@ function load_empty(model::Model)
 end
 
 """
-    read_model(model::Model, filename::Compat.ASCIIString)
+    read_model(model::Model, filename::String)
 
 Read file and add its informationt o the model
 """
-function read_model(model::Model, filename::Compat.ASCIIString)
+function read_model(model::Model, filename::String)
     #@assert is_valid(model.env)
     flags = ""
     ret = @xprs_ccall(readprob, Cint,
@@ -204,12 +204,12 @@ function read_model(model::Model, filename::Compat.ASCIIString)
 end
 
 """
-    write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
+    write_model(model::Model, filename::String, flags::String="")
 
 Writes a model into file.
 For flags setting see the manual (writeprob)
 """
-function write_model(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
+function write_model(model::Model, filename::String, flags::String="")
     ret = @xprs_ccall(writeprob, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
     if ret != 0
@@ -270,11 +270,11 @@ function fixglobals(model::Model, round::Bool)
 end
 
 """
-    setlogfile(model::Model, filename::Compat.ASCIIString)
+    setlogfile(model::Model, filename::String)
 
 Attach a log file to the model
 """
-function setlogfile(model::Model, filename::Compat.ASCIIString)
+function setlogfile(model::Model, filename::String)
     #int XPRS_CC XPRSsetlogfile(XPRSprob prob, const char *filename);
 
     flags = ""
@@ -302,12 +302,12 @@ function addnames(m::Xpress.Model, names::Vector, nametype::Int32)
     for str in names  
         cnames = string(cnames, join(take(str,NAMELENGTH)), "\0")
     end
-	ret = Xpress.@xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
-		m.ptr_model, nametype, cnames, first, last)
+    ret = Xpress.@xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
+        m.ptr_model, nametype, cnames, first, last)
 
-	if ret != 0
-		throw(Xpress.XpressError(m))
-	end
+    if ret != 0
+        throw(Xpress.XpressError(m))
+    end
 
     nothing
 end
