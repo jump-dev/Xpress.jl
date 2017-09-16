@@ -71,6 +71,76 @@ end
 #
 #################################################
 
+# Unstarted (XPRS_LP_UNSTARTED).
+# Optimal (XPRS_LP_OPTIMAL).
+# Infeasible (XPRS_LP_INFEAS).
+# Objective worse than cutoff (XPRS_LP_CUTOFF). 
+# Unfinished (XPRS_LP_UNFINISHED).
+# Unbounded (XPRS_LP_UNBOUNDED).
+# Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL).
+# Problem is unsolved (XPRS_LP_UNSOLVED).
+# Problem contains quadratic data, which is not convex (XPRS_LP_NONCONVEX).
+
+@enum LP_Status LP_Unstarted LP_Optimal LP_Infeasible LP_CutOff LP_Unfinished LP_Unbounded LP_CutOffInDual LP_Unsolved LP_NonConvex LP_Unknown
+
+function get_lp_status2(model::Model)
+    code = get_lp_status_code(model)
+    if code == XPRS_LP_UNSTARTED
+        return LP_Unstarted
+    elseif code == XPRS_LP_OPTIMAL
+        return LP_Optimal
+    elseif code == XPRS_LP_INFEAS
+        return LP_Infeasible
+    elseif code == XPRS_LP_CUTOFF
+        return LP_CutOff
+    elseif code == XPRS_LP_UNFINISHED
+        return LP_Unfinished
+    elseif code == XPRS_LP_UNBOUNDED
+        return LP_Unbounded
+    elseif code == XPRS_LP_CUTOFF_IN_DUAL
+        return LP_CutOffInDual
+    elseif code == XPRS_LP_UNSOLVED
+        return LP_Unsolved
+    elseif code == XPRS_LP_NONCONVEX
+        return LP_NonConvex
+    end
+    return LP_Unknown
+end
+
+# XPRS_MIP_NOT_LOADED Problem has not been loaded. 
+# XPRS_MIP_LP_NOT_OPTIMAL Global search incomplete - the initial continuous relaxation has not been solved and no integer solution has been found.
+# XPRS_MIP_LP_OPTIMAL Global search incomplete - the initial continuous relaxation has been solved and no integer solution has been found.
+# XPRS_MIP_NO_SOL_FOUND Global search incomplete - no integer solution found.
+# XPRS_MIP_SOLUTION Global search incomplete - an integer solution has been found.
+# XPRS_MIP_INFEAS Global search complete - no integer solution found.
+# XPRS_MIP_OPTIMAL Global search complete - integer solution found.
+# XPRS_MIP_UNBOUNDED Global search incomplete - the initial continuous relaxation was found to be unbounded. A solution may have been found.
+
+@enum MIP_Status MIP_NotLoaded MIP_LPNotOptimal MIP_LPOptimal MIP_NoSolFound MIP_Solution MIP_Infeasible MIP_Optimal MIP_Unbounded MIP_Unknown
+
+function get_mip_status2(model::Model)
+    code = get_mip_status_code(model)
+    if code == XPRS_MIP_NOT_LOADED
+        return MIP_NotLoaded
+    elseif code == XPRS_MIP_LP_NOT_OPTIMAL
+        return MIP_LPNotOptimal
+    elseif code == XPRS_MIP_LP_OPTIMAL
+        return MIP_LPOptimal
+    elseif code == XPRS_MIP_NO_SOL_FOUND
+        return MIP_NoSolFound
+    elseif code == XPRS_MIP_SOLUTION
+        return MIP_Solution
+    elseif code == XPRS_MIP_INFEAS
+        return MIP_Infeasible
+    elseif code == XPRS_MIP_OPTIMAL
+        return MIP_Optimal
+    elseif code == XPRS_MIP_UNBOUNDED
+        return MIP_Unbounded
+    end
+    return MIP_Unknown
+end
+
+
 const status_symbols_lp = Dict(
     XPRS_LP_UNSTARTED         => :unstarted,
     XPRS_LP_OPTIMAL           => :optimal,
@@ -264,6 +334,25 @@ function get_lp_slack!(model::Model, slack::Vector{Float64})
     end
     return nothing
 end
+function get_lp_slack_lin!(model::Model, place::Vector{Float64})
+    if num_qconstrs(model) > 0
+        _chklen(place, num_linconstrs(model))  
+        
+        slack = zeros(num_constrs(model))
+        get_lp_slack!(model, slack)
+        
+        lrows = get_lrows(model)
+        _chklen(lrows, num_linconstrs(model))  
+
+        for i in eachindex(lrows)
+            place[i] = slack[lrows[i]]
+        end
+    else
+        get_lp_slack!(model, place)
+    end
+
+    return nothing
+end
 
 """
     get_lp_dual(model::Model)
@@ -297,6 +386,25 @@ function get_lp_dual!(model::Model, dual::Vector{Float64})
     if ret != 0
         throw(XpressError(model))
     end
+    return nothing
+end
+function get_lp_dual_lin!(model::Model, place::Vector{Float64})
+    if num_qconstrs(model) > 0
+        _chklen(place, num_linconstrs(model))  
+        
+        dual = zeros(num_constrs(model))
+        get_lp_dual!(model, dual)
+        
+        lrows = get_lrows(model)
+        _chklen(lrows, num_linconstrs(model))  
+
+        for i in eachindex(lrows)
+            place[i] = dual[lrows[i]]
+        end
+    else
+        get_lp_dual!(model, place)
+    end
+
     return nothing
 end
 
@@ -406,6 +514,24 @@ function get_mip_slack!(model::Model, slack::Vector{Float64})
     return slack
 end
 
+function get_mip_slack_lin!(model::Model, place::Vector{Float64})
+    if num_qconstrs(model) > 0
+        _chklen(place, num_linconstrs(model))  
+        
+        slack = zeros(num_constrs(model))
+        get_mip_slack!(model, slack)
+        
+        lrows = get_lrows(model)
+        _chklen(lrows, num_linconstrs(model))  
+
+        for i in eachindex(lrows)
+            place[i] = slack[lrows[i]]
+        end
+    else
+        get_mip_slack!(model, place)
+    end
+end
+
 """
     get_solution!(model::Model, x::Vector{Float64})
 
@@ -436,6 +562,10 @@ end
     get_slack!(model::Model, slack::Vector{Float64})
 
 Return a vector of constraints slacks - inplace
+
+    get_slack(model::Model)
+
+Return a vector of constraints slacks
 """
 function get_slack!(model::Model, slack::Vector{Float64})
     if is_mip(model)
@@ -444,17 +574,18 @@ function get_slack!(model::Model, slack::Vector{Float64})
         return get_lp_slack!(model, slack)
     end
 end
-
-"""
-    get_slack(model::Model)
-
-Return a vector of constraints slacks
-"""
 function get_slack(model::Model)
     if is_mip(model)
         return get_mip_slack(model)
     else
         return get_lp_slack(model)
+    end
+end
+function get_slack_lin!(model::Model, slack::Vector{Float64})
+    if is_mip(model)
+        return get_mip_slack_lin!(model, slack)
+    else
+        return get_lp_slack_lin!(model, slack)
     end
 end
 
@@ -469,6 +600,14 @@ function get_dual!(model::Model, dual::Vector{Float64})
         return Float64[]
     else
         return get_lp_dual!(model,dual)
+    end
+end
+function get_dual_lin!(model::Model, dual::Vector{Float64})
+    if is_mip(model)
+        error("Not possible to get MIP duals")
+        return Float64[]
+    else
+        return get_lp_dual_lin!(model,dual)
     end
 end
 
@@ -712,24 +851,48 @@ end
 #
 #################################################
 
-
-function getdualray(model::Model)
-
-
-    dray = Array{Float64}( num_constrs(model))
-
+function hasdualray(model::Model)::Bool
+    
     hasray = Array{Cint}( 1)
 
     ret = @xprs_ccall(getdualray, Cint,
         (Ptr{Void},
-         Ptr{Float64},
-         Ptr{Cint}
-            ), model.ptr_model, dray, hasray)
+            Ptr{Float64},
+            Ptr{Cint}
+            ), model.ptr_model, C_NULL, hasray)
     if ret != 0
         throw(XpressError(model))
     end
 
     if hasray[1] == 0
+        return false
+    else
+        return true
+    end
+end
+
+function getdualray!(model::Model, ray::Vector{Float64})
+    
+    @assert length(ray) == num_constrs(model)
+
+    hasray = Array{Cint}(1)
+
+    ret = @xprs_ccall(getdualray, Cint,
+        (Ptr{Void},
+            Ptr{Float64},
+            Ptr{Cint}
+            ), model.ptr_model, ray, hasray)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    return hasray[1] != 0
+end
+
+function getdualray(model::Model)
+
+    dray = Array{Float64}( num_constrs(model))
+
+    if !getdualray!(model, dray)
         Base.warn("Xpress solver was unable to provide an infeasibility ray")
         return dray
     end
@@ -737,23 +900,48 @@ function getdualray(model::Model)
     return dray
 end
 
-function getprimalray(model::Model)
-
-
-    pray = Array{Float64}( num_vars(model))
+function hasprimalray(model::Model)::Bool
 
     hasray = Array{Cint}( 1)
 
     ret = @xprs_ccall(getprimalray, Cint,
         (Ptr{Void},
-         Ptr{Float64},
-         Ptr{Cint}
-            ), model.ptr_model, pray, hasray)
+            Ptr{Float64},
+            Ptr{Cint}
+            ), model.ptr_model, C_NULL, hasray)
     if ret != 0
         throw(XpressError(model))
     end
 
     if hasray[1] == 0
+        return false
+    else
+        return true
+    end
+end
+
+function getprimalray!(model::Model, ray::Vector{Float64})
+    
+    @assert length(ray) == num_vars(model)
+
+    hasray = Array{Cint}( 1)
+
+    ret = @xprs_ccall(getprimalray, Cint,
+        (Ptr{Void},
+            Ptr{Float64},
+            Ptr{Cint}
+            ), model.ptr_model, ray, hasray)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    return hasray[1] != 0
+end
+
+function getprimalray(model::Model)
+
+    pray = Array{Float64}( num_vars(model))
+
+    if !getprimalray!(model, pray)
         Base.warn("Xpress solver was unable to provide an unboundedness ray")
         return pray
     end
@@ -817,3 +1005,30 @@ function repairweightedinfeasibility(model::Model, phase2::Cchar = Cchar('f'), d
     return repairweightedinfeasibility(model, lrp, grp, lbp, ubp, phase2, delta, flags)
 end
 
+@xprs_int_attr stopstatus XPRS_STOPSTATUS
+
+@enum StopStatus StopNone StopTimeLimit StopControlC StopNodeLimit StopIterLimit StopMIPGap StopSolLimit StopUser StopUnknown
+
+function get_stopstatus(m::Model)
+    ss = stopstatus(m)
+
+    if ss == XPRS_STOP_NONE
+        return StopNone
+    elseif ss == XPRS_STOP_TIMELIMIT
+        return StopTimeLimit
+    elseif ss == XPRS_STOP_CTRLC
+        return StopControlC
+    elseif ss == XPRS_STOP_NODELIMIT
+        return StopNodeLimit
+    elseif ss == XPRS_STOP_ITERLIMIT
+        return StopIterLimit
+    elseif ss == XPRS_STOP_MIPGAP
+        return StopMIPGap
+    elseif ss == XPRS_STOP_SOLLIMIT
+        return StopSolLimit
+    elseif ss == XPRS_STOP_USER
+        return StopUser
+    end
+
+    return StopUnknown
+end
