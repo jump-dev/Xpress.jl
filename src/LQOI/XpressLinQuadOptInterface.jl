@@ -55,7 +55,7 @@ function MOI.SolverInstance(s::XpressSolver)
     # for (name,value) in s.options
     #     LQOI.lqs_setparam!(env, string(name), value)
     # end
-    csi = XpressSolverInstance(
+    m = XpressSolverInstance(
         Model(), #TODO
         false,
         0,
@@ -77,14 +77,14 @@ function MOI.SolverInstance(s::XpressSolver)
         0,
         0.0
     )
-    # for (name,value) in s.options
-    #     setparam!(m.inner, XPRS_CONTROLS_DICT[name], value)
-    # end
+    for (name,value) in s.options
+        setparam!(m.inner, XPRS_CONTROLS_DICT[name], value)
+    end
     # csi.inner.mipstart_effort = s.mipstart_effortlevel
     # if s.logfile != ""
     #     LQOI.lqs_setlogfile!(env, s.logfile)
     # end
-    return csi
+    return m
 end
 
 #=
@@ -196,8 +196,8 @@ const SOS_TYPE_MAP = Dict{Symbol,Symbol}(
 )
 LQOI.lqs_sertype_map(m::XpressSolverInstance) = SOS_TYPE_MAP
 
-# TODO - later
 # LQOI.lqs_getsos(m, idx)
+# TODO improve getting processes
 function LQOI.lqs_getsos(m::Model, idx)
     A, types = get_sos_matrix(m::Model)
     line = A[idx,:] #sparse vec
@@ -206,9 +206,12 @@ function LQOI.lqs_getsos(m::Model, idx)
     typ = types[idx] == Cchar('1') ? :SOS1 : :SOS2
     return cols, vals, typ
 end
-# TODO - later
+
 # LQOI.lqs_getnumqconstrs(m)
+LQOI.lqs_getnumqconstrs(m::Model) = num_qconstrs(m)
+
 # LQOI.lqs_addqconstr(m, cols,coefs,rhs,sense, I,J,V)
+LQOI.lqs_addqconstr!(m::Model, cols,coefs,rhs,sense, I,J,V) = add_qconstr!(m, cols, coefs, I, J, V, sense, rhs)
 
 # LQOI.lqs_chgrngval
 LQOI.lqs_chgrngval!(m::Model, rows, vals) = chg_rhsrange!(m, cintvec(rows), -vals)
@@ -226,7 +229,11 @@ LQOI.lqs_ctrtype_map(m::XpressSolverInstance) = CTR_TYPE_MAP
 =#
 
 # LQOI.lqs_copyquad(m, intvec,intvec, floatvec) #?
-function LQOI.lqs_copyquad(m::Model, intvec, intvec2, floatvec) end
+function LQOI.lqs_copyquad!(m::Model, I, J, V)
+    delq!(m)
+    add_qpterms!(m, I, J, V)
+    return nothing
+end
 
 # LQOI.lqs_chgobj(m, colvec,coefvec)
 function LQOI.lqs_chgobj!(m::Model, colvec, coefvec) 
@@ -242,7 +249,7 @@ function LQOI.lqs_chgobj!(m::Model, colvec, coefvec)
 end
 
 # LQOI.lqs_chgobjsen(m, symbol)
-# TODO improve minimax
+# TODO improve min max names
 function LQOI.lqs_chgobjsen!(m::Model, symbol)
     if symbol == :Min
         set_sense!(m, :minimize)
@@ -278,10 +285,14 @@ LQOI.lqs_newcols!(m::Model, int) = add_cvars!(m, zeros(int))
 # LQOI.lqs_delcols!(m, col, col)
 LQOI.lqs_delcols!(m::Model, col, col2) = del_vars!(m, col)
 
-# TODO - later
 # LQOI.lqs_addmipstarts(m, colvec, valvec)
-
-
+function LQOI.lqs_addmipstarts!(m::Model, colvec, valvec) 
+    x = zeros(num_vars(m))
+    for i in eachindex(colvec)
+        x[colvec[i]] = valvec[i]
+    end
+    loadbasis(m, x)
+end
 #=
     Solve
 =#
@@ -295,33 +306,160 @@ LQOI.lqs_qpopt!(m::Model) = LQOI.lqs_lpopt!(m)
 # LQOI.lqs_lpopt!(m)
 LQOI.lqs_lpopt!(m::Model) = lpoptimize(m)
 
-# LQOI.lqs_getstat(m)
-# complex TODO
-function LQOI.lqs_getstat(m::Model) 
+# LQOI.lqs_terminationstatus(m)
+function LQOI.lqs_terminationstatus(model::XpressSolverInstance)
+    m = model.inner 
+    stat_lp = get_lp_status2(m)
     if is_mip(m)
-        return get_mip_status(m)
+        stat_mip = get_mip_status2(m)
+        if stat_mip == MIP_NotLoaded
+            return MOI.OtherError
+        elseif stat_mip == MIP_LPNotOptimal
+            # MIP search incomplete but there is no linear sol
+            # return MOI.OtherError
+            return MOI.InfeasibleOrUnbounded
+        elseif stat_mip == MIP_NoSolFound
+            # MIP search incomplete but there is no integer sol
+            other = xprsmoi_stopstatus(m)
+            if other == MOI.OtherError
+                return MOI.SlowProgress#OtherLimit
+            else 
+                return other
+            end
+
+        elseif stat_mip == MIP_Solution
+            # MIP search incomplete but there is a solution
+            other = xprsmoi_stopstatus(m)
+            if other == MOI.OtherError
+                return MOI.OtherLimit
+            else 
+                return other
+            end
+
+        elseif stat_mip == MIP_Infeasible
+            if hasdualray(m)
+                return MOI.Success
+            else
+                return MOI.InfeasibleNoResult
+            end
+        elseif stat_mip == MIP_Optimal
+            return MOI.Success
+        elseif stat_mip == MIP_Unbounded
+            if hasprimalray(m)
+                return MOI.Success
+            else
+                return MOI.UnboundedNoResult
+            end
+        end
+        return MOI.OtherError
     else
-        return get_lp_status(m)
+        if stat_lp == LP_Unstarted
+            return MOI.OtherError
+        elseif stat_lp == LP_Optimal
+            return MOI.Success
+        elseif stat_lp == LP_Infeasible
+            if hasdualray(m)
+                return MOI.Success
+            else
+                return MOI.InfeasibleNoResult
+            end
+        elseif stat_lp == LP_CutOff
+            return MOI.ObjectiveLimit
+        elseif stat_lp == LP_Unfinished
+            return xprsmoi_stopstatus(m)
+        elseif stat_lp == LP_Unbounded
+            if hasprimalray(m)
+                return MOI.Success
+            else
+                return MOI.UnboundedNoResult
+            end
+        elseif stat_lp == LP_CutOffInDual
+            return MOI.ObjectiveLimit
+        elseif stat_lp == LP_Unsolved
+            return MOI.OtherError
+        elseif stat_lp == LP_NonConvex
+            return MOI.InvalidInstance
+        end
+        return MOI.OtherError
     end
 end
 
-# LQOI.lqs_solninfo(m) # complex
-# complex TODO
-function LQOI.lqs_solninfo(m::Model) 
-    warn("Fix LQOI.lqs_solninfo")
+function xprsmoi_stopstatus(m::Model)
+    ss = get_stopstatus(m)
+    if ss == StopTimeLimit
+        return MOI.TimeLimit
+    elseif ss == StopControlC
+        return MOI.Interrupted
+    elseif ss == StopNodeLimit
+        # should not be here
+        warn("should not be here")
+        return MOI.NodeLimit
+    elseif ss == StopIterLimit
+        return MOI.IterationLimit
+    elseif ss == StopMIPGap
+        return MOI.ObjectiveLimit
+    elseif ss == StopSolLimit
+        return MOI.SolutionLimit
+    elseif ss == StopUser
+        return MOI.Interrupted
+    end
+    return MOI.OtherError
+end
+
+function LQOI.lqs_primalstatus(model::XpressSolverInstance)
+    m = model.inner
     if is_mip(m)
-        return :what, :primal, 1, 0
+        stat_mip = get_mip_status2(m)
+        if stat_mip in [MIP_Solution,MIP_Optimal]
+            return MOI.FeasiblePoint
+        elseif MIP_Infeasible && hasdualray(m)
+            return MOI.InfeasibilityCertificate
+        elseif MIP_Unbounded && hasprimalray(m)
+            return MOI.InfeasibilityCertificate
+        elseif stat_mip in [MIP_LPOptimal, MIP_NoSolFound]
+            return MOI.InfeasiblePoint
+        end
+        return MOI.UnknownResultStatus
     else
-        return :what, :basic, 1, 1
+        stat_lp = get_lp_status2(m)
+        if stat_lp == LP_Optimal
+            return MOI.FeasiblePoint
+        elseif stat_lp == LP_Unbounded && hasprimalray(m)
+            return MOI.InfeasibilityCertificate
+        # elseif stat_lp == LP_Infeasible
+        #     return MOI.InfeasiblePoint - xpress wont return
+        # elseif cutoff//cutoffindual ???
+        else
+            return MOI.UnknownResultStatus
+        end
     end
 end
+function LQOI.lqs_dualstatus(model::XpressSolverInstance)
+    m = model.inner    
+    if is_mip(m)
+        return MOI.UnknownResultStatus
+    else
+        stat_lp = get_lp_status2(m)
+        if stat_lp == LP_Optimal
+            return MOI.FeasiblePoint
+        elseif stat_lp == LP_Infeasible && hasdualray(m)
+            return MOI.InfeasibilityCertificate
+        # elseif stat_lp == LP_Unbounded
+        #     return MOI.InfeasiblePoint - xpress wont return
+        # elseif cutoff//cutoffindual ???
+        else
+            return MOI.UnknownResultStatus
+        end
+    end
+end
+
 
 # LQOI.lqs_getx!(m, place)
 LQOI.lqs_getx!(m::Model, place) = get_solution!(m, place)
 
 # LQOI.lqs_getax!(m, place)
 function LQOI.lqs_getax!(m::Model, place)
-    get_slack!(m, place)
+    get_slack_lin!(m, place)
     rhs = get_rhs(m)
     for i in eachindex(place)
         place[i] = -place[i]+rhs[i]
@@ -332,7 +470,7 @@ end
 LQOI.lqs_getdj!(m::Model, place) = get_reducedcost!(m, place)
 
 # LQOI.lqs_getpi!(m, place)
-LQOI.lqs_getpi!(m::Model, place) = get_dual!(m, place)
+LQOI.lqs_getpi!(m::Model, place) = get_dual_lin!(m, place)
 
 # LQOI.lqs_getobjval(m)
 LQOI.lqs_getobjval(m::Model) = get_objval(m)
@@ -356,44 +494,11 @@ LQOI.lqs_getbaritcnt(m::Model) = get_barrier_iter_count(m)
 # LQOI.lqs_getnodecnt(m)
 LQOI.lqs_getnodecnt(m::Model) = get_node_count(m)
 
-const TERMINATION_STATUS_MAP = Dict(
-    :unstarted        => MOI.OtherError, # TODO
-    :optimal          => MOI.Success,
-    :infeasible       => MOI.InfeasibleNoResult, # TODO improve
-    :cutoff           => MOI.OtherError, # TODO
-    :unfinished       => MOI.OtherError, # TODO
-    :unbounded        => MOI.UnboundedNoResult, # TODO improve
-    :cutoff_in_dual   => MOI.OtherError, # TODO
-    :unsolved         => MOI.OtherError, # TODO
-    :nonconvex        => MOI.InvalidSolverInstance, # TODO
-    :mip_not_loaded     => MOI.OtherError, # TODO
-    :mip_lp_not_optimal => MOI.OtherError, # TODO improve
-    :mip_lp_optimal     => MOI.OtherError, # TODO improve
-    :mip_no_sol_found   => MOI.InfeasibleNoResult, # TODO improve
-    :mip_suboptimal     => MOI.AlmostSuccess, #TODO
-    :mip_infeasible     => MOI.InfeasibleNoResult, # TODO improve
-    :mip_optimal        => MOI.Success,
-    :mip_unbounded      => MOI.UnboundedNoResult # TODO improve
-)
-# LQOI.lqs_termination_status_map(m) # = TERMINATION_STATUS_MAP
-LQOI.lqs_termination_status_map(m::XpressSolverInstance) = TERMINATION_STATUS_MAP
-
-# LQOI.lqs_sol_basic(m) #
-LQOI.lqs_sol_basic(m::XpressSolverInstance) = :basic
-
-# LQOI.lqs_sol_nonbasic(m)
-LQOI.lqs_sol_nonbasic(m::XpressSolverInstance) = :nonbasic
-
-# LQOI.lqs_sol_primal(m)
-LQOI.lqs_sol_primal(m::XpressSolverInstance) = :primal
-
-# LQOI.lqs_sol_none(m)
-LQOI.lqs_sol_none(m::XpressSolverInstance) = :none
-
-# TODO - later
-# LQOI.lqs_dualopt(m)
 # LQOI.lqs_dualfarkas(m, place)
+LQOI.lqs_dualfarkas!(m::Model, place) = getdualray!(m, place)
+
 # LQOI.lqs_getray(m, place)
+LQOI.lqs_getray!(m::Model, place) = getprimalray!(m, place)
 
 
 MOI.free!(m::XpressSolverInstance) = free_model(m.onner)
