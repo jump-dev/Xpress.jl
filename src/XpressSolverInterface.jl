@@ -1,7 +1,6 @@
 # XpressMathProgInterface
 # Standardized MILP interface
 
-export XpressSolver
 
 type XpressMathProgModel <: AbstractLinearQuadraticModel
     inner::Model

@@ -16,6 +16,9 @@ end
 
 libname = string(is_windows() ? "" : "lib", "xprs", ".", Libdl.dlext)
 paths_to_try = String[]
+
+push!(paths_to_try, libname)
+
 if haskey(ENV, "XPRESSDIR")
   push!(paths_to_try, joinpath(ENV["XPRESSDIR"], is_windows() ? "bin" : "lib", libname))
 end

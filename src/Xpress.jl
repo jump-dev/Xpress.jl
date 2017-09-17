@@ -82,21 +82,14 @@ module Xpress
     include("XpressSolverInterface.jl")
 
     # license checker
-    # ---------------
     include("xprs_userlic.jl")
 
     function __init__()
 
         # some lics require special check
-        # -------------------------------
         userlic()
 
         # start Xpress with XPRSinit
-        # --------------------------
         Env()
-
-        # XPRESS finalizer
-        # ----------------
-        #atexit(free_env)
     end
 end

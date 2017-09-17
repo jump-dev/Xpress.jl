@@ -1,4 +1,5 @@
 using Xpress, JuMP, MathProgBase, Base.Test, OffsetArrays
+import Xpress.XpressSolver
 
 lp_solvers = Any[]
 ip_solvers = Any[]
@@ -20,15 +21,15 @@ error_map = Dict()
 grb, cpx, cbc, glp, mos = false, false, false, false, false
 xpr = true
 
-lp_solvers = [XpressSolver()]
-ip_solvers = [XpressSolver()]
+lp_solvers = [Xpress.XpressSolver()]
+ip_solvers = [Xpress.XpressSolver()]
 
-sos_solvers = [XpressSolver()]
+sos_solvers = [Xpress.XpressSolver()]
 
-semi_solvers = [XpressSolver()]
+semi_solvers = [Xpress.XpressSolver()]
 
-soc_solvers = [XpressSolver()]
-rsoc_solvers = [XpressSolver()]
+soc_solvers = [Xpress.XpressSolver()]
+rsoc_solvers = [Xpress.XpressSolver()]
 
 quad_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
 quad_soc_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]

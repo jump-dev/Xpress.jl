@@ -11,7 +11,9 @@ tests = ["xprs_attrs_test",
          "qp_02",
          "qcqp_01",
          "mathprog",
-         "jump"]
+         "jump",
+         
+         ]
 
 for t in tests
     fp = "$(t).jl"

@@ -50,6 +50,8 @@ function Model(; finalize_env::Bool=true)
 
     return m
 end
+Model(env; finalize_env::Bool=true) = Model(finalize_env=true)
+
 function Model(name::String, sense::Symbol = :minimize)
     model = Model()
     if sense != :minimize
@@ -202,13 +204,12 @@ function read_model(model::Model, filename::String)
 end
 
 """
-    write_model(model::Model, filename::String, flags::String)
+    write_model(model::Model, filename::String, flags::String="")
 
 Writes a model into file.
 For flags setting see the manual (writeprob)
 """
-write_model(model::Model, filename::String) = write_model(model, filename, "")
-function write_model(model::Model, filename::String, flags::String)
+function write_model(model::Model, filename::String, flags::String="")
     ret = @xprs_ccall(writeprob, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
     if ret != 0
@@ -216,6 +217,39 @@ function write_model(model::Model, filename::String, flags::String)
     end
     nothing
 end
+
+"""
+    writesol(model::Model, filename::String, flags::String="")
+
+Writes solution into file.
+For flags setting see the manual (writesol)
+"""
+function writesol(model::Model, filename::String, flags::String="")
+    # int XPRS_CC XPRSwritesol(XPRSprob prob, const char *filename, const char *flags)
+    ret = @xprs_ccall(writesol, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
+        model.ptr_model, filename, flags)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
+
+"""
+    writeptrsol(model::Model, filename::String, flags::String="")
+
+Writes solution into a ptr file.
+For flags setting see the manual (writeptrsol)
+"""
+function writeptrsol(model::Model, filename::String, flags::String="")
+    # int XPRS_CC XPRSwriteptrsol(XPRSprob prob, const char *filename, const char *flags)
+    ret = @xprs_ccall(writeptrsol, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
+        model.ptr_model, filename, flags)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
+
 
 """
     fixglobals(model::Model, round::Bool)
