@@ -1,4 +1,3 @@
-MathProgBase
-MathOptInteface
+MathProgBase 0.6 0.7
 JuMP 
 OffsetArrays 0.2.13
