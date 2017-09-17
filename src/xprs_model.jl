@@ -219,12 +219,12 @@ function write_model(model::Model, filename::String, flags::String="")
 end
 
 """
-    writesol(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
+    writesol(model::Model, filename::String, flags::String="")
 
 Writes solution into file.
 For flags setting see the manual (writesol)
 """
-function writesol(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
+function writesol(model::Model, filename::String, flags::String="")
     # int XPRS_CC XPRSwritesol(XPRSprob prob, const char *filename, const char *flags)
     ret = @xprs_ccall(writesol, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
@@ -235,12 +235,12 @@ function writesol(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCI
 end
 
 """
-    writeptrsol(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
+    writeptrsol(model::Model, filename::String, flags::String="")
 
 Writes solution into a ptr file.
 For flags setting see the manual (writeptrsol)
 """
-function writeptrsol(model::Model, filename::Compat.ASCIIString, flags::Compat.ASCIIString="")
+function writeptrsol(model::Model, filename::String, flags::String="")
     # int XPRS_CC XPRSwriteptrsol(XPRSprob prob, const char *filename, const char *flags)
     ret = @xprs_ccall(writeptrsol, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)

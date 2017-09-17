@@ -27,7 +27,7 @@ end
 Solve models ignoring integrality.
 Quadratic terms are NOT ignored.
 """
-function lpoptimize(model::Model, flags::Compat.ASCIIString="")
+function lpoptimize(model::Model, flags::String="")
     @assert model.ptr_model != C_NULL
     tic()
     ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{UInt8}),
@@ -38,7 +38,7 @@ function lpoptimize(model::Model, flags::Compat.ASCIIString="")
     end
     nothing
 end
-function mipoptimize(model::Model, flags::Compat.ASCIIString="")
+function mipoptimize(model::Model, flags::String="")
     @assert model.ptr_model != C_NULL
     tic()
     ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{UInt8}),
@@ -949,7 +949,7 @@ function getprimalray(model::Model)
     return pray
 end
 
-function repairweightedinfeasibility(model::Model, scode::Vector{Cint}, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="")
+function repairweightedinfeasibility(model::Model, scode::Vector{Cint}, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::String="")
 # int XPRS_CC XPRSrepairweightedinfeas(XPRSprob prob, int *scode, const double lrp[], const double grp[], const double lbp[], const double ubp[], char phase2, double delta, const char *optflags)
     ret = @xprs_ccall(repairweightedinfeas, Cint, 
         (Ptr{Void}, 
@@ -970,14 +970,14 @@ function repairweightedinfeasibility(model::Model, scode::Vector{Cint}, lrp::Vec
 end
 
 """
-    repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}; phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="")
-    repairweightedinfeasibility(model::Model, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="")
+    repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}; phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::String="")
+    repairweightedinfeasibility(model::Model, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::String="")
 
 Repair infeasibility tool
 """
-repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}; phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="") = repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2, delta, flags)
+repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}; phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::String="") = repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2, delta, flags)
 
-function repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2::Cchar, delta::Float64, flags::Compat.ASCIIString)
+function repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2::Cchar, delta::Float64, flags::String)
 
     cols = num_vars(model)
     rows = num_constrs(model)
@@ -994,7 +994,7 @@ function repairweightedinfeasibility(model::Model, lrp::Vector{Float64}, grp::Ve
     return scode[1]
 end
 
-function repairweightedinfeasibility(model::Model, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::Compat.ASCIIString="")
+function repairweightedinfeasibility(model::Model, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::String="")
     cols = num_vars(model)
     rows = num_constrs(model)
     lrp = ones(rows)
