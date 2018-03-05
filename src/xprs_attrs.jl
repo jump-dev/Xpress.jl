@@ -234,7 +234,7 @@ end
 
 Sets coefficients `c` given indices in `inds` in the objective function of `model`
 """
-function set_objcoeffs!{I<:Integer,R<:Real}(model::Model, inds::Vector{I}, c::Vector{R})
+function set_objcoeffs!(model::Model, inds::Vector{I}, c::Vector{R}) where {I<:Integer,R<:Real}
     # n = num_vars(model)
     # _chklen(c,n)
     _chklen(inds, length(c))
@@ -259,7 +259,7 @@ end
 
 Sets coefficients in the objective of the dirst `length(c)` all variables.
 """
-set_objcoeffs!{R<:Real}(model::Model, c::Vector{R}) = set_objcoeffs!(model, collect(1:length(c)), c)
+set_objcoeffs!(model::Model, c::Vector{R}) where {R<:Real} = set_objcoeffs!(model, collect(1:length(c)), c)
 set_obj!(model, c) = set_objcoeffs!(model,c)
 
 """
@@ -593,12 +593,12 @@ Sets lower bounds `lb` given variable indices in `inds` of `model`
 Sets lower bounds to all variables up to `length(lb)`. 
 `length(lb)` must be smaller than the number of variables.
 """
-function set_lb!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, lb::Vector{R})
+function set_lb!(model::Model, inds::Vector{I}, lb::Vector{R}) where {I<:Integer, R<:Real}
     nbnds = length(inds)
     chgbounds!(model, ivec(inds), cvecx('L', nbnds),  fvec(lb))
     return nothing
 end
-function set_lb!{R<:Real}(model::Model, lb::Vector{R})
+function set_lb!(model::Model, lb::Vector{R}) where R<:Real
     cols = num_vars(model)
     _chklen(lb,cols)
     ind = inds32(cols)
@@ -616,12 +616,12 @@ Sets upper bounds `ub` given variable indices in `inds` of `model`
 Sets upper bounds to all variables up to `length(ub)`. 
 `length(ub)` must be smaller than the number of variables.
 """
-function set_ub!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, ub::Vector{R})
+function set_ub!(model::Model, inds::Vector{I}, ub::Vector{R}) where {I<:Integer, R<:Real}
     nbnds = length(inds)
     chgbounds!(model, ivec(inds), cvecx('U', nbnds),  fvec(ub))
     return nothing
 end
-function set_ub!{R<:Real}(model::Model, ub::Vector{R})
+function set_ub!(model::Model, ub::Vector{R}) where R<:Real
     cols = num_vars(model)
     _chklen(ub,cols)
     ind = inds32(cols)
@@ -656,12 +656,12 @@ Sets coefficients `rhs` given indices in `inds` in the rhs of `model`
 Sets coefficients in the rhs of all constraints up to `length(rhs)`. 
 `length(rhs)` must be smaller than the number of constraints.
 """
-function set_rhs!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, rhs::Vector{R})
+function set_rhs!(model::Model, inds::Vector{I}, rhs::Vector{R}) where {I<:Integer, R<:Real}
     nels = length(inds)
     chgrhs!(model, ivec(inds), fvec(rhs))
     return nothing
 end
-function set_rhs!{R<:Real}(model::Model, rhs::Vector{R})
+function set_rhs!(model::Model, rhs::Vector{R}) where R<:Real
     rows = length(rhs)
     set_rhs!(model, inds32(rows), rhs)
 end
@@ -676,7 +676,7 @@ Sets row type `senses` for given indices in `inds`
 Sets row type in all constraints up to `length(senses)`. 
 `length(senses)` must be smaller than the number of constraints.
 """
-function set_rowtype!{I<:Integer}(model::Model, inds::Vector{I}, senses::Vector{Cchar})
+function set_rowtype!(model::Model, inds::Vector{I}, senses::Vector{Cchar}) where I<:Integer
     
     rows = length(senses)
     ret = @xprs_ccall(chgrowtype, Cint, (
@@ -707,7 +707,7 @@ end
 
 Change constraints lower bounds up to `length(lb)`
 """
-function set_constrLB!{R<:Real}(model::Model, lb::Vector{R})
+function set_constrLB!(model::Model, lb::Vector{R}) where R<:Real
     # should only work for liner constraints
 
     nlrows = num_linconstrs(model)
@@ -746,7 +746,7 @@ end
 
 Change constraints upper bounds up to `length(ub)`
 """
-function set_constrUB!{R<:Real}(model::Model, ub::Vector{R})
+function set_constrUB!(model::Model, ub::Vector{R}) where R<:Real
 
     nlrows = num_linconstrs(model)
     lrows = get_lrows(model)[1:length(ub)]

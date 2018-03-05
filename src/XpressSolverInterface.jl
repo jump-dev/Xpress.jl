@@ -2,7 +2,7 @@
 # Standardized MILP interface
 
 
-type XpressMathProgModel <: AbstractLinearQuadraticModel
+mutable struct XpressMathProgModel <: AbstractLinearQuadraticModel
     inner::Model
 
     lazycb
@@ -38,7 +38,7 @@ function copy(m::XpressMathProgModel)
                                 deepcopy(m.options))
 end
 
-immutable XpressSolver <: AbstractMathProgSolver
+struct XpressSolver <: AbstractMathProgSolver
     options
 end
 XpressSolver(;kwargs...) = XpressSolver(kwargs)

@@ -1,6 +1,6 @@
 # Xpress callbacks
 
-type CallbackData
+mutable struct CallbackData
     #cbdata::Ptr{Void} # data for solver
     model_root::Model # should not use operations here
     data::Any # data for user

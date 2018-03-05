@@ -40,7 +40,7 @@ cvecx(c::Vector{Char}, n::Integer) = (_chklen(c, n); convert(Vector{Cchar}, c))
 
 fvecx(v::Real, n::Integer) = fill(Float64(v), n)
 fvecx(v::Vector{Float64}, n::Integer) = (_chklen(v, n); v)
-fvecx{T<:Real}(v::Vector{T}, n::Integer) = (_chklen(v, n); convert(Vector{Float64}, v))
+fvecx(v::Vector{T}, n::Integer) where {T<:Real} = (_chklen(v, n); convert(Vector{Float64}, v))
 
 inds32(n::Integer) = collect(Cint(1):Cint(n))
 
