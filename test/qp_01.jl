@@ -29,7 +29,7 @@ using Xpress, Base.Test
     ans = get_optiminfo(model)
     @test ans.status_lp == :optimal
 
-    @test isapprox(get_solution(model), [0.0, 1]; atol = 1e-3)
+    @test isapprox(get_solution(model), [0.0, 1]; atol = 1e-2)
 
     @test isapprox(get_objval(model), 1.5; atol = 1e-3)
 end

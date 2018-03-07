@@ -31,9 +31,11 @@ semi_solvers = [Xpress.XpressSolver()]
 soc_solvers = [Xpress.XpressSolver()]
 rsoc_solvers = [Xpress.XpressSolver()]
 
-quad_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
-quad_soc_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
-quad_mip_solvers = [Xpress.XpressSolver(FEASTOL = 1e-9, BARPRIMALSTOP = 1e-9, BARGAPSTOP = 1e-9, BARDUALSTOP = 1e-9)]
+tol = 1e-12
+
+quad_solvers = [Xpress.XpressSolver(FEASTOL = tol, BARPRIMALSTOP = tol, BARGAPSTOP = tol, BARDUALSTOP = tol)]
+quad_soc_solvers = [Xpress.XpressSolver(FEASTOL = tol, BARPRIMALSTOP = tol, BARGAPSTOP = tol, BARDUALSTOP = tol)]
+quad_mip_solvers = [Xpress.XpressSolver(FEASTOL = tol, BARPRIMALSTOP = tol, BARGAPSTOP = tol, BARDUALSTOP = tol)]
 
 include(Pkg.dir("JuMP","test","model.jl"))
 include(Pkg.dir("JuMP","test","probmod.jl"))
