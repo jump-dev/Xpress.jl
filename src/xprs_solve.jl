@@ -201,7 +201,7 @@ function get_objval(model::Model)
 end
 
 
-type OptimInfo
+mutable struct OptimInfo
     status_lp::Symbol
     status_mip::Symbol
 

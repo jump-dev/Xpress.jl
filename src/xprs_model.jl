@@ -11,7 +11,7 @@
 
 Type to hold an Xpress model
 """
-type Model
+mutable struct Model
     ptr_model::Ptr{Void}
     callback::Any
     finalize_env::Bool
@@ -83,7 +83,7 @@ end
 ##############################################
 # Error handling
 ##############################################
-type XpressError
+mutable struct XpressError
     code::Int
     msg::String
 end

@@ -42,7 +42,7 @@ end
 
 Adds a single constraint  to the model.
 """
-function add_constr!{I<:Integer,R<:Real}(model::Model, inds::Vector{I}, coeffs::Vector{R}, rel::GChars, rhs::Real)
+function add_constr!(model::Model, inds::Vector{I}, coeffs::Vector{R}, rel::GChars, rhs::Real) where {I<:Integer,R<:Real}
     add_constr!(model, ivec(inds), fvec(coeffs), cchar(rel), Float64(rhs))
 end
 
@@ -330,7 +330,7 @@ end
 Add SOS constraint of type `sostype`
 Options are `:SOS1` and `:SOS2`
 """
-add_sos!{I<:Integer, R<:Real}(model::Model, sostype::Symbol, idx::Vector{I}, weight::Vector{R}) = add_sos!(model, sostype, ivec(idx), fvec(weight))
+add_sos!(model::Model, sostype::Symbol, idx::Vector{I}, weight::Vector{R}) where {I<:Integer, R<:Real} = add_sos!(model, sostype, ivec(idx), fvec(weight))
 function add_sos!(model::Model, sostype::Symbol, idx::Vector{Cint}, weight::Vector{Float64})
     ((nelem = length(idx)) == length(weight)) || error("Index and weight vectors of unequal length")
     (sostype == :SOS1) ? (typ = XPRS_SOS_TYPE1) : ( (sostype == :SOS2) ? (typ = XPRS_SOS_TYPE2) : error("Invalid SOS constraint type") )
@@ -422,8 +422,8 @@ end
 
 Delete constraintes indexed in `idx`
 """
-del_constrs!{T<:Real}(model::Model, idx::T) = del_constrs!(model, Cint[idx])
-del_constrs!{T<:Real}(model::Model, idx::Vector{T}) = del_constrs!(model, convert(Vector{Cint},idx))
+del_constrs!(model::Model, idx::T) where {T<:Real} = del_constrs!(model, Cint[idx])
+del_constrs!(model::Model, idx::Vector{T}) where {T<:Real} = del_constrs!(model, convert(Vector{Cint},idx))
 function del_constrs!(model::Model, idx::Vector{Cint})
     numdel = length(idx)
     ret = @xprs_ccall(delrows, Cint, (
@@ -441,8 +441,8 @@ end
 
 Change multiple coefficients of the `A` matrix given constraints `cidx`, variables `vidx` and values `val` 
 """
-chg_coeffs!{T<:Real, S<:Real}(model::Model, cidx::T, vidx::T, val::S) = chg_coeffs!(model, Cint[cidx], Cint[vidx], Float64[val])
-chg_coeffs!{T<:Real, S<:Real}(model::Model, cidx::Vector{T}, vidx::Vector{T}, val::Vector{S}) = chg_coeffs!(model, convert(Vector{Cint},cidx), convert(Vector{Cint},vidx), fvec(val))
+chg_coeffs!(model::Model, cidx::T, vidx::T, val::S) where {T<:Real, S<:Real} = chg_coeffs!(model, Cint[cidx], Cint[vidx], Float64[val])
+chg_coeffs!(model::Model, cidx::Vector{T}, vidx::Vector{T}, val::Vector{S}) where {T<:Real, S<:Real} = chg_coeffs!(model, convert(Vector{Cint},cidx), convert(Vector{Cint},vidx), fvec(val))
 function chg_coeffs!(model::Model, cidx::Vector{Cint}, vidx::Vector{Cint}, val::FVec)
 
     (length(cidx) == length(vidx) == length(val)) || error("Inconsistent argument dimensions.")
