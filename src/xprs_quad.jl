@@ -149,7 +149,9 @@ end
 Get quadratic terms form the objective function
 """
 function getq(model::Model)
-    Base.warn_once("getq retuns only lower triangular")
+    return sparse(Symmetric(getq_upper(model), :U))
+end
+function getq_upper(model::Model)
     nnz = num_qnzs(model)
     n = num_vars(model)
     nels = Array{Cint}( 1)
@@ -277,7 +279,6 @@ get indices of purely linear rows
 """
 function get_lrows(model::Model)
 
-    qrows = get_qrows(model)
     nrows = num_constrs(model)
     nlrows = num_linconstrs(model)
     nqrows = num_qconstrs(model)
@@ -289,20 +290,7 @@ function get_lrows(model::Model)
         return collect(1:nlrows)
     end
 
-    lrows = zeros(Int, nlrows)
-
-    pos_l = 1
-    pos_q = 1
-    for i in 1:nrows
-        if i != qrows[pos_q]
-            lrows[pos_l] = i
-            pos_l += 1
-        elseif pos_q < nqrows
-            pos_q += 1
-        end
-    end
-
-    return lrows
+    return setdiff(collect(1:nrows), get_qrows(model))
 end
 
 """
@@ -311,8 +299,10 @@ end
 Get matrix from quadratic row in triplets form
 """
 function get_qrowmatrix_triplets(model::Model, row::Int)
+    return sparse(Symmetric(get_qrowmatrix_triplets_upper(model, row),:U))
+end
+function get_qrowmatrix_triplets_upper(model::Model, row::Int)
 #int XPRS_CC XPRSgetqrowqmatrixtriplets(XPRSprob prob, int irow, int *nqelem, int mqcol1[], int mqcol2[], double dqe[]);
-    Base.warn_once("only inferior part of the matrix is represented")
     qrows = get_qrows(model)
 
     if row in qrows
@@ -349,9 +339,9 @@ function get_qrowmatrix_triplets(model::Model, row::Int)
         if ret != 0
             throw(XpressError(model))
         end
-
-        return mqcol1, mqcol2, dqe
+        n = num_vars(model)
+        return sparse(mqcol1.+1, mqcol2.+1, dqe, n, n)
     end
-
-    return Cint[], Cint[], Float64[]
+    n = num_vars(model)
+    return sparse(Cint[], Cint[], Float64[],n,n)
 end

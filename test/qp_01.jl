@@ -16,7 +16,8 @@ using Xpress, Base.Test
     add_qpterms!(model, [1, 1, 2], [1, 2, 2], [2., 1., 1.])
     add_constr!(model, [1., 1.], '=', 1.)
 
-    @test Xpress.getq(model) == triu(sparse([2. 1.; 1. 1.]))
+    @test Xpress.getq_upper(model) == triu(sparse([2. 1.; 1. 1.]))
+    @test Xpress.getq(model) == sparse([2. 1.; 1. 1.])
     @test Xpress.get_obj(model) == [1, 1]
     @test Xpress.get_constrmatrix(model) == sparse([1 1])
     @test Xpress.get_rhs(model) == [1]

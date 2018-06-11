@@ -476,4 +476,31 @@ function chg_rhsrange!(model::Model, cidx::Vector{Cint}, val::FVec)
     if ret != 0
         throw(XpressError(model))
     end
+end
+
+function get_rhsrange!(model::Model, out::Vector{Float64}, rowb::Integer, rowe::Integer)
+
+    _chklen(out, rowe-rowb+1)
+
+    ret = @xprs_ccall(getrhsrange, Cint, (
+                    Ptr{Void},
+                    Ptr{Float64},
+                    Cint,
+                    Cint),
+                    model, out, Cint(rowb-1), Cint(rowe-1))
+
+    if ret != 0
+        throw(XpressError(model))
+    end
+
+    return nothing
+end
+
+function get_rhsrange(model::Model, rowb::Integer, rowe::Integer)
+
+    out = Array{Float64}(rowe-rowb+1)
+
+    get_rhsrange!(model, out, rowb, rowe)
+
+    return out
 end 
