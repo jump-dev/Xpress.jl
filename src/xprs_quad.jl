@@ -149,9 +149,16 @@ end
 Get quadratic terms form the objective function
 """
 function getq(model::Model)
-    return sparse(Symmetric(getq_upper(model), :U))
+    U = getq_upper(model)
+    Q = (U+U')/2
+    return sparse(Q)
 end
 function getq_upper(model::Model)
+    I,J,V = getq_triplets_upper(model::Model)
+    n = num_vars(model)
+    return sparse(I,J,V,n,n)
+end
+function getq_triplets_upper(model::Model)
     nnz = num_qnzs(model)
     n = num_vars(model)
     nels = Array{Cint}( 1)
@@ -189,7 +196,7 @@ function getq_upper(model::Model)
             V[j] = dobjval[j]
         end
     end
-    return sparse(I, J, V, n, n)
+    return I, J, V
 end
 
 """
@@ -294,17 +301,23 @@ function get_lrows(model::Model)
 end
 
 """
-    get_qrowmatrix_triplets(model::Model, row::Int)
+    get_qrowmatrix(model::Model, row::Int)
 
-Get matrix from quadratic row in triplets form
+Get matrix from quadratic row in CSC form
 """
-function get_qrowmatrix_triplets(model::Model, row::Int)
-    return sparse(Symmetric(get_qrowmatrix_triplets_upper(model, row),:U))
+function get_qrowmatrix(model::Model, row::Int)
+    U = get_qrowmatrix_upper(model, row)
+    Q = (U+U')/2
+    return sparse(Q)
+end
+function get_qrowmatrix_upper(model::Model, row::Int)
+    I,J,V = get_qrowmatrix_triplets_upper(model::Model, row::Int)
+    n = num_vars(model)
+    return sparse(I,J,V,n,n)
 end
 function get_qrowmatrix_triplets_upper(model::Model, row::Int)
 #int XPRS_CC XPRSgetqrowqmatrixtriplets(XPRSprob prob, int irow, int *nqelem, int mqcol1[], int mqcol2[], double dqe[]);
     qrows = get_qrows(model)
-
     if row in qrows
 
         nqelem = Array{Cint}(1)
@@ -339,9 +352,7 @@ function get_qrowmatrix_triplets_upper(model::Model, row::Int)
         if ret != 0
             throw(XpressError(model))
         end
-        n = num_vars(model)
-        return sparse(mqcol1.+1, mqcol2.+1, dqe, n, n)
+        return mqcol1.+1, mqcol2.+1, dqe
     end
-    n = num_vars(model)
-    return sparse(Cint[], Cint[], Float64[],n,n)
+    return Cint[], Cint[], Float64[]
 end

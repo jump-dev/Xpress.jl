@@ -16,7 +16,7 @@ using Xpress, Base.Test
     b = -[4., 1.])
 
     @test Xpress.getq_upper(model) == triu(sparse([2. 1. 0.; 1. 2. 1.; 0. 1. 2.]))
-    @test Xpress.getq(model) == sparse([2. 1. 0.; 1. 2. 1.; 0. 1. 2.])
+    @test Xpress.getq(model) == sparse([2. .5 0.; .5 2. .5; 0. .5 2.])
     @test Xpress.get_obj(model) == [0,0,0]
     @test Xpress.get_constrmatrix(model) == sparse([-1 -2 -3; -1 -1 0])
     @test Xpress.get_rhs(model) == [-4,-1]
