@@ -38,6 +38,7 @@ function lpoptimize(model::Model, flags::String="")
     end
     nothing
 end
+
 function mipoptimize(model::Model, flags::String="")
     @assert model.ptr_model != C_NULL
     tic()
@@ -64,6 +65,16 @@ function computeIIS(model::Model)
     nothing
 end
 
+function loaddelayedrows{I<:Integer}(model::Model, mrows::Array{I})
+    nrows = length(mrows)
+    @assert model.ptr_model != C_NULL
+    ret = @xprs_ccall(loaddelayedrows, Cint, (Ptr{Void},Cint,Ptr{Cint}),
+        model.ptr_model,nrows,convert(Vector{Cint},mrows-1))
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
 
 #################################################
 #
@@ -74,7 +85,7 @@ end
 # Unstarted (XPRS_LP_UNSTARTED).
 # Optimal (XPRS_LP_OPTIMAL).
 # Infeasible (XPRS_LP_INFEAS).
-# Objective worse than cutoff (XPRS_LP_CUTOFF). 
+# Objective worse than cutoff (XPRS_LP_CUTOFF).
 # Unfinished (XPRS_LP_UNFINISHED).
 # Unbounded (XPRS_LP_UNBOUNDED).
 # Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL).
@@ -107,7 +118,7 @@ function get_lp_status2(model::Model)
     return LP_Unknown
 end
 
-# XPRS_MIP_NOT_LOADED Problem has not been loaded. 
+# XPRS_MIP_NOT_LOADED Problem has not been loaded.
 # XPRS_MIP_LP_NOT_OPTIMAL Global search incomplete - the initial continuous relaxation has not been solved and no integer solution has been found.
 # XPRS_MIP_LP_OPTIMAL Global search incomplete - the initial continuous relaxation has been solved and no integer solution has been found.
 # XPRS_MIP_NO_SOL_FOUND Global search incomplete - no integer solution found.
@@ -321,7 +332,7 @@ end
 return a vector of slack values for rows (some srt of constraint primal solution) - inplace
 """
 function get_lp_slack!(model::Model, slack::Vector{Float64})
-    _chklen(slack, num_constrs(model))    
+    _chklen(slack, num_constrs(model))
     ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Void},
          Ptr{Float64},
@@ -336,13 +347,13 @@ function get_lp_slack!(model::Model, slack::Vector{Float64})
 end
 function get_lp_slack_lin!(model::Model, place::Vector{Float64})
     if num_qconstrs(model) > 0
-        _chklen(place, num_linconstrs(model))  
-        
+        _chklen(place, num_linconstrs(model))
+
         slack = zeros(num_constrs(model))
         get_lp_slack!(model, slack)
-        
+
         lrows = get_lrows(model)
-        _chklen(lrows, num_linconstrs(model))  
+        _chklen(lrows, num_linconstrs(model))
 
         for i in eachindex(lrows)
             place[i] = slack[lrows[i]]
@@ -390,13 +401,13 @@ function get_lp_dual!(model::Model, dual::Vector{Float64})
 end
 function get_lp_dual_lin!(model::Model, place::Vector{Float64})
     if num_qconstrs(model) > 0
-        _chklen(place, num_linconstrs(model))  
-        
+        _chklen(place, num_linconstrs(model))
+
         dual = zeros(num_constrs(model))
         get_lp_dual!(model, dual)
-        
+
         lrows = get_lrows(model)
-        _chklen(lrows, num_linconstrs(model))  
+        _chklen(lrows, num_linconstrs(model))
 
         for i in eachindex(lrows)
             place[i] = dual[lrows[i]]
@@ -516,13 +527,13 @@ end
 
 function get_mip_slack_lin!(model::Model, place::Vector{Float64})
     if num_qconstrs(model) > 0
-        _chklen(place, num_linconstrs(model))  
-        
+        _chklen(place, num_linconstrs(model))
+
         slack = zeros(num_constrs(model))
         get_mip_slack!(model, slack)
-        
+
         lrows = get_lrows(model)
-        _chklen(lrows, num_linconstrs(model))  
+        _chklen(lrows, num_linconstrs(model))
 
         for i in eachindex(lrows)
             place[i] = slack[lrows[i]]
@@ -852,7 +863,7 @@ end
 #################################################
 
 function hasdualray(model::Model)::Bool
-    
+
     hasray = Array{Cint}( 1)
 
     ret = @xprs_ccall(getdualray, Cint,
@@ -872,7 +883,7 @@ function hasdualray(model::Model)::Bool
 end
 
 function getdualray!(model::Model, ray::Vector{Float64})
-    
+
     @assert length(ray) == num_constrs(model)
 
     hasray = Array{Cint}(1)
@@ -921,7 +932,7 @@ function hasprimalray(model::Model)::Bool
 end
 
 function getprimalray!(model::Model, ray::Vector{Float64})
-    
+
     @assert length(ray) == num_vars(model)
 
     hasray = Array{Cint}( 1)
@@ -951,15 +962,15 @@ end
 
 function repairweightedinfeasibility(model::Model, scode::Vector{Cint}, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::String="")
 # int XPRS_CC XPRSrepairweightedinfeas(XPRSprob prob, int *scode, const double lrp[], const double grp[], const double lbp[], const double ubp[], char phase2, double delta, const char *optflags)
-    ret = @xprs_ccall(repairweightedinfeas, Cint, 
-        (Ptr{Void}, 
-         Ptr{Cint}, 
-         Ptr{Float64}, 
-         Ptr{Float64}, 
-         Ptr{Float64}, 
-         Ptr{Float64}, 
-         Cchar, 
-         Float64, 
+    ret = @xprs_ccall(repairweightedinfeas, Cint,
+        (Ptr{Void},
+         Ptr{Cint},
+         Ptr{Float64},
+         Ptr{Float64},
+         Ptr{Float64},
+         Ptr{Float64},
+         Cchar,
+         Float64,
          Ptr{UInt8}),
         model.ptr_model, scode, lrp, grp, lbp, ubp, phase2, delta, flags)
     if ret != 0
