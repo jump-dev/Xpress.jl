@@ -13,13 +13,13 @@ Type to hold an Xpress model
 """
 mutable struct Model
     ptr_model::Ptr{Void}
-    callback::Any
+    callback::Array{Any}
     finalize_env::Bool
     
     time::Float64
 
     function Model(p::Ptr{Void}; finalize_env::Bool=true)
-        model = new(p, nothing, finalize_env, 0.0)
+        model = new(p, Any[], finalize_env, 0.0)
         if finalize_env
             finalizer(model, m -> (free_model(m)) )
         end
@@ -115,7 +115,6 @@ function free_model(model::Model)
         end
         model.ptr_model = C_NULL
     end
-
     return nothing
 end
 
@@ -299,7 +298,7 @@ function addnames(m::Xpress.Model, names::Vector, nametype::Int32)
     last = length(names)-1
 
     cnames = ""
-    for str in names  
+    for str in names
         cnames = string(cnames, join(take(str,NAMELENGTH)), "\0")
     end
     ret = Xpress.@xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
