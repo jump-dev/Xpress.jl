@@ -137,12 +137,51 @@ function copy(model_src::Model)
     end
     model_dest
 end
-function copycontrols!(mdest::Xpress.Model, msrc::Xpress.Model)
-    ret = Xpress.@xprs_ccall(copycontrols, Cint, (Ptr{Void}, Ptr{Void}),
+function copycontrols!(mdest::Model, msrc::Model)
+    ret = @xprs_ccall(copycontrols, Cint, (Ptr{Void}, Ptr{Void}),
     mdest.ptr_model, msrc.ptr_model)
     if ret != 0
-        throw(Xpress.XpressError(mdest))
+        throw(XpressError(mdest))
     end
+    nothing
+end
+function dumpcontrols(model::Model)
+    ret = @xprs_ccall(dumpcontrols, Cint, (Ptr{Void},), model.ptr_model)
+    if ret != 0
+        throw(XpressError(mdest))
+    end
+    nothing
+end
+function setdefaults(model::Model)
+    ret = @xprs_ccall(setdefaults, Cint, (Ptr{Void},), model.ptr_model)
+    if ret != 0
+        throw(XpressError(mdest))
+    end
+    nothing
+end
+
+addcolnames(m::Model, names::Vector) = addnames(m, names, Int32(2))
+addrownames(m::Model, names::Vector) = addnames(m, names, Int32(1))
+function addnames(m::Model, names::Vector, nametype::Int32)
+    # XPRSaddnames(prob, int type, char name[], int first, int last)
+
+    NAMELENGTH = 64
+    
+    #nametype = 2
+    first = 0
+    last = length(names)-1
+
+    cnames = ""
+    for str in names  
+        cnames = string(cnames, join(Base.Iterators.take(str,NAMELENGTH)), "\0")
+    end
+    ret = @xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
+        m.ptr_model, nametype, cnames, first, last)
+
+    if ret != 0
+        throw(XpressError(m))
+    end
+
     nothing
 end
 
@@ -249,6 +288,63 @@ function writeptrsol(model::Model, filename::String, flags::String="")
     nothing
 end
 
+"""
+    getprobname(model::Model)::String
+
+Query internal model name
+"""
+function getprobname(model::Model)
+    name = " "^100
+    ret = @xprs_ccall(getprobname, Cint,
+        (Ptr{Void},Ptr{Cchar}), model.ptr_model, name)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    out = strip(name)
+end
+
+"""
+    setprobname(model::Model, name::String)::Void
+
+Set internal model name
+"""
+function setprobname(model::Model, name::String)
+    ret = @xprs_ccall(setprobname, Cint,
+        (Ptr{Void},Ptr{Cchar}), model.ptr_model, name)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
+
+"""
+    writesvf(model::Model)::Void
+
+Save serialized internal model to svf format (Xpress internal format).
+File is saved to `pwd()`
+"""
+function writesvf(model::Model)
+    ret = @xprs_ccall(save, Cint,
+        (Ptr{Void},), model.ptr_model)
+    if ret != 0
+        throw(XpressError(model))
+    end
+    nothing
+end
+"""
+    readsvf(model::Model, name::String, force::String = "")::Void
+
+Read serialized internal model to svf format (Xpress internal format)
+"""
+function readsvf(model::Model, name::String, force::String = "")
+    ret = @xprs_ccall(restore, Cint,
+        (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}), model.ptr_model, name, force)
+    if ret != 0
+        throw(XpressErrocontr(model))
+    end
+    nothing
+end
+
 
 """
     fixglobals(model::Model, round::Bool)
@@ -286,9 +382,9 @@ function setlogfile(model::Model, filename::String)
 end
 
 
-addcolnames(m::Xpress.Model, names::Vector) = addnames(m, names, Int32(2))
-addrownames(m::Xpress.Model, names::Vector) = addnames(m, names, Int32(1))
-function addnames(m::Xpress.Model, names::Vector, nametype::Int32)
+addcolnames(m::Model, names::Vector) = addnames(m, names, Int32(2))
+addrownames(m::Model, names::Vector) = addnames(m, names, Int32(1))
+function addnames(m::Model, names::Vector, nametype::Int32)
     # XPRSaddnames(prob, int type, char name[], int first, int last)
 
     NAMELENGTH = 64
@@ -301,11 +397,11 @@ function addnames(m::Xpress.Model, names::Vector, nametype::Int32)
     for str in names
         cnames = string(cnames, join(take(str,NAMELENGTH)), "\0")
     end
-    ret = Xpress.@xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
+    ret = @xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
         m.ptr_model, nametype, cnames, first, last)
 
     if ret != 0
-        throw(Xpress.XpressError(m))
+        throw(XpressError(m))
     end
 
     nothing
