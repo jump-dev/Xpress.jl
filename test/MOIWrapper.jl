@@ -19,11 +19,9 @@ const MOIT = MathOptInterface.Test
             ]
         )
         MOIT.unittest(solver, config, [
-            "solve_affine_interval",  # Interval constraints not wrapped
             "solve_qp_edge_cases",    # tested below
             "solve_qcp_edge_cases"    # tested below
         ])
-
         @testset "solve_qp_edge_cases" begin
                 MOIT.solve_qp_edge_cases(solver,
                 MOIT.TestConfig(atol=1e-2,rtol = 1e-2)
@@ -34,7 +32,6 @@ const MOIT = MathOptInterface.Test
                 MOIT.TestConfig(atol=1e-2,rtol = 1e-2)
             )
         end
-
     end
 
     @testset "Linear tests" begin
