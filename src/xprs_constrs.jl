@@ -121,7 +121,7 @@ function add_constrs_t!(model::Model, At::SparseMatrixCSC{Float64}, rel::GCharOr
     (m == length(b) && n == num_vars(model)) || error("Incompatible argument dimensions.")
     add_constrs!(model, At.colptr[1:At.n], At.rowval, At.nzval, rel, b)
 end
-function add_constrs_t!(model::Model, At::Matrix{Float64}, rel::GCharOrVec, b::Vector)
+function add_constrs_t!(model::Model, At::AbstractMatrix{Float64}, rel::GCharOrVec, b::Vector)
     n, m = size(At)
     (m == length(b) && n == num_vars(model)) || error("Incompatible argument dimensions.")
     add_constrs_t!(model, sparse(At), rel, b)
