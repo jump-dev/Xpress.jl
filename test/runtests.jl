@@ -12,7 +12,7 @@ tests = ["xprs_attrs_test",
          "qcqp_01",
          "mathprog",
          "jump",
-         
+         "MOIWrapper"
          ]
 
 for t in tests

@@ -380,29 +380,3 @@ function setlogfile(model::Model, filename::String)
     end
     nothing
 end
-
-
-addcolnames(m::Model, names::Vector) = addnames(m, names, Int32(2))
-addrownames(m::Model, names::Vector) = addnames(m, names, Int32(1))
-function addnames(m::Model, names::Vector, nametype::Int32)
-    # XPRSaddnames(prob, int type, char name[], int first, int last)
-
-    NAMELENGTH = 64
-    
-    #nametype = 2
-    first = 0
-    last = length(names)-1
-
-    cnames = ""
-    for str in names
-        cnames = string(cnames, join(take(str,NAMELENGTH)), "\0")
-    end
-    ret = @xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
-        m.ptr_model, nametype, cnames, first, last)
-
-    if ret != 0
-        throw(XpressError(m))
-    end
-
-    nothing
-end
