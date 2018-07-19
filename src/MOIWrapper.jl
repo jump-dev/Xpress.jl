@@ -277,7 +277,7 @@ function LQOI.set_linear_objective!(instance::Optimizer, colvec, coefvec)
     obj = zeros(Float64, nvars)
 
     for i in eachindex(colvec)
-        obj[colvec[i]] = coefvec[i]
+        obj[colvec[i]] += coefvec[i]
     end
 
     XPR.set_obj!(instance.inner, obj)
