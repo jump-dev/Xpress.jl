@@ -1,4 +1,4 @@
-using Xpress, JuMP, MathProgBase, Base.Test, OffsetArrays
+using Xpress, JuMP, MathProgBase, Compat.Test, OffsetArrays
 import Xpress.XpressSolver
 
 lp_solvers = Any[]

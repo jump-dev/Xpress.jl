@@ -1,4 +1,4 @@
-using Xpress, Base.Test
+using Xpress, Compat.Test
 
 tests = ["xprs_attrs_test",
          "lp_01a", 

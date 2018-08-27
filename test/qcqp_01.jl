@@ -5,7 +5,7 @@
 #          x^2 + y^2 <= 1
 #
 #    solution: (0.71, 0.71) objv = 1.414
-using Xpress, Base.Test
+using Xpress, Compat.Test
 @testset "QCQP 1" begin
     model = Xpress.Model( "qcqp_01", :maximize)
 
