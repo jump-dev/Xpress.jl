@@ -14,7 +14,7 @@ function get_intattr(model::Model, ipar::Integer)
     out = Array{Cint}(1)
 
     ret = @xprs_ccall(getintattrib, Cint,
-                      (Ptr{Void}, Cint, Ptr{Cint}),
+                      (Ptr{Nothing}, Cint, Ptr{Cint}),
                       model.ptr_model, Cint(ipar), out)
     if ret != 0
         throw(XpressError(model, ret))
@@ -32,7 +32,7 @@ function get_dblattr(model::Model, ipar::Integer)
     out = Array{Float64}(1)
 
     ret = @xprs_ccall(getdblattrib, Cint,
-                      (Ptr{Void}, Cint, Ptr{Float64}),
+                      (Ptr{Nothing}, Cint, Ptr{Float64}),
                       model.ptr_model, Cint(ipar), out)
     if ret != 0
         throw(XpressError(model, convert(Int, ret)))
@@ -50,7 +50,7 @@ function get_strattr(model::Model, ipar::Integer)
     out = zeros(Cchar,256)
 
     ret = @xprs_ccall(getstrattrib, Cint,
-                      (Ptr{Void}, Cint, Ptr{Cchar}),
+                      (Ptr{Nothing}, Cint, Ptr{Cchar}),
                       model.ptr_model, Cint(ipar), out)
     if ret != 0
         throw(XpressError(model, convert(Int, ret)))
@@ -216,7 +216,7 @@ end
 function set_sense!(model::Model, sense::Integer)
 
     ret = @xprs_ccall(chgobjsense, Cint, (
-            Ptr{Void},    # model
+            Ptr{Nothing},    # model
             Cint          # sense
             ),
             model.ptr_model, Cint(sense))
@@ -240,7 +240,7 @@ function set_objcoeffs!(model::Model, inds::Vector{I}, c::Vector{R}) where {I<:I
     _chklen(inds, length(c))
 
     ret = @xprs_ccall(chgobj, Cint, (
-        Ptr{Void},     # model
+        Ptr{Nothing},     # model
         Cint,          # nels
         Ptr{Cint}, # inds
         Ptr{Float64} # vals
@@ -272,7 +272,7 @@ function get_lb!(model::Model, lb::Vector{Float64}, colb::Integer, cole::Integer
     _chklen(lb,cole-colb+1)
 
     ret = @xprs_ccall(getlb, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Ptr{Float64},
         Cint,
         Cint
@@ -328,7 +328,7 @@ function get_ub!(model::Model, out::Vector{Float64}, colb::Integer, cole::Intege
     _chklen(out, cole-colb+1)
 
     ret = @xprs_ccall(getub, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Ptr{Float64},
         Cint,
         Cint
@@ -387,7 +387,7 @@ function get_obj!(model::Model, obj::Vector{Float64})
     _chklen(obj,cols)
     
     ret = @xprs_ccall(getobj, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Ptr{Float64},
         Cint,
         Cint
@@ -429,7 +429,7 @@ function get_rhs!(model::Model, out::Vector{Float64}, rowb::Integer, rowe::Integ
     _chklen(out, rowe-rowb+1)
 
     ret = @xprs_ccall(getrhs, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Ptr{Float64},
         Cint,
         Cint
@@ -485,7 +485,7 @@ function get_rowtype!(model::Model, sense::Vector{Cchar})
     _chklen(sense,rows)
 
     ret = @xprs_ccall(getrowtype, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Ptr{Cchar},
         Cint,
         Cint
@@ -535,7 +535,7 @@ function get_coltype!(model::Model, coltype::Vector{Cchar})
     _chklen(coltype,cols)
 
     ret = @xprs_ccall(getcoltype, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Ptr{Cchar},
         Cint,
         Cint
@@ -568,7 +568,7 @@ end
 function unsafe_chgbounds!(model::Model, len::Cint, inds::Vector{Cint}, btype::Vector{Cchar},  lb::Vector{Float64})
 
     ret = @xprs_ccall(chgbounds, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Cint,
         Ptr{Cint},
         Ptr{Cchar},
@@ -632,7 +632,7 @@ end
 
 function unsafe_chgrhs!(model::Model, nels::Cint, inds::Vector{Cint}, rhs::Vector{Float64})
     ret = @xprs_ccall(chgrhs, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Cint,
         Ptr{Cint},
         Ptr{Float64}
@@ -680,7 +680,7 @@ function set_rowtype!(model::Model, inds::Vector{I}, senses::Vector{Cchar}) wher
     
     rows = length(senses)
     ret = @xprs_ccall(chgrowtype, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Cint,
         Ptr{Cint},
         Ptr{Cchar}

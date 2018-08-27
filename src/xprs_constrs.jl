@@ -17,7 +17,7 @@ function add_constr!(model::Model, inds::Vector{Cint}, coeffs::Vector{Float64}, 
     length(inds) == length(coeffs) || error("Inconsistent argument dimensions.")
 
     ret = @xprs_ccall(addrows, Cint,(
-        Ptr{Void}, #prob
+        Ptr{Nothing}, #prob
         Cint,    #number new rowws
         Cint, #number nonzeros
         Ptr{Cchar}, #cstr type
@@ -78,7 +78,7 @@ function add_constrs!(model::Model, cbegins::Vector{Cint}, inds::Vector{Cint}, c
 
     if m > 0
         ret = @xprs_ccall(addrows, Cint,(
-            Ptr{Void}, #prob
+            Ptr{Nothing}, #prob
             Cint,    #number new rowws
             Cint, #number nonzeros
             Ptr{Cchar}, #cstr type
@@ -140,7 +140,7 @@ function add_rangeconstr!(model::Model, inds::IVec, coeffs::FVec, lb::Float64, u
     # b = ub
     r = ub - lb
     ret = @xprs_ccall(addrows, Cint,(
-        Ptr{Void}, #prob
+        Ptr{Nothing}, #prob
         Cint,    #number new rowws
         Cint, #number nonzeros
         Ptr{Cchar}, #cstr type
@@ -183,7 +183,7 @@ function add_rangeconstrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec
     if m > 0
         r = ub - lb
         ret = @xprs_ccall(addrows, Cint,(
-            Ptr{Void}, #prob
+            Ptr{Nothing}, #prob
             Cint,    #number new rowws
             Cint, #number nonzeros
             Ptr{Cchar}, #cstr type
@@ -242,7 +242,7 @@ function get_constrmatrix(model::Model)
     cind = Array{Cint}( nnz)
     cval = Array{Float64}( nnz)
     ret = @xprs_ccall(getrows, Cint, (
-                     Ptr{Void},
+                     Ptr{Nothing},
                      Ptr{Cint},
                      Ptr{Cint},
                      Ptr{Float64},
@@ -271,7 +271,7 @@ end
 function get_rows_nnz(model::Model, first::Integer, last::Integer)
     numnzP = Array{Cint}( 1)
     ret = @xprs_ccall(getrows, Cint, (
-                     Ptr{Void},
+                     Ptr{Nothing},
                      Ptr{Cint},
                      Ptr{Cint},
                      Ptr{Float64},
@@ -296,7 +296,7 @@ function get_rows(model::Model, first::Integer, last::Integer)
     cind = Array{Cint}( nnz)
     cval = Array{Float64}( nnz)
     ret = @xprs_ccall(getrows, Cint, (
-                     Ptr{Void},
+                     Ptr{Nothing},
                      Ptr{Cint},
                      Ptr{Cint},
                      Ptr{Float64},
@@ -335,7 +335,7 @@ function add_sos!(model::Model, sostype::Symbol, idx::Vector{Cint}, weight::Vect
     ((nelem = length(idx)) == length(weight)) || error("Index and weight vectors of unequal length")
     (sostype == :SOS1) ? (typ = XPRS_SOS_TYPE1) : ( (sostype == :SOS2) ? (typ = XPRS_SOS_TYPE2) : error("Invalid SOS constraint type") )
     ret = @xprs_ccall(addsets, Cint, (
-                     Ptr{Void},
+                     Ptr{Nothing},
                      Cint,
                      Cint,
                      Ptr{Cchar},
@@ -358,7 +358,7 @@ function del_sos!(model::Model, idx::Vector{Cint})
     # int XPRS_CC XPRSdelsets(XPRSprob prob, int ndelsets, const int mindex[])
     numdel = length(idx)
     ret = @xprs_ccall(delsets, Cint, (
-                     Ptr{Void},
+                     Ptr{Nothing},
                      Cint,
                      Ptr{Cint}),
                      model.ptr_model, convert(Cint,numdel), idx.-Cint(1))
@@ -385,7 +385,7 @@ function get_sos_matrix(m::Model)
     #char qgtype[], int mgcols[], double dlim[], char qstype[], 
     #int msstart[],int mscols[], double dref[]);
     ret = @xprs_ccall(getglobal, Cint, (
-        Ptr{Void},
+        Ptr{Nothing},
         Ptr{Cint}, # nglents
         Ptr{Cint}, # sets
         Ptr{Cchar}, # qgtype
@@ -427,7 +427,7 @@ del_constrs!(model::Model, idx::Vector{T}) where {T<:Real} = del_constrs!(model,
 function del_constrs!(model::Model, idx::Vector{Cint})
     numdel = length(idx)
     ret = @xprs_ccall(delrows, Cint, (
-                     Ptr{Void},
+                     Ptr{Nothing},
                      Cint,
                      Ptr{Cint}),
                      model.ptr_model, convert(Cint,numdel), idx.-Cint(1))
@@ -449,7 +449,7 @@ function chg_coeffs!(model::Model, cidx::Vector{Cint}, vidx::Vector{Cint}, val::
 
     numchgs = length(cidx)
     ret = @xprs_ccall(chgmcoef, Cint, (
-                     Ptr{Void},
+                     Ptr{Nothing},
                      Cint,
                      Ptr{Cint},
                      Ptr{Cint},
@@ -468,7 +468,7 @@ function chg_rhsrange!(model::Model, cidx::Vector{Cint}, val::FVec)
 
     numchgs = length(cidx)
     ret = @xprs_ccall(chgrhsrange, Cint, (
-                        Ptr{Void},
+                        Ptr{Nothing},
                         Cint,
                         Ptr{Cint},
                         Ptr{Float64}),
@@ -483,7 +483,7 @@ function get_rhsrange!(model::Model, out::Vector{Float64}, rowb::Integer, rowe::
     _chklen(out, rowe-rowb+1)
 
     ret = @xprs_ccall(getrhsrange, Cint, (
-                    Ptr{Void},
+                    Ptr{Nothing},
                     Ptr{Float64},
                     Cint,
                     Cint),

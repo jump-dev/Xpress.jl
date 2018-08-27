@@ -12,13 +12,13 @@
 Type to hold an Xpress model
 """
 mutable struct Model
-    ptr_model::Ptr{Void}
+    ptr_model::Ptr{Nothing}
     callback::Array{Any}
     finalize_env::Bool
     
     time::Float64
 
-    function Model(p::Ptr{Void}; finalize_env::Bool=true)
+    function Model(p::Ptr{Nothing}; finalize_env::Bool=true)
         model = new(p, Any[], finalize_env, 0.0)
         if finalize_env
             finalizer(model, m -> (free_model(m)) )
@@ -34,8 +34,8 @@ Xpress model constructor (autimatically sets OUTPUTLOG = 1)
 """
 function Model(; finalize_env::Bool=true)
 
-    a = Array{Ptr{Void}}( 1)
-    ret = @xprs_ccall(createprob, Cint, ( Ptr{Ptr{Void}},), a )
+    a = Array{Ptr{Nothing}}( 1)
+    ret = @xprs_ccall(createprob, Cint, ( Ptr{Ptr{Nothing}},), a )
     if ret != 0
         error("It was not possible to create a model, try running Env() and then create the model again.")
     end
@@ -68,7 +68,7 @@ end
 function get_error_msg(m::Model)
     #@assert env.ptr_env == 1
     out = Array{Cchar}( 512)
-    ret = @xprs_ccall(getlasterror, Cint, (Ptr{Void},Ptr{Cchar}),
+    ret = @xprs_ccall(getlasterror, Cint, (Ptr{Nothing},Ptr{Cchar}),
         m.ptr_model, out)
 
     error( unsafe_string(pointer(out))  )
@@ -76,7 +76,7 @@ end
 function get_error_msg(m::Model, ret::Int)
     #@assert env.ptr_env == 1
     out = Array{Cint}(1)
-    out2 = @xprs_ccall(getintattrib, Cint,(Ptr{Void}, Cint, Ptr{Cint}),
+    out2 = @xprs_ccall(getintattrib, Cint,(Ptr{Nothing}, Cint, Ptr{Cint}),
         m.ptr_model, ret , out)
 end
 
@@ -100,7 +100,7 @@ end
 #
 #################################################
 
-Base.unsafe_convert(ty::Type{Ptr{Void}}, model::Model) = model.ptr_model::Ptr{Void}
+Base.unsafe_convert(ty::Type{Ptr{Nothing}}, model::Model) = model.ptr_model::Ptr{Nothing}
 
 """
     free_model(model::Model)
@@ -109,7 +109,7 @@ Free all memory allocated in C related to Model
 """
 function free_model(model::Model)
     if model.ptr_model != C_NULL
-        ret = @xprs_ccall(destroyprob, Cint, (Ptr{Void},), model.ptr_model)
+        ret = @xprs_ccall(destroyprob, Cint, (Ptr{Nothing},), model.ptr_model)
         if ret != 0
             throw(XpressError(model))
         end
@@ -129,7 +129,7 @@ function copy(model_src::Model)
     # only copies problem not callbacks and controls
     if model_src.ptr_model != C_NULL
         model_dest = Model()#env)
-        ret = @xprs_ccall(copyprob, Cint, (Ptr{Void},Ptr{Void},Ptr{UInt8}),
+        ret = @xprs_ccall(copyprob, Cint, (Ptr{Nothing},Ptr{Nothing},Ptr{UInt8}),
             model_dest.ptr_model, model_src.ptr_model, "")
         if ret != 0
             throw(XpressError(model_src))
@@ -138,7 +138,7 @@ function copy(model_src::Model)
     model_dest
 end
 function copycontrols!(mdest::Model, msrc::Model)
-    ret = @xprs_ccall(copycontrols, Cint, (Ptr{Void}, Ptr{Void}),
+    ret = @xprs_ccall(copycontrols, Cint, (Ptr{Nothing}, Ptr{Nothing}),
     mdest.ptr_model, msrc.ptr_model)
     if ret != 0
         throw(XpressError(mdest))
@@ -146,14 +146,14 @@ function copycontrols!(mdest::Model, msrc::Model)
     nothing
 end
 function dumpcontrols(model::Model)
-    ret = @xprs_ccall(dumpcontrols, Cint, (Ptr{Void},), model.ptr_model)
+    ret = @xprs_ccall(dumpcontrols, Cint, (Ptr{Nothing},), model.ptr_model)
     if ret != 0
         throw(XpressError(mdest))
     end
     nothing
 end
 function setdefaults(model::Model)
-    ret = @xprs_ccall(setdefaults, Cint, (Ptr{Void},), model.ptr_model)
+    ret = @xprs_ccall(setdefaults, Cint, (Ptr{Nothing},), model.ptr_model)
     if ret != 0
         throw(XpressError(mdest))
     end
@@ -175,7 +175,7 @@ function addnames(m::Model, names::Vector, nametype::Int32)
     for str in names  
         cnames = string(cnames, join(Base.Iterators.take(str,NAMELENGTH)), "\0")
     end
-    ret = @xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
+    ret = @xprs_ccall(addnames, Cint, (Ptr{Nothing}, Cint,Ptr{Cchar}, Cint, Cint),
         m.ptr_model, nametype, cnames, first, last)
 
     if ret != 0
@@ -188,7 +188,7 @@ end
 
 # read / write file
 #=
-XPRSprob a-> Ptr{Void}
+XPRSprob a-> Ptr{Nothing}
 const char *a -> Ptr{UInt8}  -> "" : String
 int -> Cint
 const char a[] -> Ptr{Cchar} -> Cchar[]
@@ -201,7 +201,7 @@ function load_empty(model::Model)
       dub[]);
 =#
     ret = @xprs_ccall(loadlp, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Ptr{UInt8},
             Cint,
             Cint,
@@ -233,7 +233,7 @@ function read_model(model::Model, filename::String)
     #@assert is_valid(model.env)
     flags = ""
     ret = @xprs_ccall(readprob, Cint,
-        (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
+        (Ptr{Nothing}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
     if ret != 0
         throw(XpressError(model))
@@ -248,7 +248,7 @@ Writes a model into file.
 For flags setting see the manual (writeprob)
 """
 function write_model(model::Model, filename::String, flags::String="")
-    ret = @xprs_ccall(writeprob, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
+    ret = @xprs_ccall(writeprob, Cint, (Ptr{Nothing}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
     if ret != 0
         throw(XpressError(model))
@@ -264,7 +264,7 @@ For flags setting see the manual (writesol)
 """
 function writesol(model::Model, filename::String, flags::String="")
     # int XPRS_CC XPRSwritesol(XPRSprob prob, const char *filename, const char *flags)
-    ret = @xprs_ccall(writesol, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
+    ret = @xprs_ccall(writesol, Cint, (Ptr{Nothing}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
     if ret != 0
         throw(XpressError(model))
@@ -280,7 +280,7 @@ For flags setting see the manual (writeptrsol)
 """
 function writeptrsol(model::Model, filename::String, flags::String="")
     # int XPRS_CC XPRSwriteptrsol(XPRSprob prob, const char *filename, const char *flags)
-    ret = @xprs_ccall(writeptrsol, Cint, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}),
+    ret = @xprs_ccall(writeptrsol, Cint, (Ptr{Nothing}, Ptr{UInt8}, Ptr{UInt8}),
         model.ptr_model, filename, flags)
     if ret != 0
         throw(XpressError(model))
@@ -296,7 +296,7 @@ Query internal model name
 function getprobname(model::Model)
     name = " "^100
     ret = @xprs_ccall(getprobname, Cint,
-        (Ptr{Void},Ptr{Cchar}), model.ptr_model, name)
+        (Ptr{Nothing},Ptr{Cchar}), model.ptr_model, name)
     if ret != 0
         throw(XpressError(model))
     end
@@ -304,13 +304,13 @@ function getprobname(model::Model)
 end
 
 """
-    setprobname(model::Model, name::String)::Void
+    setprobname(model::Model, name::String)::Nothing
 
 Set internal model name
 """
 function setprobname(model::Model, name::String)
     ret = @xprs_ccall(setprobname, Cint,
-        (Ptr{Void},Ptr{Cchar}), model.ptr_model, name)
+        (Ptr{Nothing},Ptr{Cchar}), model.ptr_model, name)
     if ret != 0
         throw(XpressError(model))
     end
@@ -318,27 +318,27 @@ function setprobname(model::Model, name::String)
 end
 
 """
-    writesvf(model::Model)::Void
+    writesvf(model::Model)::Nothing
 
 Save serialized internal model to svf format (Xpress internal format).
 File is saved to `pwd()`
 """
 function writesvf(model::Model)
     ret = @xprs_ccall(save, Cint,
-        (Ptr{Void},), model.ptr_model)
+        (Ptr{Nothing},), model.ptr_model)
     if ret != 0
         throw(XpressError(model))
     end
     nothing
 end
 """
-    readsvf(model::Model, name::String, force::String = "")::Void
+    readsvf(model::Model, name::String, force::String = "")::Nothing
 
 Read serialized internal model to svf format (Xpress internal format)
 """
 function readsvf(model::Model, name::String, force::String = "")
     ret = @xprs_ccall(restore, Cint,
-        (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}), model.ptr_model, name, force)
+        (Ptr{Nothing}, Ptr{UInt8}, Ptr{UInt8}), model.ptr_model, name, force)
     if ret != 0
         throw(XpressErrocontr(model))
     end
@@ -356,7 +356,7 @@ function fixglobals(model::Model, round::Bool)
     if round
         flag = 1
     end
-    ret = @xprs_ccall(fixglobals, Cint, (Ptr{Void}, Cint),
+    ret = @xprs_ccall(fixglobals, Cint, (Ptr{Nothing}, Cint),
         model.ptr_model, flag)
     if ret != 0
         throw(XpressError(model))
@@ -373,7 +373,7 @@ function setlogfile(model::Model, filename::String)
     #int XPRS_CC XPRSsetlogfile(XPRSprob prob, const char *filename);
 
     flags = ""
-    ret = @xprs_ccall(setlogfile, Cint, (Ptr{Void}, Ptr{UInt8}),
+    ret = @xprs_ccall(setlogfile, Cint, (Ptr{Nothing}, Ptr{UInt8}),
         model.ptr_model, filename)
     if ret != 0
         throw(XpressError(model))

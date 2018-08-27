@@ -13,7 +13,7 @@ function add_qpterms!(model::Model, qr::Vector{Cint}, qc::Vector{Cint}, qv::Vect
     (nnz == length(qc) == length(qv)) || error("Inconsistent argument dimensions.")
     if nnz > 0
         ret = @xprs_ccall(chgmqobj, Cint, (
-            Ptr{Void},    # model
+            Ptr{Nothing},    # model
             Cint,         # nnz
             Ptr{Cint},    # qrow
             Ptr{Cint},    # qcol
@@ -169,7 +169,7 @@ function getq_triplets_upper(model::Model)
     dobjval = Array{Float64}( nnz)
 
     ret = @xprs_ccall(getmqobj, Cint, (
-        Ptr{Void},  # model
+        Ptr{Nothing},  # model
         Ptr{Cint},  # mstart
         Ptr{Cint},  # mclind
         Ptr{Float64},  # dobjval
@@ -220,7 +220,7 @@ function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, 
 
     if qnnz > 0
         ret = @xprs_ccall(addqmatrix, Cint, (
-            Ptr{Void},    # model
+            Ptr{Nothing},    # model
             Cint,         # lin contraint o add matrix
             Cint,         # qnnz
             Ptr{Cint},    # qrow
@@ -258,7 +258,7 @@ function get_qrows(model::Model)
         qcrows = Array{Cint}( qmn)
 
         ret = @xprs_ccall(getqrows, Cint, (
-            Ptr{Void},    # model
+            Ptr{Nothing},    # model
             Ptr{Cint},    # qmn
             Ptr{Cint}    # qcrows
             ),
@@ -322,7 +322,7 @@ function get_qrowmatrix_triplets_upper(model::Model, row::Int)
 
         nqelem = Array{Cint}(1)
         ret = @xprs_ccall(getqrowqmatrixtriplets, Cint, (
-            Ptr{Void},    # model
+            Ptr{Nothing},    # model
             Cint,
             Ptr{Cint},    # nqelem
             Ptr{Cint},    # mqcol1
@@ -340,7 +340,7 @@ function get_qrowmatrix_triplets_upper(model::Model, row::Int)
         dqe = Array{Float64}( nqelem[1])
 
         ret = @xprs_ccall(getqrowqmatrixtriplets, Cint, (
-            Ptr{Void},    # model
+            Ptr{Nothing},    # model
             Cint,
             Ptr{Cint},    # nqelem
             Ptr{Cint},    # mqcol1

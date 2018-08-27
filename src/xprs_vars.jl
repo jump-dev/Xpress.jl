@@ -10,7 +10,7 @@ function addcols(model::Model, mstart::Vector{Cint}, mrwind::Vector{Cint}, dmatv
     _chklen(mrwind, newnz)
 
     ret = @xprs_ccall(addcols, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Cint,         # number of new cols
         Cint,         # number of nonzeros in added cols
         Ptr{Float64}, # coefs in objective
@@ -35,7 +35,7 @@ function addcols(model::Model, objx::Vector{Float64}, lb::Vector{Float64}, ub::V
     _chklen(objx, newcols)
 
     ret = @xprs_ccall(addcols, Cint, (
-        Ptr{Void},    # model
+        Ptr{Nothing},    # model
         Cint,         # number of new cols
         Cint,         # number of nonzeros in added cols
         Ptr{Float64}, # coefs in objective
@@ -174,7 +174,7 @@ del_vars!(model::Model, idx::Vector{T}) where {T<:Real} = del_vars!(model, conve
 function del_vars!(model::Model, idx::Vector{Cint})
     numdel = length(idx)
     ret = @xprs_ccall(delcols, Cint, (
-                     Ptr{Void},
+                     Ptr{Nothing},
                      Cint,
                      Ptr{Cint}),
                      model, convert(Cint,numdel), idx-Cint(1))
@@ -202,7 +202,7 @@ chgcoltypes!(model::Model, colnums::Vector{Integer}, vtypes::Cchar) = chgcoltype
 function chgcoltypes!(model::Model, colnums::Vector{I}, vtypes::Vector{Cchar}) where I<:Integer
     n = length(colnums)
     ret = @xprs_ccall(chgcoltype,Cint,(
-        Ptr{Void},
+        Ptr{Nothing},
         Cint,
         Ptr{Cint},
         Ptr{Cchar}),
@@ -223,7 +223,7 @@ function chgsemilb!(model::Model, colnums::Vector{I}, lb::Vector{R}) where {I<:I
 
     n=length(colnums)
     ret = @xprs_ccall(chgglblimit,Cint,(
-        Ptr{Void},
+        Ptr{Nothing},
         Cint,
         Ptr{Cint},
         Ptr{Float64}),

@@ -332,7 +332,7 @@ const XPRS_BARAASIZE                   =convert(Cint,              5002 )
 const XPRS_BARLSIZE                    =convert(Cint,              5003 )
 const XPRS_BARDENSECOL                 =convert(Cint,              5004 )
 const XPRS_BARCROSSOVER                =convert(Cint,              5005 )
-#/* XPRS_IIS has been renamed XPRS_NUMIIS to avoid confusion with the XPRSiis
+#/* XPRS_IIS has been renamed XPRS_NUMIIS to aNothing confusion with the XPRSiis
 #   function.  XPRS_IIS is defined here for your convenience. */
 const XPRS_IIS = XPRS_NUMIIS
 #/* Integer attributes that support 64-bit values */

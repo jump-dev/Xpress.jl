@@ -30,7 +30,7 @@ Quadratic terms are NOT ignored.
 function lpoptimize(model::Model, flags::String="")
     @assert model.ptr_model != C_NULL
     tic()
-    ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{UInt8}),
+    ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Nothing},Ptr{UInt8}),
         model.ptr_model, flags)
     model.time = toq()
     if ret != 0
@@ -42,7 +42,7 @@ end
 function mipoptimize(model::Model, flags::String="")
     @assert model.ptr_model != C_NULL
     tic()
-    ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{UInt8}),
+    ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Nothing},Ptr{UInt8}),
         model.ptr_model, flags)
     model.time = toq()
     if ret != 0
@@ -58,7 +58,7 @@ compute all ISS
 """
 function computeIIS(model::Model)
     @assert model.ptr_model != C_NULL
-    ret = @xprs_ccall(iisall, Cint, (Ptr{Void},), model.ptr_model)
+    ret = @xprs_ccall(iisall, Cint, (Ptr{Nothing},), model.ptr_model)
     if ret != 0
         throw(XpressError(model))
     end
@@ -68,7 +68,7 @@ end
 function loaddelayedrows{I<:Integer}(model::Model, mrows::Array{I})
     nrows = length(mrows)
     @assert model.ptr_model != C_NULL
-    ret = @xprs_ccall(loaddelayedrows, Cint, (Ptr{Void},Cint,Ptr{Cint}),
+    ret = @xprs_ccall(loaddelayedrows, Cint, (Ptr{Nothing},Cint,Ptr{Cint}),
         model.ptr_model,nrows,convert(Vector{Cint},mrows-1))
     if ret != 0
         throw(XpressError(model))
@@ -269,7 +269,7 @@ function get_complete_lp_solution(model::Model)
     red = Vector{Float64}(cols)
 
     ret = @xprs_ccall(getlpsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64},
          Ptr{Float64},
@@ -301,7 +301,7 @@ return a vector with primal variable solutions - inplace
 function get_lp_solution!(model::Model, x::Vector{Float64})
     _chklen(x, num_vars(model))
     ret = @xprs_ccall(getlpsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64},
          Ptr{Float64},
@@ -334,7 +334,7 @@ return a vector of slack values for rows (some srt of constraint primal solution
 function get_lp_slack!(model::Model, slack::Vector{Float64})
     _chklen(slack, num_constrs(model))
     ret = @xprs_ccall(getlpsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64},
          Ptr{Float64},
@@ -388,7 +388,7 @@ function get_lp_dual!(model::Model, dual::Vector{Float64})
     rows = num_constrs(model)
     _chklen(dual, rows)
     ret = @xprs_ccall(getlpsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64},
          Ptr{Float64},
@@ -444,7 +444,7 @@ function get_lp_reducedcost!(model::Model, red::Vector{Float64})
     _chklen(red, cols)
 
     ret = @xprs_ccall(getlpsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64},
          Ptr{Float64},
@@ -482,7 +482,7 @@ function get_mip_solution!(model::Model, x::Vector{Float64})
     _chklen(x, cols)
 
     ret = @xprs_ccall(getmipsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64}
             ), model.ptr_model, x, C_NULL)
@@ -515,7 +515,7 @@ function get_mip_slack!(model::Model, slack::Vector{Float64})
     rows = num_constrs(model)
     _chklen(slack, rows)
     ret = @xprs_ccall(getmipsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64}
             ), model.ptr_model, C_NULL, slack)
@@ -755,7 +755,7 @@ function loadbasis(model::Model, rval::Vector{Cint}, cval::Vector{Cint})
 # int XPRS_CC XPRSloadbasis(XPRSprob prob, const int rstatus[], const intcstatus[]);
 
     ret = @xprs_ccall(loadbasis, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Cint},
          Ptr{Cint}
             ), model.ptr_model, rval, cval)
@@ -775,7 +775,7 @@ function get_basis(model::Model)
     rbasis = Array{Symbol}( num_constrs(model))
 
     ret = @xprs_ccall(getbasis, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Cint},
          Ptr{Cint}
             ), model.ptr_model, rval, cval)
@@ -805,7 +805,7 @@ function get_iisdata(model::Model, num::Int)
     rows = Array{Cint}(1)
     cols = Array{Cint}(1)
     ret = @xprs_ccall(getiisdata, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Cint,# num
          Ptr{Cint},# #row
          Ptr{Cint},# #cols
@@ -830,7 +830,7 @@ function get_iisdata(model::Model, num::Int)
     cols_set = Array{Cint}( cols[1])
 
     ret = @xprs_ccall(getiisdata, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Cint,# num
          Ptr{Cint},# #row
          Ptr{Cint},# #cols
@@ -867,7 +867,7 @@ function hasdualray(model::Model)::Bool
     hasray = Array{Cint}( 1)
 
     ret = @xprs_ccall(getdualray, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Ptr{Float64},
             Ptr{Cint}
             ), model.ptr_model, C_NULL, hasray)
@@ -889,7 +889,7 @@ function getdualray!(model::Model, ray::Vector{Float64})
     hasray = Array{Cint}(1)
 
     ret = @xprs_ccall(getdualray, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Ptr{Float64},
             Ptr{Cint}
             ), model.ptr_model, ray, hasray)
@@ -916,7 +916,7 @@ function hasprimalray(model::Model)::Bool
     hasray = Array{Cint}( 1)
 
     ret = @xprs_ccall(getprimalray, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Ptr{Float64},
             Ptr{Cint}
             ), model.ptr_model, C_NULL, hasray)
@@ -938,7 +938,7 @@ function getprimalray!(model::Model, ray::Vector{Float64})
     hasray = Array{Cint}( 1)
 
     ret = @xprs_ccall(getprimalray, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Ptr{Float64},
             Ptr{Cint}
             ), model.ptr_model, ray, hasray)
@@ -963,7 +963,7 @@ end
 function repairweightedinfeasibility(model::Model, scode::Vector{Cint}, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::String="")
 # int XPRS_CC XPRSrepairweightedinfeas(XPRSprob prob, int *scode, const double lrp[], const double grp[], const double lbp[], const double ubp[], char phase2, double delta, const char *optflags)
     ret = @xprs_ccall(repairweightedinfeas, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Cint},
          Ptr{Float64},
          Ptr{Float64},

@@ -40,7 +40,7 @@ mutable struct Optimizer <: LQOI.LinQuadOptimizer
     params::Dict{Any,Any}
     l_rows::Vector{Int}
     q_rows::Vector{Int}
-    Optimizer(::Void) = new()
+    Optimizer(::Nothing) = new()
 end
 
 LQOI.LinearQuadraticModel(::Type{Optimizer}, env) = XPR.Model()
