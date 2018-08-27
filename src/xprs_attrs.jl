@@ -11,7 +11,7 @@
 Return integer value corresponding to attribute with number `ipar`  
 """
 function get_intattr(model::Model, ipar::Integer)
-    out = Array{Cint}(1)
+    out = Array{Cint}(undef, 1)
 
     ret = @xprs_ccall(getintattrib, Cint,
                       (Ptr{Nothing}, Cint, Ptr{Cint}),
@@ -29,7 +29,7 @@ end
 Return double value corresponding to attribute with number `ipar`  
 """
 function get_dblattr(model::Model, ipar::Integer)
-    out = Array{Float64}(1)
+    out = Array{Float64}(undef, 1)
 
     ret = @xprs_ccall(getdblattrib, Cint,
                       (Ptr{Nothing}, Cint, Ptr{Float64}),
@@ -301,7 +301,7 @@ Return vector of lowebounds with length equals to the number of variables in the
 """
 function get_lb(model::Model, colb::Integer, cole::Integer)
     
-    out = Array{Float64}(cole-colb+1)
+    out = Array{Float64}(undef, cole-colb+1)
 
     get_lb!(model, out, colb, cole)
 
@@ -310,7 +310,7 @@ end
 function get_lb(model::Model)
 
     cols = num_vars(model)
-    out = Array{Float64}(cols)
+    out = Array{Float64}(undef, cols)
 
     get_lb!(model, out)
 
@@ -359,7 +359,7 @@ Return vector of upperbounds with length equals to the number of variables in th
 """
 function get_ub(model::Model, colb::Integer, cole::Integer)
     
-    out = Array{Float64}(cole-colb+1)
+    out = Array{Float64}(undef, cole-colb+1)
 
     get_ub!(model, out, colb, cole)
 
@@ -368,7 +368,7 @@ end
 function get_ub(model::Model)
 
     cols = num_vars(model)
-    out = Array{Float64}(cols)
+    out = Array{Float64}(undef, cols)
 
     get_ub!(model, out)
 
@@ -410,7 +410,7 @@ Return vector of objective coefficients with length equals to the number of vari
 function get_obj(model::Model)
 
     cols = num_vars(model)
-    out = Array{Float64}(cols)
+    out = Array{Float64}(undef, cols)
 
     get_obj!(model, out)
 
@@ -457,7 +457,7 @@ Return a vector of rhs with length equals to the number of variables in the mode
 """
 function get_rhs(model::Model, rowb::Integer, rowe::Integer)
     
-    out = Array{Float64}(rowe-rowb+1)
+    out = Array{Float64}(undef, rowe-rowb+1)
 
     get_rhs!(model, out, rowb, rowe)
 
@@ -466,7 +466,7 @@ end
 function get_rhs(model::Model)
 
     rows = num_constrs(model)
-    out = Array{Float64}(rows)
+    out = Array{Float64}(undef, rows)
 
     get_rhs!(model, out)
 
@@ -508,7 +508,7 @@ Options are XPRS_LEQ = 'L', XPRS_GEQ = 'G', XPRS_EQ = 'E'.
 function get_rowtype(model::Model)
 
     rows = num_constrs(model)
-    out = Array{Cchar}(rows)
+    out = Array{Cchar}(undef, rows)
 
     get_rowtype!(model, out)
 
@@ -558,7 +558,7 @@ Options are XPRS_CONTINUOUS = 'C', XPRS_INTEGER = 'I', XPRS_BINARY = 'B'.
 function get_coltype(model::Model)
 
     cols = num_vars(model)
-    out = Array{Cchar}(cols)
+    out = Array{Cchar}(undef, cols)
 
     get_coltype!(model, out)
 

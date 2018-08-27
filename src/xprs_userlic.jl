@@ -67,8 +67,8 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
 
     # pre allocate vars
     lic = Cint[1]
-    slicmsg =  path_lic #xpauth_path == "dh" ? Array{Cchar}(1024*8) :
-    errmsg = Array{Cchar}(1024*8)
+    slicmsg =  path_lic #xpauth_path == "dh" ? Array{Cchar}(undef, 1024*8) :
+    errmsg = Array{Cchar}(undef, 1024*8)
 
     # FIRST call do xprslicense to get BASE LIC
     ierr = @xprs_ccall(license, Cint, (Ptr{Cint},Ptr{Cchar}), lic, slicmsg)
@@ -77,7 +77,7 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
     lic = liccheck(lic)
 
     # Send GIVEN LIC to XPRESS lib
-    slicmsg = Array{Cchar}(1024*8)
+    slicmsg = Array{Cchar}(undef, 1024*8)
     ierr = @xprs_ccall(license, Cint, (Ptr{Cint},Ptr{Cchar}), lic, slicmsg)
 
     # check LIC TYPE

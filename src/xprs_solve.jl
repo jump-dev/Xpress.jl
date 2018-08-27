@@ -263,10 +263,10 @@ function get_complete_lp_solution(model::Model)
     cols = num_vars(model)
     rows = num_constrs(model)
 
-    x = Vector{Float64}(cols)
-    slack = Vector{Float64}(rows)
-    dual = Vector{Float64}(rows)
-    red = Vector{Float64}(cols)
+    x = Vector{Float64}(undef, cols)
+    slack = Vector{Float64}(undef, rows)
+    dual = Vector{Float64}(undef, rows)
+    red = Vector{Float64}(undef, cols)
 
     ret = @xprs_ccall(getlpsol, Cint,
         (Ptr{Nothing},
@@ -288,7 +288,7 @@ return a vector with primal variable solutions
 """
 function get_lp_solution(model::Model)
     cols = num_vars(model)
-    x = Vector{Float64}(cols)
+    x = Vector{Float64}(undef, cols)
     get_lp_solution!(model, x)
     return x
 end
@@ -321,7 +321,7 @@ return a vector of slack values for rows (some srt of constraint primal solution
 """
 function get_lp_slack(model::Model)
     rows = num_constrs(model)
-    slack = Vector{Float64}(rows)
+    slack = Vector{Float64}(undef, rows)
     get_lp_slack!(model, slack)
     return slack
 end
@@ -373,7 +373,7 @@ Return a vector of constraint dual solution
 function get_lp_dual(model::Model)
     rows = num_constrs(model)
 
-    dual = Vector{Float64}(rows)
+    dual = Vector{Float64}(undef, rows)
 
     get_lp_dual!(model, dual)
     return dual
@@ -427,7 +427,7 @@ Return a vector of variable reduced cost (dual solution)
 function get_lp_reducedcost(model::Model)
     cols = num_vars(model)
 
-    red = Vector{Float64}(cols)
+    red = Vector{Float64}(undef, cols)
 
     get_lp_reducedcost!(model, red)
     return red
@@ -465,7 +465,7 @@ Return a vector of variable primal solutions
 function get_mip_solution(model::Model)
     cols = num_vars(model)
 
-    x = Vector{Float64}(cols)
+    x = Vector{Float64}(undef, cols)
 
     get_mip_solution!(model, x)
     return x
@@ -500,7 +500,7 @@ Return a vector of constraint primal solutions (slacks)
 function get_mip_slack(model::Model)
     rows = num_constrs(model)
 
-    slack = Vector{Float64}(rows)
+    slack = Vector{Float64}(undef, rows)
 
     get_mip_slack!(model, slack)
     return slack
@@ -699,8 +699,8 @@ function loadbasis(model::Model, x::Vector)#, status::Symbol = :unstarted, isnew
 
     length(x) != ncols && error("solution candidate size is different from the number of columns")
 
-    cvals = Array{Cint}( ncols)
-    rvals = Array{Cint}( nrows)
+    cvals = Array{Cint}(undef,  ncols)
+    rvals = Array{Cint}(undef,  nrows)
 
     # obtain situation of columns
 
@@ -768,10 +768,10 @@ end
 
 
 function get_basis(model::Model)
-    cval = Array{Cint}( num_vars(model))
+    cval = Array{Cint}(undef,  num_vars(model))
     cbasis = Array{Symbol}( num_vars(model))
 
-    rval = Array{Cint}( num_constrs(model))
+    rval = Array{Cint}(undef,  num_constrs(model))
     rbasis = Array{Symbol}( num_constrs(model))
 
     ret = @xprs_ccall(getbasis, Cint,
@@ -802,8 +802,8 @@ end
 function get_iisdata(model::Model, num::Int)
 # num is the number of THE IIS to be queried
 
-    rows = Array{Cint}(1)
-    cols = Array{Cint}(1)
+    rows = Array{Cint}(undef, 1)
+    cols = Array{Cint}(undef, 1)
     ret = @xprs_ccall(getiisdata, Cint,
         (Ptr{Nothing},
             Cint,# num
@@ -826,8 +826,8 @@ function get_iisdata(model::Model, num::Int)
         throw(XpressError(model))
     end
 
-    rows_set = Array{Cint}( rows[1])
-    cols_set = Array{Cint}( cols[1])
+    rows_set = Array{Cint}(undef,  rows[1])
+    cols_set = Array{Cint}(undef,  cols[1])
 
     ret = @xprs_ccall(getiisdata, Cint,
         (Ptr{Nothing},
@@ -864,7 +864,7 @@ end
 
 function hasdualray(model::Model)::Bool
 
-    hasray = Array{Cint}( 1)
+    hasray = Array{Cint}(undef,  1)
 
     ret = @xprs_ccall(getdualray, Cint,
         (Ptr{Nothing},
@@ -886,7 +886,7 @@ function getdualray!(model::Model, ray::Vector{Float64})
 
     @assert length(ray) == num_constrs(model)
 
-    hasray = Array{Cint}(1)
+    hasray = Array{Cint}(undef, 1)
 
     ret = @xprs_ccall(getdualray, Cint,
         (Ptr{Nothing},
@@ -901,7 +901,7 @@ end
 
 function getdualray(model::Model)
 
-    dray = Array{Float64}( num_constrs(model))
+    dray = Array{Float64}(undef,  num_constrs(model))
 
     if !getdualray!(model, dray)
         Base.warn("Xpress solver was unable to provide an infeasibility ray")
@@ -913,7 +913,7 @@ end
 
 function hasprimalray(model::Model)::Bool
 
-    hasray = Array{Cint}( 1)
+    hasray = Array{Cint}(undef,  1)
 
     ret = @xprs_ccall(getprimalray, Cint,
         (Ptr{Nothing},
@@ -935,7 +935,7 @@ function getprimalray!(model::Model, ray::Vector{Float64})
 
     @assert length(ray) == num_vars(model)
 
-    hasray = Array{Cint}( 1)
+    hasray = Array{Cint}(undef,  1)
 
     ret = @xprs_ccall(getprimalray, Cint,
         (Ptr{Nothing},
@@ -950,7 +950,7 @@ end
 
 function getprimalray(model::Model)
 
-    pray = Array{Float64}( num_vars(model))
+    pray = Array{Float64}(undef,  num_vars(model))
 
     if !getprimalray!(model, pray)
         Base.warn("Xpress solver was unable to provide an unboundedness ray")

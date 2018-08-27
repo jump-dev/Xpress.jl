@@ -237,10 +237,10 @@ function get_constrmatrix(model::Model)
     nnz = num_cnzs(model)
     m = Cint(num_constrs(model))
     n = Cint(num_vars(model))
-    numnzP = Array{Cint}( 1)
+    numnzP = Array{Cint}(undef,  1)
     cbeg = zeros(Cint, m+1)
-    cind = Array{Cint}( nnz)
-    cval = Array{Float64}( nnz)
+    cind = Array{Cint}(undef,  nnz)
+    cval = Array{Float64}(undef,  nnz)
     ret = @xprs_ccall(getrows, Cint, (
                      Ptr{Nothing},
                      Ptr{Cint},
@@ -256,9 +256,9 @@ function get_constrmatrix(model::Model)
         throw(XpressError(model))
     end
     cbeg[end] = nnz
-    I = Array{Int}( nnz)
-    J = Array{Int}( nnz)
-    V = Array{Float64}( nnz)
+    I = Array{Int}(undef,  nnz)
+    J = Array{Int}(undef,  nnz)
+    V = Array{Float64}(undef,  nnz)
     for i in 1:length(cbeg)-1
         for j in (cbeg[i]+1):cbeg[i+1]
             I[j] = i
@@ -269,7 +269,7 @@ function get_constrmatrix(model::Model)
     return sparse(I, J, V, m, n)
 end
 function get_rows_nnz(model::Model, first::Integer, last::Integer)
-    numnzP = Array{Cint}( 1)
+    numnzP = Array{Cint}(undef,  1)
     ret = @xprs_ccall(getrows, Cint, (
                      Ptr{Nothing},
                      Ptr{Cint},
@@ -291,10 +291,10 @@ function get_rows(model::Model, first::Integer, last::Integer)
     nnz = get_rows_nnz(model, first, last)
     m = Cint(last-first+1) #nrows to get coefs
     n = Cint(num_vars(model))
-    numnzP = Array{Cint}( 1)
+    numnzP = Array{Cint}(undef,  1)
     cbeg = zeros(Cint, m+1)
-    cind = Array{Cint}( nnz)
-    cval = Array{Float64}( nnz)
+    cind = Array{Cint}(undef,  nnz)
+    cval = Array{Float64}(undef,  nnz)
     ret = @xprs_ccall(getrows, Cint, (
                      Ptr{Nothing},
                      Ptr{Cint},
@@ -310,9 +310,9 @@ function get_rows(model::Model, first::Integer, last::Integer)
         throw(XpressError(model))
     end
     cbeg[end] = nnz
-    I = Array{Int}( nnz)
-    J = Array{Int}( nnz)
-    V = Array{Float64}( nnz)
+    I = Array{Int}(undef,  nnz)
+    J = Array{Int}(undef,  nnz)
+    V = Array{Float64}(undef,  nnz)
     for i in 1:length(cbeg)-1
         for j in (cbeg[i]+1):cbeg[i+1]
             I[j] = i
@@ -373,13 +373,13 @@ function get_sos_matrix(m::Model)
 
     n = Cint(num_vars(m))
 
-    settypes = Array{Cchar}(sets)
-    setstart = Array{Cint}(sets+1)
-    setcols = Array{Cint}(nnz)
-    setvals = Array{Float64}(nnz)
+    settypes = Array{Cchar}(undef, sets)
+    setstart = Array{Cint}(undef, sets+1)
+    setcols = Array{Cint}(undef, nnz)
+    setvals = Array{Float64}(undef, nnz)
 
-    intents = Array{Cint}(1)
-    nsets = Array{Cint}(1)
+    intents = Array{Cint}(undef, 1)
+    nsets = Array{Cint}(undef, 1)
 
     # int XPRS_CC XPRSgetglobal(XPRSprob prob, int*nglents, int*sets, 
     #char qgtype[], int mgcols[], double dlim[], char qstype[], 
@@ -403,9 +403,9 @@ function get_sos_matrix(m::Model)
         throw(XpressError(m))
     end
     setstart[end] = nnz
-    I = Array{Int}( nnz)
-    J = Array{Int}( nnz)
-    V = Array{Float64}( nnz)
+    I = Array{Int}(undef,  nnz)
+    J = Array{Int}(undef,  nnz)
+    V = Array{Float64}(undef,  nnz)
     for i in 1:length(setstart)-1
         for j in (setstart[i]+1):setstart[i+1]
             I[j] = i
@@ -498,7 +498,7 @@ end
 
 function get_rhsrange(model::Model, rowb::Integer, rowe::Integer)
 
-    out = Array{Float64}(rowe-rowb+1)
+    out = Array{Float64}(undef, rowe-rowb+1)
 
     get_rhsrange!(model, out, rowb, rowe)
 

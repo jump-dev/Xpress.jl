@@ -34,7 +34,7 @@ Xpress model constructor (autimatically sets OUTPUTLOG = 1)
 """
 function Model(; finalize_env::Bool=true)
 
-    a = Array{Ptr{Nothing}}( 1)
+    a = Array{Ptr{Nothing}}(undef, 1)
     ret = @xprs_ccall(createprob, Cint, ( Ptr{Ptr{Nothing}},), a )
     if ret != 0
         error("It was not possible to create a model, try running Env() and then create the model again.")
@@ -67,7 +67,7 @@ end
 #################################################
 function get_error_msg(m::Model)
     #@assert env.ptr_env == 1
-    out = Array{Cchar}( 512)
+    out = Array{Cchar}(undef,  512)
     ret = @xprs_ccall(getlasterror, Cint, (Ptr{Nothing},Ptr{Cchar}),
         m.ptr_model, out)
 
@@ -75,7 +75,7 @@ function get_error_msg(m::Model)
 end
 function get_error_msg(m::Model, ret::Int)
     #@assert env.ptr_env == 1
-    out = Array{Cint}(1)
+    out = Array{Cint}(undef, 1)
     out2 = @xprs_ccall(getintattrib, Cint,(Ptr{Nothing}, Cint, Ptr{Cint}),
         m.ptr_model, ret , out)
 end
