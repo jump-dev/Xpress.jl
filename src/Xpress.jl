@@ -16,9 +16,6 @@ module Xpress
 
     import Base.show, Base.copy
 
-    # Standard LP interface
-    importall MathProgBase.SolverInterface
-
     ### exports
     export
 
