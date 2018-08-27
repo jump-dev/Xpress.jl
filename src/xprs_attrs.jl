@@ -245,7 +245,7 @@ function set_objcoeffs!(model::Model, inds::Vector{I}, c::Vector{R}) where {I<:I
         Ptr{Cint}, # inds
         Ptr{Float64} # vals
         ),
-        model.ptr_model, Cint(length(c)), ivec(inds)-Cint(1), fvec(c))
+        model.ptr_model, Cint(length(c)), ivec(inds) .- Cint(1), fvec(c))
 
     if ret != 0
         throw(XpressError(model))
@@ -392,7 +392,7 @@ function get_obj!(model::Model, obj::Vector{Float64})
         Cint,
         Cint
         ),
-        model.ptr_model, obj, Cint(0), Cint(cols-1))
+        model.ptr_model, obj, Cint(0), Cint(cols - 1))
 
     if ret != 0
         throw(XpressError(model))
@@ -540,7 +540,7 @@ function get_coltype!(model::Model, coltype::Vector{Cchar})
         Cint,
         Cint
         ),
-        model.ptr_model, coltype, 0, cols-Cint(1))
+        model.ptr_model, coltype, 0, cols - Cint(1))
 
     if ret != 0
         throw(XpressError(model))
@@ -581,7 +581,7 @@ function unsafe_chgbounds!(model::Model, len::Cint, inds::Vector{Cint}, btype::V
     end
     return nothing
 end
-chgbounds!(model::Model, inds::Vector{Cint}, btype::Vector{Cchar},  lb::Vector{Float64}) = unsafe_chgbounds!(model, Cint(length(inds)), inds-Cint(1), btype,  lb)
+chgbounds!(model::Model, inds::Vector{Cint}, btype::Vector{Cchar},  lb::Vector{Float64}) = unsafe_chgbounds!(model, Cint(length(inds)), inds .- Cint(1), btype,  lb)
 
 """
     set_lb!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, lb::Vector{R})
@@ -644,7 +644,7 @@ function unsafe_chgrhs!(model::Model, nels::Cint, inds::Vector{Cint}, rhs::Vecto
     end
     return nothing
 end
-chgrhs!(model::Model, inds::Vector{Cint}, rhs::Vector{Float64}) = unsafe_chgrhs!(model, Cint(length(inds)), inds-Cint(1), rhs)
+chgrhs!(model::Model, inds::Vector{Cint}, rhs::Vector{Float64}) = unsafe_chgrhs!(model, Cint(length(inds)), inds .- Cint(1), rhs)
 
 """
     set_rhs!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, rhs::Vector{R})
@@ -685,7 +685,7 @@ function set_rowtype!(model::Model, inds::Vector{I}, senses::Vector{Cchar}) wher
         Ptr{Cint},
         Ptr{Cchar}
         ),
-        model.ptr_model, Cint(rows) , ivec(inds)-Cint(1), cvec(senses) )
+        model.ptr_model, Cint(rows) , ivec(inds) .- Cint(1), cvec(senses) )
 
     if ret != 0
         throw(XpressError(model))

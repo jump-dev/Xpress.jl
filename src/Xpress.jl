@@ -29,8 +29,8 @@ module Xpress
     getparam, setparam!, setparams!,
 
     ## xprs_model
-    set_sense!, update_model!, reset_model!, get_tune_result!,
-    read_model, write_model, #tune_model, presolve_model, fixed_model,
+    set_sense!, update_model!, reset_model!, 
+    read_model, write_model,
     copy,
 
     ## xprs_attrs

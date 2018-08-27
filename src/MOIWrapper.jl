@@ -131,14 +131,14 @@ function LQOI.add_ranged_constraints!(instance::Optimizer, A::LQOI.CSRMatrix{Flo
     append!(instance.l_rows,addedrows)
     sensevec = fill(Cchar('E'),newrows)
     XPR.add_constrs!(instance.inner, A.row_pointers, A.columns, A.coefficients, sensevec, upperbound)
-    XPR.chg_rhsrange!(instance.inner, cintvec(addedrows), +upperbound-lowerbound)
+    XPR.chg_rhsrange!(instance.inner, cintvec(addedrows), upperbound .- lowerbound)
 end
 
 function LQOI.modify_ranged_constraints!(instance::Optimizer, rows::Vector{Int}, lowerbound::Vector{Float64}, upperbound::Vector{Float64})
     # quadind
     _rows = instance.l_rows[rows]
     XPR.set_rhs!(instance.inner, _rows, upperbound)
-    XPR.chg_rhsrange!(instance.inner, cintvec(_rows), +upperbound-lowerbound)
+    XPR.chg_rhsrange!(instance.inner, cintvec(_rows), upperbound .- lowerbound)
 end
 
 function LQOI.get_rhs(instance::Optimizer, row)
@@ -157,23 +157,23 @@ function LQOI.get_range(instance::Optimizer, row)
     _row = instance.l_rows[row]
     ub = XPR.get_rhs(instance.inner, _row, _row)[1]
     r = XPR.get_rhsrange(instance.inner, _row, _row)[1]
-    return ub-r, ub
+    return ub .- r, ub
 end
 
 # TODO improve
 function LQOI.get_linear_constraint(instance::Optimizer, row)
     # quadind
     _row = instance.l_rows[row]
-    A = XPR.get_rows(instance.inner, _row, _row)'
-    return A.rowval, A.nzval
+    A = sparse(XPR.get_rows(instance.inner, _row, _row)')
+    return rowvals(A), nonzeros(A)
 end
 
 function LQOI.get_quadratic_constraint(instance::Optimizer, row)
     # quadind
     _row = instance.q_rows[row]
-    A = XPR.get_rows(instance.inner, _row, _row)'
+    A = sparse(XPR.get_rows(instance.inner, _row, _row)')
     Q = XPR.get_qrowmatrix(instance.inner, _row)
-    return A.rowval, A.nzval, Q
+    return rowvals(A), nonzeros(A), Q
 end
 
 # notin LQOI
@@ -181,9 +181,9 @@ end
 function getcoef(instance::Optimizer, row, col)
     # quadind
     _row = instance.l_rows[row]
-    A = XPR.get_rows(instance.inner, _row, _row)'
-    cols = A.rowval
-    vals = A.nzval
+    A = sparse(XPR.get_rows(instance.inner, _row, _row)')
+    cols = rowvals(A)
+    vals = nonzeros(A)
 
     pos = findfirst(cols, col)
     if pos > 0

@@ -30,7 +30,7 @@ for l in paths_to_try
     d = Libdl.dlopen_e(l)
     if d != C_NULL
         found = true
-        info("found $l")
+        Compat.@info("found $l")
         write_depsfile(l)
         break
     end

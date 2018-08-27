@@ -29,10 +29,10 @@ Quadratic terms are NOT ignored.
 """
 function lpoptimize(model::Model, flags::String="")
     @assert model.ptr_model != C_NULL
-    tic()
+    start_time = time()
     ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Nothing},Ptr{UInt8}),
         model.ptr_model, flags)
-    model.time = toq()
+    model.time = time() - start_time
     if ret != 0
         throw(XpressError(model))
     end
@@ -41,10 +41,10 @@ end
 
 function mipoptimize(model::Model, flags::String="")
     @assert model.ptr_model != C_NULL
-    tic()
+    start_time = time()
     ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Nothing},Ptr{UInt8}),
         model.ptr_model, flags)
-    model.time = toq()
+        model.time = time() - start_time
     if ret != 0
         throw(XpressError(model))
     end
@@ -65,7 +65,7 @@ function computeIIS(model::Model)
     nothing
 end
 
-function loaddelayedrows{I<:Integer}(model::Model, mrows::Array{I})
+function loaddelayedrows(model::Model, mrows::Array{I}) where I<:Integer
     nrows = length(mrows)
     @assert model.ptr_model != C_NULL
     ret = @xprs_ccall(loaddelayedrows, Cint, (Ptr{Nothing},Cint,Ptr{Cint}),

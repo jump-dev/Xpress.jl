@@ -19,7 +19,7 @@ function add_qpterms!(model::Model, qr::Vector{Cint}, qc::Vector{Cint}, qv::Vect
             Ptr{Cint},    # qcol
             Ptr{Float64} # qval
             ),
-            model.ptr_model, nnz, qr-Cint(1), qc-Cint(1), qv)
+            model.ptr_model, nnz, qr .- Cint(1), qc .- Cint(1), qv)
 
         if ret != 0
             throw(XpressError(model))
@@ -41,12 +41,13 @@ function add_qpterms!(model, H::SparseMatrixCSC{Float64}) # H must be symmetric
     k = 0
 
     colptr::Vector{Int} = H.colptr
-    nzval::Vector{Float64} = H.nzval
+    nzval::Vector{Float64} = nonzeros(H)
 
     for i = 1 : n
         qi::Cint = convert(Cint, i)
+        Hrows = rowvals(H)
         for j = colptr[i]:(colptr[i+1]-1)
-            qj = convert(Cint, H.rowval[j])
+            qj = convert(Cint, Hrows[j])
 
             if qi < qj
                 k += 1
@@ -227,7 +228,7 @@ function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, 
             Ptr{Cint},    # qcol
             Ptr{Float64} # qval
             ),
-            model.ptr_model, m-Cint(1), qnnz, qr.-Cint(1), qc.-Cint(1), qv)
+            model.ptr_model, m - Cint(1), qnnz, qr .- Cint(1), qc .- Cint(1), qv)
 
         if ret != 0
             throw(XpressError(model))
@@ -271,7 +272,7 @@ function get_qrows(model::Model)
         # for i in 1:length(qcrows)
         #     qcrows += 1
         # end
-        return qcrows+1
+        return qcrows .+ 1
 
     end
 

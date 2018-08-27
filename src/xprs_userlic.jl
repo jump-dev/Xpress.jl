@@ -39,7 +39,7 @@ function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
     for i in candidates
         if isfile(i)
             if verbose
-                info("Xpress: Found license file $i")
+                Compat.@info("Xpress: Found license file $i")
             end
             return i
         end
@@ -84,18 +84,18 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
     if ierr == 16
         # DEVELOPER
         if verbose
-            info("Xpress: Development license detected.")
+            Compat.@info("Xpress: Development license detected.")
         end
     elseif ierr != 0
         # FAIL
-        info("Xpress: Failed to find working license.")
+        Compat.@info("Xpress: Failed to find working license.")
         ret = @xprs_ccall(getlicerrmsg, Cint, (Ptr{Cchar},Cint), errmsg, 1024)
         error(  unsafe_string(pointer(errmsg))   )
     else
         # USER
         if verbose
-            info("Xpress: User license detected.")
-            info(  unsafe_string(pointer(slicmsg))  )
+            Compat.@info("Xpress: User license detected.")
+            Compat.@info(  unsafe_string(pointer(slicmsg))  )
         end
     end
 

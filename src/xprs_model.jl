@@ -20,8 +20,16 @@ mutable struct Model
 
     function Model(p::Ptr{Nothing}; finalize_env::Bool=true)
         model = new(p, Any[], finalize_env, 0.0)
-        if finalize_env
-            finalizer(model, m -> (free_model(m)) )
+        if VERSION >= v"0.7-"
+            if finalize_env
+                finalizer(model) do m
+                    free_model(m)
+                end
+            end
+        else
+            if finalize_env
+                finalizer(model, m -> free_model(m))
+            end
         end
         model
     end

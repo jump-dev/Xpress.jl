@@ -27,7 +27,7 @@ function add_constr!(model::Model, inds::Vector{Cint}, coeffs::Vector{Float64}, 
         Ptr{Cint}, # ind (size new nz)
         Ptr{Float64} # val (size newnz)
         ),
-        model.ptr_model, 1, length(inds), Cchar[rel], Float64[rhs], C_NULL, Cint[0], inds-Cint(1), coeffs
+        model.ptr_model, 1, length(inds), Cchar[rel], Float64[rhs], C_NULL, Cint[0], inds .- Cint(1), coeffs
     )
 
     if ret != 0
@@ -88,7 +88,7 @@ function add_constrs!(model::Model, cbegins::Vector{Cint}, inds::Vector{Cint}, c
             Ptr{Cint}, # ind (size new nz)
             Ptr{Float64} # val (size newnz)
             ),
-            model.ptr_model, m, nnz, rel, rhs, C_NULL, cbegins - Cint(1), inds - Cint(1), coeffs
+            model.ptr_model, m, nnz, rel, rhs, C_NULL, cbegins .- Cint(1), inds .- Cint(1), coeffs
         )
 
         if ret != 0
@@ -119,7 +119,7 @@ add multiple constrints given in transpose dense form.
 function add_constrs_t!(model::Model, At::SparseMatrixCSC{Float64}, rel::GCharOrVec, b::Vector)
     n, m = size(At)
     (m == length(b) && n == num_vars(model)) || error("Incompatible argument dimensions.")
-    add_constrs!(model, At.colptr[1:At.n], At.rowval, At.nzval, rel, b)
+    add_constrs!(model, At.colptr[1:At.n], rowvals(At), nonzeros(At), rel, b)
 end
 function add_constrs_t!(model::Model, At::AbstractMatrix{Float64}, rel::GCharOrVec, b::Vector)
     n, m = size(At)
@@ -150,7 +150,7 @@ function add_rangeconstr!(model::Model, inds::IVec, coeffs::FVec, lb::Float64, u
         Ptr{Cint}, # ind (size new nz)
         Ptr{Float64} # val (size newnz)
         ),
-        model.ptr_model, 1, length(inds), Cchar['R'], Float64[ub], Float64[r], Cint[0], inds-Cint(1), coeffs
+        model.ptr_model, 1, length(inds), Cchar['R'], Float64[ub], Float64[r], Cint[0], inds .- Cint(1), coeffs
     )
     if ret != 0
         throw(XpressError(model))
@@ -181,7 +181,7 @@ function add_rangeconstrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec
     (m == length(lb) == length(ub) && nnz == length(coeffs)) || error("Incompatible argument dimensions.")
 
     if m > 0
-        r = ub - lb
+        r = ub .- lb
         ret = @xprs_ccall(addrows, Cint,(
             Ptr{Nothing}, #prob
             Cint,    #number new rowws
@@ -193,7 +193,7 @@ function add_rangeconstrs!(model::Model, cbegins::IVec, inds::IVec, coeffs::FVec
             Ptr{Cint}, # ind (size new nz)
             Ptr{Float64} # val (size newnz)
             ),
-            model.ptr_model, m, nnz, cvecx( convert(Cchar,'R') , m), ub, r, cbegins-Cint(1), inds-Cint(1), coeffs
+            model.ptr_model, m, nnz, cvecx( convert(Cchar,'R') , m), ub, r, cbegins .- Cint(1), inds .- Cint(1), coeffs
         )
 
         if ret != 0
@@ -221,7 +221,7 @@ add multiple constrints given in transpose sparse form.
 add multiple constrints given in transpose dense form.
 """
 function add_rangeconstrs_t!(model::Model, At::SparseMatrixCSC{Float64}, lb::Vector, ub::Vector)
-    add_rangeconstrs!(model, At.colptr[1:At.n], At.rowval, At.nzval, lb, ub)
+    add_rangeconstrs!(model, At.colptr[1:At.n], rowvals(rowval), At.nzval, lb, ub)
 end
 
 function add_rangeconstrs_t!(model::Model, At::Matrix{Float64}, lb::Vector, ub::Vector)
@@ -348,7 +348,7 @@ function add_sos!(model::Model, sostype::Symbol, idx::Vector{Cint}, weight::Vect
                      convert(Cint, nelem),
                      Cchar[typ],
                      Cint[0,0],
-                     convert(Vector{Cint}, idx-Cint(1)),
+                     convert(Vector{Cint}, idx .- Cint(1)),
                      weight)
     if ret != 0
         throw(XpressError(model))
@@ -361,7 +361,7 @@ function del_sos!(model::Model, idx::Vector{Cint})
                      Ptr{Nothing},
                      Cint,
                      Ptr{Cint}),
-                     model.ptr_model, convert(Cint,numdel), idx.-Cint(1))
+                     model.ptr_model, convert(Cint,numdel), idx .- Cint(1))
     if ret != 0
         throw(XpressError(model))
     end
@@ -430,7 +430,7 @@ function del_constrs!(model::Model, idx::Vector{Cint})
                      Ptr{Nothing},
                      Cint,
                      Ptr{Cint}),
-                     model.ptr_model, convert(Cint,numdel), idx.-Cint(1))
+                     model.ptr_model, convert(Cint,numdel), idx .- Cint(1))
     if ret != 0
         throw(XpressError(model))
     end
@@ -454,7 +454,7 @@ function chg_coeffs!(model::Model, cidx::Vector{Cint}, vidx::Vector{Cint}, val::
                      Ptr{Cint},
                      Ptr{Cint},
                      Ptr{Float64}),
-                     model, convert(Cint,numchgs), cidx-Cint(1), vidx-Cint(1), val)
+                     model, convert(Cint,numchgs), cidx .- Cint(1), vidx .- Cint(1), val)
     if ret != 0
         throw(XpressError(model))
     end
@@ -472,7 +472,7 @@ function chg_rhsrange!(model::Model, cidx::Vector{Cint}, val::FVec)
                         Cint,
                         Ptr{Cint},
                         Ptr{Float64}),
-                        model, convert(Cint,numchgs), cidx-Cint(1), val)
+                        model, convert(Cint,numchgs), cidx .- Cint(1), val)
     if ret != 0
         throw(XpressError(model))
     end
