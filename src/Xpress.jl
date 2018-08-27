@@ -10,6 +10,10 @@ module Xpress
 
     ### imports
 
+    using Compat
+    using Compat.SparseArrays
+    using Compat.LinearAlgebra
+
     import Base.show, Base.copy
 
     # Standard LP interface

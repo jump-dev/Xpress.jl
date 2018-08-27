@@ -78,10 +78,7 @@ const MOIT = MathOptInterface.Test
             MOIT.emptytest(solver)
         end
         @testset "orderedindicestest" begin
-            # MOIT.orderedindicestest(solver)
-        end
-        @testset "canaddconstrainttest" begin
-            MOIT.canaddconstrainttest(solver, Float64, Complex{Float64})
+            MOIT.orderedindicestest(solver)
         end
         @testset "copytest" begin
             solver2 = Xpress.Optimizer()

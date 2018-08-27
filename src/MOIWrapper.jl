@@ -1,10 +1,10 @@
 const XPR = Xpress
-using MathOptInterface
-const MOI = MathOptInterface
 using LinQuadOptInterface
 const LQOI = LinQuadOptInterface
+const MOI = LQOI.MOI
 
 const SUPPORTED_OBJECTIVES = [
+    LQOI.SinVar,
     LQOI.Linear,
     LQOI.Quad
 ]
@@ -25,6 +25,8 @@ const SUPPORTED_CONSTRAINTS = [
     (LQOI.SinVar, MOI.Integer),
     (LQOI.VecVar, LQOI.SOS1),
     (LQOI.VecVar, LQOI.SOS2),
+    # (LQOI.SinVar, MOI.Semicontinuous{Float64}),
+    # (LQOI.SinVar, MOI.Semiinteger{Float64}),
     (LQOI.VecVar, MOI.Nonnegatives),
     (LQOI.VecVar, MOI.Nonpositives),
     (LQOI.VecVar, MOI.Zeros),
@@ -34,7 +36,7 @@ const SUPPORTED_CONSTRAINTS = [
 ]
 
 mutable struct Optimizer <: LQOI.LinQuadOptimizer
-    LQOI.@LinQuadOptimizerBase
+    LQOI.@LinQuadOptimizerBase(Model)
     params::Dict{Any,Any}
     l_rows::Vector{Int}
     q_rows::Vector{Int}
@@ -93,10 +95,6 @@ cintvec(v::Vector) = convert(Vector{Int32}, v)
 #=
     Constraints
 =#
-
-MOI.canset(::Optimizer, ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}) = true
-MOI.canset(::Optimizer, ::MOI.ObjectiveFunction{MOI.ScalarQuadraticFunction{Float64}}) = true
-MOI.canget(::Optimizer, ::MOI.ConstraintSet, ::Type{LQOI.LCI{LQOI.IV}}) = true
 
 LQOI.change_variable_bounds!(instance::Optimizer, colvec, valvec, sensevec) = XPR.chgbounds!(instance.inner, cintvec(colvec), sensevec, valvec)
 
@@ -542,8 +540,13 @@ end
 
 LQOI.get_objective_value(instance::Optimizer) = XPR.get_objval(instance.inner)
 
-LQOI.get_objective_bound(instance::Optimizer) = XPR.get_mip_objval(instance.inner)
-
+function LQOI.get_objective_bound(instance::Optimizer)
+    if XPR.is_mip(instance.inner)
+        return XPR.get_bestbound(instance.inner)+LQOI.get_constant_objective(instance)
+    else
+        return XPR.get_objval(instance.inner)+LQOI.get_constant_objective(instance)
+    end
+end
 function LQOI.get_relative_mip_gap(instance::Optimizer)
     L = XPR.get_mip_objval(instance.inner)
     U = XPR.get_bestbound(instance.inner)
