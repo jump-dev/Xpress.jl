@@ -54,13 +54,13 @@ macro xprs_ccall(func, args...)
     f = "XPRS$(func)"
     args = map(esc,args)
 
-    is_unix() && return quote
+    Sys.isunix() && return quote
         ccall(($f,xprs), $(args...))
     end
-    is_windows() && VERSION < v"0.6-" && return quote
+    Sys.iswindows() && VERSION < v"0.6-" && return quote
         ccall(($f,xprs), stdcall, $(args...))
     end
-    is_windows() && VERSION >= v"0.6-" && return quote
+    Sys.iswindows() && VERSION >= v"0.6-" && return quote
         ccall(($f,xprs), $(esc(:stdcall)), $(args...))
     end
 end
