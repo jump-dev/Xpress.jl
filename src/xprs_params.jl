@@ -9,7 +9,7 @@ function get_int_param(m::Model, param::Cint)
     ipar = convert(Cint,param)
     igval = Array{Cint}(1)
 
-    ret = @xprs_ccall(getintcontrol, Cint, (Ptr{Void},Cint,Ptr{Cint}),
+    ret = @xprs_ccall(getintcontrol, Cint, (Ptr{Cvoid},Cint,Ptr{Cint}),
         m.ptr_model, ipar, igval)
     if ret != 0
         throw(XpressError(m))
@@ -28,7 +28,7 @@ function get_dbl_param(m::Model, param::Cint)
     ipar = convert(Cint,param)
     dgval = Array{Float64}(1)
 
-    ret = @xprs_ccall(getdblcontrol, Cint, (Ptr{Void},Cint,Ptr{Cdouble}),
+    ret = @xprs_ccall(getdblcontrol, Cint, (Ptr{Cvoid},Cint,Ptr{Cdouble}),
         m.ptr_model, ipar, dgval)
     if ret != 0
         throw(XpressError(m))
@@ -47,7 +47,7 @@ function get_str_param(m::Model, param::Cint)
     ipar = convert(Cint,param)
     cgval = Array{Cchar}( 256)
 
-    ret = @xprs_ccall(getstrcontrol, Cint, (Ptr{Void},Cint,Ptr{Cchar}),
+    ret = @xprs_ccall(getstrcontrol, Cint, (Ptr{Cvoid},Cint,Ptr{Cchar}),
         m.ptr_model, ipar, cgval)
     if ret != 0
         throw(XpressError(m))
@@ -66,7 +66,7 @@ function set_int_param(m::Model, ipar::Cint, isval::Cint)
 
     ipar = convert(Cint,ipar)
     isval = convert(Cint,isval)
-    ret = @xprs_ccall(setintcontrol, Cint, (Ptr{Void},Cint,Cint),
+    ret = @xprs_ccall(setintcontrol, Cint, (Ptr{Cvoid},Cint,Cint),
         m.ptr_model, ipar, isval)
     if ret != 0
         throw(XpressError(m))
@@ -84,7 +84,7 @@ function set_dbl_param(m::Model, ipar::Cint, dsval::Float64)
 
     ipar = convert(Cint,ipar)
     dsval = convert(Cdouble,dsval)
-    ret = @xprs_ccall(setdblcontrol, Cint, (Ptr{Void},Cint,Cdouble),
+    ret = @xprs_ccall(setdblcontrol, Cint, (Ptr{Cvoid},Cint,Cdouble),
         m.ptr_model, ipar, dsval)
     if ret != 0
         throw(XpressError(m))
@@ -102,7 +102,7 @@ function set_str_param(m::Model, ipar::Cint, csval::String)
 
     ipar = convert(Cint,ipar)
     csval = convert(String,csval)
-    ret = @xprs_ccall(setstrcontrol, Cint, (Ptr{Void},Cint,Ptr{Cchar}),
+    ret = @xprs_ccall(setstrcontrol, Cint, (Ptr{Cvoid},Cint,Ptr{Cchar}),
         m.ptr_model, ipar, csval)
     if ret != 0
         throw(XpressError(m))

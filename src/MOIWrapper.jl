@@ -40,7 +40,7 @@ mutable struct Optimizer <: LQOI.LinQuadOptimizer
     params::Dict{Any,Any}
     l_rows::Vector{Int}
     q_rows::Vector{Int}
-    Optimizer(::Void) = new()
+    Optimizer(::Cvoid) = new()
 end
 
 LQOI.LinearQuadraticModel(::Type{Optimizer}, env) = XPR.Model()
@@ -564,7 +564,7 @@ LQOI.get_farkas_dual!(instance::Optimizer, place) = XPR.getdualray!(instance.inn
 LQOI.get_unbounded_ray!(instance::Optimizer, place) = XPR.getprimalray!(instance.inner, place)
 
 
-MOI.free!(m::Optimizer) = XPR.free_model(m.inner)
+finalize(m::Optimizer) = XPR.free_model(m.inner)
 
 """
     writeproblem(m: :MOI.AbstractOptimizer, filename::String)
