@@ -337,7 +337,7 @@ end
 
 LQOI.solve_mip_problem!(instance::Optimizer) = XPR.mipoptimize(instance.inner)
 
-LQOI.solve_quadratic_problem!(instance::Optimizer) = ( writeproblem(instance, "db", "l");LQOI.solve_linear_problem!(instance) )
+LQOI.solve_quadratic_problem!(instance::Optimizer) = LQOI.solve_linear_problem!(instance)
 
 LQOI.solve_linear_problem!(instance::Optimizer) = XPR.lpoptimize(instance.inner)
 
@@ -451,7 +451,7 @@ function LQOI.get_primal_status(instance::Optimizer)
         elseif stat_mip in [XPR.MIP_LPOptimal, XPR.MIP_NoSolFound]
             return MOI.InfeasiblePoint
         end
-        return MOI.UnknownResultStatus
+        return MOI.NoSolution
     else
         stat_lp = XPR.get_lp_status2(instance.inner)
         if stat_lp == XPR.LP_Optimal
@@ -462,14 +462,14 @@ function LQOI.get_primal_status(instance::Optimizer)
         #     return MOI.InfeasiblePoint - xpress wont return
         # elseif cutoff//cutoffindual ???
         else
-            return MOI.UnknownResultStatus
+            return MOI.NoSolution
         end
     end
 end
 
 function LQOI.get_dual_status(instance::Optimizer) 
     if XPR.is_mip(instance.inner)
-        return MOI.UnknownResultStatus
+        return MOI.NoSolution
     else
         stat_lp = XPR.get_lp_status2(instance.inner)
         if stat_lp == XPR.LP_Optimal
@@ -480,7 +480,7 @@ function LQOI.get_dual_status(instance::Optimizer)
         #     return MOI.InfeasiblePoint - xpress wont return
         # elseif cutoff//cutoffindual ???
         else
-            return MOI.UnknownResultStatus
+            return MOI.NoSolution
         end
     end
 end
@@ -563,12 +563,10 @@ LQOI.get_farkas_dual!(instance::Optimizer, place) = XPR.getdualray!(instance.inn
 
 LQOI.get_unbounded_ray!(instance::Optimizer, place) = XPR.getprimalray!(instance.inner, place)
 
-
-MOI.free!(m::Optimizer) = XPR.free_model(m.inner)
-
-"""
-    writeproblem(m: :MOI.AbstractOptimizer, filename::String)
-Writes the current problem data to the given file.
-Supported file types are solver-dependent.
-"""
-writeproblem(instance::Optimizer, filename::String, flags::String="") = XPR.write_model(instance.inner, filename, flags)
+function MOI.write_to_file(instance::Optimizer, lp_file_name::String)
+    flags = ""
+    if endswith(lp_file_name, ".lp")
+        flags = "l"
+    end
+    XPR.write_model(instance.inner, filename, flags)
+end
