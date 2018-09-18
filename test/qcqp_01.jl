@@ -6,6 +6,9 @@
 #
 #    solution: (0.71, 0.71) objv = 1.414
 using Xpress, Compat.Test
+using Compat.SparseArrays
+using Compat.LinearAlgebra
+
 @testset "QCQP 1" begin
     model = Xpress.Model( "qcqp_01", :maximize)
 

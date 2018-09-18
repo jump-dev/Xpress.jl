@@ -1,4 +1,6 @@
 using Xpress, Compat.Test
+using Compat.SparseArrays
+using Compat.LinearAlgebra
 
 tests = ["xprs_attrs_test",
          "lp_01a", 
@@ -11,9 +13,12 @@ tests = ["xprs_attrs_test",
          "qp_02",
          "qcqp_01",
          "mathprog",
-         "jump",
          "MOIWrapper"
          ]
+
+if VERSION < v"0.7"
+    push!(tests, "jump")
+end
 
 for t in tests
     fp = "$(t).jl"

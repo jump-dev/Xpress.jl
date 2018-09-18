@@ -13,6 +13,8 @@
 
 using MathProgBase
 using Xpress, Compat.Test
+using Compat.SparseArrays
+
 @testset "Basics 2" begin
     model = xpress_model(
         name="lp_02", 

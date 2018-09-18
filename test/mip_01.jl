@@ -11,6 +11,8 @@
 #
 # z = 1, y= 7, x = 0
 using Xpress, Compat.Test
+using Compat.SparseArrays
+
 @testset "MIP 4" begin
 
     model = Xpress.Model( "mip_01", :maximize)
