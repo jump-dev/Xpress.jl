@@ -59,7 +59,7 @@ end
 Adds a constraint based on a dense vector os coefficients `coeffs` 
 """
 function add_constr!(model::Model, coeffs::Vector, rel::GChars, rhs::Real)
-    inds = find(coeffs)
+    inds = Compat.findall(!iszero, coeffs)
     vals = coeffs[inds]
     add_constr!(model, inds, vals, rel, rhs)
 end
