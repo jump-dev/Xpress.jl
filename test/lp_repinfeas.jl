@@ -6,7 +6,7 @@
 #        x \in [0, 10], y \in [0, 5]
 #
 
-using Xpress, Base.Test
+using Xpress, Compat.Test
 
 # @testset "Basics 1" begin
     model = Xpress.Model("lp_01", :minimize)

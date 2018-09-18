@@ -29,10 +29,10 @@ Quadratic terms are NOT ignored.
 """
 function lpoptimize(model::Model, flags::String="")
     @assert model.ptr_model != C_NULL
-    tic()
-    ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Void},Ptr{UInt8}),
+    start_time = time()
+    ret = @xprs_ccall(lpoptimize, Cint, (Ptr{Nothing},Ptr{UInt8}),
         model.ptr_model, flags)
-    model.time = toq()
+    model.time = time() - start_time
     if ret != 0
         throw(XpressError(model))
     end
@@ -41,10 +41,10 @@ end
 
 function mipoptimize(model::Model, flags::String="")
     @assert model.ptr_model != C_NULL
-    tic()
-    ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Void},Ptr{UInt8}),
+    start_time = time()
+    ret = @xprs_ccall(mipoptimize, Cint, (Ptr{Nothing},Ptr{UInt8}),
         model.ptr_model, flags)
-    model.time = toq()
+        model.time = time() - start_time
     if ret != 0
         throw(XpressError(model))
     end
@@ -58,17 +58,17 @@ compute all ISS
 """
 function computeIIS(model::Model)
     @assert model.ptr_model != C_NULL
-    ret = @xprs_ccall(iisall, Cint, (Ptr{Void},), model.ptr_model)
+    ret = @xprs_ccall(iisall, Cint, (Ptr{Nothing},), model.ptr_model)
     if ret != 0
         throw(XpressError(model))
     end
     nothing
 end
 
-function loaddelayedrows{I<:Integer}(model::Model, mrows::Array{I})
+function loaddelayedrows(model::Model, mrows::Array{I}) where I<:Integer
     nrows = length(mrows)
     @assert model.ptr_model != C_NULL
-    ret = @xprs_ccall(loaddelayedrows, Cint, (Ptr{Void},Cint,Ptr{Cint}),
+    ret = @xprs_ccall(loaddelayedrows, Cint, (Ptr{Nothing},Cint,Ptr{Cint}),
         model.ptr_model,nrows,convert(Vector{Cint},mrows-1))
     if ret != 0
         throw(XpressError(model))
@@ -263,13 +263,13 @@ function get_complete_lp_solution(model::Model)
     cols = num_vars(model)
     rows = num_constrs(model)
 
-    x = Vector{Float64}(cols)
-    slack = Vector{Float64}(rows)
-    dual = Vector{Float64}(rows)
-    red = Vector{Float64}(cols)
+    x = Vector{Float64}(undef, cols)
+    slack = Vector{Float64}(undef, rows)
+    dual = Vector{Float64}(undef, rows)
+    red = Vector{Float64}(undef, cols)
 
     ret = @xprs_ccall(getlpsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64},
          Ptr{Float64},
@@ -288,7 +288,7 @@ return a vector with primal variable solutions
 """
 function get_lp_solution(model::Model)
     cols = num_vars(model)
-    x = Vector{Float64}(cols)
+    x = Vector{Float64}(undef, cols)
     get_lp_solution!(model, x)
     return x
 end
@@ -301,7 +301,7 @@ return a vector with primal variable solutions - inplace
 function get_lp_solution!(model::Model, x::Vector{Float64})
     _chklen(x, num_vars(model))
     ret = @xprs_ccall(getlpsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64},
          Ptr{Float64},
@@ -321,7 +321,7 @@ return a vector of slack values for rows (some srt of constraint primal solution
 """
 function get_lp_slack(model::Model)
     rows = num_constrs(model)
-    slack = Vector{Float64}(rows)
+    slack = Vector{Float64}(undef, rows)
     get_lp_slack!(model, slack)
     return slack
 end
@@ -334,7 +334,7 @@ return a vector of slack values for rows (some srt of constraint primal solution
 function get_lp_slack!(model::Model, slack::Vector{Float64})
     _chklen(slack, num_constrs(model))
     ret = @xprs_ccall(getlpsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64},
          Ptr{Float64},
@@ -373,7 +373,7 @@ Return a vector of constraint dual solution
 function get_lp_dual(model::Model)
     rows = num_constrs(model)
 
-    dual = Vector{Float64}(rows)
+    dual = Vector{Float64}(undef, rows)
 
     get_lp_dual!(model, dual)
     return dual
@@ -388,7 +388,7 @@ function get_lp_dual!(model::Model, dual::Vector{Float64})
     rows = num_constrs(model)
     _chklen(dual, rows)
     ret = @xprs_ccall(getlpsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64},
          Ptr{Float64},
@@ -427,7 +427,7 @@ Return a vector of variable reduced cost (dual solution)
 function get_lp_reducedcost(model::Model)
     cols = num_vars(model)
 
-    red = Vector{Float64}(cols)
+    red = Vector{Float64}(undef, cols)
 
     get_lp_reducedcost!(model, red)
     return red
@@ -444,7 +444,7 @@ function get_lp_reducedcost!(model::Model, red::Vector{Float64})
     _chklen(red, cols)
 
     ret = @xprs_ccall(getlpsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64},
          Ptr{Float64},
@@ -465,7 +465,7 @@ Return a vector of variable primal solutions
 function get_mip_solution(model::Model)
     cols = num_vars(model)
 
-    x = Vector{Float64}(cols)
+    x = Vector{Float64}(undef, cols)
 
     get_mip_solution!(model, x)
     return x
@@ -482,7 +482,7 @@ function get_mip_solution!(model::Model, x::Vector{Float64})
     _chklen(x, cols)
 
     ret = @xprs_ccall(getmipsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64}
             ), model.ptr_model, x, C_NULL)
@@ -500,7 +500,7 @@ Return a vector of constraint primal solutions (slacks)
 function get_mip_slack(model::Model)
     rows = num_constrs(model)
 
-    slack = Vector{Float64}(rows)
+    slack = Vector{Float64}(undef, rows)
 
     get_mip_slack!(model, slack)
     return slack
@@ -515,7 +515,7 @@ function get_mip_slack!(model::Model, slack::Vector{Float64})
     rows = num_constrs(model)
     _chklen(slack, rows)
     ret = @xprs_ccall(getmipsol, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Float64},
          Ptr{Float64}
             ), model.ptr_model, C_NULL, slack)
@@ -699,8 +699,8 @@ function loadbasis(model::Model, x::Vector)#, status::Symbol = :unstarted, isnew
 
     length(x) != ncols && error("solution candidate size is different from the number of columns")
 
-    cvals = Array{Cint}( ncols)
-    rvals = Array{Cint}( nrows)
+    cvals = Array{Cint}(undef,  ncols)
+    rvals = Array{Cint}(undef,  nrows)
 
     # obtain situation of columns
 
@@ -755,7 +755,7 @@ function loadbasis(model::Model, rval::Vector{Cint}, cval::Vector{Cint})
 # int XPRS_CC XPRSloadbasis(XPRSprob prob, const int rstatus[], const intcstatus[]);
 
     ret = @xprs_ccall(loadbasis, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Cint},
          Ptr{Cint}
             ), model.ptr_model, rval, cval)
@@ -768,14 +768,14 @@ end
 
 
 function get_basis(model::Model)
-    cval = Array{Cint}( num_vars(model))
+    cval = Array{Cint}(undef,  num_vars(model))
     cbasis = Array{Symbol}( num_vars(model))
 
-    rval = Array{Cint}( num_constrs(model))
+    rval = Array{Cint}(undef,  num_constrs(model))
     rbasis = Array{Symbol}( num_constrs(model))
 
     ret = @xprs_ccall(getbasis, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Cint},
          Ptr{Cint}
             ), model.ptr_model, rval, cval)
@@ -802,10 +802,10 @@ end
 function get_iisdata(model::Model, num::Int)
 # num is the number of THE IIS to be queried
 
-    rows = Array{Cint}(1)
-    cols = Array{Cint}(1)
+    rows = Array{Cint}(undef, 1)
+    cols = Array{Cint}(undef, 1)
     ret = @xprs_ccall(getiisdata, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Cint,# num
          Ptr{Cint},# #row
          Ptr{Cint},# #cols
@@ -826,11 +826,11 @@ function get_iisdata(model::Model, num::Int)
         throw(XpressError(model))
     end
 
-    rows_set = Array{Cint}( rows[1])
-    cols_set = Array{Cint}( cols[1])
+    rows_set = Array{Cint}(undef,  rows[1])
+    cols_set = Array{Cint}(undef,  cols[1])
 
     ret = @xprs_ccall(getiisdata, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Cint,# num
          Ptr{Cint},# #row
          Ptr{Cint},# #cols
@@ -864,10 +864,10 @@ end
 
 function hasdualray(model::Model)::Bool
 
-    hasray = Array{Cint}( 1)
+    hasray = Array{Cint}(undef,  1)
 
     ret = @xprs_ccall(getdualray, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Ptr{Float64},
             Ptr{Cint}
             ), model.ptr_model, C_NULL, hasray)
@@ -886,10 +886,10 @@ function getdualray!(model::Model, ray::Vector{Float64})
 
     @assert length(ray) == num_constrs(model)
 
-    hasray = Array{Cint}(1)
+    hasray = Array{Cint}(undef, 1)
 
     ret = @xprs_ccall(getdualray, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Ptr{Float64},
             Ptr{Cint}
             ), model.ptr_model, ray, hasray)
@@ -901,7 +901,7 @@ end
 
 function getdualray(model::Model)
 
-    dray = Array{Float64}( num_constrs(model))
+    dray = Array{Float64}(undef,  num_constrs(model))
 
     if !getdualray!(model, dray)
         Base.warn("Xpress solver was unable to provide an infeasibility ray")
@@ -913,10 +913,10 @@ end
 
 function hasprimalray(model::Model)::Bool
 
-    hasray = Array{Cint}( 1)
+    hasray = Array{Cint}(undef,  1)
 
     ret = @xprs_ccall(getprimalray, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Ptr{Float64},
             Ptr{Cint}
             ), model.ptr_model, C_NULL, hasray)
@@ -935,10 +935,10 @@ function getprimalray!(model::Model, ray::Vector{Float64})
 
     @assert length(ray) == num_vars(model)
 
-    hasray = Array{Cint}( 1)
+    hasray = Array{Cint}(undef,  1)
 
     ret = @xprs_ccall(getprimalray, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
             Ptr{Float64},
             Ptr{Cint}
             ), model.ptr_model, ray, hasray)
@@ -950,7 +950,7 @@ end
 
 function getprimalray(model::Model)
 
-    pray = Array{Float64}( num_vars(model))
+    pray = Array{Float64}(undef,  num_vars(model))
 
     if !getprimalray!(model, pray)
         Base.warn("Xpress solver was unable to provide an unboundedness ray")
@@ -963,7 +963,7 @@ end
 function repairweightedinfeasibility(model::Model, scode::Vector{Cint}, lrp::Vector{Float64}, grp::Vector{Float64}, lbp::Vector{Float64}, ubp::Vector{Float64}, phase2::Cchar = Cchar('f'), delta::Float64=0.001, flags::String="")
 # int XPRS_CC XPRSrepairweightedinfeas(XPRSprob prob, int *scode, const double lrp[], const double grp[], const double lbp[], const double ubp[], char phase2, double delta, const char *optflags)
     ret = @xprs_ccall(repairweightedinfeas, Cint,
-        (Ptr{Void},
+        (Ptr{Nothing},
          Ptr{Cint},
          Ptr{Float64},
          Ptr{Float64},

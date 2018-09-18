@@ -1,6 +1,8 @@
 # XpressMathProgInterface
 # Standardized MILP interface
-
+using MathProgBase
+using MathProgBase.SolverInterface
+const MPB = MathProgBase.SolverInterface
 
 mutable struct XpressMathProgModel <: AbstractLinearQuadraticModel
     inner::Model
@@ -42,19 +44,14 @@ struct XpressSolver <: AbstractMathProgSolver
     options
 end
 XpressSolver(;kwargs...) = XpressSolver(kwargs)
-LinearQuadraticModel(s::XpressSolver) = XpressMathProgModel(;s.options...)
-ConicModel(s::XpressSolver) = LPQPtoConicBridge(LinearQuadraticModel(s))
+MPB.LinearQuadraticModel(s::XpressSolver) = XpressMathProgModel(;s.options...)
+MPB.ConicModel(s::XpressSolver) = MPB.LPQPtoConicBridge(LinearQuadraticModel(s))
 
-supportedcones(m::XpressSolver) = [:Free, :Zero, :NonNeg, :NonPos, :SOC, :SOCRotated]
+MPB.supportedcones(m::XpressSolver) = [:Free, :Zero, :NonNeg, :NonPos, :SOC, :SOCRotated]
 
-loadproblem!(m::XpressMathProgModel, filename:: String) = read_model(m.inner, filename)
+MPB.loadproblem!(m::XpressMathProgModel, filename:: String) = read_model(m.inner, filename)
 
-function updatemodel!(m::XpressMathProgModel)
-end
-function update_model!(m::XpressMathProgModel)
-end
-
-function setparameters!(m::XpressMathProgModel; mpboptions...)
+function MPB.setparameters!(m::XpressMathProgModel; mpboptions...)
     for (optname, optval) in mpboptions
         if optname == :TimeLimit
             setparam!(m.inner, XPRS_MAXTIME, round(Cint, optval) )
@@ -68,9 +65,9 @@ function setparameters!(m::XpressMathProgModel; mpboptions...)
     end
 end
 
-loadproblem!(m::Model, filename::String) = read_model(m.inner, filename)
+MPB.loadproblem!(m::Model, filename::String) = read_model(m.inner, filename)
 
-function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub, sense)
+function MPB.loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub, sense)
     # throw away old model
     #env = m.inner.env
     #m.inner.finalize_env = false
@@ -101,8 +98,8 @@ function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub
         warn("Julia Xpress interface doesn't properly support range (two-sided) constraints.")
         add_rangeconstrs!(m.inner, float(A), float(rowlb), float(rowub))
     else
-        b = Array{Float64}(length(rowlb))
-        senses = Array{Cchar}(length(rowlb))
+        b = Array{Float64}(undef, length(rowlb))
+        senses = Array{Cchar}(undef, length(rowlb))
         for i in 1:length(rowlb)
             if rowlb[i] == rowub[i]
                 senses[i] = XPRS_EQ#'='
@@ -123,15 +120,15 @@ function loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, rowub
     return nothing
 end
 
-writeproblem(m::XpressMathProgModel, filename:: String) = write_model(m.inner, filename)
+MPB.writeproblem(m::XpressMathProgModel, filename:: String) = write_model(m.inner, filename)
 
-getvarLB(m::XpressMathProgModel)     = get_lb(m.inner)
-setvarLB!(m::XpressMathProgModel, l) = set_lb!(m.inner,l)
+MPB.getvarLB(m::XpressMathProgModel)     = get_lb(m.inner)
+MPB.setvarLB!(m::XpressMathProgModel, l) = set_lb!(m.inner,l)
 
-getvarUB(m::XpressMathProgModel)     = get_ub(m.inner)
-setvarUB!(m::XpressMathProgModel, u) = set_ub!(m.inner,u)
+MPB.getvarUB(m::XpressMathProgModel)     = get_ub(m.inner)
+MPB.setvarUB!(m::XpressMathProgModel, u) = set_ub!(m.inner,u)
 
-function getconstrLB(m::XpressMathProgModel)
+function MPB.getconstrLB(m::XpressMathProgModel)
     sense = get_rowtype(m.inner)
     ret   = get_rhs(m.inner)
     for i = 1:num_constrs(m.inner)
@@ -145,7 +142,7 @@ function getconstrLB(m::XpressMathProgModel)
      return ret
 end
 
-function getconstrUB(m::XpressMathProgModel)
+function MPB.getconstrUB(m::XpressMathProgModel)
     sense = get_rowtype(m.inner)
     ret   = get_rhs(m.inner)
     for i = 1:num_constrs(m.inner)
@@ -159,18 +156,18 @@ function getconstrUB(m::XpressMathProgModel)
     return ret
 end
 
-setconstrLB!(m::XpressMathProgModel, lb) = set_constrLB!(m.inner,lb)
-setconstrUB!(m::XpressMathProgModel, ub) = set_constrUB!(m.inner,ub)
+MPB.setconstrLB!(m::XpressMathProgModel, lb) = set_constrLB!(m.inner,lb)
+MPB.setconstrUB!(m::XpressMathProgModel, ub) = set_constrUB!(m.inner,ub)
 
-getobj(m::XpressMathProgModel)     = get_obj(m.inner)
-setobj!(m::XpressMathProgModel, c) = set_obj!(m.inner,c)
+MPB.getobj(m::XpressMathProgModel)     = get_obj(m.inner)
+MPB.setobj!(m::XpressMathProgModel, c) = set_obj!(m.inner,c)
 
-addvar!(m::XpressMathProgModel, constridx, constrcoef, l, u, objcoef) = add_var!(m.inner, length(constridx), constridx, float(constrcoef), float(objcoef), float(l), float(u))
-addvar!(m::XpressMathProgModel, l, u, objcoef) = add_cvar!(m.inner, float(objcoef), float(l), float(u))
+MPB.addvar!(m::XpressMathProgModel, constridx, constrcoef, l, u, objcoef) = add_var!(m.inner, length(constridx), constridx, float(constrcoef), float(objcoef), float(l), float(u))
+MPB.addvar!(m::XpressMathProgModel, l, u, objcoef) = add_cvar!(m.inner, float(objcoef), float(l), float(u))
 
-delvars!(m::XpressMathProgModel, idx) = del_vars!(m.inner, idx)
+MPB.delvars!(m::XpressMathProgModel, idx) = del_vars!(m.inner, idx)
 
-function addconstr!(m::XpressMathProgModel, varidx, coef, lb, ub)
+function MPB.addconstr!(m::XpressMathProgModel, varidx, coef, lb, ub)
     if lb == -Inf
         # <= constraint
         add_constr!(m.inner, varidx, coef, XPRS_LEQ, ub)
@@ -186,12 +183,12 @@ function addconstr!(m::XpressMathProgModel, varidx, coef, lb, ub)
     end
 end
 
-delconstrs!(m::XpressMathProgModel, idx) = del_constrs!(m.inner, idx)
-changecoeffs!(m::XpressMathProgModel, cidx, vidx, val) = chg_coeffs!(m.inner, cidx, vidx, val)
+MPB.delconstrs!(m::XpressMathProgModel, idx) = del_constrs!(m.inner, idx)
+MPB.changecoeffs!(m::XpressMathProgModel, cidx, vidx, val) = chg_coeffs!(m.inner, cidx, vidx, val)
 
-getconstrmatrix(m::XpressMathProgModel) = get_constrmatrix(m.inner)
+MPB.getconstrmatrix(m::XpressMathProgModel) = get_constrmatrix(m.inner)
 
-function setsense!(m::XpressMathProgModel, sense)
+function MPB.setsense!(m::XpressMathProgModel, sense)
     if sense == :Min
         set_sense!(m.inner, :minimize)
     elseif sense == :Max
@@ -201,7 +198,7 @@ function setsense!(m::XpressMathProgModel, sense)
     end
 end
 
-function getsense(m::XpressMathProgModel)
+function MPB.getsense(m::XpressMathProgModel)
     if model_sense(m.inner) == :maximize
         return :Max
     else
@@ -209,14 +206,14 @@ function getsense(m::XpressMathProgModel)
     end
 end
 
-numvar(m::XpressMathProgModel)    = num_vars(m.inner)
-numconstr(m::XpressMathProgModel) = num_constrs(m.inner)
-numlinconstr(m::XpressMathProgModel) = num_constrs(m.inner) - num_qconstrs(m.inner)
-numquadconstr(m::XpressMathProgModel) = num_qconstrs(m.inner)
+MPB.numvar(m::XpressMathProgModel)    = num_vars(m.inner)
+MPB.numconstr(m::XpressMathProgModel) = num_constrs(m.inner)
+MPB.numlinconstr(m::XpressMathProgModel) = num_constrs(m.inner) - num_qconstrs(m.inner)
+MPB.numquadconstr(m::XpressMathProgModel) = num_qconstrs(m.inner)
 
-optimize!(m::XpressMathProgModel) = optimize(m.inner)
+MPB.optimize!(m::XpressMathProgModel) = optimize(m.inner)
 
-function status(m::XpressMathProgModel)
+function MPB.status(m::XpressMathProgModel)
   is_mip(m.inner) ? s = get_mip_status(m.inner) : s = get_lp_status(m.inner)
 
   if s == :optimal
@@ -266,11 +263,11 @@ function status(m::XpressMathProgModel)
   end
 end
 
-getobjval(m::XpressMathProgModel)   = get_objval(m.inner)
-getobjbound(m::XpressMathProgModel) = get_bestbound(m.inner) #get_objbound(m.inner)
-getsolution(m::XpressMathProgModel) = get_solution(m.inner)
+MPB.getobjval(m::XpressMathProgModel)   = get_objval(m.inner)
+MPB.getobjbound(m::XpressMathProgModel) = get_bestbound(m.inner) #get_objbound(m.inner)
+MPB.getsolution(m::XpressMathProgModel) = get_solution(m.inner)
 
-function getconstrsolution(m::XpressMathProgModel)
+function MPB.getconstrsolution(m::XpressMathProgModel)
     rows = num_constrs(m.inner)
     sense = get_rowtype(m.inner)
     rhs   = get_rhs(m.inner)
@@ -288,7 +285,7 @@ function getconstrsolution(m::XpressMathProgModel)
     return ret
 end
 
-function getreducedcosts(m::XpressMathProgModel)
+function MPB.getreducedcosts(m::XpressMathProgModel)
     if is_qcp(m.inner) #&& get_int_param(m.inner.env, "QCPDual") == 0
         return get_reducedcost(m.inner)
         #return fill(NaN, num_vars(m.inner))
@@ -297,13 +294,13 @@ function getreducedcosts(m::XpressMathProgModel)
     end
 end
 
-function getconstrduals(m::XpressMathProgModel)
+function MPB.getconstrduals(m::XpressMathProgModel)
     if is_qcp(m.inner) #&& get_int_param(m.inner.env, "QCPDual") == 0
 
         nlrows = num_linconstrs(m.inner)
         nqrows = num_qconstrs(m.inner)
 
-        lduals = Array{Float64}( nlrows)
+        lduals = Array{Float64}(undef,  nlrows)
 
         qrows = get_qrows(m.inner)
 
@@ -330,13 +327,13 @@ function getconstrduals(m::XpressMathProgModel)
     end
 end
 
-function getquadconstrduals(m::XpressMathProgModel)
+function MPB.getquadconstrduals(m::XpressMathProgModel)
     if is_qcp(m.inner) #&& get_int_param(m.inner.env, "QCPDual") == 0
 
         #nlrows = num_linconstrs(m.inner)
         nqrows = num_qconstrs(m.inner)
 
-        qduals = Array{Float64}( nqrows)
+        qduals = Array{Float64}(undef,  nqrows)
 
         qrows = get_qrows(m.inner)
 
@@ -362,12 +359,12 @@ function getquadconstrduals(m::XpressMathProgModel)
 end
 
 
-getinfeasibilityray(m::XpressMathProgModel) = getdualray(m.inner)
-getunboundedray(m::XpressMathProgModel) = getprimalray(m.inner)
+MPB.getinfeasibilityray(m::XpressMathProgModel) = getdualray(m.inner)
+MPB.getunboundedray(m::XpressMathProgModel) = getprimalray(m.inner)
 
-getbasis(m::XpressMathProgModel) = get_basis(m.inner)
+MPB.getbasis(m::XpressMathProgModel) = get_basis(m.inner)
 
-getrawsolver(m::XpressMathProgModel) = m.inner
+MPB.getrawsolver(m::XpressMathProgModel) = m.inner
 
 const var_type_map = Dict{Cchar,Symbol}(
   convert(Cchar, 'C') => :Cont,
@@ -377,7 +374,7 @@ const var_type_map = Dict{Cchar,Symbol}(
   convert(Cchar, 'R') => :SemiInt
 )
 
-const rev_var_type_map = Dict{Symbol,Cchar}(
+const rev_var_type_map = Dict{Symbol,Cchar}( 
   :Cont => Cchar('C'),
   :Bin => Cchar('B'),
   :Int => Cchar('I'),
@@ -385,7 +382,7 @@ const rev_var_type_map = Dict{Symbol,Cchar}(
   :SemiInt => Cchar('R')
 )
 
-function setvartype!(m::XpressMathProgModel, vartype::Vector{Symbol})
+function MPB.setvartype!(m::XpressMathProgModel, vartype::Vector{Symbol})
 
     # dealing with semi continuous lower bounds
     # see issue #2
@@ -424,18 +421,18 @@ function setvartype!(m::XpressMathProgModel, vartype::Vector{Symbol})
     nothing
 end
 
-function getvartype(m::XpressMathProgModel)
+function MPB.getvartype(m::XpressMathProgModel)
     ret = get_coltype(m.inner)
     return map(x->var_type_map[x], ret)
 end
 
-setwarmstart!(m::XpressMathProgModel, v) = loadbasis(m.inner, v)
-addsos1!(m::XpressMathProgModel, idx, weight) = add_sos!(m.inner, :SOS1, idx, weight)
-addsos2!(m::XpressMathProgModel, idx, weight) = add_sos!(m.inner, :SOS2, idx, weight)
+MPB.setwarmstart!(m::XpressMathProgModel, v) = loadbasis(m.inner, v)
+MPB.addsos1!(m::XpressMathProgModel, idx, weight) = add_sos!(m.inner, :SOS1, idx, weight)
+MPB.addsos2!(m::XpressMathProgModel, idx, weight) = add_sos!(m.inner, :SOS2, idx, weight)
 
 # QCQP
 
-function setquadobj!(m::XpressMathProgModel, rowidx, colidx, quadval)
+function MPB.setquadobj!(m::XpressMathProgModel, rowidx, colidx, quadval)
     delq!(m.inner)
 
     # xpress only accept one input per matrix slot
@@ -464,7 +461,7 @@ function setquadobj!(m::XpressMathProgModel, rowidx, colidx, quadval)
     return nothing
 end
 
-function addquadconstr!(m::XpressMathProgModel, linearidx, linearval, quadrowidx, quadcolidx, quadval, sense, rhs)
+function MPB.addquadconstr!(m::XpressMathProgModel, linearidx, linearval, quadrowidx, quadcolidx, quadval, sense, rhs)
     # xpress only accept one input per matrix slot
     k = ones(Bool,length(quadrowidx)) #replicates holder (they are falses)
     for i in 1:length(quadrowidx), j in (i+1):length(quadrowidx)
@@ -487,5 +484,5 @@ function addquadconstr!(m::XpressMathProgModel, linearidx, linearval, quadrowidx
     return nothing
 end
 
-getsolvetime(m::XpressMathProgModel) = m.time
-getnodecount(m::XpressMathProgModel) = get_node_count(m.inner)
+MPB.getsolvetime(m::XpressMathProgModel) = m.time
+MPB.getnodecount(m::XpressMathProgModel) = get_node_count(m.inner)

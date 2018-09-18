@@ -12,7 +12,9 @@
 #
 
 using MathProgBase
-using Xpress, Base.Test
+using Xpress, Compat.Test
+using Compat.SparseArrays
+
 @testset "Basics 2" begin
     model = xpress_model(
         name="lp_02", 

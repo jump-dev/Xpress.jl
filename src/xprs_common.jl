@@ -46,21 +46,21 @@ inds32(n::Integer) = collect(Cint(1):Cint(n))
 
 # empty vector & matrix (for the purpose of supplying default arguments)
 
-const emptyfvec = Array{Float64}(0)
-const emptyfmat = Array{Float64}(0, 0)
+const emptyfvec = Array{Float64}(undef, 0)
+const emptyfmat = Array{Float64}(undef, 0, 0)
 
 # macro to call a Xpress C functions
 macro xprs_ccall(func, args...)
     f = "XPRS$(func)"
     args = map(esc,args)
 
-    is_unix() && return quote
+    Compat.Sys.isunix() && return quote
         ccall(($f,xprs), $(args...))
     end
-    is_windows() && VERSION < v"0.6-" && return quote
+    Compat.Sys.iswindows() && VERSION < v"0.6-" && return quote
         ccall(($f,xprs), stdcall, $(args...))
     end
-    is_windows() && VERSION >= v"0.6-" && return quote
+    Compat.Sys.iswindows() && VERSION >= v"0.6-" && return quote
         ccall(($f,xprs), $(esc(:stdcall)), $(args...))
     end
 end
@@ -71,7 +71,7 @@ end
 Get Xpress optimizer version info
 """
 function getlibversion()
-    out = Array{Cchar}( 16)                                     # "                "
+    out = Array{Cchar}(undef,  16)                                     # "                "
     ret = @xprs_ccall(getversion, Cint, ( Ptr{Cchar},), out)   # ( Cstring,), out)
 
     numbers = split(unsafe_string(pointer(out)) ,".")

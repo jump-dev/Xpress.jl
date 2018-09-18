@@ -7,7 +7,10 @@
 #
 #    solution: (0, 1), objv = 1.875
 #
-using Xpress, Base.Test
+using Xpress, Compat.Test
+using Compat.SparseArrays
+using Compat.LinearAlgebra
+
 @testset "QP 1" begin
     model = Xpress.Model("qp_02")
 

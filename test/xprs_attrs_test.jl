@@ -1,4 +1,4 @@
-using Xpress, Base.Test
+using Xpress, Compat.Test
 
 m = Xpress.Model()
 
