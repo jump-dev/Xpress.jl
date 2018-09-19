@@ -13,13 +13,13 @@ function add_qpterms!(model::Model, qr::Vector{Cint}, qc::Vector{Cint}, qv::Vect
     (nnz == length(qc) == length(qv)) || error("Inconsistent argument dimensions.")
     if nnz > 0
         ret = @xprs_ccall(chgmqobj, Cint, (
-            Ptr{Cvoid},   # model
+            Ptr{Nothing},    # model
             Cint,         # nnz
             Ptr{Cint},    # qrow
             Ptr{Cint},    # qcol
             Ptr{Float64}  # qval
             ),
-            model.ptr_model, nnz, qr.-Cint(1), qc.-Cint(1), qv)
+            model.ptr_model, nnz, qr .- Cint(1), qc .- Cint(1), qv)
 
         if ret != 0
             throw(XpressError(model))
@@ -35,18 +35,19 @@ function add_qpterms!(model, H::SparseMatrixCSC{Float64}) # H must be symmetric
     (H.m == n && H.n == n) || error("H must be an n-by-n symmetric matrix.")
 
     nnz_h = nnz(H)
-    qr = Array{Cint}( nnz_h)
-    qc = Array{Cint}( nnz_h)
-    qv = Array{Float64}( nnz_h)
+    qr = Array{Cint}(undef,  nnz_h)
+    qc = Array{Cint}(undef,  nnz_h)
+    qv = Array{Float64}(undef,  nnz_h)
     k = 0
 
     colptr::Vector{Int} = H.colptr
-    nzval::Vector{Float64} = H.nzval
+    nzval::Vector{Float64} = nonzeros(H)
 
     for i = 1 : n
         qi::Cint = convert(Cint, i)
+        Hrows = rowvals(H)
         for j = colptr[i]:(colptr[i+1]-1)
-            qj = convert(Cint, H.rowval[j])
+            qj = convert(Cint, Hrows[j])
 
             if qi < qj
                 k += 1
@@ -69,9 +70,9 @@ function add_qpterms!(model, H::Matrix{Float64}) # H must be symmetric
     size(H) == (n, n) || error("H must be an n-by-n symmetric matrix.")
 
     nmax = round(Int,n * (n + 1) / 2)
-    qr = Array{Cint}( nmax)
-    qc = Array{Cint}( nmax)
-    qv = Array{Float64}( nmax)
+    qr = Array{Cint}(undef,  nmax)
+    qc = Array{Cint}(undef,  nmax)
+    qv = Array{Float64}(undef,  nmax)
     k::Int = 0
 
     for i = 1 : n
@@ -161,15 +162,15 @@ end
 function getq_triplets_upper(model::Model)
     nnz = num_qnzs(model)
     n = num_vars(model)
-    nels = Array{Cint}( 1)
+    nels = Array{Cint}(undef,  1)
     nels[1] = nnz
 
-    mstart = Array{Cint}( n+1)
-    mclind = Array{Cint}( nnz)
-    dobjval = Array{Float64}( nnz)
+    mstart = Array{Cint}(undef,  n+1)
+    mclind = Array{Cint}(undef,  nnz)
+    dobjval = Array{Float64}(undef,  nnz)
 
     ret = @xprs_ccall(getmqobj, Cint, (
-        Ptr{Cvoid}, # model
+        Ptr{Nothing},  # model
         Ptr{Cint},  # mstart
         Ptr{Cint},  # mclind
         Ptr{Float64},  # dobjval
@@ -186,9 +187,9 @@ function getq_triplets_upper(model::Model)
     triangle_nnz = convert(Int,nels[1])
 
     mstart[end] = triangle_nnz
-    I = Array{Int}( triangle_nnz)
-    J = Array{Int}( triangle_nnz)
-    V = Array{Float64}( triangle_nnz)
+    I = Array{Int}(undef,  triangle_nnz)
+    J = Array{Int}(undef,  triangle_nnz)
+    V = Array{Float64}(undef,  triangle_nnz)
     for i in 1:length(mstart)-1
         for j in (mstart[i]+1):mstart[i+1]
             I[j] = i
@@ -220,14 +221,14 @@ function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, 
 
     if qnnz > 0
         ret = @xprs_ccall(addqmatrix, Cint, (
-            Ptr{Cvoid},   # model
+            Ptr{Nothing},    # model
             Cint,         # lin contraint o add matrix
             Cint,         # qnnz
             Ptr{Cint},    # qrow
             Ptr{Cint},    # qcol
             Ptr{Float64}  # qval
             ),
-            model.ptr_model, m-Cint(1), qnnz, qr.-Cint(1), qc.-Cint(1), qv)
+            model.ptr_model, m - Cint(1), qnnz, qr .- Cint(1), qc .- Cint(1), qv)
 
         if ret != 0
             throw(XpressError(model))
@@ -255,10 +256,10 @@ function get_qrows(model::Model)
 
     if qmn > 0
 
-        qcrows = Array{Cint}( qmn)
+        qcrows = Array{Cint}(undef,  qmn)
 
         ret = @xprs_ccall(getqrows, Cint, (
-            Ptr{Cvoid},   # model
+            Ptr{Nothing},    # model
             Ptr{Cint},    # qmn
             Ptr{Cint}     # qcrows
             ),
@@ -271,7 +272,7 @@ function get_qrows(model::Model)
         # for i in 1:length(qcrows)
         #     qcrows += 1
         # end
-        return qcrows+1
+        return qcrows .+ 1
 
     end
 
@@ -320,9 +321,9 @@ function get_qrowmatrix_triplets_upper(model::Model, row::Int)
     qrows = get_qrows(model)
     if row in qrows
 
-        nqelem = Array{Cint}(1)
+        nqelem = Array{Cint}(undef, 1)
         ret = @xprs_ccall(getqrowqmatrixtriplets, Cint, (
-            Ptr{Cvoid},   # model
+            Ptr{Nothing},    # model
             Cint,
             Ptr{Cint},    # nqelem
             Ptr{Cint},    # mqcol1
@@ -335,12 +336,12 @@ function get_qrowmatrix_triplets_upper(model::Model, row::Int)
             throw(XpressError(model))
         end
 
-        mqcol1 = Array{Cint}( nqelem[1])
-        mqcol2 = Array{Cint}( nqelem[1])
-        dqe = Array{Float64}( nqelem[1])
+        mqcol1 = Array{Cint}(undef,  nqelem[1])
+        mqcol2 = Array{Cint}(undef,  nqelem[1])
+        dqe = Array{Float64}(undef,  nqelem[1])
 
         ret = @xprs_ccall(getqrowqmatrixtriplets, Cint, (
-            Ptr{Cvoid},   # model
+            Ptr{Nothing},    # model
             Cint,
             Ptr{Cint},    # nqelem
             Ptr{Cint},    # mqcol1

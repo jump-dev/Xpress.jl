@@ -6,7 +6,10 @@
 #           x +   y       >= 1
 #
 
-using Xpress, Base.Test
+using Xpress, Compat.Test
+using Compat.SparseArrays
+using Compat.LinearAlgebra
+
 @testset "QP 2" begin
     model = xpress_model( 
     name = "qp_02", 

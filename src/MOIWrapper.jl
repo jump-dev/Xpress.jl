@@ -40,7 +40,7 @@ mutable struct Optimizer <: LQOI.LinQuadOptimizer
     params::Dict{Any,Any}
     l_rows::Vector{Int}
     q_rows::Vector{Int}
-    Optimizer(::Cvoid) = new()
+    Optimizer(::Nothing) = new()
 end
 
 LQOI.LinearQuadraticModel(::Type{Optimizer}, env) = XPR.Model()
@@ -131,14 +131,14 @@ function LQOI.add_ranged_constraints!(instance::Optimizer, A::LQOI.CSRMatrix{Flo
     append!(instance.l_rows,addedrows)
     sensevec = fill(Cchar('E'),newrows)
     XPR.add_constrs!(instance.inner, A.row_pointers, A.columns, A.coefficients, sensevec, upperbound)
-    XPR.chg_rhsrange!(instance.inner, cintvec(addedrows), +upperbound-lowerbound)
+    XPR.chg_rhsrange!(instance.inner, cintvec(addedrows), upperbound .- lowerbound)
 end
 
 function LQOI.modify_ranged_constraints!(instance::Optimizer, rows::Vector{Int}, lowerbound::Vector{Float64}, upperbound::Vector{Float64})
     # quadind
     _rows = instance.l_rows[rows]
     XPR.set_rhs!(instance.inner, _rows, upperbound)
-    XPR.chg_rhsrange!(instance.inner, cintvec(_rows), +upperbound-lowerbound)
+    XPR.chg_rhsrange!(instance.inner, cintvec(_rows), upperbound .- lowerbound)
 end
 
 function LQOI.get_rhs(instance::Optimizer, row)
@@ -157,23 +157,23 @@ function LQOI.get_range(instance::Optimizer, row)
     _row = instance.l_rows[row]
     ub = XPR.get_rhs(instance.inner, _row, _row)[1]
     r = XPR.get_rhsrange(instance.inner, _row, _row)[1]
-    return ub-r, ub
+    return ub .- r, ub
 end
 
 # TODO improve
 function LQOI.get_linear_constraint(instance::Optimizer, row)
     # quadind
     _row = instance.l_rows[row]
-    A = XPR.get_rows(instance.inner, _row, _row)'
-    return A.rowval, A.nzval
+    A = sparse(XPR.get_rows(instance.inner, _row, _row)')
+    return rowvals(A), nonzeros(A)
 end
 
 function LQOI.get_quadratic_constraint(instance::Optimizer, row)
     # quadind
     _row = instance.q_rows[row]
-    A = XPR.get_rows(instance.inner, _row, _row)'
+    A = sparse(XPR.get_rows(instance.inner, _row, _row)')
     Q = XPR.get_qrowmatrix(instance.inner, _row)
-    return A.rowval, A.nzval, Q
+    return rowvals(A), nonzeros(A), Q
 end
 
 # notin LQOI
@@ -181,9 +181,9 @@ end
 function getcoef(instance::Optimizer, row, col)
     # quadind
     _row = instance.l_rows[row]
-    A = XPR.get_rows(instance.inner, _row, _row)'
-    cols = A.rowval
-    vals = A.nzval
+    A = sparse(XPR.get_rows(instance.inner, _row, _row)')
+    cols = rowvals(A)
+    vals = nonzeros(A)
 
     pos = findfirst(cols, col)
     if pos > 0
@@ -337,7 +337,7 @@ end
 
 LQOI.solve_mip_problem!(instance::Optimizer) = XPR.mipoptimize(instance.inner)
 
-LQOI.solve_quadratic_problem!(instance::Optimizer) = ( writeproblem(instance, "db", "l");LQOI.solve_linear_problem!(instance) )
+LQOI.solve_quadratic_problem!(instance::Optimizer) = LQOI.solve_linear_problem!(instance)
 
 LQOI.solve_linear_problem!(instance::Optimizer) = XPR.lpoptimize(instance.inner)
 
@@ -451,7 +451,7 @@ function LQOI.get_primal_status(instance::Optimizer)
         elseif stat_mip in [XPR.MIP_LPOptimal, XPR.MIP_NoSolFound]
             return MOI.InfeasiblePoint
         end
-        return MOI.UnknownResultStatus
+        return MOI.NoSolution
     else
         stat_lp = XPR.get_lp_status2(instance.inner)
         if stat_lp == XPR.LP_Optimal
@@ -462,14 +462,14 @@ function LQOI.get_primal_status(instance::Optimizer)
         #     return MOI.InfeasiblePoint - xpress wont return
         # elseif cutoff//cutoffindual ???
         else
-            return MOI.UnknownResultStatus
+            return MOI.NoSolution
         end
     end
 end
 
 function LQOI.get_dual_status(instance::Optimizer) 
     if XPR.is_mip(instance.inner)
-        return MOI.UnknownResultStatus
+        return MOI.NoSolution
     else
         stat_lp = XPR.get_lp_status2(instance.inner)
         if stat_lp == XPR.LP_Optimal
@@ -480,7 +480,7 @@ function LQOI.get_dual_status(instance::Optimizer)
         #     return MOI.InfeasiblePoint - xpress wont return
         # elseif cutoff//cutoffindual ???
         else
-            return MOI.UnknownResultStatus
+            return MOI.NoSolution
         end
     end
 end
@@ -566,9 +566,10 @@ LQOI.get_unbounded_ray!(instance::Optimizer, place) = XPR.getprimalray!(instance
 
 finalize(m::Optimizer) = XPR.free_model(m.inner)
 
-"""
-    writeproblem(m: :MOI.AbstractOptimizer, filename::String)
-Writes the current problem data to the given file.
-Supported file types are solver-dependent.
-"""
-writeproblem(instance::Optimizer, filename::String, flags::String="") = XPR.write_model(instance.inner, filename, flags)
+function MOI.write_to_file(instance::Optimizer, lp_file_name::String)
+    flags = ""
+    if endswith(lp_file_name, ".lp")
+        flags = "l"
+    end
+    XPR.write_model(instance.inner, filename, flags)
+end

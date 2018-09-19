@@ -53,14 +53,14 @@ const emptyfmat = Array{Float64}(undef, 0, 0)
 macro xprs_ccall(func, args...)
     f = "XPRS$(func)"
     args = map(esc,args)
-    
-    Sys.isunix() && return quote
+
+    Compat.Sys.isunix() && return quote
         ccall(($f,xprs), $(args...))
     end
-    Sys.iswindows() && VERSION < v"0.6-" && return quote
+    Compat.Sys.iswindows() && VERSION < v"0.6-" && return quote
         ccall(($f,xprs), stdcall, $(args...))
     end
-    Sys.iswindows() && VERSION >= v"0.6-" && return quote
+    Compat.Sys.iswindows() && VERSION >= v"0.6-" && return quote
         ccall(($f,xprs), $(esc(:stdcall)), $(args...))
     end
 end

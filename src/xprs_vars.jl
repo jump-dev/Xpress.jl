@@ -10,7 +10,7 @@ function addcols(model::Model, mstart::Vector{Cint}, mrwind::Vector{Cint}, dmatv
     _chklen(mrwind, newnz)
 
     ret = @xprs_ccall(addcols, Cint, (
-        Ptr{Cvoid},   # model
+        Ptr{Nothing},    # model
         Cint,         # number of new cols
         Cint,         # number of nonzeros in added cols
         Ptr{Float64}, # coefs in objective
@@ -20,7 +20,7 @@ function addcols(model::Model, mstart::Vector{Cint}, mrwind::Vector{Cint}, dmatv
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub
         ),
-        model.ptr_model, newcols, newnz, objx, mstart.-Cint(1), mrwind.-Cint(1), dmatval, lb, ub)
+        model.ptr_model, newcols, newnz, objx, mstart .- Cint(1), mrwind .- Cint(1), dmatval, lb, ub)
     if ret != 0
         throw(XpressError(model))
     end
@@ -35,7 +35,7 @@ function addcols(model::Model, objx::Vector{Float64}, lb::Vector{Float64}, ub::V
     _chklen(objx, newcols)
 
     ret = @xprs_ccall(addcols, Cint, (
-        Ptr{Cvoid},   # model
+        Ptr{Nothing},    # model
         Cint,         # number of new cols
         Cint,         # number of nonzeros in added cols
         Ptr{Float64}, # coefs in objective
@@ -45,7 +45,7 @@ function addcols(model::Model, objx::Vector{Float64}, lb::Vector{Float64}, ub::V
         Ptr{Float64},      # lb
         Ptr{Float64}    # ub
         ),
-        model.ptr_model, newcols, Cint(0), objx, inds32(newcols).-Cint(1), C_NULL, C_NULL, lb, ub)
+        model.ptr_model, newcols, Cint(0), objx, inds32(newcols) .- Cint(1), C_NULL, C_NULL, lb, ub)
     if ret != 0
         throw(XpressError(model))
     end
@@ -174,10 +174,10 @@ del_vars!(model::Model, idx::Vector{T}) where {T<:Real} = del_vars!(model, conve
 function del_vars!(model::Model, idx::Vector{Cint})
     numdel = length(idx)
     ret = @xprs_ccall(delcols, Cint, (
-                     Ptr{Cvoid},
+                     Ptr{Nothing},
                      Cint,
                      Ptr{Cint}),
-                     model, convert(Cint,numdel), idx.-Cint(1))
+                     model, convert(Cint,numdel), idx .- Cint(1))
     if ret != 0
         throw(XpressError(model))
     end
@@ -202,11 +202,11 @@ chgcoltypes!(model::Model, colnums::Vector{Integer}, vtypes::Cchar) = chgcoltype
 function chgcoltypes!(model::Model, colnums::Vector{I}, vtypes::Vector{Cchar}) where I<:Integer
     n = length(colnums)
     ret = @xprs_ccall(chgcoltype,Cint,(
-        Ptr{Cvoid},
+        Ptr{Nothing},
         Cint,
         Ptr{Cint},
         Ptr{Cchar}),
-        model.ptr_model, n, ivec(colnums.-Cint(1)), vtypes )
+        model.ptr_model, n, ivec(colnums .- Cint(1)), vtypes )
     if 0 != ret
         throw(XpressError(model))
     end
@@ -223,11 +223,11 @@ function chgsemilb!(model::Model, colnums::Vector{I}, lb::Vector{R}) where {I<:I
 
     n=length(colnums)
     ret = @xprs_ccall(chgglblimit,Cint,(
-        Ptr{Cvoid},
+        Ptr{Nothing},
         Cint,
         Ptr{Cint},
         Ptr{Float64}),
-        model.ptr_model, n, ivec(colnums.-1), fvec(lb))
+        model.ptr_model, n, ivec(colnums .- 1), fvec(lb))
     if 0 != ret
         throw(XpressError(model))
     end

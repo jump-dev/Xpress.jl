@@ -8,7 +8,9 @@
 #
 #   solution: x = 45, y = 6.25, objv = 51.25
 
-using Xpress, Base.Test
+using Xpress, Compat.Test
+using Compat.SparseArrays
+
 @testset "Basics 1b" begin
     model = Xpress.Model("lp_01", :maximize)
 

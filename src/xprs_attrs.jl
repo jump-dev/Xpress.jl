@@ -11,10 +11,10 @@
 Return integer value corresponding to attribute with number `ipar`  
 """
 function get_intattr(model::Model, ipar::Integer)
-    out = Array{Cint}(undef,1)
+    out = Array{Cint}(undef, 1)
 
     ret = @xprs_ccall(getintattrib, Cint,
-                      (Ptr{Cvoid}, Cint, Ptr{Cint}),
+                      (Ptr{Nothing}, Cint, Ptr{Cint}),
                       model.ptr_model, Cint(ipar), out)
     if ret != 0
         throw(XpressError(model, ret))
@@ -29,10 +29,10 @@ end
 Return double value corresponding to attribute with number `ipar`  
 """
 function get_dblattr(model::Model, ipar::Integer)
-    out = Array{Float64}(undef,1)
+    out = Array{Float64}(undef, 1)
 
     ret = @xprs_ccall(getdblattrib, Cint,
-                      (Ptr{Cvoid}, Cint, Ptr{Float64}),
+                      (Ptr{Nothing}, Cint, Ptr{Float64}),
                       model.ptr_model, Cint(ipar), out)
     if ret != 0
         throw(XpressError(model, convert(Int, ret)))
@@ -50,7 +50,7 @@ function get_strattr(model::Model, ipar::Integer)
     out = zeros(Cchar,256)
 
     ret = @xprs_ccall(getstrattrib, Cint,
-                      (Ptr{Cvoid}, Cint, Ptr{Cchar}),
+                      (Ptr{Nothing}, Cint, Ptr{Cchar}),
                       model.ptr_model, Cint(ipar), out)
     if ret != 0
         throw(XpressError(model, convert(Int, ret)))
@@ -216,7 +216,7 @@ end
 function set_sense!(model::Model, sense::Integer)
 
     ret = @xprs_ccall(chgobjsense, Cint, (
-            Ptr{Cvoid},   # model
+            Ptr{Nothing},    # model
             Cint          # sense
             ),
             model.ptr_model, Cint(sense))
@@ -240,12 +240,12 @@ function set_objcoeffs!(model::Model, inds::Vector{I}, c::Vector{R}) where {I<:I
     _chklen(inds, length(c))
 
     ret = @xprs_ccall(chgobj, Cint, (
-        Ptr{Cvoid},    # model
+        Ptr{Nothing},     # model
         Cint,          # nels
         Ptr{Cint}, # inds
         Ptr{Float64} # vals
         ),
-        model.ptr_model, Cint(length(c)), ivec(inds).-Cint(1), fvec(c))
+        model.ptr_model, Cint(length(c)), ivec(inds) .- Cint(1), fvec(c))
 
     if ret != 0
         throw(XpressError(model))
@@ -272,7 +272,7 @@ function get_lb!(model::Model, lb::Vector{Float64}, colb::Integer, cole::Integer
     _chklen(lb,cole-colb+1)
 
     ret = @xprs_ccall(getlb, Cint, (
-        Ptr{Cvoid},    # model
+        Ptr{Nothing},    # model
         Ptr{Float64},
         Cint,
         Cint
@@ -301,7 +301,7 @@ Return vector of lowebounds with length equals to the number of variables in the
 """
 function get_lb(model::Model, colb::Integer, cole::Integer)
     
-    out = Array{Float64}(cole-colb+1)
+    out = Array{Float64}(undef, cole-colb+1)
 
     get_lb!(model, out, colb, cole)
 
@@ -310,7 +310,7 @@ end
 function get_lb(model::Model)
 
     cols = num_vars(model)
-    out = Array{Float64}(cols)
+    out = Array{Float64}(undef, cols)
 
     get_lb!(model, out)
 
@@ -328,7 +328,7 @@ function get_ub!(model::Model, out::Vector{Float64}, colb::Integer, cole::Intege
     _chklen(out, cole-colb+1)
 
     ret = @xprs_ccall(getub, Cint, (
-        Ptr{Cvoid},    # model
+        Ptr{Nothing},    # model
         Ptr{Float64},
         Cint,
         Cint
@@ -359,7 +359,7 @@ Return vector of upperbounds with length equals to the number of variables in th
 """
 function get_ub(model::Model, colb::Integer, cole::Integer)
     
-    out = Array{Float64}(cole-colb+1)
+    out = Array{Float64}(undef, cole-colb+1)
 
     get_ub!(model, out, colb, cole)
 
@@ -368,7 +368,7 @@ end
 function get_ub(model::Model)
 
     cols = num_vars(model)
-    out = Array{Float64}(cols)
+    out = Array{Float64}(undef, cols)
 
     get_ub!(model, out)
 
@@ -387,12 +387,12 @@ function get_obj!(model::Model, obj::Vector{Float64})
     _chklen(obj,cols)
     
     ret = @xprs_ccall(getobj, Cint, (
-        Ptr{Cvoid},    # model
+        Ptr{Nothing},    # model
         Ptr{Float64},
         Cint,
         Cint
         ),
-        model.ptr_model, obj, Cint(0), Cint(cols.-1))
+        model.ptr_model, obj, Cint(0), Cint(cols - 1))
 
     if ret != 0
         throw(XpressError(model))
@@ -410,7 +410,7 @@ Return vector of objective coefficients with length equals to the number of vari
 function get_obj(model::Model)
 
     cols = num_vars(model)
-    out = Array{Float64}(cols)
+    out = Array{Float64}(undef, cols)
 
     get_obj!(model, out)
 
@@ -429,7 +429,7 @@ function get_rhs!(model::Model, out::Vector{Float64}, rowb::Integer, rowe::Integ
     _chklen(out, rowe-rowb+1)
 
     ret = @xprs_ccall(getrhs, Cint, (
-        Ptr{Cvoid},    # model
+        Ptr{Nothing},    # model
         Ptr{Float64},
         Cint,
         Cint
@@ -457,7 +457,7 @@ Return a vector of rhs with length equals to the number of variables in the mode
 """
 function get_rhs(model::Model, rowb::Integer, rowe::Integer)
     
-    out = Array{Float64}(rowe-rowb+1)
+    out = Array{Float64}(undef, rowe-rowb+1)
 
     get_rhs!(model, out, rowb, rowe)
 
@@ -485,7 +485,7 @@ function get_rowtype!(model::Model, sense::Vector{Cchar})
     _chklen(sense,rows)
 
     ret = @xprs_ccall(getrowtype, Cint, (
-        Ptr{Cvoid},    # model
+        Ptr{Nothing},    # model
         Ptr{Cchar},
         Cint,
         Cint
@@ -508,7 +508,7 @@ Options are XPRS_LEQ = 'L', XPRS_GEQ = 'G', XPRS_EQ = 'E'.
 function get_rowtype(model::Model)
 
     rows = num_constrs(model)
-    out = Array{Cchar}(rows)
+    out = Array{Cchar}(undef, rows)
 
     get_rowtype!(model, out)
 
@@ -535,12 +535,12 @@ function get_coltype!(model::Model, coltype::Vector{Cchar})
     _chklen(coltype,cols)
 
     ret = @xprs_ccall(getcoltype, Cint, (
-        Ptr{Cvoid},    # model
+        Ptr{Nothing},    # model
         Ptr{Cchar},
         Cint,
         Cint
         ),
-        model.ptr_model, coltype, 0, cols.-Cint(1))
+        model.ptr_model, coltype, 0, cols - Cint(1))
 
     if ret != 0
         throw(XpressError(model))
@@ -558,7 +558,7 @@ Options are XPRS_CONTINUOUS = 'C', XPRS_INTEGER = 'I', XPRS_BINARY = 'B'.
 function get_coltype(model::Model)
 
     cols = num_vars(model)
-    out = Array{Cchar}(cols)
+    out = Array{Cchar}(undef, cols)
 
     get_coltype!(model, out)
 
@@ -568,7 +568,7 @@ end
 function unsafe_chgbounds!(model::Model, len::Cint, inds::Vector{Cint}, btype::Vector{Cchar},  lb::Vector{Float64})
 
     ret = @xprs_ccall(chgbounds, Cint, (
-        Ptr{Cvoid},    # model
+        Ptr{Nothing},    # model
         Cint,
         Ptr{Cint},
         Ptr{Cchar},
@@ -581,7 +581,7 @@ function unsafe_chgbounds!(model::Model, len::Cint, inds::Vector{Cint}, btype::V
     end
     return nothing
 end
-chgbounds!(model::Model, inds::Vector{Cint}, btype::Vector{Cchar},  lb::Vector{Float64}) = unsafe_chgbounds!(model, Cint(length(inds)), inds.-Cint(1), btype,  lb)
+chgbounds!(model::Model, inds::Vector{Cint}, btype::Vector{Cchar},  lb::Vector{Float64}) = unsafe_chgbounds!(model, Cint(length(inds)), inds .- Cint(1), btype,  lb)
 
 """
     set_lb!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, lb::Vector{R})
@@ -632,7 +632,7 @@ end
 
 function unsafe_chgrhs!(model::Model, nels::Cint, inds::Vector{Cint}, rhs::Vector{Float64})
     ret = @xprs_ccall(chgrhs, Cint, (
-        Ptr{Cvoid},    # model
+        Ptr{Nothing},    # model
         Cint,
         Ptr{Cint},
         Ptr{Float64}
@@ -644,7 +644,7 @@ function unsafe_chgrhs!(model::Model, nels::Cint, inds::Vector{Cint}, rhs::Vecto
     end
     return nothing
 end
-chgrhs!(model::Model, inds::Vector{Cint}, rhs::Vector{Float64}) = unsafe_chgrhs!(model, Cint(length(inds)), inds-Cint(1), rhs)
+chgrhs!(model::Model, inds::Vector{Cint}, rhs::Vector{Float64}) = unsafe_chgrhs!(model, Cint(length(inds)), inds .- Cint(1), rhs)
 
 """
     set_rhs!{I<:Integer, R<:Real}(model::Model, inds::Vector{I}, rhs::Vector{R})
@@ -680,12 +680,12 @@ function set_rowtype!(model::Model, inds::Vector{I}, senses::Vector{Cchar}) wher
     
     rows = length(senses)
     ret = @xprs_ccall(chgrowtype, Cint, (
-        Ptr{Cvoid},    # model
+        Ptr{Nothing},    # model
         Cint,
         Ptr{Cint},
         Ptr{Cchar}
         ),
-        model.ptr_model, Cint(rows) , ivec(inds).-Cint(1), cvec(senses) )
+        model.ptr_model, Cint(rows) , ivec(inds) .- Cint(1), cvec(senses) )
 
     if ret != 0
         throw(XpressError(model))

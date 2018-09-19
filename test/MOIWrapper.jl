@@ -1,6 +1,6 @@
 #push!(Base.LOAD_PATH,joinpath(dirname(@__FILE__),"..",".."))
 
-using Xpress, Base.Test, MathOptInterface, MathOptInterface.Test
+using Xpress, Compat.Test, MathOptInterface, MathOptInterface.Test
 
 const MOI = MathOptInterface
 const MOIT = MathOptInterface.Test
