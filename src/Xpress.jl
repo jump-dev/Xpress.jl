@@ -81,7 +81,7 @@ module Xpress
     include("xprs_solve.jl")
     include("xprs_callbacks.jl")
 
-    # include("XpressSolverInterface.jl")
+    include("XpressSolverInterface.jl")
     include("MOIWrapper.jl")
 
     # license checker

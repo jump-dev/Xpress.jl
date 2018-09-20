@@ -1,7 +1,7 @@
 using Compat
+using Compat.Libdl
 
 depsfile = joinpath(dirname(@__FILE__),"deps.jl")
-using Libdl
 
 if isfile(depsfile)
     rm(depsfile)
