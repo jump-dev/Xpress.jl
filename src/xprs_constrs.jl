@@ -265,7 +265,7 @@ function get_constrmatrix(model::Model)
                      Cint,
                      Cint
                      ),
-                     model.ptr_model, cbeg, cind, cval, Cint(nnz), numnzP, Cint(0), m-Cint(1))
+                     model.ptr_model, cbeg, cind, cval, Cint(nnz), numnzP, Cint(0), m.-Cint(1))
     if ret != 0
         throw(XpressError(model))
     end

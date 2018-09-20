@@ -1,6 +1,7 @@
 using Compat
 
 depsfile = joinpath(dirname(@__FILE__),"deps.jl")
+using Libdl
 
 if isfile(depsfile)
     rm(depsfile)
@@ -9,7 +10,7 @@ end
 function write_depsfile(path)
     f = open(depsfile,"w")
     if Compat.Sys.iswindows()
-        path = replace(path, "\\", "\\\\")
+        path = replace(path, "\\" => "\\\\")
     end
     println(f,"const xprs = \"$(path)\"")
     close(f)

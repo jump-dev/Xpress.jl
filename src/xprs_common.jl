@@ -71,7 +71,7 @@ end
 Get Xpress optimizer version info
 """
 function getlibversion()
-    out = Array{Cchar}(undef,  16)                                     # "                "
+    out = Array{Cchar}(undef, 16)                                     # "                "
     ret = @xprs_ccall(getversion, Cint, ( Ptr{Cchar},), out)   # ( Cstring,), out)
 
     numbers = split(unsafe_string(pointer(out)) ,".")

@@ -17,7 +17,7 @@ function add_qpterms!(model::Model, qr::Vector{Cint}, qc::Vector{Cint}, qv::Vect
             Cint,         # nnz
             Ptr{Cint},    # qrow
             Ptr{Cint},    # qcol
-            Ptr{Float64} # qval
+            Ptr{Float64}  # qval
             ),
             model.ptr_model, nnz, qr .- Cint(1), qc .- Cint(1), qv)
 
@@ -226,7 +226,7 @@ function add_qconstr!(model::Model, lind::IVec, lval::FVec, qr::IVec, qc::IVec, 
             Cint,         # qnnz
             Ptr{Cint},    # qrow
             Ptr{Cint},    # qcol
-            Ptr{Float64} # qval
+            Ptr{Float64}  # qval
             ),
             model.ptr_model, m - Cint(1), qnnz, qr .- Cint(1), qc .- Cint(1), qv)
 
@@ -261,7 +261,7 @@ function get_qrows(model::Model)
         ret = @xprs_ccall(getqrows, Cint, (
             Ptr{Nothing},    # model
             Ptr{Cint},    # qmn
-            Ptr{Cint}    # qcrows
+            Ptr{Cint}     # qcrows
             ),
             model.ptr_model, C_NULL, qcrows)
 
@@ -328,7 +328,7 @@ function get_qrowmatrix_triplets_upper(model::Model, row::Int)
             Ptr{Cint},    # nqelem
             Ptr{Cint},    # mqcol1
             Ptr{Cint},    # mqcol2
-            Ptr{Float64}    # dqe
+            Ptr{Float64}  # dqe
             ),
             model.ptr_model, Cint(row-Cint(1)), nqelem, C_NULL, C_NULL, C_NULL)
 
@@ -346,7 +346,7 @@ function get_qrowmatrix_triplets_upper(model::Model, row::Int)
             Ptr{Cint},    # nqelem
             Ptr{Cint},    # mqcol1
             Ptr{Cint},    # mqcol2
-            Ptr{Float64}    # dqe
+            Ptr{Float64}  # dqe
             ),
             model.ptr_model, Cint(row-Cint(1)), nqelem, mqcol1, mqcol2, dqe)
 
