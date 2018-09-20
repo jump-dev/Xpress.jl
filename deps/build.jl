@@ -16,7 +16,6 @@ function write_depsfile(path)
     close(f)
 end
 
-
 libname = string(Compat.Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext)
 paths_to_try = String[]
 
@@ -26,17 +25,17 @@ if haskey(ENV, "XPRESSDIR")
   push!(paths_to_try, joinpath(ENV["XPRESSDIR"], Compat.Sys.iswindows() ? "bin" : "lib", libname))
 end
 
-found = false
+global found_xprs = false
 for l in paths_to_try
     d = Libdl.dlopen_e(l)
     if d != C_NULL
-        found = true
-        Compat.@info("found $l")
+        global found_xprs = true
+        Compat.@info("Found $l")
         write_depsfile(l)
         break
     end
 end
 
-if !found
+if !found_xprs
     error("Unable to locate Xpress installation, please check your enviroment variable XPRESSDIR . Note that Xpress must be obtained separately from fico.com")
 end
