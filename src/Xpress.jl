@@ -2,8 +2,9 @@ __precompile__()
 
 module Xpress
 
-    if isfile(joinpath(dirname(@__FILE__),"..","deps","deps.jl"))
-        include("../deps/deps.jl")
+    fn = joinpath(dirname(@__FILE__),"..","deps","deps.jl")
+    if isfile(fn)
+        include(fn)
     else
         error("Xpress not properly installed. Please run Pkg.build(\"Xpress\")")
     end
@@ -13,7 +14,7 @@ module Xpress
     using Compat
     using Compat.SparseArrays
     using Compat.LinearAlgebra
-
+    
     import Base.show, Base.copy
 
     ### exports

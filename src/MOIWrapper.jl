@@ -563,6 +563,9 @@ LQOI.get_farkas_dual!(instance::Optimizer, place) = XPR.getdualray!(instance.inn
 
 LQOI.get_unbounded_ray!(instance::Optimizer, place) = XPR.getprimalray!(instance.inner, place)
 
+
+finalize(m::Optimizer) = XPR.free_model(m.inner)
+
 function MOI.write_to_file(instance::Optimizer, lp_file_name::String)
     flags = ""
     if endswith(lp_file_name, ".lp")

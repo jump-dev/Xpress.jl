@@ -490,7 +490,7 @@ function get_rowtype!(model::Model, sense::Vector{Cchar})
         Cint,
         Cint
         ),
-        model.ptr_model, sense, Cint(0), Cint(rows-1))
+        model.ptr_model, sense, Cint(0), Cint(rows.-1))
 
     if ret != 0
         throw(XpressError(model))
