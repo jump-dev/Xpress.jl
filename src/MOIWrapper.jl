@@ -373,7 +373,7 @@ function LQOI.get_termination_status(instance::Optimizer)
         elseif stat_mip == XPR.MIP_Optimal
             return MOI.OPTIMAL
         elseif stat_mip == XPR.MIP_Unbounded
-            return MOI.INFEASIBLE_OR_UNBOUNDED
+            return MOI.DUAL_INFEASIBLE
         end
         return MOI.OTHER_ERROR
     else
@@ -388,7 +388,7 @@ function LQOI.get_termination_status(instance::Optimizer)
         elseif stat_lp == XPR.LP_Unfinished
             return xprsmoi_stopstatus(instance.inner)
         elseif stat_lp == XPR.LP_Unbounded
-            return MOI.INFEASIBLE_OR_UNBOUNDED
+            return MOI.DUAL_INFEASIBLE
         elseif stat_lp == XPR.LP_CutOffInDual
             return MOI.OBJECTIVE_LIMIT
         elseif stat_lp == XPR.LP_Unsolved
@@ -403,23 +403,23 @@ end
 function xprsmoi_stopstatus(instance::Optimizer)
     ss = XPR.get_stopstatus(instance.inner)
     if ss == XPR.StopTimeLimit
-        return MOI.TimeLimit
+        return MOI.TIME_LIMIT
     elseif ss == XPR.StopControlC
-        return MOI.Interrupted
+        return MOI.INTERRUPTED
     elseif ss == XPR.StopNodeLimit
         # should not be here
         warn("should not be here")
-        return MOI.NodeLimit
+        return MOI.NODE_LIMIT
     elseif ss == XPR.StopIterLimit
-        return MOI.IterationLimit
+        return MOI.ITERATION_LIMIT
     elseif ss == XPR.StopMIPGap
-        return MOI.ObjectiveLimit
+        return MOI.OBJECTIVE_LIMIT
     elseif ss == XPR.StopSolLimit
-        return MOI.SolutionLimit
+        return MOI.SOLUTION_LIMIT
     elseif ss == XPR.StopUser
-        return MOI.Interrupted
+        return MOI.INTERRUPTED
     end
-    return MOI.OtherError
+    return MOI.OTHER_ERROR
 end
 
 function LQOI.get_primal_status(instance::Optimizer)
@@ -427,8 +427,6 @@ function LQOI.get_primal_status(instance::Optimizer)
         stat_mip = XPR.get_mip_status2(instance.inner)
         if stat_mip in [XPR.MIP_Solution, XPR.MIP_Optimal]
             return MOI.FEASIBLE_POINT
-        elseif XPR.MIP_Infeasible && XPR.hasdualray(instance.inner)
-            return MOI.INFEASIBILITY_CERTIFICATE
         elseif XPR.MIP_Unbounded && XPR.hasprimalray(instance.inner)
             return MOI.INFEASIBILITY_CERTIFICATE
         elseif stat_mip in [XPR.MIP_LPOptimal, XPR.MIP_NoSolFound]
