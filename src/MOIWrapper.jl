@@ -369,19 +369,11 @@ function LQOI.get_termination_status(instance::Optimizer)
             end
 
         elseif stat_mip == XPR.MIP_Infeasible
-            if XPR.hasdualray(instance.inner)
-                return MOI.INFEASIBLE
-            else
-                return MOI.INFEASIBLE
-            end
+            return MOI.INFEASIBLE
         elseif stat_mip == XPR.MIP_Optimal
             return MOI.OPTIMAL
         elseif stat_mip == XPR.MIP_Unbounded
-            if XPR.hasprimalray(instance.inner)
-                return MOI.INFEASIBLE_OR_UNBOUNDED
-            else
-                return MOI.INFEASIBLE_OR_UNBOUNDED
-            end
+            return MOI.INFEASIBLE_OR_UNBOUNDED
         end
         return MOI.OTHER_ERROR
     else
@@ -390,21 +382,13 @@ function LQOI.get_termination_status(instance::Optimizer)
         elseif stat_lp == XPR.LP_Optimal
             return MOI.OPTIMAL
         elseif stat_lp == XPR.LP_Infeasible
-            if XPR.hasdualray(instance.inner)
-                return MOI.INFEASIBLE
-            else
-                return MOI.INFEASIBLE
-            end
+            return MOI.INFEASIBLE
         elseif stat_lp == XPR.LP_CutOff
             return MOI.OBJECTIVE_LIMIT
         elseif stat_lp == XPR.LP_Unfinished
             return xprsmoi_stopstatus(instance.inner)
         elseif stat_lp == XPR.LP_Unbounded
-            if XPR.hasprimalray(instance.inner)
-                return MOI.INFEASIBLE_OR_UNBOUNDED
-            else
-                return MOI.INFEASIBLE_OR_UNBOUNDED
-            end
+            return MOI.INFEASIBLE_OR_UNBOUNDED
         elseif stat_lp == XPR.LP_CutOffInDual
             return MOI.OBJECTIVE_LIMIT
         elseif stat_lp == XPR.LP_Unsolved
