@@ -349,7 +349,7 @@ function LQOI.get_termination_status(instance::Optimizer)
             return MOI.OTHER_ERROR
         elseif stat_mip == XPR.MIP_LPNotOptimal
             # MIP search incomplete but there is no linear sol
-            return MOI.INFEASIBLE_OR_UNBOUNDED
+            return MOI.OTHER_ERROR
         elseif stat_mip == XPR.MIP_NoSolFound
             # MIP search incomplete but there is no integer sol
             other = xprsmoi_stopstatus(instance.inner)
