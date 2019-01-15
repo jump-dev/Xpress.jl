@@ -26,17 +26,17 @@ end
 
 function copy(m::XpressMathProgModel)
 
-    m.lazycb == nothing || Base.warn_once("Callbacks can't be copied, lazy callback ignored")
-    m.cutcb == nothing || Base.warn_once("Callbacks can't be copied, cut callback ignored")
-    m.heuristiccb == nothing || Base.warn_once("Callbacks can't be copied, heuristic callback ignored")
-    m.infocb == nothing || Base.warn_once("Callbacks can't be copied, info callback ignored")
+    m.lazycb == nothing || Compat.@warn("Callbacks can't be copied, lazy callback ignored")
+    m.cutcb == nothing || Compat.@warn("Callbacks can't be copied, cut callback ignored")
+    m.heuristiccb == nothing || Compat.@warn("Callbacks can't be copied, heuristic callback ignored")
+    m.infocb == nothing || Compat.@warn("Callbacks can't be copied, info callback ignored")
 
 
     return XpressMathProgModel(copy(m.inner),
                                 nothing,
                                 nothing,
-                                nothing, 
-                                nothing, 
+                                nothing,
+                                nothing,
                                 deepcopy(m.options))
 end
 
@@ -95,7 +95,7 @@ function MPB.loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, r
         end
     end
     if rangeconstrs
-        warn("Julia Xpress interface doesn't properly support range (two-sided) constraints.")
+        Compat.@warn("Julia Xpress interface doesn't properly support range (two-sided) constraints.")
         add_rangeconstrs!(m.inner, float(A), float(rowlb), float(rowub))
     else
         b = Array{Float64}(undef, length(rowlb))
@@ -374,7 +374,7 @@ const var_type_map = Dict{Cchar,Symbol}(
   convert(Cchar, 'R') => :SemiInt
 )
 
-const rev_var_type_map = Dict{Symbol,Cchar}( 
+const rev_var_type_map = Dict{Symbol,Cchar}(
   :Cont => Cchar('C'),
   :Bin => Cchar('B'),
   :Int => Cchar('I'),

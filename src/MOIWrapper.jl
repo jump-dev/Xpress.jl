@@ -58,7 +58,7 @@ function Optimizer(; kwargs...)
     return m
 end
 
-function MOI.empty!(m::Optimizer) 
+function MOI.empty!(m::Optimizer)
     MOI.empty!(m,nothing)
     # m.constraint_primal_solution = m.qconstraint_primal_solution
     # m.constraint_dual_solution = m.qconstraint_dual_solution
@@ -270,7 +270,7 @@ function LQOI.set_quadratic_objective!(instance::Optimizer, I, J, V)
     return nothing
 end
 
-function LQOI.set_linear_objective!(instance::Optimizer, colvec, coefvec) 
+function LQOI.set_linear_objective!(instance::Optimizer, colvec, coefvec)
     nvars = XPR.num_vars(instance.inner)
     obj = zeros(Float64, nvars)
 
@@ -323,7 +323,7 @@ LQOI.add_variables!(instance::Optimizer, int) = XPR.add_cvars!(instance.inner, z
 LQOI.delete_variables!(instance::Optimizer, col, col2) = XPR.del_vars!(instance.inner, col)
 
 # LQOI.lqs_addmipstarts(m, colvec, valvec)
-function LQOI.add_mip_starts!(instance::Optimizer, colvec, valvec) 
+function LQOI.add_mip_starts!(instance::Optimizer, colvec, valvec)
     x = zeros(XPR.num_vars(instance.inner))
     for i in eachindex(colvec)
         x[colvec[i]] = valvec[i]
@@ -355,7 +355,7 @@ function LQOI.get_termination_status(instance::Optimizer)
             other = xprsmoi_stopstatus(instance.inner)
             if other == MOI.OTHER_ERROR
                 return MOI.SLOW_PROGRESS#OtherLimit
-            else 
+            else
                 return other
             end
 
@@ -364,7 +364,7 @@ function LQOI.get_termination_status(instance::Optimizer)
             other = xprsmoi_stopstatus(instance.inner)
             if other == MOI.OtherError
                 return MOI.OTHER_LIMIT
-            else 
+            else
                 return other
             end
 
@@ -408,7 +408,7 @@ function xprsmoi_stopstatus(instance::Optimizer)
         return MOI.INTERRUPTED
     elseif ss == XPR.StopNodeLimit
         # should not be here
-        warn("should not be here")
+        Compat.@warn("should not be here")
         return MOI.NODE_LIMIT
     elseif ss == XPR.StopIterLimit
         return MOI.ITERATION_LIMIT
@@ -448,7 +448,7 @@ function LQOI.get_primal_status(instance::Optimizer)
     end
 end
 
-function LQOI.get_dual_status(instance::Optimizer) 
+function LQOI.get_dual_status(instance::Optimizer)
     if XPR.is_mip(instance.inner)
         return MOI.NO_SOLUTION
     else
