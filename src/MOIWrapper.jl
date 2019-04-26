@@ -427,7 +427,7 @@ function LQOI.get_primal_status(instance::Optimizer)
         stat_mip = XPR.get_mip_status2(instance.inner)
         if stat_mip in [XPR.MIP_Solution, XPR.MIP_Optimal]
             return MOI.FEASIBLE_POINT
-        elseif XPR.MIP_Unbounded && XPR.hasprimalray(instance.inner)
+        elseif stat_mip == XPR.MIP_Unbounded && XPR.hasprimalray(instance.inner)
             return MOI.INFEASIBILITY_CERTIFICATE
         elseif stat_mip in [XPR.MIP_LPOptimal, XPR.MIP_NoSolFound]
             return MOI.INFEASIBLE_POINT
