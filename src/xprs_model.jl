@@ -454,10 +454,10 @@ function getfirstiis(model::Model)
         getiisdata,
         Cint,
         (Ptr{Nothing}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{UInt8}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{UInt8}),
-        model.ptr_model, 1, nrows, ncols, miisrow, miiscol, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL)
+        model.ptr_model, 1, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL)
     if ret != 0
         throw(XpressError(model))
     end
 
-    return IISData(status[], rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype)
+    return IISData(status[], rownumber[], colnumber[], miisrow, miiscol, constrainttype, colbndtype)
 end
