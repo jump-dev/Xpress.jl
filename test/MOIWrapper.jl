@@ -87,23 +87,6 @@ const MOIT = MathOptInterface.Test
     end
 
     @testset "IIS tests" begin
-        @testset "Variable bounds (SingleVariable and LessThan/GreaterThan)" begin
-            model = Xpress.Optimizer()
-            x = MOI.add_variable(model)
-            c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(2.0))
-            c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(1.0))
-
-            # Getting the results before the conflict refiner has been called must return an error.
-            @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
-            @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
-
-            # Once it's called, no problem.
-            Xpress.compute_conflict(model)
-            @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
-            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
-            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == true
-        end
-
         @testset "Variable bounds (ScalarAffine)" begin
             model = Xpress.Optimizer()
             x = MOI.add_variable(model)
@@ -121,46 +104,12 @@ const MOIT = MathOptInterface.Test
             @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == true
         end
 
-        @testset "Variable fixing (SingleVariable and EqualTo)" begin
-            model = Xpress.Optimizer()
-            x = MOI.add_variable(model)
-            c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.EqualTo(1.0))
-            c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(2.0))
-
-            # Getting the results before the conflict refiner has been called must return an error.
-            @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
-            @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
-
-            # Once it's called, no problem.
-            Xpress.compute_conflict(model)
-            @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
-            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
-            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == true
-        end
-
-        @testset "Variable bounds (SingleVariable and Interval)" begin
-            model = Xpress.Optimizer()
-            x = MOI.add_variable(model)
-            c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Interval(1.0, 3.0))
-            c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(0.0))
-
-            # Getting the results before the conflict refiner has been called must return an error.
-            @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
-            @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
-
-            # Once it's called, no problem.
-            Xpress.compute_conflict(model)
-            @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
-            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
-            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == true
-        end
-
         @testset "Two conflicting constraints (GreaterThan, LessThan)" begin
             model = Xpress.Optimizer()
             x = MOI.add_variable(model)
             y = MOI.add_variable(model)
-            b1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(0.0))
-            b2 = MOI.add_constraint(model, MOI.SingleVariable(y), MOI.GreaterThan(0.0))
+            b1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(0.0))
+            b2 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [y]), 0.0), MOI.GreaterThan(0.0))
             cf1 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]), 0.0)
             c1 = MOI.add_constraint(model, cf1, MOI.LessThan(-1.0))
             cf2 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, -1.0], [x, y]), 0.0)
@@ -183,8 +132,8 @@ const MOIT = MathOptInterface.Test
             model = Xpress.Optimizer()
             x = MOI.add_variable(model)
             y = MOI.add_variable(model)
-            b1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(0.0))
-            b2 = MOI.add_constraint(model, MOI.SingleVariable(y), MOI.GreaterThan(0.0))
+            b1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(0.0))
+            b2 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [y]), 0.0), MOI.GreaterThan(0.0))
             cf1 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]), 0.0)
             c1 = MOI.add_constraint(model, cf1, MOI.EqualTo(-1.0))
             cf2 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, -1.0], [x, y]), 0.0)
@@ -208,9 +157,9 @@ const MOIT = MathOptInterface.Test
             x = MOI.add_variable(model)
             y = MOI.add_variable(model)
             z = MOI.add_variable(model)
-            b1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(0.0))
-            b2 = MOI.add_constraint(model, MOI.SingleVariable(y), MOI.GreaterThan(0.0))
-            b3 = MOI.add_constraint(model, MOI.SingleVariable(z), MOI.GreaterThan(0.0))
+            b1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(0.0))
+            b2 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [y]), 0.0), MOI.GreaterThan(0.0))
+            b3 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [z]), 0.0), MOI.GreaterThan(0.0))
             cf1 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]), 0.0)
             c1 = MOI.add_constraint(model, cf1, MOI.LessThan(-1.0))
             cf2 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, -1.0, 1.0], [x, y, z]), 0.0)
