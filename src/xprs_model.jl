@@ -422,10 +422,6 @@ function getfirstiis(model::Model)
         throw(XpressError(model))
     end
 
-    println("=============")
-    println(status)
-    println("=============")
-
     # Then, retrieve it.
     # int XPRS_CC XPRSgetiisdata(XPRSprob prob, int num, int *rownumber, int *colnumber, int miisrow[],
     # int miiscol[], char constrainttype[], char colbndtype[], double duals[], double rdcs[],
