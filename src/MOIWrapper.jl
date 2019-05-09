@@ -617,39 +617,9 @@ A Boolean constraint attribute indicating whether the constraint participates in
 struct ConstraintConflictStatus <: MOI.AbstractConstraintAttribute end
 MOI.is_set_by_optimize(::ConstraintConflictStatus) = true
 
-function _sinvar_get_conflict_type(model::Optimizer, index::MOI.ConstraintIndex)
-    _ensure_conflict_computed(model)
-    var_in_conflict = findfirst(isequal(LQOI.get_column(model, model[index]) - 1), model.conflict.miiscol)
-
-    if var_in_conflict === nothing
-        return nothing
-    else
-        return model.conflict.colbndtype[var_in_conflict]
-    end
-end
-
-function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:LQOI.LE})
-    type = _sinvar_get_conflict_type(model, index)
-    return type !== nothing && type == UInt8('U')
-end
-
-function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:LQOI.GE})
-    type = _sinvar_get_conflict_type(model, index)
-    return type !== nothing && type == UInt8('L')
-end
-
-function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:Union{LQOI.EQ, LQOI.IV}})
-    type = _sinvar_get_conflict_type(model, index)
-    return type !== nothing && (type == UInt8('U') || type == UInt8('L'))
-end
-
 function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{LQOI.LE, LQOI.GE, LQOI.EQ}})
     _ensure_conflict_computed(model)
     return (model[index] - 1) in model.conflict.miisrow
-end
-
-function MOI.supports(::Optimizer, ::ConstraintConflictStatus, ::Type{MOI.ConstraintIndex{<:MOI.SingleVariable, <:LQOI.LinSets}})
-    return true
 end
 
 function MOI.supports(::Optimizer, ::ConstraintConflictStatus, ::Type{MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{LQOI.LE, LQOI.GE, LQOI.EQ}}})
