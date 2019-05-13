@@ -120,12 +120,13 @@ const MOIT = MathOptInterface.Test
             @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
 
             # Once it's called, no problem.
+            # Two possible IISes: b1, b2, c1 OR b2, c1, c2
             Xpress.compute_conflict(model)
             @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
-            @test MOI.get(model, Xpress.ConstraintConflictStatus(), b1) == true
+            @test MOI.get(model, Xpress.ConstraintConflictStatus(), b1) in [true, false]
             @test MOI.get(model, Xpress.ConstraintConflictStatus(), b2) == true
             @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
-            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == false
+            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) in [true, false]
         end
 
         @testset "Two conflicting constraints (EqualTo)" begin
@@ -144,12 +145,13 @@ const MOIT = MathOptInterface.Test
             @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
 
             # Once it's called, no problem.
+            # Two possible IISes: b1, b2, c1 OR b2, c1, c2
             Xpress.compute_conflict(model)
             @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
-            @test MOI.get(model, Xpress.ConstraintConflictStatus(), b1) == true
+            @test MOI.get(model, Xpress.ConstraintConflictStatus(), b1) in [true, false]
             @test MOI.get(model, Xpress.ConstraintConflictStatus(), b2) == true
             @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
-            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == false
+            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) in [true, false]
         end
 
         @testset "Variables outside conflict" begin
