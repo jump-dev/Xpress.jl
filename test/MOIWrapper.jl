@@ -37,10 +37,18 @@ const MOIT = MathOptInterface.Test
     @testset "Linear tests" begin
         linconfig = MOIT.TestConfig()
         solver = Xpress.Optimizer()
-        MOIT.contlineartest(solver , linconfig, ["linear12","linear8a","linear8b","linear8c"])
+        MOIT.contlineartest(solver, linconfig, [
+            "linear12","linear8a","linear8b","linear8c",
+            # VariablePrimalStart not implemented.
+            "partial_start"
+        ])
 
         solver_nopresolve = Xpress.Optimizer(PRESOLVE = 0)
-        MOIT.contlineartest(solver_nopresolve , linconfig, ["linear12"])
+        MOIT.contlineartest(solver_nopresolve, linconfig, [
+            "linear12",
+            # VariablePrimalStart not implemented.
+            "partial_start"
+        ])
 
         linconfig_nocertificate = MOIT.TestConfig(infeas_certificates=false)
         MOIT.linear12test(solver, linconfig_nocertificate)
