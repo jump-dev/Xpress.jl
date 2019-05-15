@@ -40,7 +40,7 @@ function copy(m::XpressMathProgModel)
                                 deepcopy(m.options))
 end
 
-struct XpressSolver <: AbstractMathProgSolver
+mutable struct XpressSolver <: AbstractMathProgSolver
     options
 end
 XpressSolver(;kwargs...) = XpressSolver(kwargs)
