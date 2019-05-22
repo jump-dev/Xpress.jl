@@ -362,7 +362,7 @@ function LQOI.get_termination_status(instance::Optimizer)
         elseif stat_mip == XPR.MIP_Solution
             # MIP search incomplete but there is a solution
             other = xprsmoi_stopstatus(instance.inner)
-            if other == MOI.OtherError
+            if other == MOI.OTHER_ERROR
                 return MOI.OTHER_LIMIT
             else
                 return other
@@ -400,8 +400,8 @@ function LQOI.get_termination_status(instance::Optimizer)
     end
 end
 
-function xprsmoi_stopstatus(instance::Optimizer)
-    ss = XPR.get_stopstatus(instance.inner)
+function xprsmoi_stopstatus(instance::Model)
+    ss = XPR.get_stopstatus(instance)
     if ss == XPR.StopTimeLimit
         return MOI.TIME_LIMIT
     elseif ss == XPR.StopControlC
