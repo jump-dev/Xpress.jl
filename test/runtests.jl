@@ -13,7 +13,8 @@ tests = ["xprs_attrs_test",
          "qp_02",
          "qcqp_01",
          "mathprog",
-         "MOIWrapper"
+         "MOIWrapper",
+         "wordhunt"
          ]
 
 if VERSION < v"0.7.0"
