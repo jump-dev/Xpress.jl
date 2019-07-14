@@ -24,7 +24,7 @@ const SUPPORTED_CONSTRAINTS = [
     (LQOI.SinVar, MOI.ZeroOne),
     (LQOI.SinVar, MOI.Integer),
     (LQOI.VecVar, LQOI.SOS1),
-    (LQOI.VecVar, LQOI.SOS2),
+    # (LQOI.VecVar, LQOI.SOS2),
     # (LQOI.SinVar, MOI.Semicontinuous{Float64}),
     # (LQOI.SinVar, MOI.Semiinteger{Float64}),
     (LQOI.VecVar, MOI.Nonnegatives),

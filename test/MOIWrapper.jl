@@ -72,7 +72,7 @@ const MOIT = MathOptInterface.Test
     @testset "Integer Linear tests" begin
         intconfig = MOIT.TestConfig()
         solver = Xpress.Optimizer()
-        MOIT.intlineartest(solver, intconfig)
+        MOIT.intlineartest(solver, intconfig, ["int2"])
     end
 
     @testset "ModelLike tests" begin
