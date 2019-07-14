@@ -14,7 +14,7 @@ module Xpress
     using Compat
     using Compat.SparseArrays
     using Compat.LinearAlgebra
-    
+
     import Base.show, Base.copy
 
     ### exports
@@ -27,7 +27,7 @@ module Xpress
     getparam, setparam!, setparams!,
 
     ## xprs_model
-    set_sense!, update_model!, reset_model!, 
+    set_sense!, update_model!, reset_model!,
     read_model, write_model,
     copy,
 
@@ -80,6 +80,7 @@ module Xpress
 
     include("xprs_solve.jl")
     include("xprs_callbacks.jl")
+    include("xprs_iis.jl")
 
     include("XpressSolverInterface.jl")
     include("MOIWrapper.jl")

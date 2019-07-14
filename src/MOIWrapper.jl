@@ -40,13 +40,13 @@ mutable struct Optimizer <: LQOI.LinQuadOptimizer
     params::Dict{Any,Any}
     l_rows::Vector{Int}
     q_rows::Vector{Int}
+    conflict::Union{Nothing, IISData}
     Optimizer(::Nothing) = new()
 end
 
 LQOI.LinearQuadraticModel(::Type{Optimizer}, env) = XPR.Model()
 
 function Optimizer(; kwargs...)
-
     env = nothing
     m = Optimizer(nothing)
     m.params = Dict{Any,Any}()
@@ -55,6 +55,7 @@ function Optimizer(; kwargs...)
         m.params[name] = value
         XPR.setparam!(m.inner, XPR.XPRS_CONTROLS_DICT[name], value)
     end
+    m.conflict = nothing
     return m
 end
 
@@ -64,6 +65,7 @@ function MOI.empty!(m::Optimizer)
     # m.constraint_dual_solution = m.qconstraint_dual_solution
     m.l_rows = Int[]
     m.q_rows = Int[]
+    m.conflict = nothing
     for (name,value) in m.params
         XPR.setparam!(m.inner, XPR.XPRS_CONTROLS_DICT[name], value)
     end
@@ -553,4 +555,73 @@ function MOI.write_to_file(instance::Optimizer, lp_file_name::String)
         flags = "l"
     end
     XPR.write_model(instance.inner, filename, flags)
+end
+
+"""
+    compute_conflict(model::Optimizer)
+
+Compute a minimal subset of the constraints and variables that keep the model
+infeasible.
+
+See also `Xpress.ConflictStatus` and `Xpress.ConstraintConflictStatus`.
+
+Note that if `model` is modified after a call to `compute_conflict`, the
+conflict is not purged, and any calls to the above attributes will return values
+for the original conflict without a warning.
+"""
+function compute_conflict(model::Optimizer)
+    model.conflict = getfirstiis(model.inner)
+    return
+end
+
+function _ensure_conflict_computed(model::Optimizer)
+    if model.conflict === nothing
+        error("Cannot access conflict status. Call `Xpress.compute_conflict(model)` first. " *
+              "In case the model is modified, the computed conflict will not be purged.")
+    end
+end
+
+"""
+    ConflictStatus()
+
+Return an `MOI.TerminationStatusCode` indicating the status of the last computed conflict.
+
+If a minimal conflict is found, it will return `MOI.OPTIMAL`. If the problem is feasible, it will
+return `MOI.INFEASIBLE`. If `compute_conflict` has not been called yet, it will return
+`MOI.OPTIMIZE_NOT_CALLED`.
+"""
+struct ConflictStatus <: MOI.AbstractModelAttribute  end
+MOI.is_set_by_optimize(::ConflictStatus) = true
+
+function MOI.get(model::Optimizer, ::ConflictStatus)
+    if model.conflict === nothing
+        return MOI.OPTIMIZE_NOT_CALLED
+    elseif model.conflict.stat == 0
+        return MOI.OPTIMAL
+    elseif model.conflict.stat == 1
+        return MOI.INFEASIBLE
+    else
+        return MOI.OTHER_LIMIT
+    end
+end
+
+function MOI.supports(::Optimizer, ::ConflictStatus)
+    return true
+end
+
+"""
+    ConstraintConflictStatus()
+
+A Boolean constraint attribute indicating whether the constraint participates in the last computed conflict.
+"""
+struct ConstraintConflictStatus <: MOI.AbstractConstraintAttribute end
+MOI.is_set_by_optimize(::ConstraintConflictStatus) = true
+
+function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{LQOI.LE, LQOI.GE, LQOI.EQ}})
+    _ensure_conflict_computed(model)
+    return (model[index] - 1) in model.conflict.miisrow
+end
+
+function MOI.supports(::Optimizer, ::ConstraintConflictStatus, ::Type{MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{LQOI.LE, LQOI.GE, LQOI.EQ}}})
+    return true
 end
