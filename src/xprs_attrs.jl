@@ -777,3 +777,15 @@ function set_constrUB!(model::Model, ub::Vector{R}) where R<:Real
     end
     set_rhs!(model, lrows, ub)
 end
+
+#=
+    Objective interfacing functions
+=#
+
+function get_linear_objective!(x::Vector{Float64}, instance::Optimizer)
+    obj = get_obj(instance.inner)
+    @assert length(x) == length(obj)
+    for i in 1:length(obj)
+        x[i] = obj[i]
+    end
+end
