@@ -193,6 +193,21 @@ function addnames(m::Model, names::Vector, nametype::Int32)
     nothing
 end
 
+addcolname(m::Model, name::String, Index::Int32) = addname(m, name, Int32(2), Index::Int32)
+addrowname(m::Model, name::String, Index::Int32) = addname(m, name, Int32(1), Index::Int32)
+function addname(m::Model, name::String, nametype::Int32, Index::Int32)
+    # XPRSaddnames(prob, int type, char name[], int first, int last)
+
+    ret = @xprs_ccall(addnames, Cint, (Ptr{Nothing}, Cint,Ptr{Cchar}, Cint, Cint),
+        m.ptr_model, nametype, name, Index, Index)
+
+    if ret != 0
+        throw(XpressError(m))
+    end
+
+    nothing
+end
+
 
 # read / write file
 #=

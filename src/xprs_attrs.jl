@@ -8,7 +8,7 @@
 """
     get_intattr(model::Model, ipar::Integer)
 
-Return integer value corresponding to attribute with number `ipar`  
+Return integer value corresponding to attribute with number `ipar`
 """
 function get_intattr(model::Model, ipar::Integer)
     out = Array{Cint}(undef, 1)
@@ -26,7 +26,7 @@ end
 """
     get_dblattr(model::Model, ipar::Integer)
 
-Return double value corresponding to attribute with number `ipar`  
+Return double value corresponding to attribute with number `ipar`
 """
 function get_dblattr(model::Model, ipar::Integer)
     out = Array{Float64}(undef, 1)
@@ -44,7 +44,7 @@ end
 """
     get_strattr(model::Model, ipar::Integer)
 
-Return string value corresponding to attribute with number `ipar`  
+Return string value corresponding to attribute with number `ipar`
 """
 function get_strattr(model::Model, ipar::Integer)
     out = zeros(Cchar,256)
@@ -119,7 +119,7 @@ num_linconstrs(model::Model) = num_constrs(model) - num_qconstrs(model)
 """
     model_sense(model::Model)
 
-Return a symbol that encodes the objective function sense. 
+Return a symbol that encodes the objective function sense.
 The output is either `:minimize` or `:maximize`
 """
 model_sense(model::Model) = obj_sense(model) == XPRS_OBJ_MINIMIZE ? (:minimize) : (:maximize)
@@ -268,7 +268,7 @@ set_obj!(model, c) = set_objcoeffs!(model,c)
 Return the lower bounds for all variables in the vector lb.
 """
 function get_lb!(model::Model, lb::Vector{Float64}, colb::Integer, cole::Integer)
-    
+
     _chklen(lb,cole-colb+1)
 
     ret = @xprs_ccall(getlb, Cint, (
@@ -300,7 +300,7 @@ end
 Return vector of lowebounds with length equals to the number of variables in the model.
 """
 function get_lb(model::Model, colb::Integer, cole::Integer)
-    
+
     out = Array{Float64}(undef, cole-colb+1)
 
     get_lb!(model, out, colb, cole)
@@ -324,7 +324,7 @@ lowerbounds(model::Model) = get_lb(model)
 Return the upper bounds for all variables in the vector out.
 """
 function get_ub!(model::Model, out::Vector{Float64}, colb::Integer, cole::Integer)
-    
+
     _chklen(out, cole-colb+1)
 
     ret = @xprs_ccall(getub, Cint, (
@@ -358,7 +358,7 @@ end
 Return vector of upperbounds with length equals to the number of variables in the model.
 """
 function get_ub(model::Model, colb::Integer, cole::Integer)
-    
+
     out = Array{Float64}(undef, cole-colb+1)
 
     get_ub!(model, out, colb, cole)
@@ -385,7 +385,7 @@ function get_obj!(model::Model, obj::Vector{Float64})
 
     cols = num_vars(model)
     _chklen(obj,cols)
-    
+
     ret = @xprs_ccall(getobj, Cint, (
         Ptr{Nothing},    # model
         Ptr{Float64},
@@ -425,7 +425,7 @@ objcoeffs(model::Model) = get_obj(model)
 Return the rhs for all constraints in the vector obj.
 """
 function get_rhs!(model::Model, out::Vector{Float64}, rowb::Integer, rowe::Integer)
-    
+
     _chklen(out, rowe-rowb+1)
 
     ret = @xprs_ccall(getrhs, Cint, (
@@ -456,7 +456,7 @@ end
 Return a vector of rhs with length equals to the number of variables in the model.
 """
 function get_rhs(model::Model, rowb::Integer, rowe::Integer)
-    
+
     out = Array{Float64}(undef, rowe-rowb+1)
 
     get_rhs!(model, out, rowb, rowe)
@@ -590,7 +590,7 @@ Sets lower bounds `lb` given variable indices in `inds` of `model`
 
     set_lb!{R<:Real}(model::Model, lb::Vector{R})
 
-Sets lower bounds to all variables up to `length(lb)`. 
+Sets lower bounds to all variables up to `length(lb)`.
 `length(lb)` must be smaller than the number of variables.
 """
 function set_lb!(model::Model, inds::Vector{I}, lb::Vector{R}) where {I<:Integer, R<:Real}
@@ -613,7 +613,7 @@ Sets upper bounds `ub` given variable indices in `inds` of `model`
 
     set_ub!{R<:Real}(model::Model, ub::Vector{R})
 
-Sets upper bounds to all variables up to `length(ub)`. 
+Sets upper bounds to all variables up to `length(ub)`.
 `length(ub)` must be smaller than the number of variables.
 """
 function set_ub!(model::Model, inds::Vector{I}, ub::Vector{R}) where {I<:Integer, R<:Real}
@@ -653,7 +653,7 @@ Sets coefficients `rhs` given indices in `inds` in the rhs of `model`
 
     set_rhs!{R<:Real}(model::Model, lb::Vector{R})
 
-Sets coefficients in the rhs of all constraints up to `length(rhs)`. 
+Sets coefficients in the rhs of all constraints up to `length(rhs)`.
 `length(rhs)` must be smaller than the number of constraints.
 """
 function set_rhs!(model::Model, inds::Vector{I}, rhs::Vector{R}) where {I<:Integer, R<:Real}
@@ -673,11 +673,11 @@ Sets row type `senses` for given indices in `inds`
 
     set_rowtype!(model::Model, senses::Vector{Cchar})
 
-Sets row type in all constraints up to `length(senses)`. 
+Sets row type in all constraints up to `length(senses)`.
 `length(senses)` must be smaller than the number of constraints.
 """
 function set_rowtype!(model::Model, inds::Vector{I}, senses::Vector{Cchar}) where I<:Integer
-    
+
     rows = length(senses)
     ret = @xprs_ccall(chgrowtype, Cint, (
         Ptr{Nothing},    # model
