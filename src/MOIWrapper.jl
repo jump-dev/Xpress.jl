@@ -270,12 +270,6 @@ function MOI.supports_constraint(
     return true
 end
 
-#= Not Clear what to do about
-    (LQOI.VecLin, MOI.Nonnegatives),
-    (LQOI.VecLin, MOI.Nonpositives),
-    (LQOI.VecLin, MOI.Zeros)
-=#
-
 MOI.supports(::Optimizer, ::MOI.VariableName, ::Type{MOI.VariableIndex}) = true
 MOI.supports(::Optimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex}) = true
 MOI.supports(::Optimizer, ::MOI.ObjectiveFunctionType) = true
