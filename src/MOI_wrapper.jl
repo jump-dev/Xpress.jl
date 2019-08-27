@@ -402,9 +402,9 @@ function _indices_and_coefficients(
     return indices, coefficients, I, J, V
 end
 
-_sense_and_rhs(s::MOI.LessThan{Float64}) = (Cchar('<'), s.upper)
-_sense_and_rhs(s::MOI.GreaterThan{Float64}) = (Cchar('>'), s.lower)
-_sense_and_rhs(s::MOI.EqualTo{Float64}) = (Cchar('='), s.value)
+_sense_and_rhs(s::MOI.LessThan{Float64}) = (XPRS_LEQ, s.upper)
+_sense_and_rhs(s::MOI.GreaterThan{Float64}) = (XPRS_GEQ, s.lower)
+_sense_and_rhs(s::MOI.EqualTo{Float64}) = (XPRS_EQ, s.value)
 
 ###
 ### Variables
@@ -598,7 +598,7 @@ function MOI.get(
     end
 
     dest = zeros(length(model.variable_info))
-    get_linear_objective!(dest, model.inner)
+    get_obj!(model.inner, dest)
     terms = MOI.ScalarAffineTerm{Float64}[]
     for (index, info) in model.variable_info
         coefficient = dest[info.column]
@@ -606,7 +606,7 @@ function MOI.get(
         push!(terms, MOI.ScalarAffineTerm(coefficient, index))
     end
 
-    return MOI.ScalarAffineFunction(terms, 0.0)
+    return MOI.ScalarAffineFunction(terms, dest[0])
 end
 
 function MOI.set(
@@ -631,7 +631,7 @@ function MOI.get(
     ::MOI.ObjectiveFunction{MOI.ScalarQuadraticFunction{Float64}}
 )
     dest = zeros(length(model.variable_info))
-    get_linear_objective!(dest, model.inner)
+    get_obj!(model.inner, dest)
     terms = MOI.ScalarAffineTerm{Float64}[]
     for (index, info) in model.variable_info
         coefficient = dest[info.column]
@@ -653,22 +653,18 @@ function MOI.get(
             )
         )
     end
-    return MOI.ScalarQuadraticFunction(terms, q_terms, 0.0)
+    return MOI.ScalarQuadraticFunction(terms, q_terms, dest[0])
 end
-
-#=
-From what I can tell there is no constant term in Xpress model
 
 function MOI.modify(
     model::Optimizer,
     ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
     chg::MOI.ScalarConstantChange{Float64}
 )
-    set_dblattr!(model.inner, "ObjCon", chg.new_constant)
+    set_objcoeffs!(model.inner, 0, chg.new_constant)
 
     return
 end
-=#
 
 ##
 ##  SingleVariable-in-Set constraints.
