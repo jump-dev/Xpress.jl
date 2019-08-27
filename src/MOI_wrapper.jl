@@ -599,6 +599,7 @@ function MOI.get(
 
     dest = zeros(length(model.variable_info))
     get_obj!(model.inner, dest)
+
     terms = MOI.ScalarAffineTerm{Float64}[]
     for (index, info) in model.variable_info
         coefficient = dest[info.column]
@@ -606,7 +607,8 @@ function MOI.get(
         push!(terms, MOI.ScalarAffineTerm(coefficient, index))
     end
 
-    return MOI.ScalarAffineFunction(terms, dest[0])
+    constant = get_dblattr(model.inner, XPRS_OBJRHS)
+    return MOI.ScalarAffineFunction(terms, constant)
 end
 
 function MOI.set(
@@ -653,7 +655,8 @@ function MOI.get(
             )
         )
     end
-    return MOI.ScalarQuadraticFunction(terms, q_terms, dest[0])
+    constant = get_dblattr(model.inner, XPRS_OBJRHS)
+    return MOI.ScalarQuadraticFunction(terms, q_terms, constant)
 end
 
 function MOI.modify(
