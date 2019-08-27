@@ -1063,7 +1063,7 @@ function MOI.add_constraint(
     model::Optimizer, f::MOI.SingleVariable, ::MOI.ZeroOne
 )
     info = _info(model, f.variable)
-    add_bvars!(model.inner, [info.column])
+    chgcoltype!(model.inner, [info.column], XPRS_BINARY)
     info.type = BINARY
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.ZeroOne}(f.variable.value)
 end
@@ -1073,7 +1073,7 @@ function MOI.delete(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    add_cvars!(model.inner, [info.column])
+    chgcoltype!(model.inner, [info.column], XPRS_CONTINUOUS)
     info.type = CONTINUOUS
     info.type_constraint_name = ""
     return
@@ -1091,7 +1091,7 @@ function MOI.add_constraint(
     model::Optimizer, f::MOI.SingleVariable, ::MOI.Integer
 )
     info = _info(model, f.variable)
-    add_ivars!(model.inner, [info.column])
+    chgcoltype!(model.inner, [info.column], XPRS_INTEGER)
     info.type = INTEGER
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.Integer}(f.variable.value)
 end
@@ -1101,7 +1101,7 @@ function MOI.delete(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    add_cvars!(model.inner, [info.column])
+    chgcoltype!(model.inner, [info.column], XPRS_CONTINUOUS)
     info.type = CONTINUOUS
     info.type_constraint_name = ""
     return
