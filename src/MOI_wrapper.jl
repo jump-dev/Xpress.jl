@@ -235,14 +235,13 @@ end
 
 #=
 (LQOI.VecVar, LQOI.SOS1)
-# Not Supported (LQOI.VecVar, LQOI.SOS2),
-(LQOI.VecVar, MOI.Nonnegatives),
-(LQOI.VecVar, MOI.Nonpositives),
-(LQOI.VecVar, MOI.Zeros),
+(LQOI.VecVar, LQOI.SOS2),
 =#
 function MOI.supports_constraint(
     ::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{F}
-) where {F <: Union{MOI.SOS1{Float64}, MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}}
+) where {F <: Union{MOI.SOS1{Float64}, MOI.SOS2{Float64},
+            #MOI.SecondOrderCone. Added Later
+            }}
     return true
 end
 
