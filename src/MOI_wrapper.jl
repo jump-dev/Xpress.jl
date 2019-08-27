@@ -1349,7 +1349,8 @@ function MOI.get(
     model::Optimizer, ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}
 ) where {S}
-    rhs = get_dblattrelement(model.inner, "RHS", _info(model, c).row)
+    row = _info(model, c).row
+    rhs = get_rhs(model.inner, row, row)[1]
     return S(rhs)
 end
 
@@ -1357,7 +1358,7 @@ function MOI.set(
     model::Optimizer, ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}, s::S
 ) where {S}
-    set_dblattrelement!(model.inner, "RHS", _info(model, c).row, MOI.constant(s))
+    set_rhs!(model.inner, _info(model, c).row, MOI.constant(s))
     return
 end
 
@@ -1365,7 +1366,8 @@ function MOI.get(
     model::Optimizer, ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}
 ) where {S}
-    sparse_a = SparseArrays.sparse(get_constrs(model.inner, _info(model, c).row, 1)')
+    row = _info(model, c).row
+    sparse_a = SparseArrays.sparse(get_rows(model.inner, row, row)')
     terms = MOI.ScalarAffineTerm{Float64}[]
     for (col, val) in zip(sparse_a.rowval, sparse_a.nzval)
         iszero(val) && continue
@@ -1398,8 +1400,7 @@ function MOI.set(
     end
     info.name = name
     if !isempty(name)
-        set_strattrelement!(model.inner, "ConstrName", info.row, name)
-
+        addrowname(model.inner, name, info.row)
     end
     if model.name_to_constraint_index === nothing || isempty(name)
         return
