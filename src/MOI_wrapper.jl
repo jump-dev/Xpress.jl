@@ -272,21 +272,11 @@ function MOI.supports_constraint(
     return true
 end
 
-MOI.supports(::Optimizer, ::MOI.VariableName, ::Type{MOI.VariableIndex}) = true
-MOI.supports(::Optimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex}) = true
-MOI.supports(::Optimizer, ::MOI.ObjectiveFunctionType) = true
-
-MOI.supports(::Optimizer, ::MOI.Name) = true
-MOI.supports(::Optimizer, ::MOI.Silent) = true
-MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
-MOI.supports(::Optimizer, ::MOI.ObjectiveSense) = true
-MOI.supports(::Optimizer, ::MOI.ListOfConstraintIndices) = true
-MOI.supports(::Optimizer, ::MOI.RawStatusString) = true
-MOI.supports(::Optimizer, ::MOI.RawParameter) = true
-MOI.supports(::Optimizer, ::MOI.ConstraintPrimalStart) = false
-MOI.supports(::Optimizer, ::MOI.ConstraintDualStart) = false
-
-MOI.supports(::Optimizer, ::ConflictStatus) = true
+# Check that this what Xpress is actually going to support
+function MOI.supports(
+     ::Xpress.Optimizer, ::MOI.VariablePrimalStart, ::Type{MOI.VariableIndex})
+    return true
+end
 
 function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
     model.params[param.name] = value
