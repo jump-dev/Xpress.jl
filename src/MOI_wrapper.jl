@@ -1,3 +1,6 @@
+# Follows the implementation of the Gurobi MOI Wrapper
+# https://github.com/JuliaOpt/Gurobi.jl/blob/master/src/MOI_wrapper.jl
+
 import MathOptInterface
 
 const MOI = MathOptInterface
