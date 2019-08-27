@@ -83,7 +83,7 @@ module Xpress
     include("xprs_iis.jl")
 
     include("XpressSolverInterface.jl")
-    include("MOIWrapper.jl")
+    include("MOI_wrapper.jl")
 
     # license checker
     include("xprs_userlic.jl")
