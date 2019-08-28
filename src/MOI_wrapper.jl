@@ -1484,10 +1484,12 @@ function _rebuild_name_to_constraint_index_variables(model::Optimizer)
     return
 end
 
+# Implement Quadratic Later
+
 ###
 ### ScalarQuadraticFunction-in-SCALAR_SET
 ###
-
+#=
 function _info(
     model::Optimizer,
     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
@@ -1605,7 +1607,7 @@ function MOI.set(
     end
     return
 end
-
+=#
 ###
 ### VectorOfVariables-in-SOS{I|II}
 ###
@@ -1699,14 +1701,16 @@ function MOI.get(
     return S(sparse_a.nzval)
 end
 
+
 function MOI.get(
     model::Optimizer, ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
 ) where {S <: SOS}
-    sparse_a, _ = get_sos(model.inner, _info(model, c).row, 1)
-    indices = SparseArrays.nonzeroinds(sparse_a[1, :])
+    full_matrix, _ = get_sos_matrix(model.inner)
+    line = full_matrix[_info(model, c).row,:] #sparse vec
+    cols = line.nzind
     return MOI.VectorOfVariables(
-        [model.variable_info[CleverDicts.LinearIndex(i)].index for i in indices]
+        [model.variable_info[CleverDicts.LinearIndex(i)].index for i in cols]
     )
 end
 
