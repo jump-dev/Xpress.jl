@@ -1697,8 +1697,9 @@ function MOI.get(
     model::Optimizer, ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
 ) where {S <: SOS}
-    sparse_a, _ = get_sos(model.inner, _info(model, c).row, 1)
-    return S(sparse_a.nzval)
+    full_matrix, _ = get_sos_matrix(model.inner)
+    line = full_matrix[_info(model, c).row,:] #sparse vec
+    return S(line.nzval)
 end
 
 
