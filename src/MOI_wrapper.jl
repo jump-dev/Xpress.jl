@@ -1867,23 +1867,6 @@ function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
     end
 end
 
-#= Only for Gurobi. Confirm
-function _has_dual_ray(model::Optimizer)
-    try
-        # Note: for performance reasons, we try to get 1 element because for
-        # some versions of Gurobi, we cannot query 0 elements without error.
-        get_dblattrarray(model.inner, "FarkasDual", 1, 1)
-        return true
-    catch ex
-        if isa(ex, GurobiError)
-            return false
-        else
-            rethrow(ex)
-        end
-    end
-end
-=#
-
 function MOI.get(model::Optimizer, ::MOI.DualStatus)
     if is_mip(model.inner)
         return MOI.NO_SOLUTION
@@ -1902,22 +1885,10 @@ function MOI.get(model::Optimizer, ::MOI.DualStatus)
     end
 end
 
-#= Only for Gurobi. Confirm
-function _has_primal_ray(model::Optimizer)
-    try
-        # Note: for performance reasons, we try to get 1 element because for
-        # some versions of Gurobi, we cannot query 0 elements without error.
-        get_dblattrarray(model.inner, "UnbdRay", 1, 1)
-        return true
-    catch ex
-        if isa(ex, GurobiError)
-            return false
-        else
-            rethrow(ex)
-        end
-    end
-end
-=#
+
+#### Pending Block Start ######
+LQOI.get_unbounded_ray!(instance::Optimizer, place) = XPR.getprimalray!(instance.inner, place)
+
 
 function MOI.get(model::Optimizer, ::MOI.VariablePrimal, x::MOI.VariableIndex)
     if model.has_unbounded_ray
@@ -2017,16 +1988,37 @@ function MOI.get(
     return _dual_multiplier(model) * get_dblattrelement(model.inner, "QCPi", _info(model, c).row)
 end
 
-MOI.get(model::Optimizer, ::MOI.ObjectiveValue) = get_dblattr(model.inner, "ObjVal")
-MOI.get(model::Optimizer, ::MOI.ObjectiveBound) = get_dblattr(model.inner, "ObjBound")
-MOI.get(model::Optimizer, ::MOI.SolveTime) = get_dblattr(model.inner, "RunTime")
-MOI.get(model::Optimizer, ::MOI.SimplexIterations) = get_intattr(model.inner, "IterCount")
-MOI.get(model::Optimizer, ::MOI.BarrierIterations) = get_intattr(model.inner, "BarIterCount")
-MOI.get(model::Optimizer, ::MOI.NodeCount) = get_intattr(model.inner, "NodeCount")
-MOI.get(model::Optimizer, ::MOI.RelativeGap) = get_dblattr(model.inner, "MIPGap")
+MOI.get(model::Optimizer, ::MOI.ObjectiveValue) = get_objval(model.inner)
+
+function MOI.get(model::Optimizer, ::MOI.ObjectiveBound)
+    obj_rhs = get_dblattr(model.inner, XPRS_OBJRHS)
+    if is_mip(model.inner)
+        return get_bestbound(model.inner)+obj_rhs
+    else
+        return get_objval(model.inner)+obj_rhs
+    end
+end
+
+#### Pending Block End  ######
+
+# Not implemented in Old Wrapper
+#MOI.get(model::Optimizer, ::MOI.SolveTime) = get_dblattr(model.inner, "RunTime")
+
+MOI.get(model::Optimizer, ::MOI.SimplexIterations) = get_simplex_iter_count(model.inner)
+
+MOI.get(model::Optimizer, ::MOI.BarrierIterations) = get_barrier_iter_count(model.inner)
+MOI.get(model::Optimizer, ::MOI.NodeCount) = get_node_count(model.inner)
+
+# No MIP gap attribute in Xpress Manual
+function MOI.get(model::Optimizer, ::MOI.RelativeGap)
+    L = get_mip_objval(model.inner)
+    U = get_bestbound(model.inner)
+    return abs(U-L)/U
+end
 
 MOI.supports(model::Optimizer, ::MOI.DualObjectiveValue) = true
-MOI.get(model::Optimizer, ::MOI.DualObjectiveValue) = get_dblattr(model.inner, "ObjBound")
+
+MOI.get(model::Optimizer, ::MOI.DualObjectiveValue) = get_bestbound(model.inner)
 
 function MOI.get(model::Optimizer, ::MOI.ResultCount)
     if model.has_infeasibility_cert || model.has_unbounded_ray
