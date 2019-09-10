@@ -65,12 +65,13 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # An enum to remember what objective is currently stored in the model.
     objective_type::ObjectiveType
 
+    # Pending to check for Xpress.
     # A flag to keep track of MOI.FEASIBILITY_SENSE, since Gurobi only stores
     # MIN_SENSE or MAX_SENSE. This allows us to differentiate between MIN_SENSE
     # and FEASIBILITY_SENSE.
     is_feasibility::Bool
 
-    # A mapping from the MOI.VariableIndex to the Gurobi column. VariableInfo
+    # A mapping from the MOI.VariableIndex to the Xpress column. VariableInfo
     # also stores some additional fields like what bounds have been added, the
     # variable type, and the names of SingleVariable-in-Set constraints.
     variable_info::CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}
@@ -326,11 +327,10 @@ function _indices_and_coefficients(
     indices::AbstractVector{Int}, coefficients::AbstractVector{Float64},
     model::Optimizer, f::MOI.ScalarAffineFunction{Float64}
 )
-    i = 1
-    for term in f.terms
+
+    for (i, term) in enumerate(f.terms)
         indices[i] = _info(model, term.variable_index).column
         coefficients[i] = term.coefficient
-        i += 1
     end
     return indices, coefficients
 end
@@ -355,15 +355,15 @@ function _indices_and_coefficients(
         I[i] = _info(model, term.variable_index_1).column
         J[i] = _info(model, term.variable_index_2).column
         V[i] =  term.coefficient
-        # Xpress does the same according to page 14 of the reference Manual.
-        # Gurobi returns a list of terms. MOI requires 0.5 x' Q x. So, to get
+        # Xpress does this according to page 14 of the reference Manual.
+        # Xpress returns a list of terms. MOI requires 0.5 x' Q x. So, to get
         # from
-        #   Gurobi -> MOI => multiply diagonals by 2.0
-        #   MOI -> Gurobi => multiply diagonals by 0.5
+        #   Xpress -> MOI => multiply diagonals by 2.0
+        #   MOI -> Xpress => multiply diagonals by 0.5
         # Example: 2x^2 + x*y + y^2
         #   |x y| * |a b| * |x| = |ax+by bx+cy| * |x| = 0.5ax^2 + bxy + 0.5cy^2
         #           |b c|   |y|                   |y|
-        #   Gurobi needs: (I, J, V) = ([0, 0, 1], [0, 1, 1], [2, 1, 1])
+        #   Xpress needs: (I, J, V) = ([0, 0, 1], [0, 1, 1], [2, 1, 1])
         #   MOI needs:
         #     [SQT(4.0, x, x), SQT(1.0, x, y), SQT(2.0, y, y)]
         if I[i] == J[i]
@@ -1720,8 +1720,6 @@ end
 ###
 
 function MOI.optimize!(model::Optimizer)
-    # Note: although Gurobi will call update regardless, we do it now so that
-    # the appropriate `needs_update` flag is set.
     optimize(model.inner)
     model.has_infeasibility_cert =
     MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
