@@ -109,7 +109,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     Create a new Optimizer object.
 
-    You can share Expr `Env`s between models by passing an instance of `Env`
+    You can share Expr `Env`s between models by passing an model of `Env`
     as the first argument. By default, a new environment is created for every
     model.
 
@@ -145,9 +145,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     end
 end
 
-setparam!(instance::Optimizer, name, val) = setparam!(instance.inner, XPRS_CONTROLS_DICT[name], val)
+setparam!(model::Optimizer, name, val) = setparam!(model.inner, XPRS_CONTROLS_DICT[name], val)
 
-setlogfile!(instance::Optimizer, path) = setlogfile(instance.inner, path::String)
+setlogfile!(model::Optimizer, path) = setlogfile(model.inner, path::String)
 
 cintvec(v::Vector) = convert(Vector{Int32}, v)
 
@@ -1729,9 +1729,10 @@ function MOI.optimize!(model::Optimizer)
         MOI.get(model, MOI.PrimalStatus()) == MOI.INFEASIBILITY_CERTIFICATE
     return
 end
-
-# These strings are taken directly from the following page of the online Gurobi
-# documentation: https://www.com/documentation/8.1/refman/optimization_status_codes.html#sec:StatusCodes
+##
+# Update these for Xpress Using LPSTATUS, https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/LPSTATUS.html
+# MIPSTATUS https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/MIPSTATUS.html
+# and STOP https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/STOPSTATUS.html
 const RAW_STATUS_STRINGS = [
     (MOI.OPTIMIZE_NOT_CALLED, "Model is loaded, but no solution information is available."),
     (MOI.OPTIMAL, "Model was solved to optimality (subject to tolerances), and an optimal solution is available."),
@@ -1751,37 +1752,122 @@ const RAW_STATUS_STRINGS = [
 ]
 
 function MOI.get(model::Optimizer, ::MOI.RawStatusString)
-    status_code = get_status_code(model.inner)
+    status_code = -1 #get_status_code(model.inner)
     if 1 <= status_code <= length(RAW_STATUS_STRINGS)
         return RAW_STATUS_STRINGS[status_code][2]
     end
     return MOI.OTHER_ERROR
 end
 
-function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
-    status_code = get_status_code(model.inner)
-    if 1 <= status_code <= length(RAW_STATUS_STRINGS)
-        return RAW_STATUS_STRINGS[status_code][1]
+function _get_stopstatus(model::Model)
+    ss = get_stopstatus(model)
+    if ss == StopTimeLimit
+        return MOI.TIME_LIMIT
+    elseif ss == StopControlC
+        return MOI.INTERRUPTED
+    elseif ss == StopNodeLimit
+        # should not be here
+        Compat.@warn("should not be here")
+        return MOI.NODE_LIMIT
+    elseif ss == StopIterLimit
+        return MOI.ITERATION_LIMIT
+    elseif ss == StopMIPGap
+        return MOI.OBJECTIVE_LIMIT
+    elseif ss == StopSolLimit
+        return MOI.SOLUTION_LIMIT
+    elseif ss == StopUser
+        return MOI.INTERRUPTED
     end
     return MOI.OTHER_ERROR
 end
 
-function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
-    stat = get_status(model.inner)
-    if stat == :optimal
-        return MOI.FEASIBLE_POINT
-    elseif stat == :solution_limit
-        return MOI.FEASIBLE_POINT
-    elseif (stat == :inf_or_unbd || stat == :unbounded) && _has_primal_ray(model)
-        return MOI.INFEASIBILITY_CERTIFICATE
-    elseif stat == :suboptimal
-        return MOI.FEASIBLE_POINT
-    elseif is_mip(model.inner) && get_sol_count(model.inner) > 0
-        return MOI.FEASIBLE_POINT
+function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
+    # First determine the stop status.
+    stat_lp = get_lp_status2(model.inner)
+    if is_mip(model.inner)
+        stat_mip = get_mip_status2(model.inner)
+        if stat_mip == MIP_NotLoaded
+            return MOI.OTHER_ERROR
+        elseif stat_mip == MIP_LPNotOptimal
+            # MIP search incomplete but there is no linear sol
+            return MOI.OTHER_ERROR
+        elseif stat_mip == MIP_NoSolFound
+            # MIP search incomplete but there is no integer sol
+            other = _get_stopstatus(model.inner)
+            if other == MOI.OTHER_ERROR
+                return MOI.SLOW_PROGRESS#OtherLimit
+            else
+                return other
+            end
+
+        elseif stat_mip == MIP_Solution
+            # MIP search incomplete but there is a solution
+            other = _get_stopstatus(model.inner)
+            if other == MOI.OTHER_ERROR
+                return MOI.OTHER_LIMIT
+            else
+                return other
+            end
+
+        elseif stat_mip == MIP_Infeasible
+            return MOI.INFEASIBLE
+        elseif stat_mip == MIP_Optimal
+            return MOI.OPTIMAL
+        elseif stat_mip == MIP_Unbounded
+            return MOI.DUAL_INFEASIBLE
+        end
+        return MOI.OTHER_ERROR
+    else
+        if stat_lp == LP_Unstarted
+            return MOI.OTHER_ERROR
+        elseif stat_lp == LP_Optimal
+            return MOI.OPTIMAL
+        elseif stat_lp == LP_Infeasible
+            return MOI.INFEASIBLE
+        elseif stat_lp == LP_CutOff
+            return MOI.OBJECTIVE_LIMIT
+        elseif stat_lp == LP_Unfinished
+            return _get_stopstatus(model.inner)
+        elseif stat_lp == LP_Unbounded
+            return MOI.DUAL_INFEASIBLE
+        elseif stat_lp == LP_CutOffInDual
+            return MOI.OBJECTIVE_LIMIT
+        elseif stat_lp == LP_Unsolved
+            return MOI.OTHER_ERROR
+        elseif stat_lp == LP_NonConvex
+            return MOI.INVALID_MODEL
+        end
+        return MOI.OTHER_ERROR
     end
-    return MOI.NO_SOLUTION
 end
 
+function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
+    if is_mip(model.inner)
+        stat_mip = get_mip_status2(model.inner)
+        if stat_mip in [MIP_Solution, MIP_Optimal]
+            return MOI.FEASIBLE_POINT
+        elseif stat_mip == MIP_Unbounded && hasprimalray(model.inner)
+            return MOI.INFEASIBILITY_CERTIFICATE
+        elseif stat_mip in [MIP_LPOptimal, MIP_NoSolFound]
+            return MOI.INFEASIBLE_POINT
+        end
+        return MOI.NO_SOLUTION
+    else
+        stat_lp = get_lp_status2(model.inner)
+        if stat_lp == LP_Optimal
+            return MOI.FEASIBLE_POINT
+        elseif stat_lp == LP_Unbounded && hasprimalray(model.inner)
+            return MOI.INFEASIBILITY_CERTIFICATE
+        # elseif stat_lp == LP_Infeasible
+        #     return MOI.InfeasiblePoint - xpress wont return
+        # elseif cutoff//cutoffindual ???
+        else
+            return MOI.NO_SOLUTION
+        end
+    end
+end
+
+#= Only for Gurobi. Confirm
 function _has_dual_ray(model::Optimizer)
     try
         # Note: for performance reasons, we try to get 1 element because for
@@ -1796,25 +1882,27 @@ function _has_dual_ray(model::Optimizer)
         end
     end
 end
+=#
 
 function MOI.get(model::Optimizer, ::MOI.DualStatus)
-    stat = get_status(model.inner)
     if is_mip(model.inner)
         return MOI.NO_SOLUTION
-    elseif is_qcp(model.inner) && MOI.get(model, MOI.RawParameter("QCPDual")) != 1
-        return MOI.NO_SOLUTION
-    elseif stat == :optimal
-        return MOI.FEASIBLE_POINT
-    elseif stat == :solution_limit
-        return MOI.FEASIBLE_POINT
-    elseif (stat == :inf_or_unbd || stat == :infeasible) && _has_dual_ray(model)
-        return MOI.INFEASIBILITY_CERTIFICATE
-    elseif stat == :suboptimal
-        return MOI.FEASIBLE_POINT
+    else
+        stat_lp = get_lp_status2(model.inner)
+        if stat_lp == LP_Optimal
+            return MOI.FEASIBLE_POINT
+        elseif stat_lp == LP_Infeasible && hasdualray(model.inner)
+            return MOI.INFEASIBILITY_CERTIFICATE
+        # elseif stat_lp == LP_Unbounded
+        #     return MOI.InfeasiblePoint - xpress wont return
+        # elseif cutoff//cutoffindual ???
+        else
+            return MOI.NO_SOLUTION
+        end
     end
-    return MOI.NO_SOLUTION
 end
 
+#= Only for Gurobi. Confirm
 function _has_primal_ray(model::Optimizer)
     try
         # Note: for performance reasons, we try to get 1 element because for
@@ -1829,6 +1917,7 @@ function _has_primal_ray(model::Optimizer)
         end
     end
 end
+=#
 
 function MOI.get(model::Optimizer, ::MOI.VariablePrimal, x::MOI.VariableIndex)
     if model.has_unbounded_ray
@@ -2553,6 +2642,7 @@ function MOI.supports(
     return true
 end
 
+#= Implemenent SOC later
 ###
 ### VectorOfVariables-in-SecondOrderCone
 ###
@@ -2706,3 +2796,4 @@ function MOI.set(
     end
     return
 end
+=#
