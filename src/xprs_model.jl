@@ -208,32 +208,6 @@ function addname(m::Model, name::String, nametype::Int32, Index::Int32)
     nothing
 end
 
-addcolnames(m::Xpress.Model, names::Vector) = addnames(m, names, Int32(2))
-addrownames(m::Xpress.Model, names::Vector) = addnames(m, names, Int32(1))
-
-function addnames(m::Xpress.Model, names::Vector, nametype::Int32)
-    # XPRSaddnames(prob, int type, char name[], int first, int last)
-
-    NAMELENGTH = 64
-
-    #nametype = 2
-    first = 0
-    last = length(names)-1
-
-    cnames = ""
-    for str in names
-        cnames = string(cnames, join(Base.Iterators.take(str,NAMELENGTH)), "\0")
-    end
-    ret = Xpress.@xprs_ccall(addnames, Cint, (Ptr{Void}, Cint,Ptr{Cchar}, Cint, Cint),
-        m.ptr_model, nametype, cnames, first, last)
-
-    if ret != 0
-        throw(Xpress.XpressError(m))
-    end
-
-    nothing
-end
-
 # read / write file
 #=
 XPRSprob a-> Ptr{Nothing}
