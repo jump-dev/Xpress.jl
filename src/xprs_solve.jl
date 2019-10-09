@@ -1027,6 +1027,8 @@ function get_stopstatus(m::Model)
         return StopNone
     elseif ss == XPRS_STOP_TIMELIMIT
         return StopTimeLimit
+    elseif ss == XPRS_MAXTIME
+        return StopTimeLimit
     elseif ss == XPRS_STOP_CTRLC
         return StopControlC
     elseif ss == XPRS_STOP_NODELIMIT

@@ -15,7 +15,7 @@ mutable struct Model
     ptr_model::Ptr{Nothing}
     callback::Array{Any}
     finalize_env::Bool
-    
+
     time::Float64
 
     function Model(p::Ptr{Nothing}; finalize_env::Bool=true)
@@ -49,7 +49,7 @@ function Model(; finalize_env::Bool=true)
     end
 
     m = Model(a[1]; finalize_env = finalize_env)
-    
+
     # turn off default printing on unix
     setparam!(m, XPRS_OUTPUTLOG, 0)
     setparam!(m, XPRS_CALLBACKFROMMASTERTHREAD, 1) #cannot be changed in julia
@@ -174,13 +174,13 @@ function addnames(m::Model, names::Vector, nametype::Int32)
     # XPRSaddnames(prob, int type, char name[], int first, int last)
 
     NAMELENGTH = 64
-    
+
     #nametype = 2
     first = 0
     last = length(names)-1
 
     cnames = ""
-    for str in names  
+    for str in names
         cnames = string(cnames, join(Base.Iterators.take(str,NAMELENGTH)), "\0")
     end
     ret = @xprs_ccall(addnames, Cint, (Ptr{Nothing}, Cint,Ptr{Cchar}, Cint, Cint),
