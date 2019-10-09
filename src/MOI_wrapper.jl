@@ -120,6 +120,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     we also set `QCPDual` to `1` to enable duals in QCPs. Users can override
     this by passing `Optimizer(QCPDual=0)`.
     """
+
     function Optimizer(env::Union{Nothing, Env} = nothing; kwargs...)
         model = new()
         model.env = env
@@ -144,6 +145,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         end
         return model
     end
+
 end
 
 setparam!(model::Optimizer, name, val) = setparam!(model.inner, XPRS_CONTROLS_DICT[name], val)
@@ -156,9 +158,9 @@ Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 
 function MOI.empty!(model::Optimizer)
     if model.env === nothing
-        model.inner = Model(Env(), "", finalize_env = true)
+        model.inner = Model(Env(), finalize_env = true)
     else
-        model.inner = Model(model.env, "", finalize_env = false)
+        model.inner = Model(model.env, finalize_env = false)
     end
     for (name, value) in model.params
         setparam!(model.inner, name, value)
@@ -281,7 +283,7 @@ end
 
 function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
     model.params[param.name] = value
-    setparam!(model.inner, param.name, value)
+    setparam!(model.inner, Symbol(param.name), value)
     return
 end
 
@@ -1885,7 +1887,7 @@ end
 
 
 #### Pending Block Start ######
-LQOI.get_unbounded_ray!(instance::Optimizer, place) = XPR.getprimalray!(instance.inner, place)
+#LQOI.get_unbounded_ray!(instance::Optimizer, place) = XPR.getprimalray!(instance.inner, place)
 
 
 function MOI.get(model::Optimizer, ::MOI.VariablePrimal, x::MOI.VariableIndex)
