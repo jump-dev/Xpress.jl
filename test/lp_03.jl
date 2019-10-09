@@ -1,6 +1,6 @@
 # Test get/set objective coefficients in LP
 
-using Xpress, Compat.Test
+using Xpress, Test
 
 @testset "Basics 3" begin
     # original model
@@ -12,7 +12,7 @@ using Xpress, Compat.Test
     model = xpress_model(
     name="lp_03",
     sense=:maximize,
-    f=[2.0, 2.0], 
+    f=[2.0, 2.0],
     lb=[0.2, 0.2],
     ub=[1.0, 1.0])
 

@@ -1,5 +1,5 @@
-using Xpress, Compat.Test
-using Compat.SparseArrays
+using Xpress, Test
+using SparseArrays
 
 @testset "IIS computation" begin
     @testset "Feasible problem, C API" begin

@@ -10,10 +10,8 @@ module Xpress
     end
 
     ### imports
-
-    using Compat
-    using Compat.SparseArrays
-    using Compat.LinearAlgebra
+    using SparseArrays
+    using LinearAlgebra
 
     import Base.show, Base.copy
 

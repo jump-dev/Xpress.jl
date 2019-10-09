@@ -6,7 +6,7 @@
 #        x \in [0, 10], y \in [0, 5]
 #
 
-using Xpress, Compat.Test
+using Xpress, Test
 
 # @testset "Basics 1" begin
     model = Xpress.Model("lp_01", :minimize)
@@ -41,7 +41,7 @@ using Xpress, Compat.Test
     @test ans.status_lp == :optimal
 
 @show Xpress.get_objval(model)
-@show Xpress.get_solution(model) 
+@show Xpress.get_solution(model)
 @show Xpress.get_dual(model)
 
     @test 0 == Xpress.repairweightedinfeasibility(model, lrp, grp, lbp, ubp, phase2 = Cchar('x'))
@@ -49,7 +49,7 @@ using Xpress, Compat.Test
     @test ans.status_lp == :optimal
 
 @show Xpress.get_objval(model)
-@show Xpress.get_solution(model) 
+@show Xpress.get_solution(model)
 @show Xpress.get_dual(model)
 
     @test 0 == Xpress.repairweightedinfeasibility(model, lrp, grp, lbp, ubp, phase2 = Cchar('f'))
@@ -57,7 +57,7 @@ using Xpress, Compat.Test
     @test ans.status_lp == :optimal
 
 @show Xpress.get_objval(model)
-@show Xpress.get_solution(model) 
+@show Xpress.get_solution(model)
 @show Xpress.get_dual(model)
 
     @test 0 == Xpress.repairweightedinfeasibility(model, lrp, grp, lbp, ubp, phase2 = Cchar('n'))
@@ -65,6 +65,6 @@ using Xpress, Compat.Test
     @test ans.status_lp == :optimal
 
 @show Xpress.get_objval(model)
-@show Xpress.get_solution(model) 
+@show Xpress.get_solution(model)
 @show Xpress.get_dual(model)
 ;

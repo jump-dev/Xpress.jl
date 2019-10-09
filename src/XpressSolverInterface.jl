@@ -26,10 +26,10 @@ end
 
 function copy(m::XpressMathProgModel)
 
-    m.lazycb == nothing || Compat.@warn("Callbacks can't be copied, lazy callback ignored")
-    m.cutcb == nothing || Compat.@warn("Callbacks can't be copied, cut callback ignored")
-    m.heuristiccb == nothing || Compat.@warn("Callbacks can't be copied, heuristic callback ignored")
-    m.infocb == nothing || Compat.@warn("Callbacks can't be copied, info callback ignored")
+    m.lazycb == nothing || @warn("Callbacks can't be copied, lazy callback ignored")
+    m.cutcb == nothing || @warn("Callbacks can't be copied, cut callback ignored")
+    m.heuristiccb == nothing || @warn("Callbacks can't be copied, heuristic callback ignored")
+    m.infocb == nothing || @warn("Callbacks can't be copied, info callback ignored")
 
 
     return XpressMathProgModel(copy(m.inner),
@@ -95,7 +95,7 @@ function MPB.loadproblem!(m::XpressMathProgModel, A, collb, colub, obj, rowlb, r
         end
     end
     if rangeconstrs
-        Compat.@warn("Julia Xpress interface doesn't properly support range (two-sided) constraints.")
+        @warn("Julia Xpress interface doesn't properly support range (two-sided) constraints.")
         add_rangeconstrs!(m.inner, float(A), float(rowlb), float(rowub))
     else
         b = Array{Float64}(undef, length(rowlb))

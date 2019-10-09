@@ -1,13 +1,13 @@
-# QCQP example 
+# QCQP example
 #    maximize x + y
 #
 #    s.t.  x, y >= 0
 #          x^2 + y^2 <= 1
 #
 #    solution: (0.71, 0.71) objv = 1.414
-using Xpress, Compat.Test
-using Compat.SparseArrays
-using Compat.LinearAlgebra
+using Xpress, Test
+using SparseArrays
+using LinearAlgebra
 
 @testset "QCQP 1" begin
     model = Xpress.Model( "qcqp_01", :maximize)

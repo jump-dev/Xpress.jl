@@ -904,7 +904,7 @@ function getdualray(model::Model)
     dray = Array{Float64}(undef,  num_constrs(model))
 
     if !getdualray!(model, dray)
-        Compat.@warn("Xpress solver was unable to provide an infeasibility ray")
+        @warn("Xpress solver was unable to provide an infeasibility ray")
         return dray
     end
 
@@ -953,7 +953,7 @@ function getprimalray(model::Model)
     pray = Array{Float64}(undef,  num_vars(model))
 
     if !getprimalray!(model, pray)
-        Compat.@warn("Xpress solver was unable to provide an unboundedness ray")
+        @warn("Xpress solver was unable to provide an unboundedness ray")
         return pray
     end
 

@@ -410,7 +410,7 @@ function xprsmoi_stopstatus(instance::Model)
         return MOI.INTERRUPTED
     elseif ss == XPR.StopNodeLimit
         # should not be here
-        Compat.@warn("should not be here")
+        @warn("should not be here")
         return MOI.NODE_LIMIT
     elseif ss == XPR.StopIterLimit
         return MOI.ITERATION_LIMIT

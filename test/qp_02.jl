@@ -6,16 +6,16 @@
 #           x +   y       >= 1
 #
 
-using Xpress, Compat.Test
-using Compat.SparseArrays
-using Compat.LinearAlgebra
+using Xpress, Test
+using SparseArrays
+using LinearAlgebra
 
 @testset "QP 2" begin
-    model = xpress_model( 
-    name = "qp_02", 
+    model = xpress_model(
+    name = "qp_02",
     f = [0., 0., 0.],
     H = [2. 1. 0.; 1. 2. 1.; 0. 1. 2.],
-    A = -[1. 2. 3.; 1. 1. 0.], 
+    A = -[1. 2. 3.; 1. 1. 0.],
     b = -[4., 1.])
 
     @test Xpress.getq_upper(model) == triu(sparse([2. 1. 0.; 1. 2. 1.; 0. 1. 2.]))

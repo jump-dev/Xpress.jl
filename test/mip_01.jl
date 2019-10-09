@@ -10,8 +10,8 @@
 #         z is binary
 #
 # z = 1, y= 7, x = 0
-using Xpress, Compat.Test
-using Compat.SparseArrays
+using Xpress, Test
+using SparseArrays
 
 @testset "MIP 4" begin
 

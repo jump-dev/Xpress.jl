@@ -20,7 +20,7 @@ end
 function add_constr!(model::Model, inds::Vector{Cint}, coeffs::Vector{Float64}, rel::Cchar, rhs::Float64)
 
     rel = constrainttype(rel)
-    
+
     length(inds) == length(coeffs) || error("Inconsistent argument dimensions.")
 
     ret = @xprs_ccall(addrows, Cint,(
@@ -56,10 +56,10 @@ end
 """
     add_constr!(model::Model, coeffs::Vector, rel::GChars, rhs::Real)
 
-Adds a constraint based on a dense vector os coefficients `coeffs` 
+Adds a constraint based on a dense vector os coefficients `coeffs`
 """
 function add_constr!(model::Model, coeffs::Vector, rel::GChars, rhs::Real)
-    inds = Compat.findall(!iszero, coeffs)
+    inds = findall(!iszero, coeffs)
     vals = coeffs[inds]
     add_constr!(model, inds, vals, rel, rhs)
 end
@@ -143,7 +143,7 @@ end
 
 """
     add_rangeconstr!(model::Model, inds::Vector, coeffs::Vector, lb::Real, ub::Real)
-    
+
 Adds single range constraint in sparse format
 
     add_rangeconstr!(model::Model, coeffs::Vector, lb::Real, ub::Real)
@@ -395,8 +395,8 @@ function get_sos_matrix(m::Model)
     intents = Array{Cint}(undef, 1)
     nsets = Array{Cint}(undef, 1)
 
-    # int XPRS_CC XPRSgetglobal(XPRSprob prob, int*nglents, int*sets, 
-    #char qgtype[], int mgcols[], double dlim[], char qstype[], 
+    # int XPRS_CC XPRSgetglobal(XPRSprob prob, int*nglents, int*sets,
+    #char qgtype[], int mgcols[], double dlim[], char qstype[],
     #int msstart[],int mscols[], double dref[]);
     ret = @xprs_ccall(getglobal, Cint, (
         Ptr{Nothing},
@@ -410,7 +410,7 @@ function get_sos_matrix(m::Model)
         Ptr{Cint}, # mscols
         Ptr{Float64}, # dref
         ),
-        m.ptr_model, intents, nsets, C_NULL, C_NULL, C_NULL, 
+        m.ptr_model, intents, nsets, C_NULL, C_NULL, C_NULL,
         settypes, setstart, setcols, setvals)
 
     if ret != 0
@@ -453,7 +453,7 @@ end
 """
     chg_coeffs!{T<:Real, S<:Real}(model::Model, cidx::Vector{T}, vidx::Vector{T}, val::Vector{S})
 
-Change multiple coefficients of the `A` matrix given constraints `cidx`, variables `vidx` and values `val` 
+Change multiple coefficients of the `A` matrix given constraints `cidx`, variables `vidx` and values `val`
 """
 chg_coeffs!(model::Model, cidx::T, vidx::T, val::S) where {T<:Real, S<:Real} = chg_coeffs!(model, Cint[cidx], Cint[vidx], Float64[val])
 chg_coeffs!(model::Model, cidx::Vector{T}, vidx::Vector{T}, val::Vector{S}) where {T<:Real, S<:Real} = chg_coeffs!(model, convert(Vector{Cint},cidx), convert(Vector{Cint},vidx), fvec(val))
@@ -472,12 +472,12 @@ function chg_coeffs!(model::Model, cidx::Vector{Cint}, vidx::Vector{Cint}, val::
     if ret != 0
         throw(XpressError(model))
     end
-end 
+end
 
 
 function chg_rhsrange!(model::Model, cidx::Vector{Cint}, val::FVec)
     # XPRSchgrhsrange(XPRSprob prob, int nels, const int mindex[], const double rng[])
-    
+
     (length(cidx) == length(val)) || error("Inconsistent argument dimensions.")
 
     numchgs = length(cidx)
@@ -517,4 +517,4 @@ function get_rhsrange(model::Model, rowb::Integer, rowe::Integer)
     get_rhsrange!(model, out, rowb, rowe)
 
     return out
-end 
+end

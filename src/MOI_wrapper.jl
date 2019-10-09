@@ -1765,7 +1765,7 @@ function _get_stopstatus(model::Model)
         return MOI.INTERRUPTED
     elseif ss == StopNodeLimit
         # should not be here
-        Compat.@warn("should not be here")
+        @warn("should not be here")
         return MOI.NODE_LIMIT
     elseif ss == StopIterLimit
         return MOI.ITERATION_LIMIT
@@ -1999,7 +1999,7 @@ end
 
 #### Pending Block End  ######
 
-# Not implemented in Old Wrapper
+# Not implemented in Old Wrapper. Get CPUTIME Attribute
 #MOI.get(model::Optimizer, ::MOI.SolveTime) = get_dblattr(model.inner, "RunTime")
 
 MOI.get(model::Optimizer, ::MOI.SimplexIterations) = get_simplex_iter_count(model.inner)

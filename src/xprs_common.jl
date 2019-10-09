@@ -30,7 +30,7 @@ fvec(v::Integer) = Float64[v]
 # converts v into a vector of Cchar or Float64 of length n,
 # where v can be either a scalar or a vector of length n.
 
-_chklen(n::Integer, v::Vector) = _chklen(v, n::Integer) 
+_chklen(n::Integer, v::Vector) = _chklen(v, n::Integer)
 _chklen(v, n::Integer) = (length(v) == n || error("Inconsistent argument dimensions."))
 _cmplen(v1::Vector, v2::Vector) = (length(v1) == length(v2) || error("Inconsistent argument dimensions."))
 
@@ -54,13 +54,13 @@ macro xprs_ccall(func, args...)
     f = "XPRS$(func)"
     args = map(esc,args)
 
-    Compat.Sys.isunix() && return quote
+    Sys.isunix() && return quote
         ccall(($f,xprs), $(args...))
     end
-    Compat.Sys.iswindows() && VERSION < v"0.6-" && return quote
+    Sys.iswindows() && VERSION < v"0.6-" && return quote
         ccall(($f,xprs), stdcall, $(args...))
     end
-    Compat.Sys.iswindows() && VERSION >= v"0.6-" && return quote
+    Sys.iswindows() && VERSION >= v"0.6-" && return quote
         ccall(($f,xprs), $(esc(:stdcall)), $(args...))
     end
 end

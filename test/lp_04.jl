@@ -14,8 +14,8 @@
 #        x >= 0, y >= 0
 #
 #   solution: x = 1.3333333, y = 1.3333333, objv = 2.66666666
-using Xpress, Compat.Test
-using Compat.SparseArrays
+using Xpress, Test
+using SparseArrays
 
 @testset "Basics 4" begin
 
@@ -23,7 +23,7 @@ using Compat.SparseArrays
 
     add_cvars!(model, [1., 1.], [0., 0.], Inf)
 
-    add_constrs!(model, Cint[1, 3], Cint[1, 2, 1, 2], 
+    add_constrs!(model, Cint[1, 3], Cint[1, 2, 1, 2],
         [2., 1., 1., 2.], '<', [4., 4.])
 
     @test Xpress.get_obj(model) == [1, 1]
@@ -42,7 +42,7 @@ using Compat.SparseArrays
 
     @test isapprox(get_objval(model), 2.666666; atol = 1e-3)
 
-    # PART 2: 
+    # PART 2:
     # copy and solve
 
     model2 = copy(model)
@@ -63,7 +63,7 @@ using Compat.SparseArrays
 
     @test isapprox(get_objval(model2), 2.666666; atol = 1e-3)
 
-    # PART 3: 
+    # PART 3:
     # change coeff and solve
 
     #   maximize x + y
@@ -92,7 +92,7 @@ using Compat.SparseArrays
 
     @test isapprox(get_objval(model), 2; atol = 1e-3)
 
-    # PART 4: 
+    # PART 4:
     # change coeff and solve
 
     #   maximize x + y
@@ -120,7 +120,7 @@ using Compat.SparseArrays
 
     @test isapprox(get_objval(model), 4; atol = 1e-3)
 
-    # PART 5: 
+    # PART 5:
     # del var and solve
 
     #   maximize y

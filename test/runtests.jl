@@ -1,6 +1,6 @@
-using Xpress, Compat.Test
-using Compat.SparseArrays
-using Compat.LinearAlgebra
+using Xpress, Test
+using SparseArrays
+using LinearAlgebra
 
 tests = ["xprs_attrs_test",
          "lp_01a",

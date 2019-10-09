@@ -1,6 +1,6 @@
 using JuMP, Xpress
 using Random
-using Compat.Test
+using Test
 
 # Based on original model implemented in Mosel, courtesy of Truls Flatberg
 function wordhunt(Words::Array{String,1}, D = [:E,:S,:W, :N, :SE, :NE], Gridsize=7,woptimizer=with_optimizer(Xpress.Optimizer,MIPRELSTOP=0.1),printres=true)
@@ -38,14 +38,14 @@ function wordhunt(Words::Array{String,1}, D = [:E,:S,:W, :N, :SE, :NE], Gridsize
     for i in M, j in M
 	    @constraint(model,sum( x[i,j,l] for l in L) <= 1)
     end
-    
+
     # Each word is allowed one position and direction (if inserted)
     for n in N
 	    @constraint(model,sum( y[n,i,j,d] for i in M, j in M, d in D) <= 1)
     end
-    
+
     # Placement of words
-    for n in N, i in M, j in M, d in D 
+    for n in N, i in M, j in M, d in D
 	    ii = i
 	    jj = j
         for l in 1:length(n)
@@ -58,7 +58,7 @@ function wordhunt(Words::Array{String,1}, D = [:E,:S,:W, :N, :SE, :NE], Gridsize
                 elseif d == :SE
 			        ii = ii + 1
 			        jj = jj + 1
-                elseif d == :NE 
+                elseif d == :NE
            	        ii = ii -1
            	        jj = jj +1
                 elseif d == :W
@@ -71,21 +71,21 @@ function wordhunt(Words::Array{String,1}, D = [:E,:S,:W, :N, :SE, :NE], Gridsize
     end
 
     # Objective function
-    most_words = sum( 2 * Maxlength * y[n,i,j,d] for n in N, i in M, j in M, d in D) 
+    most_words = sum( 2 * Maxlength * y[n,i,j,d] for n in N, i in M, j in M, d in D)
     least_letters = sum( x[i,j,l] for i in M, j in M, l in L)
-    
+
     P  = [:W,:N,:SE]
     if length(intersect(P,D)) > 0
         pref = sum( y[n,i,j,d] for n in N, i in M, j in M, d in intersect(P,D))
     else
         pref = 0
     end
-    
+
     @objective(model, Max, most_words - least_letters + 0.1 * pref )
-    
+
     optimize!(model)
 
-    
+
     function printSol(x,L,fillrand=true)
         letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         for i in 1:size(x,1)
@@ -107,18 +107,18 @@ function wordhunt(Words::Array{String,1}, D = [:E,:S,:W, :N, :SE, :NE], Gridsize
                 print(' ')
             end
             println()
-        end    
+        end
     end
-    
-    if printres 
+
+    if printres
         # Show status and objective value
         print(JuMP.termination_status(model),"\t")
         println(JuMP.objective_value(model))
         println()
-        
+
         # Print solution to console
         printSol(x,L,false)
-        println()  
+        println()
         printSol(x,L)
     end
 
