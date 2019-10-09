@@ -1,6 +1,7 @@
 using Xpress, Test
 using SparseArrays
 using LinearAlgebra
+using Test
 
 #=
 tests = ["xprs_attrs_test",
