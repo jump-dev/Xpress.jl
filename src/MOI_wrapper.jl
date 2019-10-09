@@ -133,6 +133,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.last_constraint_index = 0
         model.callback_variable_primal = Float64[]
         MOI.empty!(model)  # MOI.empty!(model) re-sets the `.inner` field.
+        #= TODO: These parameters are specific to Gurobi, needs update relevant to Xpress
         for (name, value) in kwargs
             model.params[string(name)] = value
             setparam!(model.inner, XPRS_CONTROLS_DICT[name], value)
@@ -143,6 +144,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         if !haskey(model.params, "QCPDual")
             MOI.set(model, MOI.RawParameter("QCPDual"), 1)
         end
+        =#
         return model
     end
 
