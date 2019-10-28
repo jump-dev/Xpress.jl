@@ -7,15 +7,6 @@ if isfile(depsfile)
     rm(depsfile)
 end
 
-function write_depsfile(path)
-    f = open(depsfile,"w")
-    if Compat.Sys.iswindows()
-        path = replace(path, "\\" => "\\\\")
-    end
-    println(f,"const xprs = \"$(path)\"")
-    close(f)
-end
-
 libname = string(Compat.Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext)
 paths_to_try = String[]
 
@@ -31,7 +22,6 @@ for l in paths_to_try
     if d != C_NULL
         global found_xprs = true
         Compat.@info("Found $l")
-        write_depsfile(l)
         break
     end
 end

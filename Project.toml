@@ -1,0 +1,20 @@
+
+name = "Xpress"
+uuid = "9e70acf3-d6c9-5be6-b5bd-4e2c73e3e054"
+authors = ["Dheepak Krishnamurthy <me@kdheepak.com>"]
+version = "0.9.1"
+
+[deps]
+CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+
+[compat]
+CEnum = "^0.2"
+DocStringExtensions = "^0.8"
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
