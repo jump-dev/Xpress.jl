@@ -62,6 +62,20 @@ module Xpress
 
 
     ### include source files
+     module Lib
+
+        using CEnum
+
+        import ..Xpress
+        const libxprs = Xpress.libxprs
+
+        include("ctypes.jl")
+        include("common.jl")
+        include("lib.jl")
+
+        include("custom.jl")
+
+    end
 
     include("xprs_full_defines.jl")
 
