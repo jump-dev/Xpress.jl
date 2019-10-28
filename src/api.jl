@@ -18,20 +18,22 @@ function XPRSdestroyprob(_prob)
     Lib.XPRSdestroyprob(_prob)
 end
 
-function XPRSinit(path)
-    Lib.XPRSinit(path)
+function XPRSinit()
+    Lib.XPRSinit(C_NULL) != 0 && throw(XpressError("Unable to initialize Xpress"))
 end
 
 function XPRSfree()
     Lib.XPRSfree()
 end
 
-function XPRSgetbanner(banner)
-    Lib.XPRSgetbanner(banner)
+function XPRSgetbanner()
+    banner = @invoke Lib.XPRSgetbanner(_)::String
+    return banner
 end
 
-function XPRSgetversion(version)
-    Lib.XPRSgetversion(version)
+function XPRSgetversion()
+    version = @invoke Lib.XPRSgetversion(_)::String
+    return VersionNumber(parse.(Int, split(version, "."))...)
 end
 
 function XPRSgetdaysleft(daysleft)
