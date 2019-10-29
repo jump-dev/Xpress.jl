@@ -19,7 +19,8 @@ function destroyprob(_prob)
 end
 
 function init()
-    Lib.XPRSinit(C_NULL) != 0 && throw(XpressError("Unable to initialize Xpress"))
+    r = Lib.XPRSinit(C_NULL)
+    r != 0 && throw(XpressError("Unable to initialize Xpress. Received error code: $r."))
 end
 
 function free()
