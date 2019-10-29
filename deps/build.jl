@@ -1,5 +1,4 @@
-using Compat
-using Compat.Libdl
+using Libdl
 
 depsfile = joinpath(dirname(@__FILE__),"deps.jl")
 
@@ -7,13 +6,22 @@ if isfile(depsfile)
     rm(depsfile)
 end
 
-libname = string(Compat.Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext)
+function write_depsfile(path)
+    f = open(depsfile,"w")
+    if Sys.iswindows()
+        path = replace(path, "\\" => "\\\\")
+    end
+    println(f,"const libxprs = \"$(path)\"")
+    close(f)
+end
+
+libname = string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext)
 paths_to_try = String[]
 
 push!(paths_to_try, libname)
 
 if haskey(ENV, "XPRESSDIR")
-  push!(paths_to_try, joinpath(ENV["XPRESSDIR"], Compat.Sys.iswindows() ? "bin" : "lib", libname))
+  push!(paths_to_try, joinpath(ENV["XPRESSDIR"], Sys.iswindows() ? "bin" : "lib", libname))
 end
 
 global found_xprs = false
@@ -21,7 +29,8 @@ for l in paths_to_try
     d = Libdl.dlopen_e(l)
     if d != C_NULL
         global found_xprs = true
-        Compat.@info("Found $l")
+        @info("Found $l")
+        write_depsfile(l)
         break
     end
 end

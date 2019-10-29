@@ -106,7 +106,6 @@ module Xpress
     # include("xprs_userlic.jl")
 
     function __init__()
-        check_deps()
         XPRSinit()
     end
 end
