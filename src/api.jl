@@ -194,7 +194,7 @@ XPRSgetlicerrmsg.
 """
 function init()
     r = Lib.XPRSinit(C_NULL)
-    r != 0 && throw(XpressError("Unable to initialize Xpress. Received error code: $r."))
+    r != 0 ? throw(XpressError(r, "Unable to initialize Xpress.")) : nothing
 end
 
 """
@@ -666,7 +666,7 @@ MAXPROBNAMELENGTH.
 """
 function setprobname(prob::XpressProblem, name::AbstractString)
     r = Lib.XPRSsetprobname(prob, name)
-    r != 0 ? error("Unable to call setprobname.") : nothing
+    r != 0 ? throw(XpressError(r, "Unable to call setprobname.")) : nothing
 end
 
 """

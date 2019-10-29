@@ -4,7 +4,7 @@ struct XpressError <: Exception
 end
 
 function Base.showerror(io::IO, err::XpressError)
-    print(io, "XpressError: ")
+    print(io, "XpressError($(err.errorcode)): ")
     if err.errorcode == 1
         print(io, "Bad input encountered.")
     elseif err.errorcode == 2
@@ -53,9 +53,9 @@ struct XpressProblem <: CWrapper
     function XpressProblem()
         ref = Ref{Lib.XPRSprob}()
         r = createprob(ref)
-        r != 0 && error("Unable to create a Xpress Problem. Received error code $r")
+        r != 0 && throw(XpressError(r, "Unable to create a Xpress Problem."))
         ptr = ref[]
-        ptr == C_NULL && error("Failed to create XpressProblem. Received null pointer from Xpress C interface.")
+        @assert ptr == C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
         p = new(ptr)
         atexit(() -> destroyprob(p))
         return p
