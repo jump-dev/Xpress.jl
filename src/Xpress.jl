@@ -86,6 +86,11 @@ module Xpress
     # # license checker
     include("license.jl")
 
+    function initialize()
+        userlic()
+        init() # Call XPRSinit for initialization
+        atexit(free) # Call free when process terminates
+    end
     # include("xprs_full_defines.jl")
 
     # include("xprs_common.jl")
@@ -108,12 +113,4 @@ module Xpress
     # include("XpressSolverInterface.jl")
     # include("MOIWrapper.jl")
 
-    function __init__()
-
-        userlic()
-
-        init() # Call XPRSinit for initialization
-
-        atexit(free) # Call free when process terminates
-    end
 end
