@@ -1,7 +1,3 @@
-struct XpressError <: Exception
-    msg::String
-end
-
 function invoke(f::Function, pos::Int, ::Type{String}, args...)
 
     out = Cstring(pointer(Array{Cchar}(undef, 1024)))
@@ -74,3 +70,4 @@ macro invoke(expr)
 
     return f
 end
+

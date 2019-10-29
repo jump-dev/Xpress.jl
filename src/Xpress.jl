@@ -80,6 +80,8 @@ module Xpress
     include("utils.jl")
     include("api.jl")
 
+    include("helper.jl")
+
     # # license checker
     include("license.jl")
 
