@@ -2,12 +2,16 @@ struct XpressError <: Exception
     msg::String
 end
 
-function invoke(f::Function, ::Type{String}, args...)
+function invoke(f::Function, pos::Int, ::Type{String}, args...)
 
     out = Cstring(pointer(Array{Cchar}(undef, 1024)))
-    # TODO: splice out into the correct location in args
-    r = f(args..., out)
+
+    args = Vector(args...)
+    insert!(args, pos, out)
+
+    r = f(args...)
     r != 0 && throw(XpressError("Unable to invoke $f"))
+
     s = unsafe_string(out)
 
     return s
@@ -51,14 +55,22 @@ macro invoke(expr)
 
     # Remove all `_` arguments
     # TODO: note the positions and pass positions to the invoke function
+    indices = findall(x->x≠:_, f.args)
     filter!(x->x≠:_, f.args)
 
     # Call invoke function at macro call site instead
     pushfirst!(f.args, :(invoke))
 
+    # invoke function takes the position of return type as the first argument
     # invoke function takes the return type as the first argument
     # invoke function uses this argument to dispatch to the correct method
-    insert!(f.args, 3, return_type)
+    if length(indices) == 1
+        insert!(f.args, 3, return_type)
+        insert!(f.args, 3, indices[1])
+    else
+        # TODO: Implement multiple return types
+        error("Not implemented @invoke macro for multiple `_`")
+    end
 
     return f
 end
