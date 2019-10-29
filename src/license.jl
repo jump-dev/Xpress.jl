@@ -66,7 +66,6 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
     # pre allocate vars
     lic = Cint[1]
     slicmsg =  path_lic #xpauth_path == "dh" ? Array{Cchar}(undef, 1024*8) :
-    errmsg = Cstring(pointer(Array{Cchar}(undef, 1024*8)))
 
     # FIRST call do xprslicense to get BASE LIC
     license(lic, slicmsg)
@@ -87,8 +86,7 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
     elseif ierr != 0
         # FAIL
         @info("Xpress: Failed to find working license.")
-        ret = getlicerrmsg(errmsg)
-        error(  unsafe_string(pointer(errmsg))   )
+        error(getlicerrmsg())
     else
         # USER
         if verbose

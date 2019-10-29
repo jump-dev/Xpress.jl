@@ -1,12 +1,25 @@
-function invoke(f::Function, pos::Int, ::Type{String}, args...)
+function invoke(f::Function, pos::Int, ::Type{Int}, args...)
+    out = Ref{Cint}(0)
 
-    out = Cstring(pointer(Array{Cchar}(undef, 1024)))
-
-    args = Vector(args...)
-    insert!(args, pos, out)
+    args = collect(args)
+    insert!(args, pos-1, out)
 
     r = f(args...)
-    r != 0 && throw(XpressError("Unable to invoke $f"))
+    if r == 0
+        throw(XpressError(r, "Unable to invoke $f"))
+    end
+
+    return out[]
+end
+
+function invoke(f::Function, pos::Int, ::Type{String}, args...)
+    out = Cstring(pointer(Array{Cchar}(undef, 1024)))
+
+    args = collect(Any, args)
+    insert!(args, pos-1, out)
+
+    r = f(args...)
+    r != 0 && throw(XpressError(r, "Unable to invoke $f"))
 
     s = unsafe_string(out)
 
@@ -51,11 +64,13 @@ macro invoke(expr)
 
     # Remove all `_` arguments
     # TODO: note the positions and pass positions to the invoke function
-    indices = findall(x->x≠:_, f.args)
+    indices = findall(x->x==:_, f.args)
     filter!(x->x≠:_, f.args)
 
     # Call invoke function at macro call site instead
     pushfirst!(f.args, :(invoke))
+
+    f.args = esc.(f.args)
 
     # invoke function takes the position of return type as the first argument
     # invoke function takes the return type as the first argument
