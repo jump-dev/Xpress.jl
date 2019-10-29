@@ -69,14 +69,14 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
     errmsg = Cstring(pointer(Array{Cchar}(undef, 1024*8)))
 
     # FIRST call do xprslicense to get BASE LIC
-    XPRSlicense(lic, slicmsg)
+    license(lic, slicmsg)
 
     # convert BASE LIC to GIVEN LIC
     lic = liccheck(lic)
 
     # Send GIVEN LIC to XPRESS lib
     slicmsg = Cstring(pointer(Array{Cchar}(undef, 1024*8)))
-    ierr = XPRSlicense(lic, slicmsg)
+    ierr = license(lic, slicmsg)
 
     # check LIC TYPE
     if ierr == 16
@@ -87,7 +87,7 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
     elseif ierr != 0
         # FAIL
         @info("Xpress: Failed to find working license.")
-        ret = XPRSgetlicerrmsg(errmsg)
+        ret = getlicerrmsg(errmsg)
         error(  unsafe_string(pointer(errmsg))   )
     else
         # USER

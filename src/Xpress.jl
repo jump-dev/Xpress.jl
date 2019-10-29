@@ -111,6 +111,6 @@ module Xpress
 
         userlic()
 
-        XPRSinit()
+        init()
     end
 end
