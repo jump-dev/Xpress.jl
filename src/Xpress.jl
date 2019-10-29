@@ -80,6 +80,8 @@ module Xpress
     include("utils.jl")
     include("api.jl")
 
+    include("license.jl")
+
     # include("xprs_full_defines.jl")
 
     # include("xprs_common.jl")
@@ -106,6 +108,9 @@ module Xpress
     # include("xprs_userlic.jl")
 
     function __init__()
+
+        userlic()
+
         XPRSinit()
     end
 end

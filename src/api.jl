@@ -48,8 +48,8 @@ function XPRSgetcheckedmode(r_checked_mode)
     Lib.XPRSgetcheckedmode(r_checked_mode)
 end
 
-function XPRSlicense(_i1, _c1)
-    Lib.XPRSlicense(_i1, _c1)
+function XPRSlicense(lic, path)
+    Lib.XPRSlicense(lic, path)
 end
 
 function XPRSbeginlicensing(r_dontAlreadyHaveLicense)
@@ -60,7 +60,8 @@ function XPRSendlicensing()
     Lib.XPRSendlicensing()
 end
 
-function XPRSgetlicerrmsg(msg, len)
+function XPRSgetlicerrmsg(msg)
+    len = length(msg)
     Lib.XPRSgetlicerrmsg(msg, len)
 end
 
