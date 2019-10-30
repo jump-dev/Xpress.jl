@@ -485,11 +485,11 @@ XPRSgetintcontrol,
 XPRSsetdblcontrol,
 XPRSsetstrcontrol.
 """
-function setintcontrol(prob::XpressProblem, _index, _ivalue)
+function setintcontrol(prob::XpressProblem, _index::Integer, _ivalue::Integer)
     @checked Lib.XPRSsetintcontrol(prob, _index, _ivalue)
 end
 
-function setintcontrol64(prob::XpressProblem, _index, _ivalue)
+function setintcontrol64(prob::XpressProblem, _index::Integer, _ivalue::Integer)
     @checked Lib.XPRSsetintcontrol64(prob, _index, _ivalue)
 end
 
@@ -523,7 +523,7 @@ XPRSgetdblcontrol,
 XPRSsetintcontrol,
 XPRSsetstrcontrol.
 """
-function setdblcontrol(prob::XpressProblem, _index, _dvalue)
+function setdblcontrol(prob::XpressProblem, _index::Integer, _dvalue::AbstractFloat)
     @checked Lib.XPRSsetdblcontrol(prob, _index, _dvalue)
 end
 
@@ -701,8 +701,8 @@ XPRSgetstrcontrol,
 XPRSsetdblcontrol,
 XPRSsetintcontrol.
 """
-function setstrcontrol(prob::XpressProblem, _index, _svalue)
-    @checked Lib.XPRSsetstrcontrol(prob, _index, _svalue)
+function setstrcontrol(prob::XpressProblem, _index)
+    @invoke Lib.XPRSsetstrcontrol(prob, _index, _)::String
 end
 
 """
@@ -736,12 +736,12 @@ XPRSsetintcontrol,
 XPRSgetdblcontrol,
 XPRSgetstrcontrol.
 """
-function getintcontrol(prob::XpressProblem, _index, _ivalue)
-    @checked Lib.XPRSgetintcontrol(prob, _index, _ivalue)
+function getintcontrol(prob::XpressProblem, _index::Integer)
+    @invoke Lib.XPRSgetintcontrol(prob, _index, _)::Int
 end
 
-function getintcontrol64(prob::XpressProblem, _index, _ivalue)
-    @checked Lib.XPRSgetintcontrol64(prob, _index, _ivalue)
+function getintcontrol64(prob::XpressProblem, _index::Integer)
+    @invoke Lib.XPRSgetintcontrol64(prob, _index, _)::Int
 end
 
 """
@@ -774,8 +774,8 @@ XPRSsetdblcontrol,
 XPRSgetintcontrol,
 XPRSgetstrcontrol.
 """
-function getdblcontrol(prob::XpressProblem, _index, _dvalue)
-    @checked Lib.XPRSgetdblcontrol(prob, _index, _dvalue)
+function getdblcontrol(prob::XpressProblem, _index::Integer)
+    @invoke Lib.XPRSgetdblcontrol(prob, _index, _)::Float64
 end
 
 """
@@ -810,8 +810,8 @@ XPRSgetdblcontrol,
 XPRSgetintcontrol,
 XPRSsetstrcontrol.
 """
-function getstrcontrol(prob::XpressProblem, _index, _svalue)
-    @checked Lib.XPRSgetstrcontrol(prob, _index, _svalue)
+function getstrcontrol(prob::XpressProblem, _index::Integer)
+    @invoke Lib.XPRSgetstrcontrol(prob, _index, _)::String
 end
 
 function getstringcontrol(prob::XpressProblem, _index, _svalue, _svaluesize, _controlsize)
@@ -1894,7 +1894,7 @@ XPRSaddcols,
 XPRSaddrows,
 XPRSgetnames.
 """
-function addnames(prob::XpressProblem, _itype::Int, _sname::Vector{String})
+function addnames(prob::XpressProblem, _itype::Integer, _sname::Vector{String})
     # TODO: name _itype a Enum?
     NAMELENGTH = 64
 

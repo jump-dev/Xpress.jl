@@ -1,3 +1,13 @@
+function invoke(f::Function, pos::Int, ::Type{Float64}, args...)
+    out = Ref{Cfloat}(0.0) # should we use Cfloat here instead?
+
+    args = collect(args)
+    insert!(args, pos-1, out)
+
+    r = f(args...)
+    r != 0 ? throw(XpressError(r, "Unable to invoke $f")) : out[]
+end
+
 function invoke(f::Function, pos::Int, ::Type{Int}, args...)
     out = Ref{Cint}(0)
 
@@ -5,11 +15,7 @@ function invoke(f::Function, pos::Int, ::Type{Int}, args...)
     insert!(args, pos-1, out)
 
     r = f(args...)
-    if r == 0
-        throw(XpressError(r, "Unable to invoke $f"))
-    end
-
-    return out[]
+    r != 0 ? throw(XpressError(r, "Unable to invoke $f")) : out[]
 end
 
 function invoke(f::Function, pos::Int, ::Type{String}, args...)
@@ -19,11 +25,7 @@ function invoke(f::Function, pos::Int, ::Type{String}, args...)
     insert!(args, pos-1, out)
 
     r = f(args...)
-    r != 0 && throw(XpressError(r, "Unable to invoke $f"))
-
-    s = unsafe_string(out)
-
-    return s
+    r != 0 ? throw(XpressError(r, "Unable to invoke $f")) : unsafe_string(out)
 end
 
 """

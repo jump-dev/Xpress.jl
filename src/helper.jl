@@ -66,3 +66,51 @@ end
 addcolnames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 2)
 addrownames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 1)
 
+"""
+    getparam(prob::XpressProblem, param::Integer)
+
+Get parameter of any type
+"""
+function getparam(prob::XpressProblem, param::Integer)
+    # TODO: this function is not type stable
+    if convert(Int, param) in XPRS_INT_CONTROLS
+        return get_int_param(prob, param)
+    elseif convert(Int, param) in XPRS_DBL_CONTROLS
+        return get_dbl_param(prob, param)
+    elseif convert(Int, param) in XPRS_STR_CONTROLS
+        return get_str_param(prob, param)
+    else
+        error("Unrecognized parameter number: $(param).")
+    end
+end
+
+"""
+    setparam!(prob::XpressProblem, param::Symbol, val::Any)
+    setparam!(prob::XpressProblem, param::Integer, val::Any)
+
+Set parameter of any type
+"""
+setparam!(prob::XpressProblem, param::Symbol, val::Any) = setparam!(prob, Cint(XPRS_CONTROLS_DICT[param]),val)
+setparam!(prob::XpressProblem, param::Integer, val::Any) = setparam!(prob, Cint(param), val::Any)
+function setparam!(prob::XpressProblem, param::Cint, val::Any)
+    if convert(Int, param) in XPRS_INT_CONTROLS
+        set_int_param(prob, param, val)
+    elseif convert(Int, param) in XPRS_DBL_CONTROLS
+        set_dbl_param(prob, param, val)
+    elseif convert(Int, param) in XPRS_STR_CONTROLS
+        set_str_param(prob, param, val)
+    else
+        error("Unrecognized parameter number: $(param).")
+    end
+end
+
+"""
+    setparams!(prob::XpressProblem;args...)
+
+Set multiple parameters of any type
+"""
+function setparams!(prob::XpressProblem; args...)
+    for (param,val) in args
+        setparam!(prob, XPRS_CONTROLS_DICT[param],val)
+    end
+end
