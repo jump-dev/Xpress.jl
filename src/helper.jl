@@ -48,16 +48,18 @@ abstract type CWrapper end
 
 Base.unsafe_convert(T::Type{Ptr{Nothing}}, t::CWrapper) = t.ptr
 
-struct XpressProblem <: CWrapper
+mutable struct XpressProblem <: CWrapper
     ptr::Lib.XPRSprob
+    callback::Array{Any}
+    time::Float64
     function XpressProblem()
         ref = Ref{Lib.XPRSprob}()
         r = createprob(ref)
         r != 0 && throw(XpressError(r, "Unable to create a Xpress Problem."))
         ptr = ref[]
-        @assert ptr == C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
-        p = new(ptr)
-        atexit(() -> destroyprob(p))
+        @assert ptr != C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
+        p = new(ptr, Any[], 0.0)
+        finalizer(p, (p) -> destroyprob(p))
         return p
     end
 end
