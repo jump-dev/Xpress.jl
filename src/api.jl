@@ -28,7 +28,7 @@ prob2.
 XPRScopycontrols,
 XPRScopyprob.
 """
-function copycallbacks(dest, src)
+function copycallbacks(dest::XpressProblem, src::XpressProblem)
     Lib.XPRScopycallbacks(dest, src)
 end
 
@@ -61,8 +61,9 @@ prob2 :
 XPRScopycallbacks,
 XPRScopyprob.
 """
-function copycontrols(dest, src)
-    Lib.XPRScopycontrols(dest, src)
+function copycontrols(dest::XpressProblem, src::XpressProblem)
+    r = Lib.XPRScopycontrols(dest, src)
+    return r != 0 ? throw(XpressError(r, "Unable to copycontrols")) : dest
 end
 
 """
@@ -96,8 +97,9 @@ XPRScopycallbacks,
 XPRScopycontrols,
 XPRScreateprob.
 """
-function copyprob(dest, src, probname)
-    Lib.XPRScopyprob(dest, src, probname)
+function copyprob(dest::XpressProblem, src::XpressProblem, probname="")
+    r = Lib.XPRScopyprob(dest, src, probname)
+    return r != 0 ? throw(XpressError(r, "Unable to copyprob")) : dest
 end
 
 """
@@ -993,7 +995,8 @@ XPRSsetdblcontrol,
 XPRSsetstrcontrol.
 """
 function setdefaults(prob::XpressProblem)
-    Lib.XPRSsetdefaults(prob)
+    r = Lib.XPRSsetdefaults(prob)
+    r != 0 ? throw(XpressError(r, "Unable to call setdefaults.")) : nothing
 end
 
 """
@@ -2185,7 +2188,8 @@ SETDEFAULTS,
 SETDEFAULTCONTROL
 """
 function dumpcontrols(prob::XpressProblem)
-    Lib.XPRSdumpcontrols(prob)
+    r = Lib.XPRSdumpcontrols(prob)
+    r != 0 ? throw(XpressError(r, "Unable to call dumpcontrols.")) : nothing
 end
 
 function minim(prob::XpressProblem, _sflags)
