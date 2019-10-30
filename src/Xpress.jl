@@ -64,8 +64,6 @@ module Xpress
     ### include source files
      module Lib
 
-        using CEnum
-
         import ..Xpress
         const libxprs = Xpress.libxprs
 
