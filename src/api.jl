@@ -29,7 +29,7 @@ XPRScopycontrols,
 XPRScopyprob.
 """
 function copycallbacks(dest::XpressProblem, src::XpressProblem)
-    Lib.XPRScopycallbacks(dest, src)
+    @checked Lib.XPRScopycallbacks(dest, src)
 end
 
 """
@@ -62,8 +62,8 @@ XPRScopycallbacks,
 XPRScopyprob.
 """
 function copycontrols(dest::XpressProblem, src::XpressProblem)
-    r = Lib.XPRScopycontrols(dest, src)
-    return r != 0 ? throw(XpressError(r, "Unable to copycontrols")) : dest
+    @checked Lib.XPRScopycontrols(dest, src)
+    return dest
 end
 
 """
@@ -98,8 +98,8 @@ XPRScopycontrols,
 XPRScreateprob.
 """
 function copyprob(dest::XpressProblem, src::XpressProblem, probname="")
-    r = Lib.XPRScopyprob(dest, src, probname)
-    return r != 0 ? throw(XpressError(r, "Unable to copyprob")) : dest
+    @checked Lib.XPRScopyprob(dest, src, probname)
+    return dest
 end
 
 """
@@ -131,7 +131,7 @@ XPRScopyprob,
 XPRSinit.
 """
 function createprob(_probholder)
-    Lib.XPRScreateprob(_probholder)
+    @checked Lib.XPRScreateprob(_probholder)
 end
 
 """
@@ -164,7 +164,7 @@ XPRSfree,
 XPRSinit.
 """
 function destroyprob(prob::XpressProblem)
-    Lib.XPRSdestroyprob(prob)
+    @checked Lib.XPRSdestroyprob(prob)
 end
 
 """
@@ -195,8 +195,7 @@ XPRSfree,
 XPRSgetlicerrmsg.
 """
 function init()
-    r = Lib.XPRSinit(C_NULL)
-    r != 0 ? throw(XpressError(r, "Unable to initialize Xpress.")) : nothing
+    @checked Lib.XPRSinit(C_NULL)
 end
 
 """
@@ -227,7 +226,7 @@ XPRSdestroyprob,
 XPRSinit.
 """
 function free()
-    Lib.XPRSfree()
+    @checked Lib.XPRSfree()
 end
 
 """
@@ -344,7 +343,7 @@ int XPRS_CC XPRSsetcheckedmode(int checked_mode);
 XPRSgetcheckedmode.
 """
 function setcheckedmode(checked_mode)
-    Lib.XPRSsetcheckedmode(checked_mode)
+    @checked Lib.XPRSsetcheckedmode(checked_mode)
 end
 
 """
@@ -373,19 +372,19 @@ int XPRS_CC XPRSgetcheckedmode(int* r_checked_mode);
 XPRSsetcheckedmode.
 """
 function getcheckedmode(r_checked_mode)
-    Lib.XPRSgetcheckedmode(r_checked_mode)
+    @checked Lib.XPRSgetcheckedmode(r_checked_mode)
 end
 
 function license(lic, path)
-    Lib.XPRSlicense(lic, path)
+    r = Lib.XPRSlicense(lic, path)
 end
 
 function beginlicensing(r_dontAlreadyHaveLicense)
-    Lib.XPRSbeginlicensing(r_dontAlreadyHaveLicense)
+    @checked Lib.XPRSbeginlicensing(r_dontAlreadyHaveLicense)
 end
 
 function endlicensing()
-    Lib.XPRSendlicensing()
+    @checked Lib.XPRSendlicensing()
 end
 
 """
@@ -418,7 +417,7 @@ XPRSinit.
 function getlicerrmsg()
     msg = Cstring(pointer(Array{Cchar}(undef, 1024*8)))
     len = length(msg)
-    Lib.XPRSgetlicerrmsg(msg, len)
+    @checked Lib.XPRSgetlicerrmsg(msg, len)
     return unsafe_string(msg)
 end
 
@@ -451,8 +450,7 @@ logfile.log:
 XPRSaddcbmessage.
 """
 function setlogfile(prob::XpressProblem, logname::String)
-    r = Lib.XPRSsetlogfile(prob, logname)
-    r != 0 ? throw(XpressError(r, "Unable to call setlogfile.")) : nothing
+    @checked Lib.XPRSsetlogfile(prob, logname)
 end
 
 """
@@ -488,11 +486,11 @@ XPRSsetdblcontrol,
 XPRSsetstrcontrol.
 """
 function setintcontrol(prob::XpressProblem, _index, _ivalue)
-    Lib.XPRSsetintcontrol(prob, _index, _ivalue)
+    @checked Lib.XPRSsetintcontrol(prob, _index, _ivalue)
 end
 
 function setintcontrol64(prob::XpressProblem, _index, _ivalue)
-    Lib.XPRSsetintcontrol64(prob, _index, _ivalue)
+    @checked Lib.XPRSsetintcontrol64(prob, _index, _ivalue)
 end
 
 """
@@ -526,7 +524,7 @@ XPRSsetintcontrol,
 XPRSsetstrcontrol.
 """
 function setdblcontrol(prob::XpressProblem, _index, _dvalue)
-    Lib.XPRSsetdblcontrol(prob, _index, _dvalue)
+    @checked Lib.XPRSsetdblcontrol(prob, _index, _dvalue)
 end
 
 """
@@ -562,7 +560,7 @@ int XPRS_CC XPRSinterrupt(XPRSprob prob, int reason);
 None.
 """
 function interrupt(prob::XpressProblem, reason)
-    Lib.XPRSinterrupt(prob, reason)
+    @checked Lib.XPRSinterrupt(prob, reason)
 end
 
 """
@@ -632,7 +630,7 @@ XPRSchgqobj,
 XPRSchgmqobj.
 """
 function getqobj(prob::XpressProblem, _icol, _jcol, _dval)
-    Lib.XPRSgetqobj(prob, _icol, _jcol, _dval)
+    @checked Lib.XPRSgetqobj(prob, _icol, _jcol, _dval)
 end
 
 """
@@ -668,8 +666,7 @@ XPRSgetprobname,
 MAXPROBNAMELENGTH.
 """
 function setprobname(prob::XpressProblem, name::AbstractString)
-    r = Lib.XPRSsetprobname(prob, name)
-    r != 0 ? throw(XpressError(r, "Unable to call setprobname.")) : nothing
+    @checked Lib.XPRSsetprobname(prob, name)
 end
 
 """
@@ -705,7 +702,7 @@ XPRSsetdblcontrol,
 XPRSsetintcontrol.
 """
 function setstrcontrol(prob::XpressProblem, _index, _svalue)
-    Lib.XPRSsetstrcontrol(prob, _index, _svalue)
+    @checked Lib.XPRSsetstrcontrol(prob, _index, _svalue)
 end
 
 """
@@ -740,11 +737,11 @@ XPRSgetdblcontrol,
 XPRSgetstrcontrol.
 """
 function getintcontrol(prob::XpressProblem, _index, _ivalue)
-    Lib.XPRSgetintcontrol(prob, _index, _ivalue)
+    @checked Lib.XPRSgetintcontrol(prob, _index, _ivalue)
 end
 
 function getintcontrol64(prob::XpressProblem, _index, _ivalue)
-    Lib.XPRSgetintcontrol64(prob, _index, _ivalue)
+    @checked Lib.XPRSgetintcontrol64(prob, _index, _ivalue)
 end
 
 """
@@ -778,7 +775,7 @@ XPRSgetintcontrol,
 XPRSgetstrcontrol.
 """
 function getdblcontrol(prob::XpressProblem, _index, _dvalue)
-    Lib.XPRSgetdblcontrol(prob, _index, _dvalue)
+    @checked Lib.XPRSgetdblcontrol(prob, _index, _dvalue)
 end
 
 """
@@ -814,11 +811,11 @@ XPRSgetintcontrol,
 XPRSsetstrcontrol.
 """
 function getstrcontrol(prob::XpressProblem, _index, _svalue)
-    Lib.XPRSgetstrcontrol(prob, _index, _svalue)
+    @checked Lib.XPRSgetstrcontrol(prob, _index, _svalue)
 end
 
 function getstringcontrol(prob::XpressProblem, _index, _svalue, _svaluesize, _controlsize)
-    Lib.XPRSgetstringcontrol(prob, _index, _svalue, _svaluesize, _controlsize)
+    @checked Lib.XPRSgetstringcontrol(prob, _index, _svalue, _svaluesize, _controlsize)
 end
 
 """
@@ -851,11 +848,11 @@ XPRSgetdblattrib,
 XPRSgetstrattrib.
 """
 function getintattrib(prob::XpressProblem, _index, _ivalue)
-    Lib.XPRSgetintattrib(prob, _index, _ivalue)
+    @checked Lib.XPRSgetintattrib(prob, _index, _ivalue)
 end
 
 function getintattrib64(prob::XpressProblem, _index, _ivalue)
-    Lib.XPRSgetintattrib64(prob, _index, _ivalue)
+    @checked Lib.XPRSgetintattrib64(prob, _index, _ivalue)
 end
 
 """
@@ -890,11 +887,11 @@ XPRSgetdblattrib,
 XPRSgetintattrib.
 """
 function getstrattrib(prob::XpressProblem, _index, _cvalue)
-    Lib.XPRSgetstrattrib(prob, _index, _cvalue)
+    @checked Lib.XPRSgetstrattrib(prob, _index, _cvalue)
 end
 
 function getstringattrib(prob::XpressProblem, _index, _cvalue, _cvaluesize, _controlsize)
-    Lib.XPRSgetstringattrib(prob, _index, _cvalue, _cvaluesize, _controlsize)
+    @checked Lib.XPRSgetstringattrib(prob, _index, _cvalue, _cvaluesize, _controlsize)
 end
 
 """
@@ -927,7 +924,7 @@ XPRSgetintattrib,
 XPRSgetstrattrib.
 """
 function getdblattrib(prob::XpressProblem, _index, _dvalue)
-    Lib.XPRSgetdblattrib(prob, _index, _dvalue)
+    @checked Lib.XPRSgetdblattrib(prob, _index, _dvalue)
 end
 
 """
@@ -960,7 +957,7 @@ XPRSsetdblcontrol,
 XPRSsetstrcontrol.
 """
 function setdefaultcontrol(prob::XpressProblem, _index)
-    Lib.XPRSsetdefaultcontrol(prob, _index)
+    @checked Lib.XPRSsetdefaultcontrol(prob, _index)
 end
 
 """
@@ -996,8 +993,7 @@ XPRSsetdblcontrol,
 XPRSsetstrcontrol.
 """
 function setdefaults(prob::XpressProblem)
-    r = Lib.XPRSsetdefaults(prob)
-    r != 0 ? throw(XpressError(r, "Unable to call setdefaults.")) : nothing
+    @checked Lib.XPRSsetdefaults(prob)
 end
 
 """
@@ -1046,7 +1042,7 @@ sCaName. Note that the name happens to be a control name in this example:
 XPRSgetattribinfo.
 """
 function getcontrolinfo(prob::XpressProblem, sCaName, iHeaderId, iTypeinfo)
-    Lib.XPRSgetcontrolinfo(prob, sCaName, iHeaderId, iTypeinfo)
+    @checked Lib.XPRSgetcontrolinfo(prob, sCaName, iHeaderId, iTypeinfo)
 end
 
 """
@@ -1094,7 +1090,7 @@ sCaName. Note that the name happens to be a control name in this example:
 XPRSgetcontrolinfo.
 """
 function getattribinfo(prob::XpressProblem, sCaName, iHeaderId, iTypeinfo)
-    Lib.XPRSgetattribinfo(prob, sCaName, iHeaderId, iTypeinfo)
+    @checked Lib.XPRSgetattribinfo(prob, sCaName, iHeaderId, iTypeinfo)
 end
 
 """
@@ -1131,7 +1127,7 @@ OBJ1 is unknown and we wish to perform goal programming, maximizing this row and
 Goal Programming.
 """
 function goal(prob::XpressProblem, _filename::String, _sflags::String="")
-    Lib.XPRSgoal(prob, _filename, _sflags)
+    @checked Lib.XPRSgoal(prob, _filename, _sflags)
 end
 
 """
@@ -1169,8 +1165,7 @@ XPRSloadqglobal,
 XPRSloadqp.
 """
 function readprob(prob::XpressProblem, _sprobname::String, _sflags::String="")
-    r = Lib.XPRSreadprob(prob, _sprobname, _sflags)
-    r != 0 ? throw(XpressError(r, "Unable to call readprob.")) : nothing
+    @checked Lib.XPRSreadprob(prob, _sprobname, _sflags)
 end
 
 """
@@ -1254,12 +1249,11 @@ XPRSloadqp,
 XPRSreadprob.
 """
 function loadlp(prob::XpressProblem, _sprobname="", ncols=0, nrows=0, _srowtypes=Cchar[], _drhs=Float64[], _drange=Float64[], _dobj=Float64[], _mstart=Int[], _mnel=Int[], _mrwind=Int[], _dmatval=Float64[], _dlb=Float64[], _dub=Float64[])
-    r = Lib.XPRSloadlp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
-    r != 0 ? throw(XpressError(r, "Unable to call loadlp.")) : nothing
+    @checked Lib.XPRSloadlp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
 end
 
 function loadlp64(prob::XpressProblem, _sprobname="", ncols=0, nrows=0, _srowtypes=Cchar[], _drhs=Float64[], _drange=Float64[], _dobj=Float64[], _mstart=Int[], _mnel=Int[], _mrwind=Int[], _dmatval=Float64[], _dlb=Float64[], _dub=Float64[])
-    Lib.XPRSloadlp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
+    @checked Lib.XPRSloadlp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
 end
 
 """
@@ -1345,11 +1339,11 @@ XPRSloadqglobal,
 XPRSreadprob.
 """
 function loadqp(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
-    Lib.XPRSloadqp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
+    @checked Lib.XPRSloadqp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
 end
 
 function loadqp64(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
-    Lib.XPRSloadqp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
+    @checked Lib.XPRSloadqp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
 end
 
 """
@@ -1462,11 +1456,11 @@ XPRSloadqp,
 XPRSreadprob.
 """
 function loadqglobal(prob::XpressProblem, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
-    Lib.XPRSloadqglobal(prob, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
+    @checked Lib.XPRSloadqglobal(prob, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
 end
 
 function loadqglobal64(prob::XpressProblem, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
-    Lib.XPRSloadqglobal64(prob, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
+    @checked Lib.XPRSloadqglobal64(prob, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
 end
 
 """
@@ -1500,8 +1494,7 @@ XPRSmipoptimize (
 MIPOPTIMIZE).
 """
 function fixglobals(prob::XpressProblem, ifround::Bool)
-    r = Lib.XPRSfixglobals(prob, ifround)
-    r != 0 ? throw(XpressError(r, "Unable to call fixglobals.")) : nothing
+    @checked Lib.XPRSfixglobals(prob, ifround)
 end
 
 """
@@ -1534,7 +1527,7 @@ myprob.
 Working with the Cut Manager.
 """
 function loadmodelcuts(prob::XpressProblem, nmodcuts, _mrows)
-    Lib.XPRSloadmodelcuts(prob, nmodcuts, _mrows)
+    @checked Lib.XPRSloadmodelcuts(prob, nmodcuts, _mrows)
 end
 
 """
@@ -1565,7 +1558,7 @@ prob.
 XPRSloadmodelcuts.
 """
 function loaddelayedrows(prob::XpressProblem, nrows, _mrows)
-    Lib.XPRSloaddelayedrows(prob, nrows, _mrows)
+    @checked Lib.XPRSloaddelayedrows(prob, nrows, _mrows)
 end
 
 """
@@ -1611,7 +1604,7 @@ XPRSloadpresolvedirs,
 XPRSreaddirs.
 """
 function loaddirs(prob::XpressProblem, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
-    Lib.XPRSloaddirs(prob, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
+    @checked Lib.XPRSloaddirs(prob, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
 end
 
 """
@@ -1646,7 +1639,7 @@ XPRSreaddirs,
 The Directives (.dir) File.
 """
 function loadbranchdirs(prob::XpressProblem, ndirs, _mcols, _mbranch)
-    Lib.XPRSloadbranchdirs(prob, ndirs, _mcols, _mbranch)
+    @checked Lib.XPRSloadbranchdirs(prob, ndirs, _mcols, _mbranch)
 end
 
 """
@@ -1693,7 +1686,7 @@ XPRSgetdirs,
 XPRSloaddirs.
 """
 function loadpresolvedirs(prob::XpressProblem, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
-    Lib.XPRSloadpresolvedirs(prob, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
+    @checked Lib.XPRSloadpresolvedirs(prob, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
 end
 
 """
@@ -1742,7 +1735,7 @@ XPRSloaddirs,
 XPRSloadpresolvedirs.
 """
 function getdirs(prob::XpressProblem, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
-    Lib.XPRSgetdirs(prob, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
+    @checked Lib.XPRSgetdirs(prob, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
 end
 
 """
@@ -1855,11 +1848,11 @@ XPRSloadqp,
 XPRSreadprob.
 """
 function loadglobal(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
-    Lib.XPRSloadglobal(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
+    @checked Lib.XPRSloadglobal(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
 end
 
 function loadglobal64(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
-    Lib.XPRSloadglobal64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
+    @checked Lib.XPRSloadglobal64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
 end
 
 """
@@ -1912,8 +1905,8 @@ function addnames(prob::XpressProblem, _itype::Int, _sname::Vector{String})
     for str in names
         _cnames = string(_cnames, join(Base.Iterators.take(str,NAMELENGTH)), "\0")
     end
-    r = Lib.XPRSaddnames(prob, _itype, _cnames, first, last)
-    r != 0 ? throw(XpressError(r, "Unable to call addnames.")) : nothing
+
+    @checked Lib.XPRSaddnames(prob, _itype, _cnames, first, last)
 end
 
 """
@@ -1949,7 +1942,7 @@ XPRSloadglobal,
 XPRSloadqglobal.
 """
 function addsetnames(prob::XpressProblem, _sname, first, last)
-    Lib.XPRSaddsetnames(prob, _sname, first, last)
+    @checked Lib.XPRSaddsetnames(prob, _sname, first, last)
 end
 
 """
@@ -1987,7 +1980,7 @@ XPRSreadprob (
 READPROB).
 """
 function scale(prob::XpressProblem, mrscal, mcscal)
-    Lib.XPRSscale(prob, mrscal, mcscal)
+    @checked Lib.XPRSscale(prob, mrscal, mcscal)
 end
 
 """
@@ -2023,7 +2016,7 @@ XPRSloaddirs,
 The Directives (.dir) File.
 """
 function readdirs(prob::XpressProblem, _sfilename::String)
-    Lib.XPRSreaddirs(prob, _sfilename)
+    @checked Lib.XPRSreaddirs(prob, _sfilename)
 end
 
 """
@@ -2054,7 +2047,7 @@ XPRSloaddirs,
 The Directives (.dir) File.
 """
 function writedirs(prob::XpressProblem, _sfilename::String)
-    Lib.XPRSwritedirs(prob, _sfilename)
+    @checked Lib.XPRSwritedirs(prob, _sfilename)
 end
 
 """
@@ -2105,7 +2098,7 @@ XPRSgetindicators,
 XPRSdelindicators.
 """
 function setindicators(prob::XpressProblem, nrows, _mrows, _inds, _comps)
-    Lib.XPRSsetindicators(prob, nrows, _mrows, _inds, _comps)
+    @checked Lib.XPRSsetindicators(prob, nrows, _mrows, _inds, _comps)
 end
 
 """
@@ -2143,7 +2136,7 @@ XPRSsetindicators,
 XPRSdelindicators.
 """
 function getindicators(prob::XpressProblem, _inds, _comps, first, last)
-    Lib.XPRSgetindicators(prob, _inds, _comps, first, last)
+    @checked Lib.XPRSgetindicators(prob, _inds, _comps, first, last)
 end
 
 """
@@ -2174,7 +2167,7 @@ XPRSgetindicators,
 XPRSsetindicators.
 """
 function delindicators(prob::XpressProblem, first, last)
-    Lib.XPRSdelindicators(prob, first, last)
+    @checked Lib.XPRSdelindicators(prob, first, last)
 end
 
 """
@@ -2203,12 +2196,11 @@ SETDEFAULTS,
 SETDEFAULTCONTROL
 """
 function dumpcontrols(prob::XpressProblem)
-    r = Lib.XPRSdumpcontrols(prob)
-    r != 0 ? throw(XpressError(r, "Unable to call dumpcontrols.")) : nothing
+    @checked Lib.XPRSdumpcontrols(prob)
 end
 
 function minim(prob::XpressProblem, _sflags::String="")
-    Lib.XPRSminim(prob, _sflags)
+    @checked Lib.XPRSminim(prob, _sflags)
 end
 
 """
@@ -2259,7 +2251,7 @@ Solution Methods,
 The Matrix Alteration (.alt) File.
 """
 function maxim(prob::XpressProblem, _sflags::String="")
-    Lib.XPRSmaxim(prob, _sflags)
+    @checked Lib.XPRSmaxim(prob, _sflags)
 end
 
 """
@@ -2299,7 +2291,7 @@ MIPOPTIMIZE),
 Solution Methods.
 """
 function lpoptimize(prob::XpressProblem, _sflags::String="")
-    Lib.XPRSlpoptimize(prob, _sflags)
+    @checked Lib.XPRSlpoptimize(prob, _sflags)
 end
 
 """
@@ -2338,7 +2330,7 @@ LPOPTIMIZE),
 Solution Methods.
 """
 function mipoptimize(prob::XpressProblem, _sflags::String="")
-    Lib.XPRSmipoptimize(prob, _sflags)
+    @checked Lib.XPRSmipoptimize(prob, _sflags)
 end
 
 """
@@ -2374,7 +2366,7 @@ XPRSwriterange (
 WRITERANGE).
 """
 function range(prob::XpressProblem)
-    Lib.XPRSrange(prob)
+    @checked Lib.XPRSrange(prob)
 end
 
 """
@@ -2411,7 +2403,7 @@ XPRSchgrhsrange,
 XPRSgetcolrange.
 """
 function getrowrange(prob::XpressProblem, _upact, _loact, _uup, _udn)
-    Lib.XPRSgetrowrange(prob, _upact, _loact, _uup, _udn)
+    @checked Lib.XPRSgetrowrange(prob, _upact, _loact, _uup, _udn)
 end
 
 """
@@ -2451,7 +2443,7 @@ XPRSgetrowrange,
 XPRSrange.
 """
 function getcolrange(prob::XpressProblem, _upact, _loact, _uup, _udn, _ucost, _lcost)
-    Lib.XPRSgetcolrange(prob, _upact, _loact, _uup, _udn, _ucost, _lcost)
+    @checked Lib.XPRSgetcolrange(prob, _upact, _loact, _uup, _udn, _ucost, _lcost)
 end
 
 """
@@ -2483,7 +2475,7 @@ XPRSgetpivots,
 XPRSpivot.
 """
 function getpivotorder(prob::XpressProblem, mpiv)
-    Lib.XPRSgetpivotorder(prob, mpiv)
+    @checked Lib.XPRSgetpivotorder(prob, mpiv)
 end
 
 """
@@ -2514,7 +2506,7 @@ The following reads in a (Mixed) Integer Programming problem and gets the mappin
 Working with Presolve.
 """
 function getpresolvemap(prob::XpressProblem, rowmap, colmap)
-    Lib.XPRSgetpresolvemap(prob, rowmap, colmap)
+    @checked Lib.XPRSgetpresolvemap(prob, rowmap, colmap)
 end
 
 """
@@ -2551,7 +2543,7 @@ XPRSwritebasis (
 WRITEBASIS).
 """
 function readbasis(prob::XpressProblem, _sfilename::String, _sflags::String="")
-    Lib.XPRSreadbasis(prob, _sfilename, _sflags)
+    @checked Lib.XPRSreadbasis(prob, _sfilename, _sflags)
 end
 
 """
@@ -2592,7 +2584,7 @@ XPRSreadbasis (
 READBASIS).
 """
 function writebasis(prob::XpressProblem, _sfilename::String, _sflags::String="")
-    Lib.XPRSwritebasis(prob, _sfilename, _sflags)
+    @checked Lib.XPRSwritebasis(prob, _sfilename, _sflags)
 end
 
 """
@@ -2633,7 +2625,7 @@ MINIM),
 The Simplex Log.
 """
 function XPRSglobal(prob::XpressProblem)
-    Lib.XPRSglobal(prob)
+    @checked Lib.XPRSglobal(prob)
 end
 
 """
@@ -2667,7 +2659,7 @@ XPRSmipoptimize (
 MIPOPTIMIZE).
 """
 function initglobal(prob::XpressProblem)
-    Lib.XPRSinitglobal(prob)
+    @checked Lib.XPRSinitglobal(prob)
 end
 
 """
@@ -2712,8 +2704,7 @@ XPRSwritesol,
 ASCII Solution Files.
 """
 function writeprtsol(prob::XpressProblem, _sfilename::String, _sflags::String="")
-    r = Lib.XPRSwriteprtsol(prob, _sfilename, _sflags)
-    r != 0 ? throw(XpressProblem(r, "Unable to call writeprtsol")) : nothing
+    @checked Lib.XPRSwriteprtsol(prob, _sfilename, _sflags)
 end
 
 """
@@ -2747,7 +2738,7 @@ Section
 The Matrix Alteration (.alt) File.
 """
 function alter(prob::XpressProblem, _sfilename::String)
-    Lib.XPRSalter(prob, _sfilename)
+    @checked Lib.XPRSalter(prob, _sfilename)
 end
 
 """
@@ -2807,8 +2798,7 @@ XPRSwriteprtsol (
 WRITEPRTSOL).
 """
 function writesol(prob::XpressProblem, _sfilename::String, _sflags="")
-    r = Lib.XPRSwritesol(prob, _sfilename, _sflags)
-    r != 0 ? throw(XpressProblem(r, "Unable to call writesol.")) : nothing
+    @checked Lib.XPRSwritesol(prob, _sfilename, _sflags)
 end
 
 """
@@ -2848,7 +2838,7 @@ XPRSwriteprtsol (
 WRITEPRTSOL).
 """
 function writebinsol(prob::XpressProblem, _sfilename::String, _sflags)
-    Lib.XPRSwritebinsol(prob, _sfilename, _sflags)
+    @checked Lib.XPRSwritebinsol(prob, _sfilename, _sflags)
 end
 
 """
@@ -2888,7 +2878,7 @@ XPRSwriteprtsol (
 WRITEPRTSOL).
 """
 function readbinsol(prob::XpressProblem, _sfilename::String, _sflags)
-    Lib.XPRSreadbinsol(prob, _sfilename, _sflags)
+    @checked Lib.XPRSreadbinsol(prob, _sfilename, _sflags)
 end
 
 """
@@ -2936,7 +2926,7 @@ XPRSreadbinsol (
 READBINSOL).
 """
 function writeslxsol(prob::XpressProblem, _sfilename::String, _sflags)
-    Lib.XPRSwriteslxsol(prob, _sfilename, _sflags)
+    @checked Lib.XPRSwriteslxsol(prob, _sfilename, _sflags)
 end
 
 """
@@ -2983,7 +2973,7 @@ XPRSaddmipsol,
 XPRSaddcbusersolnotify.
 """
 function readslxsol(prob::XpressProblem, _sfilename::String, _sflags)
-    Lib.XPRSreadslxsol(prob, _sfilename, _sflags)
+    @checked Lib.XPRSreadslxsol(prob, _sfilename, _sflags)
 end
 
 """
@@ -3024,7 +3014,7 @@ XPRSwriterange,
 The Directives (.dir) File.
 """
 function writeprtrange(prob::XpressProblem)
-    Lib.XPRSwriteprtrange(prob)
+    @checked Lib.XPRSwriteprtrange(prob)
 end
 
 """
@@ -3078,11 +3068,11 @@ WRITESOL),
 The Directives (.dir) File.
 """
 function writerange(prob::XpressProblem, _sfilename::String, _sflags)
-    Lib.XPRSwriterange(prob, _sfilename, _sflags)
+    @checked Lib.XPRSwriterange(prob, _sfilename, _sflags)
 end
 
 function getsol(prob::XpressProblem, _dx, _dslack, _dual, _dj)
-    Lib.XPRSgetsol(prob, _dx, _dslack, _dual, _dj)
+    @checked Lib.XPRSgetsol(prob, _dx, _dslack, _dual, _dj)
 end
 
 """
@@ -3119,7 +3109,7 @@ XPRSgetlpsol,
 Working with Presolve.
 """
 function getpresolvesol(prob::XpressProblem, _dx, _dslack, _dual, _dj)
-    Lib.XPRSgetpresolvesol(prob, _dx, _dslack, _dual, _dj)
+    @checked Lib.XPRSgetpresolvesol(prob, _dx, _dslack, _dual, _dj)
 end
 
 """
@@ -3170,7 +3160,7 @@ XPRSiiswrite,
 IIS.
 """
 function getinfeas(prob::XpressProblem, npv, nps, nds, ndv, mx, mslack, mdual, mdj)
-    Lib.XPRSgetinfeas(prob, npv, nps, nds, ndv, mx, mslack, mdual, mdj)
+    @checked Lib.XPRSgetinfeas(prob, npv, nps, nds, ndv, mx, mslack, mdual, mdj)
 end
 
 """
@@ -3222,7 +3212,7 @@ XPRSiiswrite,
 IIS.
 """
 function getscaledinfeas(prob::XpressProblem, npv, nps, nds, ndv, mx, mslack, mdual, mdj)
-    Lib.XPRSgetscaledinfeas(prob, npv, nps, nds, ndv, mx, mslack, mdual, mdj)
+    @checked Lib.XPRSgetscaledinfeas(prob, npv, nps, nds, ndv, mx, mslack, mdual, mdj)
 end
 
 """
@@ -3259,7 +3249,7 @@ XPRSgetinfeas,
 XPRSlpoptimize.
 """
 function getunbvec(prob::XpressProblem, icol)
-    Lib.XPRSgetunbvec(prob, icol)
+    @checked Lib.XPRSgetunbvec(prob, icol)
 end
 
 """
@@ -3290,7 +3280,7 @@ irow, assuming that all arrays have been dimensioned.
 XPRSftran.
 """
 function btran(prob::XpressProblem, dwork)
-    Lib.XPRSbtran(prob, dwork)
+    @checked Lib.XPRSbtran(prob, dwork)
 end
 
 """
@@ -3320,7 +3310,7 @@ jcol, assuming that all arrays have been dimensioned, do the following:
 XPRSbtran.
 """
 function ftran(prob::XpressProblem, dwork)
-    Lib.XPRSftran(prob, dwork)
+    @checked Lib.XPRSftran(prob, dwork)
 end
 
 """
@@ -3352,7 +3342,7 @@ The following example retrieves the objective function coefficients of the curre
 XPRSchgobj.
 """
 function getobj(prob::XpressProblem, _dobj, first, last)
-    Lib.XPRSgetobj(prob, _dobj, first, last)
+    @checked Lib.XPRSgetobj(prob, _dobj, first, last)
 end
 
 """
@@ -3386,7 +3376,7 @@ XPRSchgrhsrange,
 XPRSgetrhsrange.
 """
 function getrhs(prob::XpressProblem, _drhs, first, last)
-    Lib.XPRSgetrhs(prob, _drhs, first, last)
+    @checked Lib.XPRSgetrhs(prob, _drhs, first, last)
 end
 
 """
@@ -3421,7 +3411,7 @@ XPRSgetrhs,
 XPRSrange.
 """
 function getrhsrange(prob::XpressProblem, _drng, first, last)
-    Lib.XPRSgetrhsrange(prob, _drng, first, last)
+    @checked Lib.XPRSgetrhsrange(prob, _drng, first, last)
 end
 
 """
@@ -3455,7 +3445,7 @@ XPRSchgbounds,
 XPRSgetub.
 """
 function getlb(prob::XpressProblem, _dbdl, first, last)
-    Lib.XPRSgetlb(prob, _dbdl, first, last)
+    @checked Lib.XPRSgetlb(prob, _dbdl, first, last)
 end
 
 """
@@ -3488,7 +3478,7 @@ XPRSchgbounds,
 XPRSgetlb.
 """
 function getub(prob::XpressProblem, _dbdu, first, last)
-    Lib.XPRSgetub(prob, _dbdu, first, last)
+    @checked Lib.XPRSgetub(prob, _dbdu, first, last)
 end
 
 """
@@ -3534,11 +3524,11 @@ The following examples retrieves the number of nonzero coefficients in all colum
 XPRSgetrows.
 """
 function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
-    Lib.XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
+    @checked Lib.XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
 function getcols64(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
-    Lib.XPRSgetcols64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
+    @checked Lib.XPRSgetcols64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
 """
@@ -3586,11 +3576,11 @@ XPRSgetrowrange,
 XPRSgetrowtype.
 """
 function getrows(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
-    Lib.XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
+    @checked Lib.XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
 function getrows64(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
-    Lib.XPRSgetrows64(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
+    @checked Lib.XPRSgetrows64(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
 """
@@ -3622,7 +3612,7 @@ XPRSgetcols,
 XPRSgetrows.
 """
 function getcoef(prob::XpressProblem, _irow, _icol, _dval)
-    Lib.XPRSgetcoef(prob, _irow, _icol, _dval)
+    @checked Lib.XPRSgetcoef(prob, _irow, _icol, _dval)
 end
 
 """
@@ -3672,11 +3662,11 @@ XPRSchgqobj,
 XPRSgetqobj.
 """
 function getmqobj(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
-    Lib.XPRSgetmqobj(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
+    @checked Lib.XPRSgetmqobj(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
 function getmqobj64(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
-    Lib.XPRSgetmqobj64(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
+    @checked Lib.XPRSgetmqobj64(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
 """
@@ -3710,11 +3700,11 @@ XPRSreadslxsol, Section
 Crossover.
 """
 function crossoverlpsol(prob::XpressProblem, status)
-    Lib.XPRScrossoverlpsol(prob, status)
+    @checked Lib.XPRScrossoverlpsol(prob, status)
 end
 
 function getbarnumstability(prob::XpressProblem, dColumnStability, dRowStability)
-    Lib.XPRSgetbarnumstability(prob, dColumnStability, dRowStability)
+    @checked Lib.XPRSgetbarnumstability(prob, dColumnStability, dRowStability)
 end
 
 """
@@ -3749,7 +3739,7 @@ XPRSiiswrite,
 IIS.
 """
 function iisclear(prob::XpressProblem)
-    Lib.XPRSiisclear(prob)
+    @checked Lib.XPRSiisclear(prob)
 end
 
 """
@@ -3792,7 +3782,7 @@ XPRSiiswrite,
 IIS.
 """
 function iisfirst(prob::XpressProblem, iismode, status_code)
-    Lib.XPRSiisfirst(prob, iismode, status_code)
+    @checked Lib.XPRSiisfirst(prob, iismode, status_code)
 end
 
 """
@@ -3833,7 +3823,7 @@ XPRSiiswrite,
 IIS.
 """
 function iisnext(prob::XpressProblem, status_code)
-    Lib.XPRSiisnext(prob, status_code)
+    @checked Lib.XPRSiisnext(prob, status_code)
 end
 
 """
@@ -3882,7 +3872,7 @@ XPRSiiswrite,
 IIS.
 """
 function iisstatus(prob::XpressProblem, iiscount, rowsizes, colsizes, suminfeas, numinfeas)
-    Lib.XPRSiisstatus(prob, iiscount, rowsizes, colsizes, suminfeas, numinfeas)
+    @checked Lib.XPRSiisstatus(prob, iiscount, rowsizes, colsizes, suminfeas, numinfeas)
 end
 
 """
@@ -3918,7 +3908,7 @@ XPRSiiswrite,
 IIS.
 """
 function iisall(prob::XpressProblem)
-    Lib.XPRSiisall(prob)
+    @checked Lib.XPRSiisall(prob)
 end
 
 """
@@ -3959,7 +3949,7 @@ XPRSiisstatus,
 IIS.
 """
 function iiswrite(prob::XpressProblem, number, fn, filetype, typeflags)
-    Lib.XPRSiiswrite(prob, number, fn, filetype, typeflags)
+    @checked Lib.XPRSiiswrite(prob, number, fn, filetype, typeflags)
 end
 
 """
@@ -3999,7 +3989,7 @@ XPRSiiswrite,
 IIS.
 """
 function iisisolations(prob::XpressProblem, number)
-    Lib.XPRSiisisolations(prob, number)
+    @checked Lib.XPRSiisisolations(prob, number)
 end
 
 """
@@ -4068,11 +4058,11 @@ IIS, Section
 IIS description file in CSV format.
 """
 function getiisdata(prob::XpressProblem, number, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, duals, rdcs, isolationrows, isolationcols)
-    Lib.XPRSgetiisdata(prob, number, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, duals, rdcs, isolationrows, isolationcols)
+    @checked Lib.XPRSgetiisdata(prob, number, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, duals, rdcs, isolationrows, isolationcols)
 end
 
 function getiis(prob::XpressProblem, ncols, nrows, _miiscol, _miisrow)
-    Lib.XPRSgetiis(prob, ncols, nrows, _miiscol, _miisrow)
+    @checked Lib.XPRSgetiis(prob, ncols, nrows, _miiscol, _miisrow)
 end
 
 """
@@ -4115,7 +4105,7 @@ XPRSloadbasis,
 XPRSloadpresolvebasis.
 """
 function getpresolvebasis(prob::XpressProblem, _mrowstatus, _mcolstatus)
-    Lib.XPRSgetpresolvebasis(prob, _mrowstatus, _mcolstatus)
+    @checked Lib.XPRSgetpresolvebasis(prob, _mrowstatus, _mcolstatus)
 end
 
 """
@@ -4157,7 +4147,7 @@ XPRSgetpresolvebasis,
 XPRSloadbasis.
 """
 function loadpresolvebasis(prob::XpressProblem, _mrowstatus, _mcolstatus)
-    Lib.XPRSloadpresolvebasis(prob, _mrowstatus, _mcolstatus)
+    @checked Lib.XPRSloadpresolvebasis(prob, _mrowstatus, _mcolstatus)
 end
 
 """
@@ -4213,11 +4203,11 @@ XPRSloadglobal,
 XPRSloadqglobal.
 """
 function getglobal(prob::XpressProblem, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
-    Lib.XPRSgetglobal(prob, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
+    @checked Lib.XPRSgetglobal(prob, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
 end
 
 function getglobal64(prob::XpressProblem, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
-    Lib.XPRSgetglobal64(prob, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
+    @checked Lib.XPRSgetglobal64(prob, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
 end
 
 """
@@ -4258,8 +4248,7 @@ XPRSreadprob (
 READPROB).
 """
 function writeprob(prob::XpressProblem, _sfilename::String, _sflags="")
-    r = Lib.XPRSwriteprob(prob, _sfilename, _sflags)
-    r != 0 ? throw(XpressError(r, "Unable to call writeprob.")) : nothing
+    @checked Lib.XPRSwriteprob(prob, _sfilename, _sflags)
 end
 
 """
@@ -4301,7 +4290,7 @@ XPRSaddnames,
 XPRSgetnamelist.
 """
 function getnames(prob::XpressProblem, _itype, _sbuff, first, last)
-    Lib.XPRSgetnames(prob, _itype, _sbuff, first, last)
+    @checked Lib.XPRSgetnames(prob, _itype, _sbuff, first, last)
 end
 
 """
@@ -4341,7 +4330,7 @@ XPRSgetrowrange,
 XPRSgetrows.
 """
 function getrowtype(prob::XpressProblem, _srowtype, first, last)
-    Lib.XPRSgetrowtype(prob, _srowtype, first, last)
+    @checked Lib.XPRSgetrowtype(prob, _srowtype, first, last)
 end
 
 """
@@ -4376,7 +4365,7 @@ This sets the first six rows and the first four columns to not be removed during
 Working with Presolve.
 """
 function loadsecurevecs(prob::XpressProblem, nrows, ncols, mrow, mcol)
-    Lib.XPRSloadsecurevecs(prob, nrows, ncols, mrow, mcol)
+    @checked Lib.XPRSloadsecurevecs(prob, nrows, ncols, mrow, mcol)
 end
 
 """
@@ -4415,7 +4404,7 @@ XPRSchgcoltype,
 XPRSgetrowtype.
 """
 function getcoltype(prob::XpressProblem, _coltype, first, last)
-    Lib.XPRSgetcoltype(prob, _coltype, first, last)
+    @checked Lib.XPRSgetcoltype(prob, _coltype, first, last)
 end
 
 """
@@ -4458,7 +4447,7 @@ XPRSloadbasis,
 XPRSloadpresolvebasis.
 """
 function getbasis(prob::XpressProblem, _mrowstatus, _mcolstatus)
-    Lib.XPRSgetbasis(prob, _mrowstatus, _mcolstatus)
+    @checked Lib.XPRSgetbasis(prob, _mrowstatus, _mcolstatus)
 end
 
 """
@@ -4500,7 +4489,7 @@ XPRSgetpresolvebasis,
 XPRSloadpresolvebasis.
 """
 function loadbasis(prob::XpressProblem, _mrowstatus, _mcolstatus)
-    Lib.XPRSloadbasis(prob, _mrowstatus, _mcolstatus)
+    @checked Lib.XPRSloadbasis(prob, _mrowstatus, _mcolstatus)
 end
 
 """
@@ -4537,7 +4526,7 @@ n 0203" is the name of a row or column:
 XPRSaddnames.
 """
 function getindex(prob::XpressProblem, _itype, _sname, _iseq)
-    Lib.XPRSgetindex(prob, _itype, _sname, _iseq)
+    @checked Lib.XPRSgetindex(prob, _itype, _sname, _iseq)
 end
 
 """
@@ -4604,11 +4593,11 @@ XPRSaddnames,
 XPRSdelrows.
 """
 function addrows(prob::XpressProblem, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
-    Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
+    @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
 end
 
 function addrows64(prob::XpressProblem, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
-    Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
+    @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
 end
 
 """
@@ -4645,7 +4634,7 @@ XPRSgetpivots,
 XPRSpivot.
 """
 function delrows(prob::XpressProblem, nrows, _mindex)
-    Lib.XPRSdelrows(prob, nrows, _mindex)
+    @checked Lib.XPRSdelrows(prob, nrows, _mindex)
 end
 
 """
@@ -4724,11 +4713,11 @@ XPRSdelcols,
 XPRSchgcoltype.
 """
 function addcols(prob::XpressProblem, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
-    Lib.XPRSaddcols(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
+    @checked Lib.XPRSaddcols(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
 end
 
 function addcols64(prob::XpressProblem, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
-    Lib.XPRSaddcols64(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
+    @checked Lib.XPRSaddcols64(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
 end
 
 """
@@ -4761,7 +4750,7 @@ XPRSaddcols,
 XPRSdelrows.
 """
 function delcols(prob::XpressProblem, ncols, _mindex)
-    Lib.XPRSdelcols(prob, ncols, _mindex)
+    @checked Lib.XPRSdelcols(prob, ncols, _mindex)
 end
 
 """
@@ -4805,7 +4794,7 @@ XPRSdelcols,
 XPRSgetcoltype.
 """
 function chgcoltype(prob::XpressProblem, ncols, _mindex, _coltype)
-    Lib.XPRSchgcoltype(prob, ncols, _mindex, _coltype)
+    @checked Lib.XPRSchgcoltype(prob, ncols, _mindex, _coltype)
 end
 
 """
@@ -4850,7 +4839,7 @@ XPRSgetrowrange,
 XPRSgetrowtype.
 """
 function chgrowtype(prob::XpressProblem, nrows, _mindex, _srowtype)
-    Lib.XPRSchgrowtype(prob, nrows, _mindex, _srowtype)
+    @checked Lib.XPRSchgrowtype(prob, nrows, _mindex, _srowtype)
 end
 
 """
@@ -4892,7 +4881,7 @@ XPRSgetub,
 XPRSstorebounds.
 """
 function chgbounds(prob::XpressProblem, nbnds, _mindex, _sboundtype, _dbnd)
-    Lib.XPRSchgbounds(prob, nbnds, _mindex, _sboundtype, _dbnd)
+    @checked Lib.XPRSchgbounds(prob, nbnds, _mindex, _sboundtype, _dbnd)
 end
 
 """
@@ -4930,7 +4919,7 @@ XPRSchgqobj,
 XPRSgetobj.
 """
 function chgobj(prob::XpressProblem, ncols, _mindex, _dobj)
-    Lib.XPRSchgobj(prob, ncols, _mindex, _dobj)
+    @checked Lib.XPRSchgobj(prob, ncols, _mindex, _dobj)
 end
 
 """
@@ -4973,7 +4962,7 @@ XPRSgetcols,
 XPRSgetrows.
 """
 function chgcoef(prob::XpressProblem, _irow, _icol, _dval)
-    Lib.XPRSchgcoef(prob, _irow, _icol, _dval)
+    @checked Lib.XPRSchgcoef(prob, _irow, _icol, _dval)
 end
 
 """
@@ -5017,11 +5006,11 @@ XPRSgetcols,
 XPRSgetrhs.
 """
 function chgmcoef(prob::XpressProblem, ncoeffs, _mrow, _mcol, _dval)
-    Lib.XPRSchgmcoef(prob, ncoeffs, _mrow, _mcol, _dval)
+    @checked Lib.XPRSchgmcoef(prob, ncoeffs, _mrow, _mcol, _dval)
 end
 
 function chgmcoef64(prob::XpressProblem, ncoeffs, _mrow, _mcol, _dval)
-    Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow, _mcol, _dval)
+    @checked Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow, _mcol, _dval)
 end
 
 """
@@ -5062,11 +5051,11 @@ XPRSchgqobj,
 XPRSgetqobj.
 """
 function chgmqobj(prob::XpressProblem, ncols, _mcol1, _mcol2, _dval)
-    Lib.XPRSchgmqobj(prob, ncols, _mcol1, _mcol2, _dval)
+    @checked Lib.XPRSchgmqobj(prob, ncols, _mcol1, _mcol2, _dval)
 end
 
 function chgmqobj64(prob::XpressProblem, ncols, _mcol1, _mcol2, _dval)
-    Lib.XPRSchgmqobj64(prob, ncols, _mcol1, _mcol2, _dval)
+    @checked Lib.XPRSchgmqobj64(prob, ncols, _mcol1, _mcol2, _dval)
 end
 
 """
@@ -5107,7 +5096,7 @@ XPRSchgobj,
 XPRSgetqobj.
 """
 function chgqobj(prob::XpressProblem, _icol, _jcol, _dval)
-    Lib.XPRSchgqobj(prob, _icol, _jcol, _dval)
+    @checked Lib.XPRSchgqobj(prob, _icol, _jcol, _dval)
 end
 
 """
@@ -5148,7 +5137,7 @@ XPRSgetrhs,
 XPRSgetrhsrange.
 """
 function chgrhs(prob::XpressProblem, nrows, _mindex, _drhs)
-    Lib.XPRSchgrhs(prob, nrows, _mindex, _drhs)
+    @checked Lib.XPRSchgrhs(prob, nrows, _mindex, _drhs)
 end
 
 """
@@ -5185,7 +5174,7 @@ XPRSchgrhs,
 XPRSgetrhsrange.
 """
 function chgrhsrange(prob::XpressProblem, nrows, _mindex, _drng)
-    Lib.XPRSchgrhsrange(prob, nrows, _mindex, _drng)
+    @checked Lib.XPRSchgrhsrange(prob, nrows, _mindex, _drng)
 end
 
 """
@@ -5215,7 +5204,7 @@ XPRSlpoptimize,
 XPRSmipoptimize.
 """
 function chgobjsense(prob::XpressProblem, objsense)
-    Lib.XPRSchgobjsense(prob, objsense)
+    @checked Lib.XPRSchgobjsense(prob, objsense)
 end
 
 """
@@ -5248,7 +5237,7 @@ XPRSchgcoltype,
 XPRSgetglobal.
 """
 function chgglblimit(prob::XpressProblem, ncols, _mindex, _dlimit)
-    Lib.XPRSchgglblimit(prob, ncols, _mindex, _dlimit)
+    @checked Lib.XPRSchgglblimit(prob, ncols, _mindex, _dlimit)
 end
 
 """
@@ -5278,8 +5267,7 @@ XPRSrestore (
 RESTORE).
 """
 function save(prob::XpressProblem)
-    r = Lib.XPRSsave(prob)
-    r != 0 ? throw(XpressError(r, "Unable to call save.")) : nothing
+    @checked Lib.XPRSsave(prob)
 end
 
 """
@@ -5316,8 +5304,7 @@ XPRSsave (
 SAVE).
 """
 function restore(prob::XpressProblem, _sprobname, _force)
-    r = Lib.XPRSrestore(prob, _sprobname, _force)
-    r != 0 ? throw(XpressError(r, "Unable to call restore.")) : nothing
+    @checked Lib.XPRSrestore(prob, _sprobname, _force)
 end
 
 """
@@ -5350,7 +5337,7 @@ XPRSgetpivotorder,
 XPRSgetpivots.
 """
 function pivot(prob::XpressProblem, _in, _out)
-    Lib.XPRSpivot(prob, _in, _out)
+    @checked Lib.XPRSpivot(prob, _in, _out)
 end
 
 """
@@ -5391,7 +5378,7 @@ XPRSgetpivotorder,
 XPRSpivot.
 """
 function getpivots(prob::XpressProblem, _in, _mout, _dout, _dobjo, npiv, maxpiv)
-    Lib.XPRSgetpivots(prob, _in, _mout, _dout, _dobjo, npiv, maxpiv)
+    @checked Lib.XPRSgetpivots(prob, _in, _mout, _dout, _dobjo, npiv, maxpiv)
 end
 
 """
@@ -5443,11 +5430,11 @@ XPRSstorecuts, Section
 Working with the Cut Manager.
 """
 function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
-    Lib.XPRSaddcuts(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
+    @checked Lib.XPRSaddcuts(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
 end
 
 function addcuts64(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
-    Lib.XPRSaddcuts64(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
+    @checked Lib.XPRSaddcuts64(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
 end
 
 """
@@ -5501,7 +5488,7 @@ XPRSloadcuts, Section
 Working with the Cut Manager.
 """
 function delcuts(prob::XpressProblem, ibasis, itype, interp, delta, ncuts, mcutind)
-    Lib.XPRSdelcuts(prob, ibasis, itype, interp, delta, ncuts, mcutind)
+    @checked Lib.XPRSdelcuts(prob, ibasis, itype, interp, delta, ncuts, mcutind)
 end
 
 """
@@ -5547,7 +5534,7 @@ XPRSloadcuts, Section
 Working with the Cut Manager.
 """
 function delcpcuts(prob::XpressProblem, itype, interp, ncuts, mcutind)
-    Lib.XPRSdelcpcuts(prob, itype, interp, ncuts, mcutind)
+    @checked Lib.XPRSdelcpcuts(prob, itype, interp, ncuts, mcutind)
 end
 
 """
@@ -5590,7 +5577,7 @@ XPRSgetcpcuts, Section
 Working with the Cut Manager.
 """
 function getcutlist(prob::XpressProblem, itype, interp, ncuts, maxcuts, mcutind)
-    Lib.XPRSgetcutlist(prob, itype, interp, ncuts, maxcuts, mcutind)
+    @checked Lib.XPRSgetcutlist(prob, itype, interp, ncuts, maxcuts, mcutind)
 end
 
 """
@@ -5638,7 +5625,7 @@ XPRSgetcutslack, Section
 Working with the Cut Manager.
 """
 function getcpcutlist(prob::XpressProblem, itype, interp, delta, ncuts, maxcuts, mcutind, dviol)
-    Lib.XPRSgetcpcutlist(prob, itype, interp, delta, ncuts, maxcuts, mcutind, dviol)
+    @checked Lib.XPRSgetcpcutlist(prob, itype, interp, delta, ncuts, maxcuts, mcutind, dviol)
 end
 
 """
@@ -5688,11 +5675,11 @@ XPRSgetcutlist,
 Working with the Cut Manager.
 """
 function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
-    Lib.XPRSgetcpcuts(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
+    @checked Lib.XPRSgetcpcuts(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
 end
 
 function getcpcuts64(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
-    Lib.XPRSgetcpcuts64(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
+    @checked Lib.XPRSgetcpcuts64(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
 end
 
 """
@@ -5739,7 +5726,7 @@ XPRSgetcpcutlist,
 Working with the Cut Manager.
 """
 function loadcuts(prob::XpressProblem, itype, interp, ncuts, mcutind)
-    Lib.XPRSloadcuts(prob, itype, interp, ncuts, mcutind)
+    @checked Lib.XPRSloadcuts(prob, itype, interp, ncuts, mcutind)
 end
 
 """
@@ -5794,11 +5781,11 @@ XPRSaddcbsepnode,
 Working with the Cut Manager.
 """
 function storecuts(prob::XpressProblem, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
-    Lib.XPRSstorecuts(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
+    @checked Lib.XPRSstorecuts(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
 end
 
 function storecuts64(prob::XpressProblem, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
-    Lib.XPRSstorecuts64(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
+    @checked Lib.XPRSstorecuts64(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
 end
 
 """
@@ -5854,7 +5841,7 @@ XPRSsetbranchcuts,
 XPRSstorecuts.
 """
 function presolverow(prob::XpressProblem, qrtype, nzo, mcolso, dvalo, drhso, maxcoeffs, nzp, mcolsp, dvalp, drhsp, status)
-    Lib.XPRSpresolverow(prob, qrtype, nzo, mcolso, dvalo, drhso, maxcoeffs, nzp, mcolsp, dvalp, drhsp, status)
+    @checked Lib.XPRSpresolverow(prob, qrtype, nzo, mcolso, dvalo, drhso, maxcoeffs, nzp, mcolsp, dvalp, drhsp, status)
 end
 
 """
@@ -5893,7 +5880,7 @@ XPRSgetlpsol,
 XPRScrossoverlpsol.
 """
 function loadlpsol(prob::XpressProblem, _dx, _dslack, _dual, _dj, status)
-    Lib.XPRSloadlpsol(prob, _dx, _dslack, _dual, _dj, status)
+    @checked Lib.XPRSloadlpsol(prob, _dx, _dslack, _dual, _dj, status)
 end
 
 """
@@ -5930,7 +5917,7 @@ XPRSgetmipsol,
 XPRSaddcboptnode.
 """
 function loadmipsol(prob::XpressProblem, dsol, status)
-    Lib.XPRSloadmipsol(prob, dsol, status)
+    @checked Lib.XPRSloadmipsol(prob, dsol, status)
 end
 
 """
@@ -5966,7 +5953,7 @@ XPRSaddcbusersolnotify,
 XPRSaddcboptnode.
 """
 function addmipsol(prob::XpressProblem, ilength, mipsolval, mipsolcol, solname)
-    Lib.XPRSaddmipsol(prob, ilength, mipsolval, mipsolcol, solname)
+    @checked Lib.XPRSaddmipsol(prob, ilength, mipsolval, mipsolcol, solname)
 end
 
 """
@@ -6003,7 +5990,7 @@ XPRSaddcbestimate,
 XPRSaddcbsepnode.
 """
 function storebounds(prob::XpressProblem, nbnds, mcols, qbtype, dbnd, mindex)
-    Lib.XPRSstorebounds(prob, nbnds, mcols, qbtype, dbnd, mindex)
+    @checked Lib.XPRSstorebounds(prob, nbnds, mcols, qbtype, dbnd, mindex)
 end
 
 """
@@ -6039,7 +6026,7 @@ XPRSstorecuts, Section
 Working with the Cut Manager.
 """
 function setbranchcuts(prob::XpressProblem, nbcuts, mindex)
-    Lib.XPRSsetbranchcuts(prob, nbcuts, mindex)
+    @checked Lib.XPRSsetbranchcuts(prob, nbcuts, mindex)
 end
 
 """
@@ -6075,7 +6062,7 @@ XPRSstorebounds, Section
 Working with the Cut Manager.
 """
 function setbranchbounds(prob::XpressProblem, mindex)
-    Lib.XPRSsetbranchbounds(prob, mindex)
+    @checked Lib.XPRSsetbranchbounds(prob, mindex)
 end
 
 """
@@ -6107,7 +6094,7 @@ XPRSsetlogfile, Chapter
 Return Codes and Error Messages.
 """
 function getlasterror(prob::XpressProblem, errmsg)
-    Lib.XPRSgetlasterror(prob, errmsg)
+    @checked Lib.XPRSgetlasterror(prob, errmsg)
 end
 
 """
@@ -6139,7 +6126,7 @@ Print the condition number after optimizing a problem.
 
 """
 function basiscondition(prob::XpressProblem, condnum, scondnum)
-    Lib.XPRSbasiscondition(prob, condnum, scondnum)
+    @checked Lib.XPRSbasiscondition(prob, condnum, scondnum)
 end
 
 """
@@ -6176,7 +6163,7 @@ XPRSwriteprtsol,
 XPRSwritesol.
 """
 function getmipsol(prob::XpressProblem, _dx, _dslack)
-    Lib.XPRSgetmipsol(prob, _dx, _dslack)
+    @checked Lib.XPRSgetmipsol(prob, _dx, _dslack)
 end
 
 """
@@ -6219,7 +6206,7 @@ XPRSwriteprtsol,
 XPRSwritesol.
 """
 function getlpsol(prob::XpressProblem, _dx, _dslack, _dual, _dj)
-    Lib.XPRSgetlpsol(prob, _dx, _dslack, _dual, _dj)
+    @checked Lib.XPRSgetlpsol(prob, _dx, _dslack, _dual, _dj)
 end
 
 """
@@ -6248,7 +6235,7 @@ XPRSlpoptimize,
 XPRSmipoptimize
 """
 function postsolve(prob::XpressProblem)
-    Lib.XPRSpostsolve(prob)
+    @checked Lib.XPRSpostsolve(prob)
 end
 
 """
@@ -6281,7 +6268,7 @@ In this example, sets
 XPRSaddsets.
 """
 function delsets(prob::XpressProblem, nsets, msindex)
-    Lib.XPRSdelsets(prob, nsets, msindex)
+    @checked Lib.XPRSdelsets(prob, nsets, msindex)
 end
 
 """
@@ -6320,11 +6307,11 @@ int XPRS_CC XPRSaddsets(XPRSprob prob, int newsets, int newnz, const char qrtype
 XPRSdelsets.
 """
 function addsets(prob::XpressProblem, newsets, newnz, qstype, msstart, mscols, dref)
-    Lib.XPRSaddsets(prob, newsets, newnz, qstype, msstart, mscols, dref)
+    @checked Lib.XPRSaddsets(prob, newsets, newnz, qstype, msstart, mscols, dref)
 end
 
 function addsets64(prob::XpressProblem, newsets, newnz, qstype, msstart, mscols, dref)
-    Lib.XPRSaddsets64(prob, newsets, newnz, qstype, msstart, mscols, dref)
+    @checked Lib.XPRSaddsets64(prob, newsets, newnz, qstype, msstart, mscols, dref)
 end
 
 """
@@ -6367,7 +6354,7 @@ Suppose that the current LP relaxation has two integer columns (columns
 
 """
 function strongbranch(prob::XpressProblem, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
-    Lib.XPRSstrongbranch(prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
+    @checked Lib.XPRSstrongbranch(prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
 end
 
 """
@@ -6401,7 +6388,7 @@ XPRSlpoptimize,
 XPRSstrongbranch
 """
 function estimaterowdualranges(prob::XpressProblem, nRows, rowIndices, iterationLimit, minDualActivity, maxDualActivity)
-    Lib.XPRSestimaterowdualranges(prob, nRows, rowIndices, iterationLimit, minDualActivity, maxDualActivity)
+    @checked Lib.XPRSestimaterowdualranges(prob, nRows, rowIndices, iterationLimit, minDualActivity, maxDualActivity)
 end
 
 """
@@ -6431,7 +6418,7 @@ The following code tries to retrieve a primal ray:
 XPRSgetdualray.
 """
 function getprimalray(prob::XpressProblem, _dpray, _hasray)
-    Lib.XPRSgetprimalray(prob, _dpray, _hasray)
+    @checked Lib.XPRSgetprimalray(prob, _dpray, _hasray)
 end
 
 """
@@ -6461,7 +6448,7 @@ The following code tries to retrieve a dual ray:
 XPRSgetprimalray.
 """
 function getdualray(prob::XpressProblem, _ddray, _hasray)
-    Lib.XPRSgetdualray(prob, _ddray, _hasray)
+    @checked Lib.XPRSgetdualray(prob, _ddray, _hasray)
 end
 
 """
@@ -6495,7 +6482,7 @@ XPRSsetmessagestatus to suppress the error message:
 XPRSgetmessagestatus.
 """
 function setmessagestatus(prob::XpressProblem, errcode, bEnabledStatus)
-    Lib.XPRSsetmessagestatus(prob, errcode, bEnabledStatus)
+    @checked Lib.XPRSsetmessagestatus(prob, errcode, bEnabledStatus)
 end
 
 """
@@ -6526,7 +6513,7 @@ int XPRS_CC XPRSgetmessagestatus(XPRSprob prob, int errcode, int *status);
 XPRSsetmessagestatus.
 """
 function getmessagestatus(prob::XpressProblem, errcode, bEnabledStatus)
-    Lib.XPRSgetmessagestatus(prob, errcode, bEnabledStatus)
+    @checked Lib.XPRSgetmessagestatus(prob, errcode, bEnabledStatus)
 end
 
 """
@@ -6580,7 +6567,7 @@ XPRSrepairweightedinfeasbounds,
 The Infeasibility Repair Utility.
 """
 function repairweightedinfeas(prob::XpressProblem, scode, lrp_array, grp_array, lbp_array, ubp_array, second_phase, delta, optflags)
-    Lib.XPRSrepairweightedinfeas(prob, scode, lrp_array, grp_array, lbp_array, ubp_array, second_phase, delta, optflags)
+    @checked Lib.XPRSrepairweightedinfeas(prob, scode, lrp_array, grp_array, lbp_array, ubp_array, second_phase, delta, optflags)
 end
 
 """
@@ -6644,7 +6631,7 @@ REPAIRINFEAS),
 The Infeasibility Repair Utility.
 """
 function repairweightedinfeasbounds(prob::XpressProblem, scode, lrp_array, grp_array, lbp_array, ubp_array, lrb_array, grb_array, lbb_array, ubb_array, second_phase, delta, optflags)
-    Lib.XPRSrepairweightedinfeasbounds(prob, scode, lrp_array, grp_array, lbp_array, ubp_array, lrb_array, grb_array, lbb_array, ubb_array, second_phase, delta, optflags)
+    @checked Lib.XPRSrepairweightedinfeasbounds(prob, scode, lrp_array, grp_array, lbp_array, ubp_array, lrb_array, grb_array, lbb_array, ubb_array, second_phase, delta, optflags)
 end
 
 """
@@ -6702,7 +6689,7 @@ XPRSrepairweightedinfeas,
 The Infeasibility Repair Utility.
 """
 function repairinfeas(prob::XpressProblem, scode, ptype, phase2, globalflags, lrp, grp, lbp, ubp, delta)
-    Lib.XPRSrepairinfeas(prob, scode, ptype, phase2, globalflags, lrp, grp, lbp, ubp, delta)
+    @checked Lib.XPRSrepairinfeas(prob, scode, ptype, phase2, globalflags, lrp, grp, lbp, ubp, delta)
 end
 
 """
@@ -6738,7 +6725,7 @@ XPRSgetcpcuts, Section
 Working with the Cut Manager.
 """
 function getcutslack(prob::XpressProblem, cut, dslack)
-    Lib.XPRSgetcutslack(prob, cut, dslack)
+    @checked Lib.XPRSgetcutslack(prob, cut, dslack)
 end
 
 """
@@ -6775,7 +6762,7 @@ XPRSgetcpcuts, Section
 Working with the Cut Manager.
 """
 function getcutmap(prob::XpressProblem, ncuts, cuts, cutmap)
-    Lib.XPRSgetcutmap(prob, ncuts, cuts, cutmap)
+    @checked Lib.XPRSgetcutmap(prob, ncuts, cuts, cutmap)
 end
 
 """
@@ -6821,7 +6808,7 @@ int XPRS_CC XPRSbasisstability(XPRSprob prob, int type, int norm, int ifscaled, 
 
 """
 function basisstability(prob::XpressProblem, typecode, norm, ifscaled::Bool, dval)
-    Lib.XPRSbasisstability(prob, typecode, norm, ifscaled, dval)
+    @checked Lib.XPRSbasisstability(prob, typecode, norm, ifscaled, dval)
 end
 
 """
@@ -6853,7 +6840,7 @@ XPRScalcsolinfo,
 XPRScalcobjective.
 """
 function calcslacks(prob::XpressProblem, solution, calculatedslacks)
-    Lib.XPRScalcslacks(prob, solution, calculatedslacks)
+    @checked Lib.XPRScalcslacks(prob, solution, calculatedslacks)
 end
 
 """
@@ -6886,7 +6873,7 @@ XPRScalcsolinfo,
 XPRScalcobjective.
 """
 function calcreducedcosts(prob::XpressProblem, duals, solution, calculateddjs)
-    Lib.XPRScalcreducedcosts(prob, duals, solution, calculateddjs)
+    @checked Lib.XPRScalcreducedcosts(prob, duals, solution, calculateddjs)
 end
 
 """
@@ -6918,7 +6905,7 @@ XPRScalcsolinfo,
 XPRScalcreducedcosts.
 """
 function calcobjective(prob::XpressProblem, solution, objective)
-    Lib.XPRScalcobjective(prob, solution, objective)
+    @checked Lib.XPRScalcobjective(prob, solution, objective)
 end
 
 """
@@ -6957,7 +6944,7 @@ int XPRS_CC XPRSrefinemipsol(XPRSprob prob, int options, const char* flags, cons
 REFINEOPS.
 """
 function refinemipsol(prob::XpressProblem, options, _sflags, solution, refined_solution, refinestatus)
-    Lib.XPRSrefinemipsol(prob, options, _sflags, solution, refined_solution, refinestatus)
+    @checked Lib.XPRSrefinemipsol(prob, options, _sflags, solution, refined_solution, refinestatus)
 end
 
 """
@@ -6995,7 +6982,7 @@ XPRScalcobjective,
 XPRScalcreducedcosts.
 """
 function calcsolinfo(prob::XpressProblem, solution, dual, Property, Value)
-    Lib.XPRScalcsolinfo(prob, solution, dual, Property, Value)
+    @checked Lib.XPRScalcsolinfo(prob, solution, dual, Property, Value)
 end
 
 """
@@ -7033,7 +7020,7 @@ The following example retrieves and outputs the row and column names for the cur
 XPRSaddnames.
 """
 function getnamelist(prob::XpressProblem, _itype, _sbuff, names_len, names_len_reqd, first, last)
-    Lib.XPRSgetnamelist(prob, _itype, _sbuff, names_len, names_len_reqd, first, last)
+    @checked Lib.XPRSgetnamelist(prob, _itype, _sbuff, names_len, names_len_reqd, first, last)
 end
 
 """
@@ -7067,11 +7054,11 @@ int XPRS_CC XPRSgetnamelistobject(XPRSprob prob, int itype, XPRSnamelist *r_nml)
 None.
 """
 function getnamelistobject(prob::XpressProblem, _itype, r_nl)
-    Lib.XPRSgetnamelistobject(prob, _itype, r_nl)
+    @checked Lib.XPRSgetnamelistobject(prob, _itype, r_nl)
 end
 
 function logfilehandler(obj, vUserContext, vSystemThreadId, sMsg, iMsgType, iMsgCode)
-    Lib.XPRSlogfilehandler(obj, vUserContext, vSystemThreadId, sMsg, iMsgType, iMsgCode)
+    @checked Lib.XPRSlogfilehandler(obj, vUserContext, vSystemThreadId, sMsg, iMsgType, iMsgCode)
 end
 
 """
@@ -7102,7 +7089,7 @@ int XPRS_CC XPRSgetobjecttypename(XPRSobject object, const char **sObjectName);
 XPRS_ge_addcbmsghandler.
 """
 function getobjecttypename(obj, sObjectName)
-    Lib.XPRSgetobjecttypename(obj, sObjectName)
+    @checked Lib.XPRSgetobjecttypename(obj, sObjectName)
 end
 
 """
@@ -7147,15 +7134,15 @@ int XPRS_CC XPRSstrongbranchcb(XPRSprob prob, const int nbnds, const int mbndind
 
 """
 function strongbranchcb(prob::XpressProblem, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus, sbsolvecb, vContext)
-    Lib.XPRSstrongbranchcb(prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus, sbsolvecb, vContext)
+    @checked Lib.XPRSstrongbranchcb(prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus, sbsolvecb, vContext)
 end
 
 function setcblplog(prob::XpressProblem, f_lplog, p)
-    Lib.XPRSsetcblplog(prob, f_lplog, p)
+    @checked Lib.XPRSsetcblplog(prob, f_lplog, p)
 end
 
 function getcblplog(prob::XpressProblem, f_lplog, p)
-    Lib.XPRSgetcblplog(prob, f_lplog, p)
+    @checked Lib.XPRSgetcblplog(prob, f_lplog, p)
 end
 
 """
@@ -7201,7 +7188,7 @@ XPRSaddcbgloballog,
 XPRSaddcbmessage.
 """
 function addcblplog(prob::XpressProblem, f_lplog, p, priority)
-    Lib.XPRSaddcblplog(prob, f_lplog, p, priority)
+    @checked Lib.XPRSaddcblplog(prob, f_lplog, p, priority)
 end
 
 """
@@ -7234,15 +7221,15 @@ The following code sets and removes a callback function:
 XPRSaddcblplog
 """
 function removecblplog(prob::XpressProblem, f_lplog, p)
-    Lib.XPRSremovecblplog(prob, f_lplog, p)
+    @checked Lib.XPRSremovecblplog(prob, f_lplog, p)
 end
 
 function setcbgloballog(prob::XpressProblem, f_globallog, p)
-    Lib.XPRSsetcbgloballog(prob, f_globallog, p)
+    @checked Lib.XPRSsetcbgloballog(prob, f_globallog, p)
 end
 
 function getcbgloballog(prob::XpressProblem, f_globallog, p)
-    Lib.XPRSgetcbgloballog(prob, f_globallog, p)
+    @checked Lib.XPRSgetcbgloballog(prob, f_globallog, p)
 end
 
 """
@@ -7283,7 +7270,7 @@ XPRSaddcblplog,
 XPRSaddcbmessage.
 """
 function addcbgloballog(prob::XpressProblem, f_globallog, p, priority)
-    Lib.XPRSaddcbgloballog(prob, f_globallog, p, priority)
+    @checked Lib.XPRSaddcbgloballog(prob, f_globallog, p, priority)
 end
 
 """
@@ -7315,15 +7302,15 @@ The following code sets and removes a callback function:
 XPRSaddcbgloballog
 """
 function removecbgloballog(prob::XpressProblem, f_globallog, p)
-    Lib.XPRSremovecbgloballog(prob, f_globallog, p)
+    @checked Lib.XPRSremovecbgloballog(prob, f_globallog, p)
 end
 
 function setcbcutlog(prob::XpressProblem, f_cutlog, p)
-    Lib.XPRSsetcbcutlog(prob, f_cutlog, p)
+    @checked Lib.XPRSsetcbcutlog(prob, f_cutlog, p)
 end
 
 function getcbcutlog(prob::XpressProblem, f_cutlog, p)
-    Lib.XPRSgetcbcutlog(prob, f_cutlog, p)
+    @checked Lib.XPRSgetcbcutlog(prob, f_cutlog, p)
 end
 
 """
@@ -7360,7 +7347,7 @@ XPRSremovecbcutlog,
 XPRSaddcbcutmgr.
 """
 function addcbcutlog(prob::XpressProblem, f_cutlog, p, priority)
-    Lib.XPRSaddcbcutlog(prob, f_cutlog, p, priority)
+    @checked Lib.XPRSaddcbcutlog(prob, f_cutlog, p, priority)
 end
 
 """
@@ -7391,15 +7378,15 @@ int XPRS_CC XPRSremovecbcutlog(XPRSprob prob, int (XPRS_CC *f_cutlog)(XPRSprob p
 XPRSaddcbcutlog
 """
 function removecbcutlog(prob::XpressProblem, f_cutlog, p)
-    Lib.XPRSremovecbcutlog(prob, f_cutlog, p)
+    @checked Lib.XPRSremovecbcutlog(prob, f_cutlog, p)
 end
 
 function setcbbarlog(prob::XpressProblem, f_barlog, p)
-    Lib.XPRSsetcbbarlog(prob, f_barlog, p)
+    @checked Lib.XPRSsetcbbarlog(prob, f_barlog, p)
 end
 
 function getcbbarlog(prob::XpressProblem, f_barlog, p)
-    Lib.XPRSgetcbbarlog(prob, f_barlog, p)
+    @checked Lib.XPRSgetcbbarlog(prob, f_barlog, p)
 end
 
 """
@@ -7440,7 +7427,7 @@ XPRSaddcblplog,
 XPRSaddcbmessage.
 """
 function addcbbarlog(prob::XpressProblem, f_barlog, p, priority)
-    Lib.XPRSaddcbbarlog(prob, f_barlog, p, priority)
+    @checked Lib.XPRSaddcbbarlog(prob, f_barlog, p, priority)
 end
 
 """
@@ -7471,15 +7458,15 @@ int XPRS_CC XPRSremovecbbarlog(XPRSprob prob, int (XPRS_CC *f_barlog)(XPRSprob p
 XPRSaddcbbarlog.
 """
 function removecbbarlog(prob::XpressProblem, f_barlog, p)
-    Lib.XPRSremovecbbarlog(prob, f_barlog, p)
+    @checked Lib.XPRSremovecbbarlog(prob, f_barlog, p)
 end
 
 function setcbcutmgr(prob::XpressProblem, f_cutmgr, p)
-    Lib.XPRSsetcbcutmgr(prob, f_cutmgr, p)
+    @checked Lib.XPRSsetcbcutmgr(prob, f_cutmgr, p)
 end
 
 function getcbcutmgr(prob::XpressProblem, f_cutmgr, p)
-    Lib.XPRSgetcbcutmgr(prob, f_cutmgr, p)
+    @checked Lib.XPRSgetcbcutmgr(prob, f_cutmgr, p)
 end
 
 """
@@ -7519,7 +7506,7 @@ XPRSaddcbcutlog,
 CALLBACKCOUNT_CUTMGR.
 """
 function addcbcutmgr(prob::XpressProblem, f_cutmgr, p, priority)
-    Lib.XPRSaddcbcutmgr(prob, f_cutmgr, p, priority)
+    @checked Lib.XPRSaddcbcutmgr(prob, f_cutmgr, p, priority)
 end
 
 """
@@ -7550,15 +7537,15 @@ int XPRS_CC XPRSremovecbcutmgr(XPRSprob prob, int (XPRS_CC *f_cutmgr)(XPRSprob p
 XPRSaddcbcutmgr
 """
 function removecbcutmgr(prob::XpressProblem, f_cutmgr, p)
-    Lib.XPRSremovecbcutmgr(prob, f_cutmgr, p)
+    @checked Lib.XPRSremovecbcutmgr(prob, f_cutmgr, p)
 end
 
 function setcbchgnode(prob::XpressProblem, f_chgnode, p)
-    Lib.XPRSsetcbchgnode(prob, f_chgnode, p)
+    @checked Lib.XPRSsetcbchgnode(prob, f_chgnode, p)
 end
 
 function getcbchgnode(prob::XpressProblem, f_chgnode, p)
-    Lib.XPRSgetcbchgnode(prob, f_chgnode, p)
+    @checked Lib.XPRSgetcbchgnode(prob, f_chgnode, p)
 end
 
 """
@@ -7605,7 +7592,7 @@ XPRSaddcbchgbranch,
 XPRSaddcbprenode.
 """
 function addcbchgnode(prob::XpressProblem, f_chgnode, p, priority)
-    Lib.XPRSaddcbchgnode(prob, f_chgnode, p, priority)
+    @checked Lib.XPRSaddcbchgnode(prob, f_chgnode, p, priority)
 end
 
 """
@@ -7636,15 +7623,15 @@ int XPRS_CC XPRSremovecbchgnode(XPRSprob prob, void (XPRS_CC *f_chgnode)(XPRSpro
 XPRSaddcbchgnode
 """
 function removecbchgnode(prob::XpressProblem, f_chgnode, p)
-    Lib.XPRSremovecbchgnode(prob, f_chgnode, p)
+    @checked Lib.XPRSremovecbchgnode(prob, f_chgnode, p)
 end
 
 function setcboptnode(prob::XpressProblem, f_optnode, p)
-    Lib.XPRSsetcboptnode(prob, f_optnode, p)
+    @checked Lib.XPRSsetcboptnode(prob, f_optnode, p)
 end
 
 function getcboptnode(prob::XpressProblem, f_optnode, p)
-    Lib.XPRSgetcboptnode(prob, f_optnode, p)
+    @checked Lib.XPRSgetcboptnode(prob, f_optnode, p)
 end
 
 """
@@ -7687,7 +7674,7 @@ XPRSaddcbnodecutoff,
 CALLBACKCOUNT_OPTNODE.
 """
 function addcboptnode(prob::XpressProblem, f_optnode, p, priority)
-    Lib.XPRSaddcboptnode(prob, f_optnode, p, priority)
+    @checked Lib.XPRSaddcboptnode(prob, f_optnode, p, priority)
 end
 
 """
@@ -7718,15 +7705,15 @@ int XPRS_CC XPRSremovecboptnode(XPRSprob prob, void (XPRS_CC *f_optnode)(XPRSpro
 XPRSaddcboptnode
 """
 function removecboptnode(prob::XpressProblem, f_optnode, p)
-    Lib.XPRSremovecboptnode(prob, f_optnode, p)
+    @checked Lib.XPRSremovecboptnode(prob, f_optnode, p)
 end
 
 function setcbprenode(prob::XpressProblem, f_prenode, p)
-    Lib.XPRSsetcbprenode(prob, f_prenode, p)
+    @checked Lib.XPRSsetcbprenode(prob, f_prenode, p)
 end
 
 function getcbprenode(prob::XpressProblem, f_prenode, p)
-    Lib.XPRSgetcbprenode(prob, f_prenode, p)
+    @checked Lib.XPRSgetcbprenode(prob, f_prenode, p)
 end
 
 """
@@ -7771,7 +7758,7 @@ XPRSaddcbnodecutoff,
 XPRSaddcboptnode.
 """
 function addcbprenode(prob::XpressProblem, f_prenode, p, priority)
-    Lib.XPRSaddcbprenode(prob, f_prenode, p, priority)
+    @checked Lib.XPRSaddcbprenode(prob, f_prenode, p, priority)
 end
 
 """
@@ -7802,15 +7789,15 @@ int XPRS_CC XPRSremovecbprenode(XPRSprob prob, void (XPRS_CC *f_prenode)(XPRSpro
 XPRSaddcbprenode
 """
 function removecbprenode(prob::XpressProblem, f_prenode, p)
-    Lib.XPRSremovecbprenode(prob, f_prenode, p)
+    @checked Lib.XPRSremovecbprenode(prob, f_prenode, p)
 end
 
 function setcbinfnode(prob::XpressProblem, f_infnode, p)
-    Lib.XPRSsetcbinfnode(prob, f_infnode, p)
+    @checked Lib.XPRSsetcbinfnode(prob, f_infnode, p)
 end
 
 function getcbinfnode(prob::XpressProblem, f_infnode, p)
-    Lib.XPRSgetcbinfnode(prob, f_infnode, p)
+    @checked Lib.XPRSgetcbinfnode(prob, f_infnode, p)
 end
 
 """
@@ -7851,7 +7838,7 @@ XPRSaddcbintsol,
 XPRSaddcbnodecutoff.
 """
 function addcbinfnode(prob::XpressProblem, f_infnode, p, priority)
-    Lib.XPRSaddcbinfnode(prob, f_infnode, p, priority)
+    @checked Lib.XPRSaddcbinfnode(prob, f_infnode, p, priority)
 end
 
 """
@@ -7882,15 +7869,15 @@ int XPRS_CC XPRSremovecbinfnode(XPRSprob prob, void (XPRS_CC *f_infnode)(XPRSpro
 XPRSaddcbinfnode
 """
 function removecbinfnode(prob::XpressProblem, f_infnode, p)
-    Lib.XPRSremovecbinfnode(prob, f_infnode, p)
+    @checked Lib.XPRSremovecbinfnode(prob, f_infnode, p)
 end
 
 function setcbnodecutoff(prob::XpressProblem, f_nodecutoff, p)
-    Lib.XPRSsetcbnodecutoff(prob, f_nodecutoff, p)
+    @checked Lib.XPRSsetcbnodecutoff(prob, f_nodecutoff, p)
 end
 
 function getcbnodecutoff(prob::XpressProblem, f_nodecutoff, p)
-    Lib.XPRSgetcbnodecutoff(prob, f_nodecutoff, p)
+    @checked Lib.XPRSgetcbnodecutoff(prob, f_nodecutoff, p)
 end
 
 """
@@ -7933,7 +7920,7 @@ XPRSaddcbinfnode,
 XPRSaddcbintsol.
 """
 function addcbnodecutoff(prob::XpressProblem, f_nodecutoff, p, priority)
-    Lib.XPRSaddcbnodecutoff(prob, f_nodecutoff, p, priority)
+    @checked Lib.XPRSaddcbnodecutoff(prob, f_nodecutoff, p, priority)
 end
 
 """
@@ -7964,15 +7951,15 @@ int XPRS_CC XPRSremovecbnodecutoff(XPRSprob prob, void (XPRS_CC *f_nodecutoff)(X
 XPRSaddcbnodecutoff
 """
 function removecbnodecutoff(prob::XpressProblem, f_nodecutoff, p)
-    Lib.XPRSremovecbnodecutoff(prob, f_nodecutoff, p)
+    @checked Lib.XPRSremovecbnodecutoff(prob, f_nodecutoff, p)
 end
 
 function setcbintsol(prob::XpressProblem, f_intsol, p)
-    Lib.XPRSsetcbintsol(prob, f_intsol, p)
+    @checked Lib.XPRSsetcbintsol(prob, f_intsol, p)
 end
 
 function getcbintsol(prob::XpressProblem, f_intsol, p)
-    Lib.XPRSgetcbintsol(prob, f_intsol, p)
+    @checked Lib.XPRSgetcbintsol(prob, f_intsol, p)
 end
 
 """
@@ -8010,7 +7997,7 @@ XPRSremovecbintsol,
 XPRSaddcbpreintsol.
 """
 function addcbintsol(prob::XpressProblem, f_intsol, p, priority)
-    Lib.XPRSaddcbintsol(prob, f_intsol, p, priority)
+    @checked Lib.XPRSaddcbintsol(prob, f_intsol, p, priority)
 end
 
 """
@@ -8041,15 +8028,15 @@ int XPRS_CC XPRSremovecbintsol(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob 
 XPRSaddcbintsol
 """
 function removecbintsol(prob::XpressProblem, f_intsol, p)
-    Lib.XPRSremovecbintsol(prob, f_intsol, p)
+    @checked Lib.XPRSremovecbintsol(prob, f_intsol, p)
 end
 
 function setcbpreintsol(prob::XpressProblem, f_preintsol, p)
-    Lib.XPRSsetcbpreintsol(prob, f_preintsol, p)
+    @checked Lib.XPRSsetcbpreintsol(prob, f_preintsol, p)
 end
 
 function getcbpreintsol(prob::XpressProblem, f_preintsol, p)
-    Lib.XPRSgetcbpreintsol(prob, f_preintsol, p)
+    @checked Lib.XPRSgetcbpreintsol(prob, f_preintsol, p)
 end
 
 """
@@ -8095,7 +8082,7 @@ XPRSremovecbpreintsol,
 XPRSaddcbintsol.
 """
 function addcbpreintsol(prob::XpressProblem, f_preintsol, p, priority)
-    Lib.XPRSaddcbpreintsol(prob, f_preintsol, p, priority)
+    @checked Lib.XPRSaddcbpreintsol(prob, f_preintsol, p, priority)
 end
 
 """
@@ -8126,15 +8113,15 @@ int XPRS_CC XPRSremovecbpreintsol(XPRSprob prob, void (XPRS_CC *f_preintsol)(XPR
 XPRSaddcbpreintsol
 """
 function removecbpreintsol(prob::XpressProblem, f_preintsol, p)
-    Lib.XPRSremovecbpreintsol(prob, f_preintsol, p)
+    @checked Lib.XPRSremovecbpreintsol(prob, f_preintsol, p)
 end
 
 function setcbchgbranch(prob::XpressProblem, f_chgbranch, p)
-    Lib.XPRSsetcbchgbranch(prob, f_chgbranch, p)
+    @checked Lib.XPRSsetcbchgbranch(prob, f_chgbranch, p)
 end
 
 function getcbchgbranch(prob::XpressProblem, f_chgbranch, p)
-    Lib.XPRSgetcbchgbranch(prob, f_chgbranch, p)
+    @checked Lib.XPRSgetcbchgbranch(prob, f_chgbranch, p)
 end
 
 """
@@ -8190,7 +8177,7 @@ XPRSaddcbnodecutoff,
 XPRSaddcbprenode.
 """
 function addcbchgbranch(prob::XpressProblem, f_chgbranch, p, priority)
-    Lib.XPRSaddcbchgbranch(prob, f_chgbranch, p, priority)
+    @checked Lib.XPRSaddcbchgbranch(prob, f_chgbranch, p, priority)
 end
 
 """
@@ -8221,15 +8208,15 @@ int XPRS_CC XPRSremovecbchgbranch(XPRSprob prob, void (XPRS_CC *f_chgbranch)(XPR
 XPRSaddcbchgbranch.
 """
 function removecbchgbranch(prob::XpressProblem, f_chgbranch, p)
-    Lib.XPRSremovecbchgbranch(prob, f_chgbranch, p)
+    @checked Lib.XPRSremovecbchgbranch(prob, f_chgbranch, p)
 end
 
 function setcbestimate(prob::XpressProblem, f_estimate, p)
-    Lib.XPRSsetcbestimate(prob, f_estimate, p)
+    @checked Lib.XPRSsetcbestimate(prob, f_estimate, p)
 end
 
 function getcbestimate(prob::XpressProblem, f_estimate, p)
-    Lib.XPRSgetcbestimate(prob, f_estimate, p)
+    @checked Lib.XPRSgetcbestimate(prob, f_estimate, p)
 end
 
 """
@@ -8288,7 +8275,7 @@ XPRSaddcbsepnode,
 XPRS_bo_create.
 """
 function addcbestimate(prob::XpressProblem, f_estimate, p, priority)
-    Lib.XPRSaddcbestimate(prob, f_estimate, p, priority)
+    @checked Lib.XPRSaddcbestimate(prob, f_estimate, p, priority)
 end
 
 """
@@ -8319,15 +8306,15 @@ int XPRS_CC XPRSremovecbestimate(XPRSprob prob, int (XPRS_CC *f_estimate)(XPRSpr
 XPRSaddcbestimate
 """
 function removecbestimate(prob::XpressProblem, f_estimate, p)
-    Lib.XPRSremovecbestimate(prob, f_estimate, p)
+    @checked Lib.XPRSremovecbestimate(prob, f_estimate, p)
 end
 
 function setcbsepnode(prob::XpressProblem, f_sepnode, p)
-    Lib.XPRSsetcbsepnode(prob, f_sepnode, p)
+    @checked Lib.XPRSsetcbsepnode(prob, f_sepnode, p)
 end
 
 function getcbsepnode(prob::XpressProblem, f_sepnode, p)
-    Lib.XPRSgetcbsepnode(prob, f_sepnode, p)
+    @checked Lib.XPRSgetcbsepnode(prob, f_sepnode, p)
 end
 
 """
@@ -8380,7 +8367,7 @@ XPRSstorebounds,
 XPRSstorecuts.
 """
 function addcbsepnode(prob::XpressProblem, f_sepnode, p, priority)
-    Lib.XPRSaddcbsepnode(prob, f_sepnode, p, priority)
+    @checked Lib.XPRSaddcbsepnode(prob, f_sepnode, p, priority)
 end
 
 """
@@ -8411,15 +8398,15 @@ int XPRS_CC XPRSremovecbsepnode(XPRSprob prob, int (XPRS_CC *f_sepnode)(XPRSprob
 XPRSaddcbsepnode
 """
 function removecbsepnode(prob::XpressProblem, f_sepnode, p)
-    Lib.XPRSremovecbsepnode(prob, f_sepnode, p)
+    @checked Lib.XPRSremovecbsepnode(prob, f_sepnode, p)
 end
 
 function setcbmessage(prob::XpressProblem, f_message, p)
-    Lib.XPRSsetcbmessage(prob, f_message, p)
+    @checked Lib.XPRSsetcbmessage(prob, f_message, p)
 end
 
 function getcbmessage(prob::XpressProblem, f_message, p)
-    Lib.XPRSgetcbmessage(prob, f_message, p)
+    @checked Lib.XPRSgetcbmessage(prob, f_message, p)
 end
 
 """
@@ -8469,7 +8456,7 @@ XPRSaddcblplog,
 XPRSsetlogfile.
 """
 function addcbmessage(prob::XpressProblem, f_message, p, priority)
-    Lib.XPRSaddcbmessage(prob, f_message, p, priority)
+    @checked Lib.XPRSaddcbmessage(prob, f_message, p, priority)
 end
 
 """
@@ -8500,15 +8487,15 @@ int XPRS_CC XPRSremovecbmessage(XPRSprob prob, void (XPRS_CC *f_message)(XPRSpro
 XPRSaddcbmessage
 """
 function removecbmessage(prob::XpressProblem, f_message, p)
-    Lib.XPRSremovecbmessage(prob, f_message, p)
+    @checked Lib.XPRSremovecbmessage(prob, f_message, p)
 end
 
 function setcbmipthread(prob::XpressProblem, f_mipthread, p)
-    Lib.XPRSsetcbmipthread(prob, f_mipthread, p)
+    @checked Lib.XPRSsetcbmipthread(prob, f_mipthread, p)
 end
 
 function getcbmipthread(prob::XpressProblem, f_mipthread, p)
-    Lib.XPRSgetcbmipthread(prob, f_mipthread, p)
+    @checked Lib.XPRSgetcbmipthread(prob, f_mipthread, p)
 end
 
 """
@@ -8546,7 +8533,7 @@ MIPTHREADS,
 MAXMIPTASKS.
 """
 function addcbmipthread(prob::XpressProblem, f_mipthread, p, priority)
-    Lib.XPRSaddcbmipthread(prob, f_mipthread, p, priority)
+    @checked Lib.XPRSaddcbmipthread(prob, f_mipthread, p, priority)
 end
 
 """
@@ -8577,15 +8564,15 @@ int XPRS_CC XPRSremovecbmipthread(XPRSprob prob, void (XPRS_CC *f_mipthread)(XPR
 XPRSaddcbmipthread
 """
 function removecbmipthread(prob::XpressProblem, f_mipthread, p)
-    Lib.XPRSremovecbmipthread(prob, f_mipthread, p)
+    @checked Lib.XPRSremovecbmipthread(prob, f_mipthread, p)
 end
 
 function setcbdestroymt(prob::XpressProblem, f_destroymt, p)
-    Lib.XPRSsetcbdestroymt(prob, f_destroymt, p)
+    @checked Lib.XPRSsetcbdestroymt(prob, f_destroymt, p)
 end
 
 function getcbdestroymt(prob::XpressProblem, f_destroymt, p)
-    Lib.XPRSgetcbdestroymt(prob, f_destroymt, p)
+    @checked Lib.XPRSgetcbdestroymt(prob, f_destroymt, p)
 end
 
 """
@@ -8621,7 +8608,7 @@ XPRSremovecbdestroymt,
 XPRSaddcbmipthread.
 """
 function addcbdestroymt(prob::XpressProblem, f_destroymt, p, priority)
-    Lib.XPRSaddcbdestroymt(prob, f_destroymt, p, priority)
+    @checked Lib.XPRSaddcbdestroymt(prob, f_destroymt, p, priority)
 end
 
 """
@@ -8652,15 +8639,15 @@ int XPRS_CC XPRSremovecbdestroymt(XPRSprob prob, void (XPRS_CC *f_destroymt)(XPR
 XPRSaddcbdestroymt
 """
 function removecbdestroymt(prob::XpressProblem, f_destroymt, p)
-    Lib.XPRSremovecbdestroymt(prob, f_destroymt, p)
+    @checked Lib.XPRSremovecbdestroymt(prob, f_destroymt, p)
 end
 
 function setcbnewnode(prob::XpressProblem, f_newnode, p)
-    Lib.XPRSsetcbnewnode(prob, f_newnode, p)
+    @checked Lib.XPRSsetcbnewnode(prob, f_newnode, p)
 end
 
 function getcbnewnode(prob::XpressProblem, f_newnode, p)
-    Lib.XPRSgetcbnewnode(prob, f_newnode, p)
+    @checked Lib.XPRSgetcbnewnode(prob, f_newnode, p)
 end
 
 """
@@ -8702,7 +8689,7 @@ XPRSremovecbnewnode,
 XPRSaddcbchgnode.
 """
 function addcbnewnode(prob::XpressProblem, f_newnode, p, priority)
-    Lib.XPRSaddcbnewnode(prob, f_newnode, p, priority)
+    @checked Lib.XPRSaddcbnewnode(prob, f_newnode, p, priority)
 end
 
 """
@@ -8733,15 +8720,15 @@ int XPRS_CC XPRSremovecbnewnode(XPRSprob prob, void (XPRS_CC *f_newnode)(XPRSpro
 XPRSaddcbnewnode
 """
 function removecbnewnode(prob::XpressProblem, f_newnode, p)
-    Lib.XPRSremovecbnewnode(prob, f_newnode, p)
+    @checked Lib.XPRSremovecbnewnode(prob, f_newnode, p)
 end
 
 function setcbbariteration(prob::XpressProblem, f_bariteration, p)
-    Lib.XPRSsetcbbariteration(prob, f_bariteration, p)
+    @checked Lib.XPRSsetcbbariteration(prob, f_bariteration, p)
 end
 
 function getcbbariteration(prob::XpressProblem, f_bariteration, p)
-    Lib.XPRSgetcbbariteration(prob, f_bariteration, p)
+    @checked Lib.XPRSgetcbbariteration(prob, f_bariteration, p)
 end
 
 """
@@ -8784,7 +8771,7 @@ This simple example demonstrates how the solution might be retrieved for each ba
 XPRSremovecbbariteration.
 """
 function addcbbariteration(prob::XpressProblem, f_bariteration, p, priority)
-    Lib.XPRSaddcbbariteration(prob, f_bariteration, p, priority)
+    @checked Lib.XPRSaddcbbariteration(prob, f_bariteration, p, priority)
 end
 
 """
@@ -8815,15 +8802,15 @@ int XPRS_CC XPRSremovecbbariteration(XPRSprob prob, void (XPRS_CC *f_bariteratio
 XPRSaddcbbariteration.
 """
 function removecbbariteration(prob::XpressProblem, f_bariteration, p)
-    Lib.XPRSremovecbbariteration(prob, f_bariteration, p)
+    @checked Lib.XPRSremovecbbariteration(prob, f_bariteration, p)
 end
 
 function setcbchgbranchobject(prob::XpressProblem, f_chgbranchobject, p)
-    Lib.XPRSsetcbchgbranchobject(prob, f_chgbranchobject, p)
+    @checked Lib.XPRSsetcbchgbranchobject(prob, f_chgbranchobject, p)
 end
 
 function getcbchgbranchobject(prob::XpressProblem, f_chgbranchobject, p)
-    Lib.XPRSgetcbchgbranchobject(prob, f_chgbranchobject, p)
+    @checked Lib.XPRSgetcbchgbranchobject(prob, f_chgbranchobject, p)
 end
 
 """
@@ -8863,7 +8850,7 @@ XPRSremovecbchgbranchobject,
 XPRS_bo_create.
 """
 function addcbchgbranchobject(prob::XpressProblem, f_chgbranchobject, p, priority)
-    Lib.XPRSaddcbchgbranchobject(prob, f_chgbranchobject, p, priority)
+    @checked Lib.XPRSaddcbchgbranchobject(prob, f_chgbranchobject, p, priority)
 end
 
 """
@@ -8894,15 +8881,15 @@ int XPRS_CC XPRSremovecbchgbranchobject(XPRSprob prob, void (XPRS_CC *f_chgbranc
 XPRSaddcbchgbranchobject
 """
 function removecbchgbranchobject(prob::XpressProblem, f_chgbranchobject, p)
-    Lib.XPRSremovecbchgbranchobject(prob, f_chgbranchobject, p)
+    @checked Lib.XPRSremovecbchgbranchobject(prob, f_chgbranchobject, p)
 end
 
 function setcbgapnotify(prob::XpressProblem, f_gapnotify, p)
-    Lib.XPRSsetcbgapnotify(prob, f_gapnotify, p)
+    @checked Lib.XPRSsetcbgapnotify(prob, f_gapnotify, p)
 end
 
 function getcbgapnotify(prob::XpressProblem, f_gapnotify, p)
-    Lib.XPRSgetcbgapnotify(prob, f_gapnotify, p)
+    @checked Lib.XPRSgetcbgapnotify(prob, f_gapnotify, p)
 end
 
 """
@@ -8950,7 +8937,7 @@ MIPABSGAPNOTIFYBOUND,
 XPRSremovecbgapnotify.
 """
 function addcbgapnotify(prob::XpressProblem, f_gapnotify, p, priority)
-    Lib.XPRSaddcbgapnotify(prob, f_gapnotify, p, priority)
+    @checked Lib.XPRSaddcbgapnotify(prob, f_gapnotify, p, priority)
 end
 
 """
@@ -8983,15 +8970,15 @@ int XPRS_CC XPRSremovecbgapnotify(XPRSprob prob, void (XPRS_CC *f_gapnotify)(XPR
 XPRSaddcbgapnotify.
 """
 function removecbgapnotify(prob::XpressProblem, f_gapnotify, p)
-    Lib.XPRSremovecbgapnotify(prob, f_gapnotify, p)
+    @checked Lib.XPRSremovecbgapnotify(prob, f_gapnotify, p)
 end
 
 function setcbusersolnotify(prob::XpressProblem, f_usersolnotify, p)
-    Lib.XPRSsetcbusersolnotify(prob, f_usersolnotify, p)
+    @checked Lib.XPRSsetcbusersolnotify(prob, f_usersolnotify, p)
 end
 
 function getcbusersolnotify(prob::XpressProblem, f_usersolnotify, p)
-    Lib.XPRSgetcbusersolnotify(prob, f_usersolnotify, p)
+    @checked Lib.XPRSgetcbusersolnotify(prob, f_usersolnotify, p)
 end
 
 """
@@ -9042,7 +9029,7 @@ XPRSremovecbusersolnotify,
 XPRSaddmipsol.
 """
 function addcbusersolnotify(prob::XpressProblem, f_usersolnotify, p, priority)
-    Lib.XPRSaddcbusersolnotify(prob, f_usersolnotify, p, priority)
+    @checked Lib.XPRSaddcbusersolnotify(prob, f_usersolnotify, p, priority)
 end
 
 """
@@ -9074,7 +9061,7 @@ int XPRS_CC XPRSremovecbusersolnotify(XPRSprob prob, void (XPRS_CC *f_usersolnot
 XPRSaddcbusersolnotify.
 """
 function removecbusersolnotify(prob::XpressProblem, f_usersolnotify, p)
-    Lib.XPRSremovecbusersolnotify(prob, f_usersolnotify, p)
+    @checked Lib.XPRSremovecbusersolnotify(prob, f_usersolnotify, p)
 end
 
 """
@@ -9110,7 +9097,7 @@ Here we obtain the objective function ranges for the three columns:
 XPRSrhssa.
 """
 function objsa(prob::XpressProblem, ncols, mindex, lower, upper)
-    Lib.XPRSobjsa(prob, ncols, mindex, lower, upper)
+    @checked Lib.XPRSobjsa(prob, ncols, mindex, lower, upper)
 end
 
 """
@@ -9146,7 +9133,7 @@ Here we obtain the RHS function ranges for the three columns:
 XPRSobjsa.
 """
 function rhssa(prob::XpressProblem, nrows, mindex, lower, upper)
-    Lib.XPRSrhssa(prob, nrows, mindex, lower, upper)
+    @checked Lib.XPRSrhssa(prob, nrows, mindex, lower, upper)
 end
 
 """
@@ -9189,7 +9176,7 @@ int XPRS_CC XPRS_ge_setcbmsghandler(int (XPRS_CC *f_msghandler)(XPRSobject vXPRS
 XPRSgetobjecttypename.
 """
 function _ge_setcbmsghandler(f_msghandler, p)
-    Lib.XPRS_ge_setcbmsghandler(f_msghandler, p)
+    @checked Lib.XPRS_ge_setcbmsghandler(f_msghandler, p)
 end
 
 """
@@ -9219,7 +9206,7 @@ int XPRS_CC XPRS_ge_getcbmsghandler(int (XPRS_CC **r_f_msghandler)(XPRSobject vX
 XPRS_ge_setcbmsghandler.
 """
 function _ge_getcbmsghandler(f_msghandler, p)
-    Lib.XPRS_ge_getcbmsghandler(f_msghandler, p)
+    @checked Lib.XPRS_ge_getcbmsghandler(f_msghandler, p)
 end
 
 """
@@ -9267,7 +9254,7 @@ XPRS_ge_removecbmsghandler,
 XPRSgetobjecttypename.
 """
 function _ge_addcbmsghandler(f_msghandler, p, priority)
-    Lib.XPRS_ge_addcbmsghandler(f_msghandler, p, priority)
+    @checked Lib.XPRS_ge_addcbmsghandler(f_msghandler, p, priority)
 end
 
 """
@@ -9297,7 +9284,7 @@ int XPRS_CC XPRS_ge_removecbmsghandler(int (XPRS_CC *f_msghandler)(XPRSobject vX
 XPRS_ge_addcbmsghandler
 """
 function _ge_removecbmsghandler(f_msghandler, p)
-    Lib.XPRS_ge_removecbmsghandler(f_msghandler, p)
+    @checked Lib.XPRS_ge_removecbmsghandler(f_msghandler, p)
 end
 
 """
@@ -9329,159 +9316,159 @@ The following shows how this function might be used in error checking:
 XPRS_ge_setcbmsghandler.
 """
 function _ge_getlasterror(iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    Lib.XPRS_ge_getlasterror(iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+    @checked Lib.XPRS_ge_getlasterror(iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
 end
 
 function _msp_create(msp)
-    Lib.XPRS_msp_create(msp)
+    @checked Lib.XPRS_msp_create(msp)
 end
 
 function _msp_destroy(msp)
-    Lib.XPRS_msp_destroy(msp)
+    @checked Lib.XPRS_msp_destroy(msp)
 end
 
 function _msp_probattach(msp, prob)
-    Lib.XPRS_msp_probattach(msp, prob)
+    @checked Lib.XPRS_msp_probattach(msp, prob)
 end
 
 function _msp_probdetach(msp, prob)
-    Lib.XPRS_msp_probdetach(msp, prob)
+    @checked Lib.XPRS_msp_probdetach(msp, prob)
 end
 
 function _msp_getsollist(msp, prob_to_rank_against, iRankAttrib, bRankAscending, iRankFirstIndex_Ob, iRankLastIndex_Ob, iSolutionIds_Zb, nReturnedSolIds, nSols)
-    Lib.XPRS_msp_getsollist(msp, prob_to_rank_against, iRankAttrib, bRankAscending, iRankFirstIndex_Ob, iRankLastIndex_Ob, iSolutionIds_Zb, nReturnedSolIds, nSols)
+    @checked Lib.XPRS_msp_getsollist(msp, prob_to_rank_against, iRankAttrib, bRankAscending, iRankFirstIndex_Ob, iRankLastIndex_Ob, iSolutionIds_Zb, nReturnedSolIds, nSols)
 end
 
 function _msp_getsollist2(msp, prob_to_rank_against, iRankAttrib, bRankAscending, iRankFirstIndex_Ob, iRankLastIndex_Ob, bUseUserBitFilter, iUserBitMask, iUserBitPattern, bUseInternalBitFilter, iInternalBitMask, iInternalBitPattern, iSolutionIds_Zb, nReturnedSolIds, nSols)
-    Lib.XPRS_msp_getsollist2(msp, prob_to_rank_against, iRankAttrib, bRankAscending, iRankFirstIndex_Ob, iRankLastIndex_Ob, bUseUserBitFilter, iUserBitMask, iUserBitPattern, bUseInternalBitFilter, iInternalBitMask, iInternalBitPattern, iSolutionIds_Zb, nReturnedSolIds, nSols)
+    @checked Lib.XPRS_msp_getsollist2(msp, prob_to_rank_against, iRankAttrib, bRankAscending, iRankFirstIndex_Ob, iRankLastIndex_Ob, bUseUserBitFilter, iUserBitMask, iUserBitPattern, bUseInternalBitFilter, iInternalBitMask, iInternalBitPattern, iSolutionIds_Zb, nReturnedSolIds, nSols)
 end
 
 function _msp_getsol(msp, iSolutionId, iSolutionIdStatus_, x, iColFirst, iColLast, nValuesReturned)
-    Lib.XPRS_msp_getsol(msp, iSolutionId, iSolutionIdStatus_, x, iColFirst, iColLast, nValuesReturned)
+    @checked Lib.XPRS_msp_getsol(msp, iSolutionId, iSolutionIdStatus_, x, iColFirst, iColLast, nValuesReturned)
 end
 
 function _msp_getslack(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, slack, iRowFirst, iRowLast, nValuesReturned)
-    Lib.XPRS_msp_getslack(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, slack, iRowFirst, iRowLast, nValuesReturned)
+    @checked Lib.XPRS_msp_getslack(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, slack, iRowFirst, iRowLast, nValuesReturned)
 end
 
 function _msp_loadsol(msp, iSolutionId, x, nCols, sSolutionName, bNameModifiedForUniqueness, iSolutionIdOfExistingDuplicatePreventedLoad)
-    Lib.XPRS_msp_loadsol(msp, iSolutionId, x, nCols, sSolutionName, bNameModifiedForUniqueness, iSolutionIdOfExistingDuplicatePreventedLoad)
+    @checked Lib.XPRS_msp_loadsol(msp, iSolutionId, x, nCols, sSolutionName, bNameModifiedForUniqueness, iSolutionIdOfExistingDuplicatePreventedLoad)
 end
 
 function _msp_delsol(msp, iSolutionId, iSolutionIdStatus_)
-    Lib.XPRS_msp_delsol(msp, iSolutionId, iSolutionIdStatus_)
+    @checked Lib.XPRS_msp_delsol(msp, iSolutionId, iSolutionIdStatus_)
 end
 
 function _msp_getintattribprobsol(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
-    Lib.XPRS_msp_getintattribprobsol(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
+    @checked Lib.XPRS_msp_getintattribprobsol(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
 end
 
 function _msp_getdblattribprobsol(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
-    Lib.XPRS_msp_getdblattribprobsol(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
+    @checked Lib.XPRS_msp_getdblattribprobsol(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
 end
 
 function _msp_getintattribprob(msp, prob::XpressProblem, iAttribId, Dst)
-    Lib.XPRS_msp_getintattribprob(msp, prob, iAttribId, Dst)
+    @checked Lib.XPRS_msp_getintattribprob(msp, prob, iAttribId, Dst)
 end
 
 function _msp_getdblattribprob(msp, prob::XpressProblem, iAttribId, Dst)
-    Lib.XPRS_msp_getdblattribprob(msp, prob, iAttribId, Dst)
+    @checked Lib.XPRS_msp_getdblattribprob(msp, prob, iAttribId, Dst)
 end
 
 function _msp_getintattribsol(msp, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
-    Lib.XPRS_msp_getintattribsol(msp, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
+    @checked Lib.XPRS_msp_getintattribsol(msp, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
 end
 
 function _msp_getdblattribsol(msp, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
-    Lib.XPRS_msp_getdblattribsol(msp, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
+    @checked Lib.XPRS_msp_getdblattribsol(msp, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
 end
 
 function _msp_getintcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
-    Lib.XPRS_msp_getintcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
+    @checked Lib.XPRS_msp_getintcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
 end
 
 function _msp_getdblcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
-    Lib.XPRS_msp_getdblcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
+    @checked Lib.XPRS_msp_getdblcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
 end
 
 function _msp_setintcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
-    Lib.XPRS_msp_setintcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
+    @checked Lib.XPRS_msp_setintcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
 end
 
 function _msp_setdblcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
-    Lib.XPRS_msp_setdblcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
+    @checked Lib.XPRS_msp_setdblcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
 end
 
 function _msp_getintattribprobextreme(msp, prob_to_rank_against, bGet_Max_Otherwise_Min, iSolutionId, iAttribId, ExtremeVal)
-    Lib.XPRS_msp_getintattribprobextreme(msp, prob_to_rank_against, bGet_Max_Otherwise_Min, iSolutionId, iAttribId, ExtremeVal)
+    @checked Lib.XPRS_msp_getintattribprobextreme(msp, prob_to_rank_against, bGet_Max_Otherwise_Min, iSolutionId, iAttribId, ExtremeVal)
 end
 
 function _msp_getdblattribprobextreme(msp, prob_to_rank_against, bGet_Max_Otherwise_Min, iSolutionId, iAttribId, ExtremeVal)
-    Lib.XPRS_msp_getdblattribprobextreme(msp, prob_to_rank_against, bGet_Max_Otherwise_Min, iSolutionId, iAttribId, ExtremeVal)
+    @checked Lib.XPRS_msp_getdblattribprobextreme(msp, prob_to_rank_against, bGet_Max_Otherwise_Min, iSolutionId, iAttribId, ExtremeVal)
 end
 
 function _msp_getintattrib(msp, iAttribId, Val)
-    Lib.XPRS_msp_getintattrib(msp, iAttribId, Val)
+    @checked Lib.XPRS_msp_getintattrib(msp, iAttribId, Val)
 end
 
 function _msp_getdblattrib(msp, iAttribId, Val)
-    Lib.XPRS_msp_getdblattrib(msp, iAttribId, Val)
+    @checked Lib.XPRS_msp_getdblattrib(msp, iAttribId, Val)
 end
 
 function _msp_getintcontrol(msp, iControlId, Val)
-    Lib.XPRS_msp_getintcontrol(msp, iControlId, Val)
+    @checked Lib.XPRS_msp_getintcontrol(msp, iControlId, Val)
 end
 
 function _msp_getdblcontrol(msp, iControlId, Val)
-    Lib.XPRS_msp_getdblcontrol(msp, iControlId, Val)
+    @checked Lib.XPRS_msp_getdblcontrol(msp, iControlId, Val)
 end
 
 function _msp_setintcontrol(msp, iControlId, Val)
-    Lib.XPRS_msp_setintcontrol(msp, iControlId, Val)
+    @checked Lib.XPRS_msp_setintcontrol(msp, iControlId, Val)
 end
 
 function _msp_setdblcontrol(msp, iControlId, Val)
-    Lib.XPRS_msp_setdblcontrol(msp, iControlId, Val)
+    @checked Lib.XPRS_msp_setdblcontrol(msp, iControlId, Val)
 end
 
 function _msp_setsolname(msp, iSolutionId, sNewSolutionBaseName, bNameModifiedForUniqueness, iSolutionIdStatus_)
-    Lib.XPRS_msp_setsolname(msp, iSolutionId, sNewSolutionBaseName, bNameModifiedForUniqueness, iSolutionIdStatus_)
+    @checked Lib.XPRS_msp_setsolname(msp, iSolutionId, sNewSolutionBaseName, bNameModifiedForUniqueness, iSolutionIdStatus_)
 end
 
 function _msp_getsolname(msp, iSolutionId, _sname, _iStringBufferBytes, _iBytesInInternalString, iSolutionIdStatus_)
-    Lib.XPRS_msp_getsolname(msp, iSolutionId, _sname, _iStringBufferBytes, _iBytesInInternalString, iSolutionIdStatus_)
+    @checked Lib.XPRS_msp_getsolname(msp, iSolutionId, _sname, _iStringBufferBytes, _iBytesInInternalString, iSolutionIdStatus_)
 end
 
 function _msp_findsolbyname(msp, sSolutionName, iSolutionId)
-    Lib.XPRS_msp_findsolbyname(msp, sSolutionName, iSolutionId)
+    @checked Lib.XPRS_msp_findsolbyname(msp, sSolutionName, iSolutionId)
 end
 
 function _msp_writeslxsol(msp, prob_context, iSolutionId, iSolutionIdStatus_, sFileName, sFlags)
-    Lib.XPRS_msp_writeslxsol(msp, prob_context, iSolutionId, iSolutionIdStatus_, sFileName, sFlags)
+    @checked Lib.XPRS_msp_writeslxsol(msp, prob_context, iSolutionId, iSolutionIdStatus_, sFileName, sFlags)
 end
 
 function _msp_readslxsol(msp, col_name_list, sFileName, sFlags, iSolutionId_Beg, iSolutionId_End)
-    Lib.XPRS_msp_readslxsol(msp, col_name_list, sFileName, sFlags, iSolutionId_Beg, iSolutionId_End)
+    @checked Lib.XPRS_msp_readslxsol(msp, col_name_list, sFileName, sFlags, iSolutionId_Beg, iSolutionId_End)
 end
 
 function _msp_getlasterror(msp, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    Lib.XPRS_msp_getlasterror(msp, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+    @checked Lib.XPRS_msp_getlasterror(msp, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
 end
 
 function _msp_setcbmsghandler(msp, f_msghandler, p)
-    Lib.XPRS_msp_setcbmsghandler(msp, f_msghandler, p)
+    @checked Lib.XPRS_msp_setcbmsghandler(msp, f_msghandler, p)
 end
 
 function _msp_getcbmsghandler(msp, f_msghandler, p)
-    Lib.XPRS_msp_getcbmsghandler(msp, f_msghandler, p)
+    @checked Lib.XPRS_msp_getcbmsghandler(msp, f_msghandler, p)
 end
 
 function _msp_addcbmsghandler(msp, f_msghandler, p, priority)
-    Lib.XPRS_msp_addcbmsghandler(msp, f_msghandler, p, priority)
+    @checked Lib.XPRS_msp_addcbmsghandler(msp, f_msghandler, p, priority)
 end
 
 function _msp_removecbmsghandler(msp, f_msghandler, p)
-    Lib.XPRS_msp_removecbmsghandler(msp, f_msghandler, p)
+    @checked Lib.XPRS_msp_removecbmsghandler(msp, f_msghandler, p)
 end
 
 """
@@ -9513,7 +9500,7 @@ XPRSgetnamelistobject,
 XPRS_nml_destroy.
 """
 function _nml_create(r_nl)
-    Lib.XPRS_nml_create(r_nl)
+    @checked Lib.XPRS_nml_create(r_nl)
 end
 
 """
@@ -9548,7 +9535,7 @@ XPRSgetnamelistobject,
 XPRSdestroyprob.
 """
 function _nml_destroy(nml)
-    Lib.XPRS_nml_destroy(nml)
+    @checked Lib.XPRS_nml_destroy(nml)
 end
 
 """
@@ -9583,7 +9570,7 @@ printf("There are %d names", count);
 None.
 """
 function _nml_getnamecount(nml, count)
-    Lib.XPRS_nml_getnamecount(nml, count)
+    @checked Lib.XPRS_nml_getnamecount(nml, count)
 end
 
 """
@@ -9614,7 +9601,7 @@ int XPRS_CC XPRS_nml_getmaxnamelen(XPRSnamelist nml, int* namlen);
 None.
 """
 function _nml_getmaxnamelen(nml, namlen)
-    Lib.XPRS_nml_getmaxnamelen(nml, namlen)
+    @checked Lib.XPRS_nml_getmaxnamelen(nml, namlen)
 end
 
 """
@@ -9668,7 +9655,7 @@ o += strlen(cbuf)+1;
 None.
 """
 function _nml_getnames(nml, padlen, buf, buflen, r_buflen_reqd, firstIndex, lastIndex)
-    Lib.XPRS_nml_getnames(nml, padlen, buf, buflen, r_buflen_reqd, firstIndex, lastIndex)
+    @checked Lib.XPRS_nml_getnames(nml, padlen, buf, buflen, r_buflen_reqd, firstIndex, lastIndex)
 end
 
 """
@@ -9707,7 +9694,7 @@ XPRS_nml_copynames,
 XPRSaddnames.
 """
 function _nml_addnames(nml, buf, firstIndex, lastIndex)
-    Lib.XPRS_nml_addnames(nml, buf, firstIndex, lastIndex)
+    @checked Lib.XPRS_nml_addnames(nml, buf, firstIndex, lastIndex)
 end
 
 """
@@ -9740,7 +9727,7 @@ XPRS_nml_removenames(mylist, 3, 5);
 XPRS_nml_addnames.
 """
 function _nml_removenames(nml, firstIndex, lastIndex)
-    Lib.XPRS_nml_removenames(nml, firstIndex, lastIndex)
+    @checked Lib.XPRS_nml_removenames(nml, firstIndex, lastIndex)
 end
 
 """
@@ -9780,7 +9767,7 @@ XPRS_nml_addnames,
 XPRS_nml_getnames.
 """
 function _nml_findname(nml, name, r_index)
-    Lib.XPRS_nml_findname(nml, name, r_index)
+    @checked Lib.XPRS_nml_findname(nml, name, r_index)
 end
 
 """
@@ -9825,7 +9812,7 @@ XPRS_nml_addnames,
 XPRSgetnamelistobject.
 """
 function _nml_copynames(dst, src)
-    Lib.XPRS_nml_copynames(dst, src)
+    @checked Lib.XPRS_nml_copynames(dst, src)
 end
 
 """
@@ -9867,7 +9854,7 @@ printf("ERROR removing names: %s\n", cbuf);
 None.
 """
 function _nml_getlasterror(nml, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    Lib.XPRS_nml_getlasterror(nml, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+    @checked Lib.XPRS_nml_getlasterror(nml, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
 end
 
 """
@@ -9910,7 +9897,7 @@ XPRSchgmqobj,
 XPRSgetqobj.
 """
 function getqrowcoeff(prob::XpressProblem, irow, icol, jcol, dval)
-    Lib.XPRSgetqrowcoeff(prob, irow, icol, jcol, dval)
+    @checked Lib.XPRSgetqrowcoeff(prob, irow, icol, jcol, dval)
 end
 
 """
@@ -9962,7 +9949,7 @@ XPRSchgmqobj,
 XPRSgetqobj.
 """
 function getqrowqmatrix(prob::XpressProblem, irow, mstart, mclind, dobjval, maxcoeffs, ncoeffs, first, last)
-    Lib.XPRSgetqrowqmatrix(prob, irow, mstart, mclind, dobjval, maxcoeffs, ncoeffs, first, last)
+    @checked Lib.XPRSgetqrowqmatrix(prob, irow, mstart, mclind, dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
 """
@@ -10004,7 +9991,7 @@ XPRSchgmqobj,
 XPRSgetqobj.
 """
 function getqrowqmatrixtriplets(prob::XpressProblem, irow, nqelem, mqcol1, mqcol2, dqe)
-    Lib.XPRSgetqrowqmatrixtriplets(prob, irow, nqelem, mqcol1, mqcol2, dqe)
+    @checked Lib.XPRSgetqrowqmatrixtriplets(prob, irow, nqelem, mqcol1, mqcol2, dqe)
 end
 
 """
@@ -10045,7 +10032,7 @@ XPRSchgmqobj,
 XPRSgetqobj.
 """
 function chgqrowcoeff(prob::XpressProblem, irow, icol, jcol, dval)
-    Lib.XPRSchgqrowcoeff(prob, irow, icol, jcol, dval)
+    @checked Lib.XPRSchgqrowcoeff(prob, irow, icol, jcol, dval)
 end
 
 """
@@ -10083,7 +10070,7 @@ XPRSchgmqobj,
 XPRSgetqobj.
 """
 function getqrows(prob::XpressProblem, qmn, qcrows)
-    Lib.XPRSgetqrows(prob, qmn, qcrows)
+    @checked Lib.XPRSgetqrows(prob, qmn, qcrows)
 end
 
 """
@@ -10124,11 +10111,11 @@ XPRSchgmqobj,
 XPRSgetqobj.
 """
 function addqmatrix(prob::XpressProblem, irow, nqtr, mqc1, mqc2, dqew)
-    Lib.XPRSaddqmatrix(prob, irow, nqtr, mqc1, mqc2, dqew)
+    @checked Lib.XPRSaddqmatrix(prob, irow, nqtr, mqc1, mqc2, dqew)
 end
 
 function addqmatrix64(prob::XpressProblem, irow, nqtr, mqc1, mqc2, dqew)
-    Lib.XPRSaddqmatrix64(prob, irow, nqtr, mqc1, mqc2, dqew)
+    @checked Lib.XPRSaddqmatrix64(prob, irow, nqtr, mqc1, mqc2, dqew)
 end
 
 """
@@ -10159,7 +10146,7 @@ XPRSdelcols,
 XPRSdelrows.
 """
 function delqmatrix(prob::XpressProblem, irow)
-    Lib.XPRSdelqmatrix(prob, irow)
+    @checked Lib.XPRSdelqmatrix(prob, irow)
 end
 
 """
@@ -10246,11 +10233,11 @@ XPRSloadqp,
 XPRSreadprob.
 """
 function loadqcqp(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
-    Lib.XPRSloadqcqp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
+    @checked Lib.XPRSloadqcqp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
 end
 
 function loadqcqp64(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
-    Lib.XPRSloadqcqp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
+    @checked Lib.XPRSloadqcqp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
 end
 
 """
@@ -10362,111 +10349,111 @@ XPRSloadqp,
 XPRSreadprob.
 """
 function loadqcqpglobal(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
-    Lib.XPRSloadqcqpglobal(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
+    @checked Lib.XPRSloadqcqpglobal(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
 end
 
 function loadqcqpglobal64(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
-    Lib.XPRSloadqcqpglobal64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
+    @checked Lib.XPRSloadqcqpglobal64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
 end
 
 function _mse_create(mse)
-    Lib.XPRS_mse_create(mse)
+    @checked Lib.XPRS_mse_create(mse)
 end
 
 function _mse_destroy(mse)
-    Lib.XPRS_mse_destroy(mse)
+    @checked Lib.XPRS_mse_destroy(mse)
 end
 
 function _mse_getsollist(mse, iMetricId, iRankFirstIndex_Ob, iRankLastIndex_Ob, iSolutionIds, nReturnedSolIds, nSols)
-    Lib.XPRS_mse_getsollist(mse, iMetricId, iRankFirstIndex_Ob, iRankLastIndex_Ob, iSolutionIds, nReturnedSolIds, nSols)
+    @checked Lib.XPRS_mse_getsollist(mse, iMetricId, iRankFirstIndex_Ob, iRankLastIndex_Ob, iSolutionIds, nReturnedSolIds, nSols)
 end
 
 function _mse_getsolmetric(mse, iSolutionId, iSolutionIdStatus, iMetricId, dMetric)
-    Lib.XPRS_mse_getsolmetric(mse, iSolutionId, iSolutionIdStatus, iMetricId, dMetric)
+    @checked Lib.XPRS_mse_getsolmetric(mse, iSolutionId, iSolutionIdStatus, iMetricId, dMetric)
 end
 
 function _mse_getcullchoice(mse, iMetricId, cull_sol_id_list, nMaxSolsToCull, nSolsToCull, dNewSolMetric, x, nCols, bRejectSoln)
-    Lib.XPRS_mse_getcullchoice(mse, iMetricId, cull_sol_id_list, nMaxSolsToCull, nSolsToCull, dNewSolMetric, x, nCols, bRejectSoln)
+    @checked Lib.XPRS_mse_getcullchoice(mse, iMetricId, cull_sol_id_list, nMaxSolsToCull, nSolsToCull, dNewSolMetric, x, nCols, bRejectSoln)
 end
 
 function _mse_minim(mse, prob::XpressProblem, msp, f_mse_handler, p, nMaxSols)
-    Lib.XPRS_mse_minim(mse, prob, msp, f_mse_handler, p, nMaxSols)
+    @checked Lib.XPRS_mse_minim(mse, prob, msp, f_mse_handler, p, nMaxSols)
 end
 
 function _mse_maxim(mse, prob::XpressProblem, msp, f_mse_handler, p, nMaxSols)
-    Lib.XPRS_mse_maxim(mse, prob, msp, f_mse_handler, p, nMaxSols)
+    @checked Lib.XPRS_mse_maxim(mse, prob, msp, f_mse_handler, p, nMaxSols)
 end
 
 function _mse_opt(mse, prob::XpressProblem, msp, f_mse_handler, p, nMaxSols)
-    Lib.XPRS_mse_opt(mse, prob, msp, f_mse_handler, p, nMaxSols)
+    @checked Lib.XPRS_mse_opt(mse, prob, msp, f_mse_handler, p, nMaxSols)
 end
 
 function _mse_getintattrib(mse, iAttribId, Val)
-    Lib.XPRS_mse_getintattrib(mse, iAttribId, Val)
+    @checked Lib.XPRS_mse_getintattrib(mse, iAttribId, Val)
 end
 
 function _mse_getdblattrib(mse, iAttribId, Val)
-    Lib.XPRS_mse_getdblattrib(mse, iAttribId, Val)
+    @checked Lib.XPRS_mse_getdblattrib(mse, iAttribId, Val)
 end
 
 function _mse_getintcontrol(mse, iAttribId, Val)
-    Lib.XPRS_mse_getintcontrol(mse, iAttribId, Val)
+    @checked Lib.XPRS_mse_getintcontrol(mse, iAttribId, Val)
 end
 
 function _mse_getdblcontrol(mse, iAttribId, Val)
-    Lib.XPRS_mse_getdblcontrol(mse, iAttribId, Val)
+    @checked Lib.XPRS_mse_getdblcontrol(mse, iAttribId, Val)
 end
 
 function _mse_setintcontrol(mse, iAttribId, Val)
-    Lib.XPRS_mse_setintcontrol(mse, iAttribId, Val)
+    @checked Lib.XPRS_mse_setintcontrol(mse, iAttribId, Val)
 end
 
 function _mse_setdblcontrol(mse, iAttribId, Val)
-    Lib.XPRS_mse_setdblcontrol(mse, iAttribId, Val)
+    @checked Lib.XPRS_mse_setdblcontrol(mse, iAttribId, Val)
 end
 
 function _mse_getlasterror(mse, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    Lib.XPRS_mse_getlasterror(mse, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+    @checked Lib.XPRS_mse_getlasterror(mse, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
 end
 
 function _mse_setsolbasename(mse, sSolutionBaseName)
-    Lib.XPRS_mse_setsolbasename(mse, sSolutionBaseName)
+    @checked Lib.XPRS_mse_setsolbasename(mse, sSolutionBaseName)
 end
 
 function _mse_getsolbasename(mse, _sname, _iStringBufferBytes, _iBytesInInternalString)
-    Lib.XPRS_mse_getsolbasename(mse, _sname, _iStringBufferBytes, _iBytesInInternalString)
+    @checked Lib.XPRS_mse_getsolbasename(mse, _sname, _iStringBufferBytes, _iBytesInInternalString)
 end
 
 function _mse_setcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
-    Lib.XPRS_mse_setcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
+    @checked Lib.XPRS_mse_setcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
 end
 
 function _mse_getcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
-    Lib.XPRS_mse_getcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
+    @checked Lib.XPRS_mse_getcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
 end
 
 function _mse_addcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p, priority)
-    Lib.XPRS_mse_addcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p, priority)
+    @checked Lib.XPRS_mse_addcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p, priority)
 end
 
 function _mse_removecbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
-    Lib.XPRS_mse_removecbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
+    @checked Lib.XPRS_mse_removecbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
 end
 
 function _mse_setcbmsghandler(mse, f_msghandler, p)
-    Lib.XPRS_mse_setcbmsghandler(mse, f_msghandler, p)
+    @checked Lib.XPRS_mse_setcbmsghandler(mse, f_msghandler, p)
 end
 
 function _mse_getcbmsghandler(mse, f_msghandler, p)
-    Lib.XPRS_mse_getcbmsghandler(mse, f_msghandler, p)
+    @checked Lib.XPRS_mse_getcbmsghandler(mse, f_msghandler, p)
 end
 
 function _mse_addcbmsghandler(mse, f_msghandler, p, priority)
-    Lib.XPRS_mse_addcbmsghandler(mse, f_msghandler, p, priority)
+    @checked Lib.XPRS_mse_addcbmsghandler(mse, f_msghandler, p, priority)
 end
 
 function _mse_removecbmsghandler(mse, f_msghandler, p)
-    Lib.XPRS_mse_removecbmsghandler(mse, f_msghandler, p)
+    @checked Lib.XPRS_mse_removecbmsghandler(mse, f_msghandler, p)
 end
 
 """
@@ -10501,7 +10488,7 @@ XPRSaddcboptnode,
 XPRSaddcbchgbranchobject.
 """
 function _bo_create(p_object, prob::XpressProblem, isoriginal)
-    Lib.XPRS_bo_create(p_object, prob, isoriginal)
+    @checked Lib.XPRS_bo_create(p_object, prob, isoriginal)
 end
 
 """
@@ -10530,7 +10517,7 @@ XPRS_bo_create,
 XPRS_bo_store.
 """
 function _bo_destroy(obranch)
-    Lib.XPRS_bo_destroy(obranch)
+    @checked Lib.XPRS_bo_destroy(obranch)
 end
 
 """
@@ -10566,7 +10553,7 @@ XPRS_bo_create,
 XPRS_bo_validate.
 """
 function _bo_store(obranch, p_status)
-    Lib.XPRS_bo_store(obranch, p_status)
+    @checked Lib.XPRS_bo_store(obranch, p_status)
 end
 
 """
@@ -10597,7 +10584,7 @@ XPRS_bo_addbranches.
 XPRS_bo_create.
 """
 function _bo_addbranches(obranch, nbranches)
-    Lib.XPRS_bo_addbranches(obranch, nbranches)
+    @checked Lib.XPRS_bo_addbranches(obranch, nbranches)
 end
 
 """
@@ -10627,7 +10614,7 @@ XPRS_bo_create,
 XPRS_bo_addbranches.
 """
 function _bo_getbranches(obranch, p_nbranches)
-    Lib.XPRS_bo_getbranches(obranch, p_nbranches)
+    @checked Lib.XPRS_bo_getbranches(obranch, p_nbranches)
 end
 
 """
@@ -10657,7 +10644,7 @@ XPRS_bo_create, Section
 The Directives (.dir) File.
 """
 function _bo_setpriority(obranch, ipriority)
-    Lib.XPRS_bo_setpriority(obranch, ipriority)
+    @checked Lib.XPRS_bo_setpriority(obranch, ipriority)
 end
 
 """
@@ -10686,7 +10673,7 @@ int XPRS_CC XPRS_bo_setpreferredbranch(XPRSbranchobject obranch, int ibranch);
 XPRS_bo_create.
 """
 function _bo_setpreferredbranch(obranch, ibranch)
-    Lib.XPRS_bo_setpreferredbranch(obranch, ibranch)
+    @checked Lib.XPRS_bo_setpreferredbranch(obranch, ibranch)
 end
 
 """
@@ -10725,7 +10712,7 @@ XPRS_bo_addbounds.
 XPRS_bo_create.
 """
 function _bo_addbounds(obranch, ibranch, nbounds, cbndtype, mbndcol, dbndval)
-    Lib.XPRS_bo_addbounds(obranch, ibranch, nbounds, cbndtype, mbndcol, dbndval)
+    @checked Lib.XPRS_bo_addbounds(obranch, ibranch, nbounds, cbndtype, mbndcol, dbndval)
 end
 
 """
@@ -10764,7 +10751,7 @@ XPRS_bo_create,
 XPRS_bo_addbounds.
 """
 function _bo_getbounds(obranch, ibranch, p_nbounds, nbounds_size, cbndtype, mbndcol, dbndval)
-    Lib.XPRS_bo_getbounds(obranch, ibranch, p_nbounds, nbounds_size, cbndtype, mbndcol, dbndval)
+    @checked Lib.XPRS_bo_getbounds(obranch, ibranch, p_nbounds, nbounds_size, cbndtype, mbndcol, dbndval)
 end
 
 """
@@ -10809,7 +10796,7 @@ x_1 + x_2 â¤ 0:
 XPRS_bo_create.
 """
 function _bo_addrows(obranch, ibranch, nrows, nelems, crtype, drrhs, mrbeg, mcol, dval)
-    Lib.XPRS_bo_addrows(obranch, ibranch, nrows, nelems, crtype, drrhs, mrbeg, mcol, dval)
+    @checked Lib.XPRS_bo_addrows(obranch, ibranch, nrows, nelems, crtype, drrhs, mrbeg, mcol, dval)
 end
 
 """
@@ -10854,7 +10841,7 @@ XPRS_bo_create,
 XPRS_bo_addrows.
 """
 function _bo_getrows(obranch, ibranch, p_nrows, nrows_size, p_nelems, nelems_size, crtype, drrhs, mrbeg, mcol, dval)
-    Lib.XPRS_bo_getrows(obranch, ibranch, p_nrows, nrows_size, p_nelems, nelems_size, crtype, drrhs, mrbeg, mcol, dval)
+    @checked Lib.XPRS_bo_getrows(obranch, ibranch, p_nrows, nrows_size, p_nelems, nelems_size, crtype, drrhs, mrbeg, mcol, dval)
 end
 
 """
@@ -10887,7 +10874,7 @@ XPRS_bo_create,
 XPRS_bo_addrows.
 """
 function _bo_addcuts(obranch, ibranch, ncuts, mcutind)
-    Lib.XPRS_bo_addcuts(obranch, ibranch, ncuts, mcutind)
+    @checked Lib.XPRS_bo_addcuts(obranch, ibranch, ncuts, mcutind)
 end
 
 """
@@ -10916,7 +10903,7 @@ int XPRS_CC XPRS_bo_getid(XPRSbranchobject obranch, int* p_id);
 XPRS_bo_create.
 """
 function _bo_getid(obranch, p_id)
-    Lib.XPRS_bo_getid(obranch, p_id)
+    @checked Lib.XPRS_bo_getid(obranch, p_id)
 end
 
 """
@@ -10949,7 +10936,7 @@ The following shows how this function might be used in error checking:
 XPRS_ge_setcbmsghandler.
 """
 function _bo_getlasterror(obranch, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    Lib.XPRS_bo_getlasterror(obranch, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+    @checked Lib.XPRS_bo_getlasterror(obranch, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
 end
 
 """
@@ -10982,5 +10969,5 @@ int XPRS_CC XPRS_bo_validate(XPRSbranchobject obranch, int* p_status);
 XPRS_bo_create.
 """
 function _bo_validate(obranch, p_status)
-    Lib.XPRS_bo_validate(obranch, p_status)
+    @checked Lib.XPRS_bo_validate(obranch, p_status)
 end

@@ -54,8 +54,7 @@ mutable struct XpressProblem <: CWrapper
     time::Float64
     function XpressProblem()
         ref = Ref{Lib.XPRSprob}()
-        r = createprob(ref)
-        r != 0 && throw(XpressError(r, "Unable to create a Xpress Problem."))
+        createprob(ref)
         ptr = ref[]
         @assert ptr != C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
         p = new(ptr, Any[], 0.0)

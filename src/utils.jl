@@ -86,3 +86,13 @@ macro invoke(expr)
     return f
 end
 
+
+macro checked(expr)
+    @assert expr.head == :call "Can only use @checked on function calls"
+    @assert ( expr.args[1].head == :(.) ) && ( expr.args[1].args[1] == :Lib) "Can only use @checked on Lib.\$function"
+    f = replace(String(expr.args[1].args[2].value), "XPRS"=>"")
+    return esc(quote
+        r = $(expr)
+        r != 0 ? throw(XpressError(r, "Unable to call $($f)")) : nothing
+    end)
+end
