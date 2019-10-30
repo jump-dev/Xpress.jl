@@ -64,3 +64,6 @@ mutable struct XpressProblem <: CWrapper
     end
 end
 
+addcolnames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 2)
+addrownames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 1)
+

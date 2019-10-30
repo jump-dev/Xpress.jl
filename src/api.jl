@@ -450,8 +450,9 @@ logfile.log:
 
 XPRSaddcbmessage.
 """
-function setlogfile(prob::XpressProblem, logname)
-    Lib.XPRSsetlogfile(prob, logname)
+function setlogfile(prob::XpressProblem, logname::String)
+    r = Lib.XPRSsetlogfile(prob, logname)
+    r != 0 ? throw(XpressError(r, "Unable to call setlogfile.")) : nothing
 end
 
 """
@@ -1129,7 +1130,7 @@ OBJ1 is unknown and we wish to perform goal programming, maximizing this row and
 
 Goal Programming.
 """
-function goal(prob::XpressProblem, _filename, _sflags)
+function goal(prob::XpressProblem, _filename::String, _sflags::String="")
     Lib.XPRSgoal(prob, _filename, _sflags)
 end
 
@@ -1167,8 +1168,9 @@ XPRSloadlp,
 XPRSloadqglobal,
 XPRSloadqp.
 """
-function readprob(prob::XpressProblem, _sprobname, _sflags)
-    Lib.XPRSreadprob(prob, _sprobname, _sflags)
+function readprob(prob::XpressProblem, _sprobname::String, _sflags::String="")
+    r = Lib.XPRSreadprob(prob, _sprobname, _sflags)
+    r != 0 ? throw(XpressError(r, "Unable to call readprob.")) : nothing
 end
 
 """
@@ -1252,7 +1254,8 @@ XPRSloadqp,
 XPRSreadprob.
 """
 function loadlp(prob::XpressProblem, _sprobname="", ncols=0, nrows=0, _srowtypes=Cchar[], _drhs=Float64[], _drange=Float64[], _dobj=Float64[], _mstart=Int[], _mnel=Int[], _mrwind=Int[], _dmatval=Float64[], _dlb=Float64[], _dub=Float64[])
-    Lib.XPRSloadlp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
+    r = Lib.XPRSloadlp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
+    r != 0 ? throw(XpressError(r, "Unable to call loadlp.")) : nothing
 end
 
 function loadlp64(prob::XpressProblem, _sprobname="", ncols=0, nrows=0, _srowtypes=Cchar[], _drhs=Float64[], _drange=Float64[], _dobj=Float64[], _mstart=Int[], _mnel=Int[], _mrwind=Int[], _dmatval=Float64[], _dlb=Float64[], _dub=Float64[])
@@ -1496,8 +1499,9 @@ A similar set of commands at the console would be as follows:
 XPRSmipoptimize (
 MIPOPTIMIZE).
 """
-function fixglobals(prob::XpressProblem, ifround)
-    Lib.XPRSfixglobals(prob, ifround)
+function fixglobals(prob::XpressProblem, ifround::Bool)
+    r = Lib.XPRSfixglobals(prob, ifround)
+    r != 0 ? throw(XpressError(r, "Unable to call fixglobals.")) : nothing
 end
 
 """
@@ -1897,8 +1901,19 @@ XPRSaddcols,
 XPRSaddrows,
 XPRSgetnames.
 """
-function addnames(prob::XpressProblem, _itype, _sname, first, last)
-    Lib.XPRSaddnames(prob, _itype, _sname, first, last)
+function addnames(prob::XpressProblem, _itype::Int, _sname::Vector{String})
+    # TODO: name _itype a Enum?
+    NAMELENGTH = 64
+
+    first = 0
+    last = length(names)-1
+
+    _cnames = ""
+    for str in names
+        _cnames = string(_cnames, join(Base.Iterators.take(str,NAMELENGTH)), "\0")
+    end
+    r = Lib.XPRSaddnames(prob, _itype, _cnames, first, last)
+    r != 0 ? throw(XpressError(r, "Unable to call addnames.")) : nothing
 end
 
 """
@@ -2007,7 +2022,7 @@ MIPOPTIMIZE
 XPRSloaddirs,
 The Directives (.dir) File.
 """
-function readdirs(prob::XpressProblem, _sfilename)
+function readdirs(prob::XpressProblem, _sfilename::String)
     Lib.XPRSreaddirs(prob, _sfilename)
 end
 
@@ -2038,7 +2053,7 @@ int XPRS_CC XPRSwritedirs(XPRSprob prob, const char *filename);
 XPRSloaddirs,
 The Directives (.dir) File.
 """
-function writedirs(prob::XpressProblem, _sfilename)
+function writedirs(prob::XpressProblem, _sfilename::String)
     Lib.XPRSwritedirs(prob, _sfilename)
 end
 
@@ -2192,7 +2207,7 @@ function dumpcontrols(prob::XpressProblem)
     r != 0 ? throw(XpressError(r, "Unable to call dumpcontrols.")) : nothing
 end
 
-function minim(prob::XpressProblem, _sflags)
+function minim(prob::XpressProblem, _sflags::String="")
     Lib.XPRSminim(prob, _sflags)
 end
 
@@ -2243,7 +2258,7 @@ GOAL),
 Solution Methods,
 The Matrix Alteration (.alt) File.
 """
-function maxim(prob::XpressProblem, _sflags)
+function maxim(prob::XpressProblem, _sflags::String="")
     Lib.XPRSmaxim(prob, _sflags)
 end
 
@@ -2283,7 +2298,7 @@ XPRSmipoptimize (
 MIPOPTIMIZE),
 Solution Methods.
 """
-function lpoptimize(prob::XpressProblem, _sflags)
+function lpoptimize(prob::XpressProblem, _sflags::String="")
     Lib.XPRSlpoptimize(prob, _sflags)
 end
 
@@ -2322,7 +2337,7 @@ XPRSlpoptimize (
 LPOPTIMIZE),
 Solution Methods.
 """
-function mipoptimize(prob::XpressProblem, _sflags)
+function mipoptimize(prob::XpressProblem, _sflags::String="")
     Lib.XPRSmipoptimize(prob, _sflags)
 end
 
@@ -2535,7 +2550,7 @@ XPRSloadbasis,
 XPRSwritebasis (
 WRITEBASIS).
 """
-function readbasis(prob::XpressProblem, _sfilename, _sflags)
+function readbasis(prob::XpressProblem, _sfilename::String, _sflags::String="")
     Lib.XPRSreadbasis(prob, _sfilename, _sflags)
 end
 
@@ -2576,7 +2591,7 @@ XPRSgetbasis,
 XPRSreadbasis (
 READBASIS).
 """
-function writebasis(prob::XpressProblem, _sfilename, _sflags)
+function writebasis(prob::XpressProblem, _sfilename::String, _sflags::String="")
     Lib.XPRSwritebasis(prob, _sfilename, _sflags)
 end
 
@@ -2696,8 +2711,9 @@ XPRSwriteprtrange,
 XPRSwritesol,
 ASCII Solution Files.
 """
-function writeprtsol(prob::XpressProblem, _sfilename, _sflags)
-    Lib.XPRSwriteprtsol(prob, _sfilename, _sflags)
+function writeprtsol(prob::XpressProblem, _sfilename::String, _sflags::String="")
+    r = Lib.XPRSwriteprtsol(prob, _sfilename, _sflags)
+    r != 0 ? throw(XpressProblem(r, "Unable to call writeprtsol")) : nothing
 end
 
 """
@@ -2730,7 +2746,7 @@ fred.alt, from which instructions are taken to alter the current matrix:
 Section
 The Matrix Alteration (.alt) File.
 """
-function alter(prob::XpressProblem, _sfilename)
+function alter(prob::XpressProblem, _sfilename::String)
     Lib.XPRSalter(prob, _sfilename)
 end
 
@@ -2790,8 +2806,9 @@ WRITERANGE),
 XPRSwriteprtsol (
 WRITEPRTSOL).
 """
-function writesol(prob::XpressProblem, _sfilename, _sflags)
-    Lib.XPRSwritesol(prob, _sfilename, _sflags)
+function writesol(prob::XpressProblem, _sfilename::String, _sflags="")
+    r = Lib.XPRSwritesol(prob, _sfilename, _sflags)
+    r != 0 ? throw(XpressProblem(r, "Unable to call writesol.")) : nothing
 end
 
 """
@@ -2830,7 +2847,7 @@ WRITESOL),
 XPRSwriteprtsol (
 WRITEPRTSOL).
 """
-function writebinsol(prob::XpressProblem, _sfilename, _sflags)
+function writebinsol(prob::XpressProblem, _sfilename::String, _sflags)
     Lib.XPRSwritebinsol(prob, _sfilename, _sflags)
 end
 
@@ -2870,7 +2887,7 @@ WRITESOL),
 XPRSwriteprtsol (
 WRITEPRTSOL).
 """
-function readbinsol(prob::XpressProblem, _sfilename, _sflags)
+function readbinsol(prob::XpressProblem, _sfilename::String, _sflags)
     Lib.XPRSreadbinsol(prob, _sfilename, _sflags)
 end
 
@@ -2918,7 +2935,7 @@ WRITEBINSOL),
 XPRSreadbinsol (
 READBINSOL).
 """
-function writeslxsol(prob::XpressProblem, _sfilename, _sflags)
+function writeslxsol(prob::XpressProblem, _sfilename::String, _sflags)
     Lib.XPRSwriteslxsol(prob, _sfilename, _sflags)
 end
 
@@ -2965,7 +2982,7 @@ READBINSOL),
 XPRSaddmipsol,
 XPRSaddcbusersolnotify.
 """
-function readslxsol(prob::XpressProblem, _sfilename, _sflags)
+function readslxsol(prob::XpressProblem, _sfilename::String, _sflags)
     Lib.XPRSreadslxsol(prob, _sfilename, _sflags)
 end
 
@@ -3060,7 +3077,7 @@ XPRSwritesol (
 WRITESOL),
 The Directives (.dir) File.
 """
-function writerange(prob::XpressProblem, _sfilename, _sflags)
+function writerange(prob::XpressProblem, _sfilename::String, _sflags)
     Lib.XPRSwriterange(prob, _sfilename, _sflags)
 end
 
@@ -4240,8 +4257,9 @@ WRITEPROB -x C:myprob
 XPRSreadprob (
 READPROB).
 """
-function writeprob(prob::XpressProblem, _sfilename, _sflags)
-    Lib.XPRSwriteprob(prob, _sfilename, _sflags)
+function writeprob(prob::XpressProblem, _sfilename::String, _sflags="")
+    r = Lib.XPRSwriteprob(prob, _sfilename, _sflags)
+    r != 0 ? throw(XpressError(r, "Unable to call writeprob.")) : nothing
 end
 
 """
@@ -5260,7 +5278,8 @@ XPRSrestore (
 RESTORE).
 """
 function save(prob::XpressProblem)
-    Lib.XPRSsave(prob)
+    r = Lib.XPRSsave(prob)
+    r != 0 ? throw(XpressError(r, "Unable to call save.")) : nothing
 end
 
 """
@@ -5297,7 +5316,8 @@ XPRSsave (
 SAVE).
 """
 function restore(prob::XpressProblem, _sprobname, _force)
-    Lib.XPRSrestore(prob, _sprobname, _force)
+    r = Lib.XPRSrestore(prob, _sprobname, _force)
+    r != 0 ? throw(XpressError(r, "Unable to call restore.")) : nothing
 end
 
 """
@@ -6800,7 +6820,7 @@ int XPRS_CC XPRSbasisstability(XPRSprob prob, int type, int norm, int ifscaled, 
 
 
 """
-function basisstability(prob::XpressProblem, typecode, norm, ifscaled, dval)
+function basisstability(prob::XpressProblem, typecode, norm, ifscaled::Bool, dval)
     Lib.XPRSbasisstability(prob, typecode, norm, ifscaled, dval)
 end
 
