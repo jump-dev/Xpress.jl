@@ -59,7 +59,7 @@ mutable struct XpressProblem <: CWrapper
         ptr = ref[]
         @assert ptr != C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
         p = new(ptr, Any[], 0.0)
-        finalizer((p) -> destroyprob(p), p)
+        atexit(() -> destroyprob(p))
         return p
     end
 end
