@@ -17,9 +17,9 @@ Xpress.initialize()
     @test Xpress.getintcontrol(xp, Xpress.Lib.XPRS_DEFAULTALG) == 1
     @test Xpress.getcontrol(xp, Xpress.Lib.XPRS_DEFAULTALG) == 1
 
-    Xpress.setcontrol!(xp, Xpress.Lib.XPRS_PRESOLVE, 0)
+    @test Xpress.setcontrol!(xp, Xpress.Lib.XPRS_PRESOLVE, 0) == nothing
     @test Xpress.getcontrol(xp, :XPRS_PRESOLVE) == 0
-    Xpress.setcontrol!(xp, Xpress.Lib.XPRS_PRESOLVE, 1)
+    @test Xpress.setcontrol!(xp, Xpress.Lib.XPRS_PRESOLVE, 1) == nothing
     @test Xpress.getcontrol(xp, Xpress.Lib.XPRS_PRESOLVE) == 1
 end
 
