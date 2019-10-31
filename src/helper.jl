@@ -358,5 +358,79 @@ XPRS_INT_CONTROLS = [
                         Lib.XPRS_EXTRAELEMS
                         Lib.XPRS_EXTRAPRESOLVE
                         Lib.XPRS_EXTRASETELEMS
-
                     ]
+
+
+n_variables(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_COLS)
+n_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ROWS)
+n_special_ordered_sets(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_SETS)
+n_quadratic_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_QCONSTRAINTS)
+n_non_zero_elements(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ELEMS)
+n_quadratic_elements(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_QELEMS)
+n_quadratic_row_coefficients(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_QCELEMS)
+n_entities(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_MIPENTS)
+n_setmembers(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_SETMEMBERS)
+
+n_original_variables(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALCOLS)
+n_original_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALROWS)
+
+objective_sense(prob::XpressProblem) = getdblattrib(prob, Lib.XPRS_OBJSENSE) == Lib.XPRS_OBJ_MINIMIZE ? :minimize : :maximize
+
+# derived attribute functions
+
+"""
+    n_linear_constraints(prob::XpressProblem)
+Return the number of purely linear contraints in the XpressProblem
+"""
+n_linear_constraints(prob::XpressProblem) = n_constraints(prob) - n_quadratic_constraints(prob)
+
+"""
+    is_qcp(prob::XpressProblem)
+Return `true` if there are quadratic constraints in the XpressProblem
+"""
+is_quadratic_constraints(prob::XpressProblem) = n_quadratic_constraints(prob) > 0
+
+"""
+    is_mip(prob::XpressProblem)
+Return `true` if there are integer entities in the XpressProblem
+"""
+is_mixedinteger(prob::XpressProblem) = (n_entities(prob) + n_special_ordered_sets(prob)) > 0
+
+"""
+    is_qp(prob::XpressProblem)
+Return `true` if there are quadratic terms in the objective in the XpressProblem
+"""
+is_quadratic_objective(prob::XpressProblem) = n_quadratic_elements(prob) > 0
+
+"""
+    problem_type(prob::XpressProblem)
+Return a symbol enconding the type of the problem.]
+Options are: `:LP`, `:QP` and `:QCP`
+"""
+function problem_type(prob::XpressProblem)
+    is_quadratic_objective(prob)  ? (:QP)  :
+    is_quadratic_constraints(prob) ? (:QCP) : (:LP)
+end
+
+"""
+    show(io::IO, prob::XpressProblem)
+Prints a simplified problem description
+"""
+function Base.show(io::IO, prob::XpressProblem)
+    println(io, "Xpress Problem:"     )
+    if is_mixedinteger(prob)
+    println(io, "    type   : $(problem_type(prob)) (MIP)")
+    else
+    println(io, "    type   : $(problem_type(prob))")
+    end
+    println(io, "    sense  : $(objective_sense(prob))")
+    println(io, "    number of variables                    = $(n_variables(prob))")
+    println(io, "    number of linear constraints           = $(n_linear_constraints(prob))")
+    println(io, "    number of quadratic constraints        = $(n_quadratic_constraints(prob))")
+    println(io, "    number of sos constraints              = $(n_special_ordered_sets(prob))")
+    println(io, "    number of non-zero coeffs              = $(n_non_zero_elements(prob))")
+    println(io, "    number of non-zero qp objective terms  = $(n_quadratic_elements(prob))")
+    println(io, "    number of non-zero qp constraint terms = $(n_quadratic_row_coefficients(prob))")
+    println(io, "    number of integer entities             = $(n_entities(prob))")
+end
+

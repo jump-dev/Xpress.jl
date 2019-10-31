@@ -1,5 +1,5 @@
 function invoke(f::Function, pos::Int, ::Type{Float64}, args...)
-    out = Ref{Cfloat}(0.0) # should we use Cfloat here instead?
+    out = Ref{Float64}(0.0) # should we use Cfloat here instead?
 
     args = collect(args)
     insert!(args, pos-1, out)
