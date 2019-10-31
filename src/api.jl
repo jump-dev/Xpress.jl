@@ -701,7 +701,7 @@ XPRSgetstrcontrol,
 XPRSsetdblcontrol,
 XPRSsetintcontrol.
 """
-function setstrcontrol(prob::XpressProblem, _index)
+function setstrcontrol(prob::XpressProblem, _index::Integer)
     @invoke Lib.XPRSsetstrcontrol(prob, _index, _)::String
 end
 
@@ -814,7 +814,7 @@ function getstrcontrol(prob::XpressProblem, _index::Integer)
     @invoke Lib.XPRSgetstrcontrol(prob, _index, _)::String
 end
 
-function getstringcontrol(prob::XpressProblem, _index, _svalue, _svaluesize, _controlsize)
+function getstringcontrol(prob::XpressProblem, _index::Integer, _svalue, _svaluesize, _controlsize)
     @checked Lib.XPRSgetstringcontrol(prob, _index, _svalue, _svaluesize, _controlsize)
 end
 
@@ -847,12 +847,12 @@ The following obtains the number of columns in the matrix and allocates space to
 XPRSgetdblattrib,
 XPRSgetstrattrib.
 """
-function getintattrib(prob::XpressProblem, _index, _ivalue)
-    @checked Lib.XPRSgetintattrib(prob, _index, _ivalue)
+function getintattrib(prob::XpressProblem, _index::Integer)
+    @invoke Lib.XPRSgetintattrib(prob, _index, _)::Int
 end
 
-function getintattrib64(prob::XpressProblem, _index, _ivalue)
-    @checked Lib.XPRSgetintattrib64(prob, _index, _ivalue)
+function getintattrib64(prob::XpressProblem, _index::Integer)
+    @invoke Lib.XPRSgetintattrib64(prob, _index, _)::Int
 end
 
 """
@@ -886,11 +886,11 @@ int XPRS_CC XPRSgetstrattrib(XPRSprob prob, int ipar, char *cval);
 XPRSgetdblattrib,
 XPRSgetintattrib.
 """
-function getstrattrib(prob::XpressProblem, _index, _cvalue)
-    @checked Lib.XPRSgetstrattrib(prob, _index, _cvalue)
+function getstrattrib(prob::XpressProblem, _index::Integer)
+    @invoke Lib.XPRSgetstrattrib(prob, _index, _)::String
 end
 
-function getstringattrib(prob::XpressProblem, _index, _cvalue, _cvaluesize, _controlsize)
+function getstringattrib(prob::XpressProblem, _index::Integer, _cvalue, _cvaluesize, _controlsize)
     @checked Lib.XPRSgetstringattrib(prob, _index, _cvalue, _cvaluesize, _controlsize)
 end
 
@@ -923,8 +923,8 @@ The following obtains the optimal value of the objective function and displays i
 XPRSgetintattrib,
 XPRSgetstrattrib.
 """
-function getdblattrib(prob::XpressProblem, _index, _dvalue)
-    @checked Lib.XPRSgetdblattrib(prob, _index, _dvalue)
+function getdblattrib(prob::XpressProblem, _index::Integer)
+    @invoke Lib.XPRSgetdblattrib(prob, _index, _)::Float64
 end
 
 """
@@ -956,7 +956,7 @@ XPRSsetintcontrol,
 XPRSsetdblcontrol,
 XPRSsetstrcontrol.
 """
-function setdefaultcontrol(prob::XpressProblem, _index)
+function setdefaultcontrol(prob::XpressProblem, _index::Integer)
     @checked Lib.XPRSsetdefaultcontrol(prob, _index)
 end
 
