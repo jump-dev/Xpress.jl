@@ -1941,7 +1941,7 @@ XPRSaddnames,
 XPRSloadglobal,
 XPRSloadqglobal.
 """
-function addsetnames(prob::XpressProblem, _sname, first::Int, last::Int)
+function addsetnames(prob::XpressProblem, _sname, first::Integer, last::Integer)
     @checked Lib.XPRSaddsetnames(prob, _sname, first, last)
 end
 
@@ -2135,7 +2135,7 @@ The following example retrieves information about all indicator constraints in t
 XPRSsetindicators,
 XPRSdelindicators.
 """
-function getindicators(prob::XpressProblem, _inds, _comps, first::Int, last::Int)
+function getindicators(prob::XpressProblem, _inds, _comps, first::Integer, last::Integer)
     @checked Lib.XPRSgetindicators(prob, _inds, _comps, first, last)
 end
 
@@ -2166,7 +2166,7 @@ In this example, if any of the first two rows of the matrix is an indicator cons
 XPRSgetindicators,
 XPRSsetindicators.
 """
-function delindicators(prob::XpressProblem, first::Int, last::Int)
+function delindicators(prob::XpressProblem, first::Integer, last::Integer)
     @checked Lib.XPRSdelindicators(prob, first, last)
 end
 
@@ -3380,8 +3380,18 @@ XPRSchgrhs,
 XPRSchgrhsrange,
 XPRSgetrhsrange.
 """
-function getrhs(prob::XpressProblem, _drhs, first::Int, last::Int)
+function getrhs(prob::XpressProblem, first::Integer=1, last::Integer=0)
+    n_elems = last - first + 1
+    if n_elems <= 0
+        n_elems = n_constraints(prob)
+        first = 0
+        last = n_elems - 1
+    else
+        first = first - 1
+    end
+    _drhs = Vector{Float64}(undef, n_elems)
     @checked Lib.XPRSgetrhs(prob, _drhs, first, last)
+    return _drhs
 end
 
 """
@@ -3415,7 +3425,7 @@ XPRSchgrhsrange,
 XPRSgetrhs,
 XPRSrange.
 """
-function getrhsrange(prob::XpressProblem, _drng, first::Int, last::Int)
+function getrhsrange(prob::XpressProblem, _drng, first::Integer, last::Integer)
     @checked Lib.XPRSgetrhsrange(prob, _drng, first, last)
 end
 
@@ -3449,9 +3459,17 @@ The following example retrieves the lower bounds for the columns of the current 
 XPRSchgbounds,
 XPRSgetub.
 """
-function getlb(prob::XpressProblem, first::Int, last::Int)
-    _dbdl = Vector{Float64}(undef, last - first + 1)
-    @checked Lib.XPRSgetlb(prob, _dbdl, first - 1, last - 1)
+function getlb(prob::XpressProblem, first::Integer=1, last::Integer=0)
+    n_elems = last - first + 1
+    if n_elems <= 0
+        n_elems = n_variables(prob)
+        first = 0
+        last = n_elems - 1
+    else
+        first = first - 1
+    end
+    _dbdl = Vector{Float64}(undef, n_elems)
+    @checked Lib.XPRSgetlb(prob, _dbdl, first, last)
     return _dbdl
 end
 
@@ -3484,8 +3502,16 @@ The following example retrieves the upper bounds for the columns of the current 
 XPRSchgbounds,
 XPRSgetlb.
 """
-function getub(prob::XpressProblem, first::Int, last::Int)
-    _dbdu = Vector{Float64}(undef, last - first + 1)
+function getub(prob::XpressProblem, first::Integer=1, last::Integer=0)
+    n_elems = last - first + 1
+    if n_elems <= 0
+        n_elems = n_variables(prob)
+        first = 0
+        last = n_elems - 1
+    else
+        first = first - 1
+    end
+    _dbdu = Vector{Float64}(undef, n_elems)
     @checked Lib.XPRSgetub(prob, _dbdu, first, last)
     return _dbdu
 end
@@ -3532,11 +3558,11 @@ The following examples retrieves the number of nonzero coefficients in all colum
 
 XPRSgetrows.
 """
-function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Int, last::Int)
+function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
     @checked Lib.XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
-function getcols64(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Int, last::Int)
+function getcols64(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
     @checked Lib.XPRSgetcols64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
@@ -3584,11 +3610,11 @@ XPRSgetcols,
 XPRSgetrowrange,
 XPRSgetrowtype.
 """
-function getrows(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first::Int, last::Int)
+function getrows(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
     @checked Lib.XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
-function getrows64(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first::Int, last::Int)
+function getrows64(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
     @checked Lib.XPRSgetrows64(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
@@ -3670,11 +3696,11 @@ XPRSchgmqobj,
 XPRSchgqobj,
 XPRSgetqobj.
 """
-function getmqobj(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first::Int, last::Int)
+function getmqobj(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
     @checked Lib.XPRSgetmqobj(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
-function getmqobj64(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first::Int, last::Int)
+function getmqobj64(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
     @checked Lib.XPRSgetmqobj64(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
@@ -4298,7 +4324,7 @@ The following example retrieves the row and column names of the current problem:
 XPRSaddnames,
 XPRSgetnamelist.
 """
-function getnames(prob::XpressProblem, _itype, _sbuff, first::Int, last::Int)
+function getnames(prob::XpressProblem, _itype, _sbuff, first::Integer, last::Integer)
     @checked Lib.XPRSgetnames(prob, _itype, _sbuff, first, last)
 end
 
@@ -4338,8 +4364,18 @@ XPRSchgrowtype,
 XPRSgetrowrange,
 XPRSgetrows.
 """
-function getrowtype(prob::XpressProblem, _srowtype, first::Int, last::Int)
-    @checked Lib.XPRSgetrowtype(prob, _srowtype, first, last)
+function getrowtype(prob::XpressProblem, first::Integer, last::Integer)
+    n_elems = last - first + 1
+    if n_elems <= 0
+        n_elems = n_constraints(prob)
+        first = 0
+        last = n_elems - 1
+    else
+        first = first - 1
+    end
+    _srowtype = Vector{Cchar}(undef, n_elems)
+    @checked Lib.XPRSgetrowtype(prob, _dbdl, first, last)
+    return _srowtype
 end
 
 """
@@ -4412,8 +4448,18 @@ This example finds the types for all columns in the matrix and prints them to th
 XPRSchgcoltype,
 XPRSgetrowtype.
 """
-function getcoltype(prob::XpressProblem, _coltype, first::Int, last::Int)
+function getcoltype(prob::XpressProblem, first::Integer, last::Integer)
+    n_elems = last - first + 1
+    if n_elems <= 0
+        n_elems = n_variables(prob)
+        first = 0
+        last = n_elems - 1
+    else
+        first = first - 1
+    end
+    _coltype = Vector{Cchar}(undef, n_elems)
     @checked Lib.XPRSgetcoltype(prob, _coltype, first, last)
+    return _coltype
 end
 
 """
@@ -4847,7 +4893,9 @@ XPRSdelrows,
 XPRSgetrowrange,
 XPRSgetrowtype.
 """
-function chgrowtype(prob::XpressProblem, nrows::Int, _mindex::Vector{Int}, _srowtype)
+function chgrowtype(prob::XpressProblem, _mindex::Vector{Int}, _srowtype::Vector{Cchar})
+    nrows = length(_mindex)
+    _mindex = _mindex - 1
     @checked Lib.XPRSchgrowtype(prob, nrows, _mindex, _srowtype)
 end
 
@@ -4889,7 +4937,9 @@ XPRSgetlb,
 XPRSgetub,
 XPRSstorebounds.
 """
-function chgbounds(prob::XpressProblem, nbnds::Int, _mindex::Vector{Int}, _sboundtype, _dbnd)
+function chgbounds(prob::XpressProblem, _mindex::Vector{Int}, _sboundtype::Vector{Cchar}, _dbnd::Vector{Float64})
+    nbnds = length(_mindex)
+    _mindex = _mindex .- 1
     @checked Lib.XPRSchgbounds(prob, nbnds, _mindex, _sboundtype, _dbnd)
 end
 
@@ -4929,7 +4979,7 @@ XPRSgetobj.
 """
 function chgobj(prob::XpressProblem, ncols::Int, _mindex::Vector{Int}, _dobj::Vector{Float64})
     @assert length(_dobj) == ncols
-    _mindex = _mindex - 1
+    _mindex = _mindex .- 1
     @checked Lib.XPRSchgobj(prob, ncols, _mindex, _dobj)
 end
 
@@ -5147,7 +5197,9 @@ XPRSchgrhsrange,
 XPRSgetrhs,
 XPRSgetrhsrange.
 """
-function chgrhs(prob::XpressProblem, nrows::Int, _mindex::Vector{Int}, _drhs::Vector{Float64})
+function chgrhs(prob::XpressProblem, _mindex::Vector{Int}, _drhs::Vector{Float64})
+    nrows = length(_mindex)
+    _mindex = _mindex .- 1
     @checked Lib.XPRSchgrhs(prob, nrows, _mindex, _drhs)
 end
 
@@ -7033,7 +7085,7 @@ The following example retrieves and outputs the row and column names for the cur
 
 XPRSaddnames.
 """
-function getnamelist(prob::XpressProblem, _itype, _sbuff, names_len, names_len_reqd, first::Int, last::Int)
+function getnamelist(prob::XpressProblem, _itype, _sbuff, names_len, names_len_reqd, first::Integer, last::Integer)
     @checked Lib.XPRSgetnamelist(prob, _itype, _sbuff, names_len, names_len_reqd, first, last)
 end
 
@@ -9962,7 +10014,7 @@ XPRSchgqobj,
 XPRSchgmqobj,
 XPRSgetqobj.
 """
-function getqrowqmatrix(prob::XpressProblem, irow, mstart, mclind, dobjval, maxcoeffs, ncoeffs, first::Int, last::Int)
+function getqrowqmatrix(prob::XpressProblem, irow, mstart, mclind, dobjval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
     @checked Lib.XPRSgetqrowqmatrix(prob, irow, mstart, mclind, dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
