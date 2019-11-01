@@ -4767,11 +4767,25 @@ XPRSaddrows,
 XPRSdelcols,
 XPRSchgcoltype.
 """
-function addcols(prob::XpressProblem, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl::Vector{Float64}, _dbdu)
+function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{Int}, _mrwind::Vector{Int}, _dmatval::Vector{Float64}, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
+    @assert length(_dbdl) == length(_dbdu)
+    fixinfinity!(_dbdl)
+    fixinfinity!(_dbdu)
+    ncols = length(_dbdl)
+    ncoeffs = length(_dmatval)
+    _mstart = _mstart - 1
+    _mrwind = _mrwind - 1
     @checked Lib.XPRSaddcols(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
 end
 
-function addcols64(prob::XpressProblem, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl::Vector{Float64}, _dbdu)
+function addcols64(prob::XpressProblem, _dobj, _mstart, _mrwind, _dmatval, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
+    @assert length(_dbdl) == length(_dbdu)
+    fixinfinity!(_dbdl)
+    fixinfinity!(_dbdu)
+    ncols = length(_dbdl)
+    ncoeffs = length(_dmatval)
+    _mstart = _mstart - 1
+    _mrwind = _mrwind - 1
     @checked Lib.XPRSaddcols64(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
 end
 
@@ -4804,7 +4818,9 @@ In this example, column
 XPRSaddcols,
 XPRSdelrows.
 """
-function delcols(prob::XpressProblem, ncols::Int, _mindex::Vector{Int})
+function delcols(prob::XpressProblem, _mindex::Vector{Int})
+    ncols = length(_mindex)
+    _mindex = _mindex - 1
     @checked Lib.XPRSdelcols(prob, ncols, _mindex)
 end
 
@@ -4848,7 +4864,10 @@ XPRSchgrowtype,
 XPRSdelcols,
 XPRSgetcoltype.
 """
-function chgcoltype(prob::XpressProblem, ncols::Int, _mindex::Vector{Int}, _coltype)
+function chgcoltype(prob::XpressProblem, _mindex::Vector{Int}, _coltype::Vector{Cchar})
+    ncols = length(_mindex)
+    _mindex = _mindex - 1
+    _coltype
     @checked Lib.XPRSchgcoltype(prob, ncols, _mindex, _coltype)
 end
 
@@ -5302,8 +5321,10 @@ int XPRS_CC XPRSchgglblimit(XPRSprob prob, int ncols, const int mindex[], const 
 XPRSchgcoltype,
 XPRSgetglobal.
 """
-function chgglblimit(prob::XpressProblem, ncols::Int, _mindex::Vector{Int}, _dlimit::Vector{Float64})
-    @checked Lib.XPRSchgglblimit(prob, ncols, _mindex, _dlimit)
+function chgglblimit(prob::XpressProblem, _mindex::Vector{Int}, _dlimit::Vector{Float64})
+    ncols = length(_mindex)
+    _mindex = _mindex - 1
+    @checked Lib.XPRSchgglblimit(prob, _mindex, _dlimit)
 end
 
 """
