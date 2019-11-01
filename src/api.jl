@@ -4895,7 +4895,7 @@ XPRSgetrowtype.
 """
 function chgrowtype(prob::XpressProblem, _mindex::Vector{Int}, _srowtype::Vector{Cchar})
     nrows = length(_mindex)
-    _mindex = _mindex - 1
+    _mindex = _mindex .- 1
     @checked Lib.XPRSchgrowtype(prob, nrows, _mindex, _srowtype)
 end
 
