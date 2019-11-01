@@ -1,4 +1,4 @@
-# QCQP example 
+# QCQP example
 #    maximize x + y
 #
 #    s.t.  x, y >= 0
