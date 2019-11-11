@@ -109,6 +109,6 @@ module Xpress
     # include("xprs_iis.jl")
 
     # include("XpressSolverInterface.jl")
-    # include("MOIWrapper.jl")
+    include("MOI/MOI_Wrapper.jl")
 
 end

@@ -157,7 +157,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # TODO: add functionality to the lower-level API to support querying single
     # elements of the solution.
     cached_solution::Union{Nothing, CachedSolution}
-    conflict::Union{Nothing, ConflictRefinerData}
+    conflict #::Union{Nothing, ConflictRefinerData}
 
     # Callback fields.
     callback_variable_primal::Vector{Float64}
