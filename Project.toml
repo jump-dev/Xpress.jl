@@ -1,6 +1,6 @@
 name = "Xpress"
 uuid = "9e70acf3-d6c9-5be6-b5bd-4e2c73e3e054"
-authors = ["Dheepak Krishnamurthy <me@kdheepak.com>"]
+authors = ["Joaquim Dias Garcia <joaquim@psr-inc.con>, Dheepak Krishnamurthy <me@kdheepak.com>, Jose Daniel Lara <jdlara@berkeley.edu>"]
 version = "0.9.1"
 
 [deps]

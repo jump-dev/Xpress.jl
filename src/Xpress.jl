@@ -62,7 +62,7 @@ module Xpress
 
 
     ### include source files
-     module Lib
+    module Lib
 
         import ..Xpress
         const libxprs = Xpress.libxprs

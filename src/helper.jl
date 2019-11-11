@@ -50,7 +50,7 @@ Base.unsafe_convert(T::Type{Ptr{Nothing}}, t::CWrapper) = (t.ptr == C_NULL) ? th
 
 mutable struct XpressProblem <: CWrapper
     ptr::Lib.XPRSprob
-    callback::Array{Any}
+    callback::Vector{Any}
     time::Float64
     function XpressProblem()
         ref = Ref{Lib.XPRSprob}()
@@ -360,6 +360,8 @@ XPRS_INT_CONTROLS = [
                         Lib.XPRS_EXTRASETELEMS
                     ]
 
+# TODO list attributes by type
+
 
 n_variables(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_COLS)
 n_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ROWS)
@@ -408,8 +410,8 @@ Return a symbol enconding the type of the problem.]
 Options are: `:LP`, `:QP` and `:QCP`
 """
 function problem_type(prob::XpressProblem)
-    is_quadratic_objective(prob)  ? (:QP)  :
-    is_quadratic_constraints(prob) ? (:QCP) : (:LP)
+    is_quadratic_constraints(prob) ? (:QCP) : 
+    is_quadratic_objective(prob)  ? (:QP)  : (:LP)
 end
 
 """
@@ -435,4 +437,69 @@ function Base.show(io::IO, prob::XpressProblem)
 end
 
 
+"""
+    delq!(model::Model)
 
+delete all quadritic terms formthe objective
+"""
+function delq!(prob::XpressProblem)
+
+    n = n_variables(prob)
+    k = n*(n+1)÷2
+
+    qr = zeros(Int, k)
+    qc = zeros(Int, k)
+    qv = zeros(k)
+
+    cont = 1
+    for i in 1:n
+        for j in i:n
+            qr[cont] = i
+            qc[cont] = j
+            cont += 1
+        end
+    end
+
+    Xpress.chgqobj(prob, qr, qc, qv)
+end
+
+const MIPSTATUS_STRING = Dict{Int,String}(
+    Xpress.Lib.XPRS_MIP_NOT_LOADED => "0 Problem has not been loaded ( XPRS_MIP_NOT_LOADED).",
+    Xpress.Lib.XPRS_MIP_LP_NOT_OPTIMAL => "1 Global search incomplete - the initial continuous relaxation has not been solved and no integer solution has been found ( XPRS_MIP_LP_NOT_OPTIMAL).",
+    Xpress.Lib.XPRS_MIP_LP_OPTIMAL => "2 Global search incomplete - the initial continuous relaxation has been solved and no integer solution has been found ( XPRS_MIP_LP_OPTIMAL).",
+    Xpress.Lib.XPRS_MIP_NO_SOL_FOUND => "3 Global search incomplete - no integer solution found ( XPRS_MIP_NO_SOL_FOUND).",
+    Xpress.Lib.XPRS_MIP_SOLUTION => "4 Global search incomplete - an integer solution has been found ( XPRS_MIP_SOLUTION).",
+    Xpress.Lib.XPRS_MIP_INFEAS => "5 Global search complete - no integer solution found ( XPRS_MIP_INFEAS).",
+    Xpress.Lib.XPRS_MIP_OPTIMAL => "6 Global search complete - integer solution found ( XPRS_MIP_OPTIMAL).",
+    Xpress.Lib.XPRS_MIP_UNBOUNDED => "7 Global search incomplete - the initial continuous relaxation was found to be unbounded. A solution may have been found ( XPRS_MIP_UNBOUNDED).",
+)
+
+function mip_solve_complete(stat)
+    stat in [Xpress.Lib.XPRS_MIP_INFEAS, Xpress.Lib.XPRS_MIP_OPTIMAL]
+end
+function mip_solve_stopped(stat)
+    stat in [Xpress.Lib.XPRS_MIP_INFEAS, Xpress.Lib.XPRS_MIP_OPTIMAL]
+end
+
+const LPSTATUS_STRING = Dict{Int,String}(
+    Xpress.Lib.XPRS_LP_UNSTARTED => "0 Unstarted ( XPRS_LP_UNSTARTED).",
+    Xpress.Lib.XPRS_LP_OPTIMAL => "1 Optimal ( XPRS_LP_OPTIMAL).",
+    Xpress.Lib.XPRS_LP_INFEAS => "2 Infeasible ( XPRS_LP_INFEAS).",
+    Xpress.Lib.XPRS_LP_CUTOFF => "3 Objective worse than cutoff ( XPRS_LP_CUTOFF).",
+    Xpress.Lib.XPRS_LP_UNFINISHED => "4 Unfinished ( XPRS_LP_UNFINISHED).",
+    Xpress.Lib.XPRS_LP_UNBOUNDED => "5 Unbounded ( XPRS_LP_UNBOUNDED).",
+    Xpress.Lib.XPRS_LP_CUTOFF_IN_DUAL => "6 Cutoff in dual ( XPRS_LP_CUTOFF_IN_DUAL).",
+    Xpress.Lib.XPRS_LP_UNSOLVED => "7 Problem could not be solved due to numerical issues. ( XPRS_LP_UNSOLVED).",
+    Xpress.Lib.XPRS_LP_NONCONVEX => "8 Problem contains quadratic data, which is not convex ( XPRS_LP_NONCONVEX).",
+)
+
+const STOPSTATUS_STRING = Dict{Int, String}(
+    Xpress.Lib.XPRS_STOP_NONE => "no interruption - the solve completed normally",
+    Xpress.Lib.XPRS_STOP_TIMELIMIT => "time limit hit",
+    Xpress.Lib.XPRS_STOP_CTRLC => "control C hit",
+    Xpress.Lib.XPRS_STOP_NODELIMIT => "node limit hit",
+    Xpress.Lib.XPRS_STOP_ITERLIMIT => "iteration limit hit",
+    Xpress.Lib.XPRS_STOP_MIPGAP => "MIP gap is sufficiently small",
+    Xpress.Lib.XPRS_STOP_SOLLIMIT => "solution limit hit",
+    Xpress.Lib.XPRS_STOP_USER => "user interrupt.",
+)

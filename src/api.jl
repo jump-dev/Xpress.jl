@@ -1857,7 +1857,9 @@ end
 
 """
 
-    addnames(prob::XpressProblem, _itype, _sname, first, last)
+    addnames(prob::XpressProblem, _itype::Integer, _sname::Vector{String})
+
+    addnames(prob::XpressProblem, _itype::Integer, first::Integer, _sname::Vector{String})
 
 *Purpose*
 
@@ -1894,12 +1896,13 @@ XPRSaddcols,
 XPRSaddrows,
 XPRSgetnames.
 """
-function addnames(prob::XpressProblem, _itype::Integer, _sname::Vector{String})
+function addnames(prob::XpressProblem, _itype::Integer, first::Integer, _sname::Vector{String})
     # TODO: name _itype a Enum?
     NAMELENGTH = 64
 
-    first = 0
-    last = length(names)-1
+    last = first+length(names)-1
+    first -= 1
+    last -= 1
 
     _cnames = ""
     for str in names
@@ -1907,6 +1910,9 @@ function addnames(prob::XpressProblem, _itype::Integer, _sname::Vector{String})
     end
 
     @checked Lib.XPRSaddnames(prob, _itype, _cnames, first, last)
+end
+function addnames(prob::XpressProblem, _itype::Integer, _sname::Vector{String})
+    addnames(prob, _itype, 1, _sname)
 end
 
 """
@@ -2290,7 +2296,7 @@ XPRSmipoptimize (
 MIPOPTIMIZE),
 Solution Methods.
 """
-function lpoptimize(prob::XpressProblem, _sflags::String="")
+function XPRSlpoptimize(prob::XpressProblem, _sflags::String="")
     @checked Lib.XPRSlpoptimize(prob, _sflags)
 end
 
@@ -3388,6 +3394,7 @@ function getrhs(prob::XpressProblem, first::Integer=1, last::Integer=0)
         last = n_elems - 1
     else
         first = first - 1
+        last = last - 1
     end
     _drhs = Vector{Float64}(undef, n_elems)
     @checked Lib.XPRSgetrhs(prob, _drhs, first, last)
@@ -3467,6 +3474,7 @@ function getlb(prob::XpressProblem, first::Integer=1, last::Integer=0)
         last = n_elems - 1
     else
         first = first - 1
+        last = last - 1
     end
     _dbdl = Vector{Float64}(undef, n_elems)
     @checked Lib.XPRSgetlb(prob, _dbdl, first, last)
@@ -3510,6 +3518,7 @@ function getub(prob::XpressProblem, first::Integer=1, last::Integer=0)
         last = n_elems - 1
     else
         first = first - 1
+        last = last - 1
     end
     _dbdu = Vector{Float64}(undef, n_elems)
     @checked Lib.XPRSgetub(prob, _dbdu, first, last)
@@ -3610,12 +3619,22 @@ XPRSgetcols,
 XPRSgetrowrange,
 XPRSgetrowtype.
 """
-function getrows(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
-    @checked Lib.XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
+function getrows(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, first::Integer, last::Integer)
+    @checked Lib.XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, C_NULL, first - 1, last - 1)
+    _mstart .+= 1
+    _mclind .+= 1
+    return
 end
 
-function getrows64(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
-    @checked Lib.XPRSgetrows64(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
+function getrows_nnz(prob::XpressProblem, first::Integer, last::Integer)
+    nzcnt = zeros(Cint, 1)
+    @checked Lib.XPRSgetrows(prob, C_NULL, C_NULL, C_NULL, 0, nzcnt, first - 1, last - 1)
+    return nzcnt[]
+end
+
+# TODO
+function getrows64(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, first::Integer, last::Integer)
+    @checked Lib.XPRSgetrows64(prob, _mstart .- 1, _mclind .- 1, _dmatval, maxcoeffs, C_NULL, first - 1, last - 1)
 end
 
 """
@@ -4372,6 +4391,7 @@ function getrowtype(prob::XpressProblem, first::Integer, last::Integer)
         last = n_elems - 1
     else
         first = first - 1
+        last = last - 1
     end
     _srowtype = Vector{Cchar}(undef, n_elems)
     @checked Lib.XPRSgetrowtype(prob, _dbdl, first, last)
@@ -4456,6 +4476,7 @@ function getcoltype(prob::XpressProblem, first::Integer, last::Integer)
         last = n_elems - 1
     else
         first = first - 1
+        last = last - 1
     end
     _coltype = Vector{Cchar}(undef, n_elems)
     @checked Lib.XPRSgetcoltype(prob, _coltype, first, last)
@@ -4586,7 +4607,7 @@ end
 
 """
 
-    addrows(prob::XpressProblem, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
+    addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int}, _mclind::Vector{Int}, _dmatval::Vector{Float64})
 
 *Purpose*
 
@@ -4647,8 +4668,14 @@ XPRSaddcuts,
 XPRSaddnames,
 XPRSdelrows.
 """
-function addrows(prob::XpressProblem, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
-    @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
+function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int}, _mclind::Vector{Int}, _dmatval::Vector{Float64})
+    nrows = length(_drhs)
+    # @assert nrows == length(_drng) # can be a C_NULL
+    @assert nrows == length(_srowtype)
+    ncoeffs = length(_mclind)
+    @assert ncoeffs == length(_mstart)
+    @assert ncoeffs == length(_dmatval)
+    @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mclind.-1, _dmatval)
 end
 
 function addrows64(prob::XpressProblem, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
@@ -5286,8 +5313,8 @@ XPRSlpoptimize,
 XPRSmipoptimize.
 """
 function chgobjsense(prob::XpressProblem, objsense::Union{Symbol, Int})
-    v = objsense == :maximize || sense == :Max || sense == Lib.XPRS_OBJ_MAXIMIZE ? Lib.XPRS_OBJ_MAXIMIZE :
-        objsense == :maximize || sense == :Max || sense == Lib.XPRS_OBJ_MINIMIZE ? Lib.XPRS_OBJ_MINIMIZE :
+    v = objsense == :maximize || objsense == :Max || objsense == Lib.XPRS_OBJ_MAXIMIZE ? Lib.XPRS_OBJ_MAXIMIZE :
+        objsense == :minimize || objsense == :Min || objsense == Lib.XPRS_OBJ_MINIMIZE ? Lib.XPRS_OBJ_MINIMIZE :
         throw(ArgumentError("Invalid objective sense: $objsense. It can only be `:maximize`, `:minimize`, `:Max`, `:Min`, `$(Lib.XPRS_OBJ_MAXIMIZE)`, or `$(Lib.XPRS_OBJ_MINIMIZE)`."))
     @checked Lib.XPRSchgobjsense(prob, v)
 end
