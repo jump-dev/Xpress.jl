@@ -1874,10 +1874,11 @@ int XPRS_CC XPRSaddnames(XPRSprob prob, int type, const char cnames[], int first
 *Arguments*
 
 `prob`: The current problem.
-`type`: 1
-`for row names;`: 2
-`for column names.`: 3
-`for set names.`: cnames
+`type`:
+`for row names;`: 1
+`for column names.`: 2
+`for set names.`: 3
+cnames
 `Character buffer containing the null-terminated string names.`: first
 `Start of the range of rows, columns or sets.`: last
 
@@ -1896,7 +1897,7 @@ XPRSaddcols,
 XPRSaddrows,
 XPRSgetnames.
 """
-function addnames(prob::XpressProblem, _itype::Integer, first::Integer, _sname::Vector{String})
+function addnames(prob::XpressProblem, _itype::Integer, first::Integer, names::Vector{String})
     # TODO: name _itype a Enum?
     NAMELENGTH = 64
 
@@ -2296,7 +2297,7 @@ XPRSmipoptimize (
 MIPOPTIMIZE),
 Solution Methods.
 """
-function XPRSlpoptimize(prob::XpressProblem, _sflags::String="")
+function lpoptimize(prob::XpressProblem, _sflags::String="")
     @checked Lib.XPRSlpoptimize(prob, _sflags)
 end
 
@@ -4983,7 +4984,9 @@ XPRSgetlb,
 XPRSgetub,
 XPRSstorebounds.
 """
-function chgbounds(prob::XpressProblem, _mindex::Vector{Int}, _sboundtype::Vector{Cchar}, _dbnd::Vector{Float64})
+function chgbounds(prob::XpressProblem,
+    _mindex::Vector{I}, _sboundtype::Vector{Cchar},
+    _dbnd::Vector{Float64}) where {I<:Integer}
     nbnds = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgbounds(prob, nbnds, _mindex, _sboundtype, _dbnd)
@@ -4991,7 +4994,7 @@ end
 
 """
 
-    chgobj(prob::XpressProblem, ncols, _mindex, _dobj)
+    chgobj(prob::XpressProblem, _mindex, _dobj)
 
 *Purpose*
 
@@ -5023,8 +5026,9 @@ XPRSchgmqobj,
 XPRSchgqobj,
 XPRSgetobj.
 """
-function chgobj(prob::XpressProblem, ncols::Int, _mindex::Vector{Int}, _dobj::Vector{Float64})
-    @assert length(_dobj) == ncols
+function chgobj(prob::XpressProblem, _mindex::Vector{Int}, _dobj::Vector{Float64})
+    ncols = length(_dobj)
+    @assert length(_mindex) == ncols
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgobj(prob, ncols, _mindex, _dobj)
 end

@@ -175,7 +175,10 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     function Optimizer()
         model = new()
         model.inner = XpressProblem()
+        Xpress.loadlp(model.inner)
         MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), 1)
+        MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_MPSNAMELENGTH), 64)
+        MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_CALLBACKFROMMASTERTHREAD), 1) #cannot be changed in julia
         model.silent = false
         model.variable_info = CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}()
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
@@ -208,6 +211,9 @@ Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 
 function MOI.empty!(model::Optimizer)
     model.inner = XpressProblem()
+    Xpress.loadlp(model.inner)
+    MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_MPSNAMELENGTH), 64)
+    MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_CALLBACKFROMMASTERTHREAD), 1)
     model.name = ""
     if model.silent
         MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), 0)
@@ -557,9 +563,9 @@ function MOI.set(
 )
     info = _info(model, v)
     info.name = name
-    if isascii(name)
+    if isascii(name) && length(name) > 0
         # TODO not do this always
-        Xpress.addnames(model.inner, 3, info.column, [name])
+        Xpress.addnames(model.inner, 2, info.column, [name])
     end
     model.name_to_variable = nothing
     return
@@ -573,7 +579,7 @@ function _zero_objective(model::Optimizer)
     num_vars = length(model.variable_info)
     obj = zeros(Float64, num_vars)
     Xpress.delq!(model.inner) # TODO - only delete when needed
-    Xpress.chgobj(model.inner, num_vars, collect(1:num_vars), obj)
+    Xpress.chgobj(model.inner, collect(1:num_vars), obj)
     Xpress.chgobj(model.inner, [0], [0.0])
     return
 end
@@ -643,8 +649,8 @@ function MOI.set(
         column = _info(model, term.variable_index).column
         obj[column] += term.coefficient
     end
-    Xpress.chgobj(model.inner, num_vars, collect(1:num_vars), obj)
-    Xpress.chgobj(model.inner, [0], f.constant)
+    Xpress.chgobj(model.inner, collect(1:num_vars), obj)
+    Xpress.chgobj(model.inner, [0], [f.constant])
     model.objective_type = SCALAR_AFFINE
     return
 end
@@ -733,7 +739,7 @@ function MOI.modify(
     ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
     chg::MOI.ScalarConstantChange{Float64}
 )
-    Xpress.chgobj(model.inner, [0], chg.new_constant)
+    Xpress.chgobj(model.inner, [0], [chg.new_constant])
     return
 end
 
@@ -1528,9 +1534,9 @@ function MOI.set(
 )
     info = _info(model, c)
     info.name = name
-    if isascii(name)
+    if isascii(name) && length(name) > 0
         # TODO not do this always
-        Xpress.addnames(model.inner, 2, info.column, [name])
+        Xpress.addnames(model.inner, 1, info.row, [name])
     end
     model.name_to_constraint_index = nothing
     return
@@ -2484,7 +2490,7 @@ function MOI.modify(
     chg::MOI.ScalarCoefficientChange{Float64}
 )
     column = _info(model, chg.variable).column
-    Xpress.chgobj(model.inner, 1, [column], [chg.new_coefficient])
+    Xpress.chgobj(model.inner, [column], [chg.new_coefficient])
     return
 end
 
