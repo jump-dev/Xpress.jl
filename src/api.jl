@@ -4800,8 +4800,8 @@ function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{In
     fixinfinity!(_dbdu)
     ncols = length(_dbdl)
     ncoeffs = length(_dmatval)
-    _mstart = _mstart - 1
-    _mrwind = _mrwind - 1
+    _mstart = _mstart .- 1
+    _mrwind = _mrwind .- 1
     @checked Lib.XPRSaddcols(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
 end
 
@@ -4811,8 +4811,8 @@ function addcols64(prob::XpressProblem, _dobj, _mstart, _mrwind, _dmatval, _dbdl
     fixinfinity!(_dbdu)
     ncols = length(_dbdl)
     ncoeffs = length(_dmatval)
-    _mstart = _mstart - 1
-    _mrwind = _mrwind - 1
+    _mstart = _mstart .- 1
+    _mrwind = _mrwind .- 1
     @checked Lib.XPRSaddcols64(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
 end
 
@@ -4847,7 +4847,7 @@ XPRSdelrows.
 """
 function delcols(prob::XpressProblem, _mindex::Vector{Int})
     ncols = length(_mindex)
-    _mindex = _mindex - 1
+    _mindex = _mindex .- 1
     @checked Lib.XPRSdelcols(prob, ncols, _mindex)
 end
 
@@ -4893,7 +4893,7 @@ XPRSgetcoltype.
 """
 function chgcoltype(prob::XpressProblem, _mindex::Vector{Int}, _coltype::Vector{Cchar})
     ncols = length(_mindex)
-    _mindex = _mindex - 1
+    _mindex = _mindex .- 1
     _coltype
     @checked Lib.XPRSchgcoltype(prob, ncols, _mindex, _coltype)
 end
@@ -5350,7 +5350,7 @@ XPRSgetglobal.
 """
 function chgglblimit(prob::XpressProblem, _mindex::Vector{Int}, _dlimit::Vector{Float64})
     ncols = length(_mindex)
-    _mindex = _mindex - 1
+    _mindex = _mindex .- 1
     @checked Lib.XPRSchgglblimit(prob, _mindex, _dlimit)
 end
 
