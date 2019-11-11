@@ -1,4 +1,4 @@
-using Xpress, MathOptInterface
+using Xpress, MathOptInterface, Test
 
 const MOI = MathOptInterface
 const MOIT = MathOptInterface.Test
@@ -12,23 +12,18 @@ const OPTIMIZER = MOI.Bridges.full_bridge_optimizer(
     Xpress.Optimizer(), Float64)
 
 const CONFIG = MOIT.TestConfig()
-#=
+
 @testset "Unit Tests" begin
-    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG; exclude = [
-        (MOI.VectorOfVariables, MOI.GeometricMeanCone)
+    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG)
+    MOIT.unittest(OPTIMIZER, CONFIG, [
+        # These are excluded because they aren't supported yet.
+        "solve_qcp_edge_cases",
+        "solve_qp_edge_cases",
+        "delete_soc_variables",
     ])
-    # get(::ConstraintFunction) and get(::ConstraintSet) haven't been
-    # implemented for the geomean bridge in MOI.
-    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG; include = [
-            (MOI.VectorOfVariables, MOI.GeometricMeanCone)
-        ],
-        get_constraint_function = false,
-        get_constraint_set = false
-    )
-    MOIT.unittest(OPTIMIZER, MOIT.TestConfig(atol=1e-6))
     MOIT.modificationtest(OPTIMIZER, CONFIG)
 end
-
+#=
 @testset "Linear tests" begin
     @testset "Default Solver"  begin
         MOIT.contlineartest(OPTIMIZER, MOIT.TestConfig(basis = true), [
