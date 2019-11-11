@@ -40,3 +40,12 @@ Xpress Problem:
 
 end
 
+tests = ["MOI_Wrapper",
+        #  "wordhunt"
+         ]
+
+for t in tests
+    fp = "$(t).jl"
+    println("running $(fp) ...")
+    evalfile(fp)
+end
