@@ -27,9 +27,9 @@ end
 
 function fixinfinity(val::Float64)
     if val == Inf
-        return XPRS_PLUSINFINITY
+        return Xpress.Lib.XPRS_PLUSINFINITY
     elseif val == -Inf
-        return XPRS_MINUSINFINITY
+        return Xpress.Lib.XPRS_MINUSINFINITY
     else
         return val
     end
@@ -410,7 +410,7 @@ Return a symbol enconding the type of the problem.]
 Options are: `:LP`, `:QP` and `:QCP`
 """
 function problem_type(prob::XpressProblem)
-    is_quadratic_constraints(prob) ? (:QCP) : 
+    is_quadratic_constraints(prob) ? (:QCP) :
     is_quadratic_objective(prob)  ? (:QP)  : (:LP)
 end
 
