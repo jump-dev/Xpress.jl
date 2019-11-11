@@ -3,25 +3,33 @@ using Xpress, MathOptInterface, Test
 const MOI = MathOptInterface
 const MOIT = MathOptInterface.Test
 
-const MOI  = Xpress.MOI
 const MOIT = MOI.Test
+const MOIU = MOI.Utilities
 
-const OPTIMIZER = MOI.Bridges.full_bridge_optimizer(
-    # Note: we set `DualReductions = 0` so that we never return
-    # `INFEASIBLE_OR_UNBOUNDED`.
+const OPTIMIZER = Xpress.Optimizer()
+
+@testset "SolverName" begin
+    @test MOI.get(OPTIMIZER, MOI.SolverName()) == "Xpress"
+end
+
+@testset "supports_default_copy_to" begin
+    @test MOIU.supports_default_copy_to(OPTIMIZER, true)
+end
+
+const BRIDGED_OPTIMIZER = MOI.Bridges.full_bridge_optimizer(
     Xpress.Optimizer(), Float64)
 
 const CONFIG = MOIT.TestConfig()
 
 @testset "Unit Tests" begin
-    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG)
-    MOIT.unittest(OPTIMIZER, CONFIG, [
+    #MOIT.basic_constraint_tests(BRIDGED_OPTIMIZER, CONFIG)
+    MOIT.unittest(BRIDGED_OPTIMIZER, CONFIG, [
         # These are excluded because they aren't supported yet.
         "solve_qcp_edge_cases",
         "solve_qp_edge_cases",
         "delete_soc_variables",
     ])
-    MOIT.modificationtest(OPTIMIZER, CONFIG)
+    #    MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
 #=
 @testset "Linear tests" begin
