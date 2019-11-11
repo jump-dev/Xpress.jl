@@ -7,6 +7,10 @@ const MOIT = MOI.Test
 const MOIU = MOI.Utilities
 
 const OPTIMIZER = Xpress.Optimizer()
+const BRIDGED_OPTIMIZER = MOI.Bridges.full_bridge_optimizer(
+    Xpress.Optimizer(), Float64)
+
+const CONFIG = MOIT.TestConfig()
 
 @testset "SolverName" begin
     @test MOI.get(OPTIMIZER, MOI.SolverName()) == "Xpress"
@@ -16,19 +20,20 @@ end
     @test MOIU.supports_default_copy_to(OPTIMIZER, true)
 end
 
-const BRIDGED_OPTIMIZER = MOI.Bridges.full_bridge_optimizer(
-    Xpress.Optimizer(), Float64)
-
-const CONFIG = MOIT.TestConfig()
-
 @testset "Unit Tests" begin
-    #MOIT.basic_constraint_tests(BRIDGED_OPTIMIZER, CONFIG)
-    MOIT.unittest(BRIDGED_OPTIMIZER, CONFIG, [
-        # These are excluded because they aren't supported yet.
-        "solve_qcp_edge_cases",
-        "solve_qp_edge_cases",
-        "delete_soc_variables",
-    ])
+    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG;
+            exclude = [
+                (MOI.SingleVariable, MOI.Integer),
+                (MOI.SingleVariable, MOI.EqualTo{Float64}),
+                (MOI.SingleVariable, MOI.Interval{Float64}),
+                (MOI.SingleVariable, MOI.GreaterThan{Float64}),
+                (MOI.SingleVariable, MOI.LessThan{Float64}),
+            ]
+        )
+        MOIT.unittest(OPTIMIZER, CONFIG, [
+            "solve_qp_edge_cases",    # tested below
+            "solve_qcp_edge_cases"    # tested below
+        ])
     #    MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
 #=
