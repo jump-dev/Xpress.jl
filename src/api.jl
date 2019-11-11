@@ -6207,8 +6207,8 @@ XPRSaddcbmessage,
 XPRSsetlogfile, Chapter
 Return Codes and Error Messages.
 """
-function getlasterror(prob::XpressProblem, errmsg)
-    @checked Lib.XPRSgetlasterror(prob, errmsg)
+function getlasterror(prob::XpressProblem)
+    @invoke Lib.XPRSgetlasterror(prob, _)::String
 end
 
 """
