@@ -1493,6 +1493,7 @@ function MOI.get(
     rmatbeg = zeros(Int, 1)
     rmatind = Array{Int}(undef,  nzcnt)
     rmatval = Array{Float64}(undef,  nzcnt)
+    val = 0
 
     Xpress.getrows(
         model.inner,
@@ -1500,7 +1501,7 @@ function MOI.get(
         rmatind,#_mclind,
         rmatval,#_dmatval,
         nzcnt,#maxcoeffs,
-        # C_NULL,#ncoeffs,
+        val,
         row,#first::Integer,
         row,#last::Integer
         )

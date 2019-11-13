@@ -3578,7 +3578,7 @@ end
 
 """
 
-    getrows(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
+    getrows(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
 
 *Purpose*
 
@@ -3620,10 +3620,10 @@ XPRSgetcols,
 XPRSgetrowrange,
 XPRSgetrowtype.
 """
-function getrows(prob::XpressProblem, _mstart::Vector{Cint}, _mclind::Vector{Cint}, _dmatval::Array{Float64}, maxcoeffs, first::Cint, last::Cint)
-    @checked Lib.XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, C_NULL, first - 1, last - 1)
+function getrows(prob::XpressProblem, _mstart::Vector{Cint}, _mrwind::Vector{Cint}, _dmatval::Array{Float64}, maxcoeffs::Integer, val::Integer, first::Cint, last::Cint)
+    @checked Lib.XPRSgetrows(prob, _mstart, _mrwind, _dmatval, maxcoeffs, val, first - 1, last - 1)
     _mstart .+= 1
-    _mclind .+= 1
+    _mrwind .+= 1
     return
 end
 
@@ -3634,10 +3634,10 @@ function getrows_nnz(prob::XpressProblem, first::Integer, last::Integer)
 end
 
 # TODO
-function getrows(prob::XpressProblem, _mstart::Vector{Int}, _mclind::Vector{Int}, _dmatval::Array{Float64}, maxcoeffs, first::Int, last::Int)
-    @checked Lib.XPRSgetrows64(prob, _mstart, _mclind, _dmatval, maxcoeffs, C_NULL, first - 1, last - 1)
+function getrows(prob::XpressProblem, _mstart::Vector{Int}, _mrwind::Vector{Int}, _dmatval::Array{Float64}, maxcoeffs::Integer, val::Integer, first::Int, last::Int)
+    @checked Lib.XPRSgetrows64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, val, first - 1, last - 1)
     _mstart .+= 1
-    _mclind .+= 1
+    _mrwind .+= 1
     return
 end
 
@@ -3675,7 +3675,7 @@ end
 
 """
 
-    getmqobj(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
+    getmqobj(prob::XpressProblem, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first, last)
 
 *Purpose*
 
@@ -3719,12 +3719,12 @@ XPRSchgmqobj,
 XPRSchgqobj,
 XPRSgetqobj.
 """
-function getmqobj(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first::Cint, last::Cint)
-    @checked Lib.XPRSgetmqobj(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
+function getmqobj(prob::XpressProblem, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first::Cint, last::Cint)
+    @checked Lib.XPRSgetmqobj(prob, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
-function getmqobj(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first::Int, last::Int)
-    @checked Lib.XPRSgetmqobj64(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
+function getmqobj(prob::XpressProblem, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first::Int, last::Int)
+    @checked Lib.XPRSgetmqobj64(prob, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
 """
@@ -4611,7 +4611,7 @@ end
 
 """
 
-    addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Cint}, _mclind::Vector{Cint}, _dmatval::Vector{Float64})
+    addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Cint}, _mrwind::Vector{Cint}, _dmatval::Vector{Float64})
 
 *Purpose*
 
@@ -4672,24 +4672,24 @@ XPRSaddcuts,
 XPRSaddnames,
 XPRSdelrows.
 """
-function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Cint}, _mclind::Vector{Cint}, _dmatval::Vector{Float64})
+function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Cint}, _mrwind::Vector{Cint}, _dmatval::Vector{Float64})
     nrows = length(_drhs)
     # @assert nrows == length(_drng) # can be a C_NULL
     @assert nrows == length(_srowtype)
-    ncoeffs = length(_mclind)
+    ncoeffs = length(_mrwind)
     @assert ncoeffs == length(_mstart)
     @assert ncoeffs == length(_dmatval)
-    @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mclind.-1, _dmatval)
+    @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mrwind.-1, _dmatval)
 end
 
-function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int}, _mclind::Vector{Int}, _dmatval::Vector{Float64})
+function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int}, _mrwind::Vector{Int}, _dmatval::Vector{Float64})
     nrows = length(_drhs)
     # @assert nrows == length(_drng) # can be a C_NULL
     @assert nrows == length(_srowtype)
-    ncoeffs = length(_mclind)
+    ncoeffs = length(_mrwind)
     @assert ncoeffs == length(_mstart)
     @assert ncoeffs == length(_dmatval)
-    @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mclind.-1, _dmatval)
+    @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mrwind.-1, _dmatval)
 end
 
 """
