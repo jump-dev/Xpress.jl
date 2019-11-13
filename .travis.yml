@@ -11,18 +11,16 @@ notifications:
 matrix:
   allow_failures:
   - julia: nightly
-  - julia: 1.3
 addons:
   ssh_known_hosts: github.com
 env:
   global:
   - XPRESSDIR=/Users/travis/XPRESSBINFILES/xpressmp
   - DYLD_LIBRARY_PATH=$XPRESSDIR/lib:$DYLD_LIBRARY_PATH
-  - secure: ifJ+StnGFeLWUiX8STz0ltOK9cTCoqOm0uGTq1O3olTKpOS6NI+/OCfSj/Qe/mYdTbVlSRDnNRmLUGxoctNqmdI87N/P+BrP5kWUwzrijvTkbMZ+za0UfsZ5AhhrlWLfqVWjsaezSQpU9Trgjs+2SvrO6bWBJxgMtVxVEAONWheBn3B4UWwhU6jltXoY0zEm29n1W8tg8vD4/VMSdasHcjbVP05VDGK/wqrPPtoHFzm5ct/UvSmf6LjT+OfptSIuzr0TTrNz7+vaa3GO+m1JtW5XphPH+CvxUu8bR+qHjkF0PTl7z39vSstfQkBBYYyM3Dg7hOcYE0pJfx1gQ7aFx3942GDTkXiru0j35oqIsUtPvtgRQqkjrzEoYsutlr01eCmzfwJnMW0D9J+TK9khsZkpec2CpFBIS3DZxIM7uv73FIAL/OiZBTGGgEYB4JbgTX36rsIHNcTppHk7R4RD0N72AYPgZEh53kgX6gwW/JiKo5SQeAvDvjSeJdlysgvp/2+Tua0RYXq/663ChOgRqEMHhEhBzklWGayZypEaEXAycj1+uwrgLli0D5t1orY9402GdYF1PMFZZSfRc0Vvs5qVS22M8kqlSnzgZ49nFzAr17Gji/CIVBRhhc5f0m8Pab7OvsuXGNMnPNwoUUyaN49DrvrbCnSLnQtbi5Ymtfs=
+  - secure: FYT4eu668AQnXDyN6jE5INuhOTpp3hNUJ5Y2fdg0AeIBNzxa5EghNa2mB67c0D4S0+Pb8bjipaimnvGZOYniyXCs4ANFw4/e/OXkgCaTiQzgAYL96SbbeJJaWDP5NtVUsavb9KyGDQeexUP4nvXcTZshwbkI3JGoqg/Vlr4IfQmNb6+uQ9Eyt6Pk/YxAEaLuu/bDEPXBms4BbknCEnfoDstJYo/RoeUgcdtg7MFTkOhPMPgYs+JAMSgue6W0dVsNg3bzAZKs0xR57ThvV6UvsSPSI8kG5nrgL4+H0Zj4Ald/HftcmUGmCE4/koyPVmIOc4PKD9GHbGwoyXR2086qhtD78mHuFZgQ4pKOT1gGdtvHilPKCT924zHstEmTIZhUrMSlwW6rqiJmBBunydZsntr6+9bMZS97u/tfZCiZe/5R4CwEoU3X0Y0wEQzVSZO9l292toN93Y6Ua735c2yvmEq/5/LRu8hGMb3vuCCMUC98TABcQ44TTpj3mIWNgd6SoA76cimLqicQBURoLB9OkCibluukWQ61NCQpRzZeycOlDyh9kV0ld77n+E3DsXEoDihee+aPuJZdLTM5ZlIlI4QOuZdsD0JVj90C7wYh+5m9WARfSM1yP2jK15T1SA/S8+eL7xTvStNCTBJYyaZudZRd/0qAJmp4bUCJLim1mFs=
 before_install:
-- wget $BINKEY
+- wget $FILES
 - eval "$(ssh-agent -s)"
 - chmod 600 xpress_binkey
 - ssh-add xpress_binkey
 - git clone git@github.com:jd-lara/XPRESSBINFILES.git /Users/travis/XPRESSBINFILES
-- nm -gU $XPRESSDIR/lib/libxprs.dylib
