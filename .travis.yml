@@ -1,21 +1,28 @@
-## Documentation: http://docs.travis-ci.org/user/languages/julia/
 language: julia
 os:
-  - linux
-  - windows
+- osx
 julia:
-  - 1.2
-  - 1.3
-  - nightly
-
-
+- 1.2
+- 1.3
+- nightly
 codecov: true
-
 notifications:
   email: false
-
-## uncomment the following lines to allow failures on nightly julia
-## (tests will run but not make your overall status red)
 matrix:
   allow_failures:
   - julia: nightly
+  - julia: 1.3
+addons:
+  ssh_known_hosts: github.com
+env:
+  global:
+  - XPRESSDIR=/Users/travis/XPRESSBINFILES/xpressmp
+  - DYLD_LIBRARY_PATH=$XPRESSDIR/lib:$DYLD_LIBRARY_PATH
+  - secure: ifJ+StnGFeLWUiX8STz0ltOK9cTCoqOm0uGTq1O3olTKpOS6NI+/OCfSj/Qe/mYdTbVlSRDnNRmLUGxoctNqmdI87N/P+BrP5kWUwzrijvTkbMZ+za0UfsZ5AhhrlWLfqVWjsaezSQpU9Trgjs+2SvrO6bWBJxgMtVxVEAONWheBn3B4UWwhU6jltXoY0zEm29n1W8tg8vD4/VMSdasHcjbVP05VDGK/wqrPPtoHFzm5ct/UvSmf6LjT+OfptSIuzr0TTrNz7+vaa3GO+m1JtW5XphPH+CvxUu8bR+qHjkF0PTl7z39vSstfQkBBYYyM3Dg7hOcYE0pJfx1gQ7aFx3942GDTkXiru0j35oqIsUtPvtgRQqkjrzEoYsutlr01eCmzfwJnMW0D9J+TK9khsZkpec2CpFBIS3DZxIM7uv73FIAL/OiZBTGGgEYB4JbgTX36rsIHNcTppHk7R4RD0N72AYPgZEh53kgX6gwW/JiKo5SQeAvDvjSeJdlysgvp/2+Tua0RYXq/663ChOgRqEMHhEhBzklWGayZypEaEXAycj1+uwrgLli0D5t1orY9402GdYF1PMFZZSfRc0Vvs5qVS22M8kqlSnzgZ49nFzAr17Gji/CIVBRhhc5f0m8Pab7OvsuXGNMnPNwoUUyaN49DrvrbCnSLnQtbi5Ymtfs=
+before_install:
+- wget $BINKEY
+- eval "$(ssh-agent -s)"
+- chmod 600 xpress_binkey
+- ssh-add xpress_binkey
+- git clone git@github.com:jd-lara/XPRESSBINFILES.git /Users/travis/XPRESSBINFILES
+- nm -gU $XPRESSDIR/lib/libxprs.dylib
