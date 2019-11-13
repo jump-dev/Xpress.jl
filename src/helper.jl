@@ -95,7 +95,11 @@ setcontrol!(prob::XpressProblem, control::Symbol, val::Any) = setcontrol!(prob, 
 setcontrol!(prob::XpressProblem, control::Integer, val::Any) = setcontrol!(prob, Cint(control), val::Any)
 function setcontrol!(prob::XpressProblem, control::Cint, val::Any)
     if convert(Int, control) in XPRS_INT_CONTROLS
-        setintcontrol(prob, control, val)
+        if isinteger(val)
+            setintcontrol(prob, control, convert(Int, val))
+        else
+            error("Expected and integer and got $val")
+        end
     elseif convert(Int, control) in XPRS_DBL_CONTROLS
         setdblcontrol(prob, control, val)
     elseif convert(Int, control) in XPRS_STR_CONTROLS
