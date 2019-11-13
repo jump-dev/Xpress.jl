@@ -414,10 +414,11 @@ XPRSinit failed:
 
 XPRSinit.
 """
-function getlicerrmsg()
-    msg = Cstring(pointer(Array{Cchar}(undef, 1024*8)))
-    len = length(msg)
-    @checked Lib.XPRSgetlicerrmsg(msg, len)
+function getlicerrmsg(; len = 1024)
+    msg = Cstring(pointer(Array{Cchar}(undef, len*8)))
+    Lib.XPRSgetlicerrmsg(msg, len)
+    # TODO - @ checked version does not work
+    # @checked Lib.XPRSgetlicerrmsg(msg, len)
     return unsafe_string(msg)
 end
 
