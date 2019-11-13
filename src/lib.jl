@@ -66,6 +66,10 @@ function XPRSgetlicerrmsg(msg, len)
     ccall((:XPRSgetlicerrmsg, libxprs), Cint, (Cstring, Cint), msg, len)
 end
 
+function XPRSfeaturequery(FeatureName, FeatureStatus)
+    ccall((:XPRSfeaturequery, libxprs), Cint, (Cstring, Ptr{Cint}), FeatureName, FeatureStatus)
+end
+
 function XPRSsetlogfile(prob, logname)
     ccall((:XPRSsetlogfile, libxprs), Cint, (XPRSprob, Cstring), prob, logname)
 end
@@ -378,6 +382,14 @@ function XPRSftran(prob, dwork)
     ccall((:XPRSftran, libxprs), Cint, (XPRSprob, Ptr{Cdouble}), prob, dwork)
 end
 
+function XPRSsparsebtran(prob, dval, mind, nzcnt)
+    ccall((:XPRSsparsebtran, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}), prob, dval, mind, nzcnt)
+end
+
+function XPRSsparseftran(prob, dval, mind, nzcnt)
+    ccall((:XPRSsparseftran, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}), prob, dval, mind, nzcnt)
+end
+
 function XPRSgetobj(prob, _dobj, first, last)
     ccall((:XPRSgetobj, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Cint, Cint), prob, _dobj, first, last)
 end
@@ -428,6 +440,18 @@ end
 
 function XPRScrossoverlpsol(prob, status)
     ccall((:XPRScrossoverlpsol, libxprs), Cint, (XPRSprob, Ptr{Cint}), prob, status)
+end
+
+function XPRStune(prob, _sflags)
+    ccall((:XPRStune, libxprs), Cint, (XPRSprob, Cstring), prob, _sflags)
+end
+
+function XPRStunerwritemethod(prob, methodfile)
+    ccall((:XPRStunerwritemethod, libxprs), Cint, (XPRSprob, Cstring), prob, methodfile)
+end
+
+function XPRStunerreadmethod(prob, methodfile)
+    ccall((:XPRStunerreadmethod, libxprs), Cint, (XPRSprob, Cstring), prob, methodfile)
 end
 
 function XPRSgetbarnumstability(prob, dColumnStability, dRowStability)
@@ -508,6 +532,10 @@ end
 
 function XPRSgetbasis(prob, _mrowstatus, _mcolstatus)
     ccall((:XPRSgetbasis, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}), prob, _mrowstatus, _mcolstatus)
+end
+
+function XPRSgetbasisval(prob, row, col, _rowstatus, _colstatus)
+    ccall((:XPRSgetbasisval, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cint}, Ptr{Cint}), prob, row, col, _rowstatus, _colstatus)
 end
 
 function XPRSloadbasis(prob, _mrowstatus, _mcolstatus)
@@ -600,6 +628,10 @@ end
 
 function XPRSsave(prob)
     ccall((:XPRSsave, libxprs), Cint, (XPRSprob,), prob)
+end
+
+function XPRSsaveas(prob, _filename)
+    ccall((:XPRSsaveas, libxprs), Cint, (XPRSprob, Cstring), prob, _filename)
 end
 
 function XPRSrestore(prob, _sprobname, _force)
@@ -698,8 +730,16 @@ function XPRSgetmipsol(prob, _dx, _dslack)
     ccall((:XPRSgetmipsol, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Ptr{Cdouble}), prob, _dx, _dslack)
 end
 
+function XPRSgetmipsolval(prob, col, row, _dx, _dslack)
+    ccall((:XPRSgetmipsolval, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Ptr{Cdouble}), prob, col, row, _dx, _dslack)
+end
+
 function XPRSgetlpsol(prob, _dx, _dslack, _dual, _dj)
     ccall((:XPRSgetlpsol, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, _dx, _dslack, _dual, _dj)
+end
+
+function XPRSgetlpsolval(prob, col, row, _dx, _dslack, _dual, _dj)
+    ccall((:XPRSgetlpsolval, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, col, row, _dx, _dslack, _dual, _dj)
 end
 
 function XPRSpostsolve(prob)
@@ -804,6 +844,10 @@ end
 
 function XPRSstrongbranchcb(prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus, sbsolvecb, vContext)
     ccall((:XPRSstrongbranchcb, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}, Ptr{UInt8}, Ptr{Cdouble}, Cint, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cvoid}, Ptr{Cvoid}), prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus, sbsolvecb, vContext)
+end
+
+function XPRSgetlastbarsol(prob, _dx, _dslack, _dual, _dj, lpstatus)
+    ccall((:XPRSgetlastbarsol, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}), prob, _dx, _dslack, _dual, _dj, lpstatus)
 end
 
 function XPRSsetcblplog(prob, f_lplog, p)
@@ -1126,6 +1170,22 @@ function XPRSremovecbbariteration(prob, f_bariteration, p)
     ccall((:XPRSremovecbbariteration, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, f_bariteration, p)
 end
 
+function XPRSsetcbpresolve(prob, f_presolve, p)
+    ccall((:XPRSsetcbpresolve, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, f_presolve, p)
+end
+
+function XPRSgetcbpresolve(prob, f_presolve, p)
+    ccall((:XPRSgetcbpresolve, libxprs), Cint, (XPRSprob, Ptr{Ptr{Cvoid}}, Ptr{Ptr{Cvoid}}), prob, f_presolve, p)
+end
+
+function XPRSaddcbpresolve(prob, f_presolve, p, priority)
+    ccall((:XPRSaddcbpresolve, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}, Cint), prob, f_presolve, p, priority)
+end
+
+function XPRSremovecbpresolve(prob, f_presolve, p)
+    ccall((:XPRSremovecbpresolve, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, f_presolve, p)
+end
+
 function XPRSsetcbchgbranchobject(prob, f_chgbranchobject, p)
     ccall((:XPRSsetcbchgbranchobject, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, f_chgbranchobject, p)
 end
@@ -1174,6 +1234,38 @@ function XPRSremovecbusersolnotify(prob, f_usersolnotify, p)
     ccall((:XPRSremovecbusersolnotify, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, f_usersolnotify, p)
 end
 
+function XPRSsetcbbeforesolve(prob, f_beforesolve, p)
+    ccall((:XPRSsetcbbeforesolve, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, f_beforesolve, p)
+end
+
+function XPRSgetcbbeforesolve(prob, f_beforesolve, p)
+    ccall((:XPRSgetcbbeforesolve, libxprs), Cint, (XPRSprob, Ptr{Ptr{Cvoid}}, Ptr{Ptr{Cvoid}}), prob, f_beforesolve, p)
+end
+
+function XPRSaddcbbeforesolve(prob, f_beforesolve, p, priority)
+    ccall((:XPRSaddcbbeforesolve, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}, Cint), prob, f_beforesolve, p, priority)
+end
+
+function XPRSremovecbbeforesolve(prob, f_beforesolve, p)
+    ccall((:XPRSremovecbbeforesolve, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, f_beforesolve, p)
+end
+
+function XPRSsetcbchecktime(prob, f_checktime, p)
+    ccall((:XPRSsetcbchecktime, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, f_checktime, p)
+end
+
+function XPRSgetcbchecktime(prob, f_checktime, p)
+    ccall((:XPRSgetcbchecktime, libxprs), Cint, (XPRSprob, Ptr{Ptr{Cvoid}}, Ptr{Ptr{Cvoid}}), prob, f_checktime, p)
+end
+
+function XPRSaddcbchecktime(prob, f_checktime, p, priority)
+    ccall((:XPRSaddcbchecktime, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}, Cint), prob, f_checktime, p, priority)
+end
+
+function XPRSremovecbchecktime(prob, f_checktime, p)
+    ccall((:XPRSremovecbchecktime, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, f_checktime, p)
+end
+
 function XPRSobjsa(prob, ncols, mindex, lower, upper)
     ccall((:XPRSobjsa, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}), prob, ncols, mindex, lower, upper)
 end
@@ -1200,6 +1292,26 @@ end
 
 function XPRS_ge_getlasterror(iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
     ccall((:XPRS_ge_getlasterror, libxprs), Cint, (Ptr{Cint}, Cstring, Cint, Ptr{Cint}), iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+end
+
+function XPRS_ge_setarchconsistency(ifArchConsistent)
+    ccall((:XPRS_ge_setarchconsistency, libxprs), Cint, (Cint,), ifArchConsistent)
+end
+
+function XPRS_ge_setsafemode(ifSafeMode)
+    ccall((:XPRS_ge_setsafemode, libxprs), Cint, (Cint,), ifSafeMode)
+end
+
+function XPRS_ge_getsafemode(ifSafeMode)
+    ccall((:XPRS_ge_getsafemode, libxprs), Cint, (Ptr{Cint},), ifSafeMode)
+end
+
+function XPRS_ge_setdebugmode(ifDebugMode)
+    ccall((:XPRS_ge_setdebugmode, libxprs), Cint, (Cint,), ifDebugMode)
+end
+
+function XPRS_ge_getdebugmode(ifDebugMode)
+    ccall((:XPRS_ge_getdebugmode, libxprs), Cint, (Ptr{Cint},), ifDebugMode)
 end
 
 function XPRS_msp_create(msp)
