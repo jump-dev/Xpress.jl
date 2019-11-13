@@ -369,13 +369,13 @@ function MOI.get(model::Optimizer, ::MOI.ListOfConstraintAttributesSet)
 end
 
 function _indices_and_coefficients(
-    indices::AbstractVector{Cint},
+    indices::AbstractVector{<:Integer},
     coefficients::AbstractVector{Float64},
     model::Optimizer,
     f::MOI.ScalarAffineFunction{Float64}
 )
     for (i, term) in enumerate(f.terms)
-        indices[i] = Cint(_info(model, term.variable_index).column)
+        indices[i] = _info(model, term.variable_index).column
         coefficients[i] = term.coefficient
     end
     return indices, coefficients
@@ -386,24 +386,24 @@ function _indices_and_coefficients(
 )
     f_canon = MOI.Utilities.canonical(f)
     nnz = length(f_canon.terms)
-    indices = Vector{Cint}(undef, nnz)
+    indices = Vector{Int}(undef, nnz)
     coefficients = Vector{Float64}(undef, nnz)
     _indices_and_coefficients(indices, coefficients, model, f_canon)
     return indices, coefficients
 end
 
 function _indices_and_coefficients(
-    I::AbstractVector{Cint},
-    J::AbstractVector{Cint},
+    I::AbstractVector{Int},
+    J::AbstractVector{Int},
     V::AbstractVector{Float64},
-    indices::AbstractVector{Cint},
+    indices::AbstractVector{Int},
     coefficients::AbstractVector{Float64},
     model::Optimizer,
     f::MOI.ScalarQuadraticFunction
 )
     for (i, term) in enumerate(f.quadratic_terms)
-        I[i] = Cint(_info(model, term.variable_index_1).column)
-        J[i] = Cint(_info(model, term.variable_index_2).column)
+        I[i] = _info(model, term.variable_index_1).column
+        J[i] = _info(model, term.variable_index_2).column
         V[i] =  term.coefficient
         # CPLEX returns a list of terms. MOI requires 0.5 x' Q x. So, to get
         # from
@@ -420,7 +420,7 @@ function _indices_and_coefficients(
         end
     end
     for (i, term) in enumerate(f.affine_terms)
-        indices[i] = Cint(_info(model, term.variable_index).column)
+        indices[i] = _info(model, term.variable_index).column
         coefficients[i] = term.coefficient
     end
     return
@@ -432,10 +432,10 @@ function _indices_and_coefficients(
     f_canon = MOI.Utilities.canonical(f)
     nnz_quadratic = length(f_canon.quadratic_terms)
     nnz_affine = length(f_canon.affine_terms)
-    I = Vector{Cint}(undef, nnz_quadratic)
-    J = Vector{Cint}(undef, nnz_quadratic)
+    I = Vector{Int}(undef, nnz_quadratic)
+    J = Vector{Int}(undef, nnz_quadratic)
     V = Vector{Float64}(undef, nnz_quadratic)
-    indices = Vector{Cint}(undef, nnz_affine)
+    indices = Vector{Int}(undef, nnz_affine)
     coefficients = Vector{Float64}(undef, nnz_affine)
     _indices_and_coefficients(I, J, V, indices, coefficients, model, f_canon)
     return indices, coefficients, I, J, V
@@ -954,17 +954,17 @@ function _set_bounds(
     indices::Vector{MOI.ConstraintIndex{MOI.SingleVariable, S}},
     sets::Vector{S}
 ) where {S}
-    columns, senses, values = Cint[], Cchar[], Float64[]
+    columns, senses, values = Int[], Cchar[], Float64[]
     for (c, s) in zip(indices, sets)
         lower, upper = _bounds(s)
         info = _info(model, c)
         if lower !== nothing
-            push!(columns, Cint(info.column))
+            push!(columns, info.column)
             push!(senses, Cchar('L'))
             push!(values, lower)
         end
         if upper !== nothing
-            push!(columns, Cint(info.column))
+            push!(columns, info.column)
             push!(senses, Cchar('U'))
             push!(values, upper)
         end
@@ -1004,7 +1004,7 @@ function _set_variable_lower_bound(model, info, value)
     if info.num_soc_constraints == 0
         # No SOC constraints, set directly.
         @assert isnan(info.lower_bound_if_soc)
-        Xpress.chgbounds(model.inner, Cint[info.column], Cchar['L'], [value])
+        Xpress.chgbounds(model.inner, [info.column], Cchar['L'], [value])
     else
         # TODO
         error("SOC not currently supported")
@@ -1013,14 +1013,14 @@ function _set_variable_lower_bound(model, info, value)
     #     # Regardless of whether there are SOC constraints, this is a valid bound
     #     # for the SOC constraint and should over-ride any previous bounds.
     #     info.lower_bound_if_soc = NaN
-    #     CPLEX.c_api_chgbds(model.inner, Cint[info.column], Cchar['L'], [value])
+    #     CPLEX.c_api_chgbds(model.inner, [info.column], Cchar['L'], [value])
     # elseif isnan(info.lower_bound_if_soc)
     #     # Previously, we had a non-negative lower bound (i.e., it was set in the
     #     # case above). Now we're setting this with a negative one, but there are
     #     # still some SOC constraints, so we cache `value` and set the variable
     #     # lower bound to `0.0`.
     #     @assert value < 0.0
-    #     CPLEX.c_api_chgbds(model.inner, Cint[info.column], Cchar['L'], [0.0])
+    #     CPLEX.c_api_chgbds(model.inner, [info.column], Cchar['L'], [0.0])
     #     info.lower_bound_if_soc = value
     # else
     #     # Previously, we had a negative lower bound. We're setting this with
@@ -1050,7 +1050,7 @@ function _get_variable_lower_bound(model, info)
 end
 
 function _set_variable_upper_bound(model, info, value)
-    Xpress.chgbounds(model.inner, Cint[info.column], Cchar['U'], [value])
+    Xpress.chgbounds(model.inner, [info.column], Cchar['U'], [value])
     return
 end
 
@@ -1165,7 +1165,7 @@ function MOI.add_constraint(
     model::Optimizer, f::MOI.SingleVariable, ::MOI.ZeroOne
 )
     info = _info(model, f.variable)
-    Xpress.chgcoltype(model.inner, Cint[info.column], Cchar['B'])
+    Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
     info.type = BINARY
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.ZeroOne}(f.variable.value)
 end
@@ -1175,7 +1175,7 @@ function MOI.delete(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    Xpress.chgcoltype(model.inner, Cint[info.column], Cchar['C'])
+    Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
     info.type = CONTINUOUS
     info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
@@ -1195,7 +1195,7 @@ function MOI.add_constraint(
     model::Optimizer, f::MOI.SingleVariable, ::MOI.Integer
 )
     info = _info(model, f.variable)
-    Xpress.chgcoltype(model.inner, Cint[info.column], Cchar['I'])
+    Xpress.chgcoltype(model.inner, [info.column], Cchar['I'])
     info.type = INTEGER
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.Integer}(f.variable.value)
 end
@@ -1205,7 +1205,7 @@ function MOI.delete(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    Xpress.chgcoltype(model.inner, Cint[info.column], Cchar['C'])
+    Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
     info.type = CONTINUOUS
     info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
@@ -1227,7 +1227,7 @@ function MOI.add_constraint(
     info = _info(model, f.variable)
     _throw_if_existing_lower(info.bound, info.type, typeof(s), f.variable)
     _throw_if_existing_upper(info.bound, info.type, typeof(s), f.variable)
-    Xpress.chgcoltype(model.inner, Cint[info.column], Cchar['S'])
+    Xpress.chgcoltype(model.inner, [info.column], Cchar['S'])
     _set_variable_lower_bound(model, info, s.lower)
     _set_variable_upper_bound(model, info, s.upper)
     info.type = SEMICONTINUOUS
@@ -1240,7 +1240,7 @@ function MOI.delete(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    Xpress.chgcoltype(model.inner, Cint[info.column], Cchar['C'])
+    Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
     _set_variable_lower_bound(model, info, -Inf)
     _set_variable_upper_bound(model, info, Inf)
     info.type = CONTINUOUS
@@ -1267,7 +1267,7 @@ function MOI.add_constraint(
     info = _info(model, f.variable)
     _throw_if_existing_lower(info.bound, info.type, typeof(s), f.variable)
     _throw_if_existing_upper(info.bound, info.type, typeof(s), f.variable)
-    Xpress.chgcoltype(model.inner, Cint[info.column], Cchar['P'])
+    Xpress.chgcoltype(model.inner, [info.column], Cchar['P'])
     _set_variable_lower_bound(model, info, s.lower)
     _set_variable_upper_bound(model, info, s.upper)
     info.type = SEMIINTEGER
@@ -1280,7 +1280,7 @@ function MOI.delete(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    Xpress.chgcoltype(model.inner, Cint[info.column], Cchar['C'])
+    Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
     _set_variable_lower_bound(model, info, -Inf)
     _set_variable_upper_bound(model, info, Inf)
     info.type = CONTINUOUS
@@ -1409,9 +1409,9 @@ function MOI.add_constraints(
     end
     # Initialize storage
     indices = Vector{MOI.ConstraintIndex{eltype(f), eltype(s)}}(undef, length(f))
-    row_starts = Vector{Cint}(undef, length(f) + 1)
+    row_starts = Vector{Int}(undef, length(f) + 1)
     row_starts[1] = 1
-    columns = Vector{Cint}(undef, nnz)
+    columns = Vector{Int}(undef, nnz)
     coefficients = Vector{Float64}(undef, nnz)
     senses = Vector{Cchar}(undef, length(f))
     rhss = Vector{Float64}(undef, length(f))
@@ -1490,8 +1490,8 @@ function MOI.get(
 
     @assert nzcnt <= nzcnt_max
 
-    rmatbeg = zeros(Cint, 1)
-    rmatind = Array{Cint}(undef,  nzcnt)
+    rmatbeg = zeros(Int, 1)
+    rmatind = Array{Int}(undef,  nzcnt)
     rmatval = Array{Float64}(undef,  nzcnt)
 
     Xpress.getrows(
@@ -2477,8 +2477,8 @@ function MOI.modify(
 )
     Xpress.chgcoef(
         model.inner,
-        Cint(_info(model, c).row),
-        Cint(_info(model, chg.variable).column,),
+        _info(model, c).row,
+        _info(model, chg.variable).column,
         chg.new_coefficient
     )
     return
@@ -2516,9 +2516,9 @@ function _replace_with_matching_sparsity!(
     replacement::MOI.ScalarAffineFunction, row::Int
 )
     for term in replacement.terms
-        col = Cint(_info(model, term.variable_index).column)
+        col = _info(model, term.variable_index).column
         Xpress.chgcoef(
-            model.inner, Cint(row), Cint(col), MOI.coefficient(term)
+            model.inner, row, col, MOI.coefficient(term)
         )
     end
     return
@@ -2549,16 +2549,14 @@ function _replace_with_different_sparsity!(
 )
     # First, zero out the old constraint function terms.
     for term in previous.terms
-        col = Cint(_info(model, term.variable_index).column)
-        Xpress.chgcoef(model.inner, Cint(row), Cint(col), 0.0)
+        col = _info(model, term.variable_index).column
+        Xpress.chgcoef(model.inner, row, col, 0.0)
     end
 
     # Next, set the new constraint function terms.
     for term in previous.terms
-        col = Cint(_info(model, term.variable_index).column)
-        Xpress.chgcoef(
-            model.inner, Cint(row), Cint(col), MOI.coefficient(term)
-        )
+        col = _info(model, term.variable_index).column
+        Xpress.chgcoef(model.inner, row, col, MOI.coefficient(term))
     end
     return
 end
@@ -2608,9 +2606,9 @@ function MOI.set(
     else
         _replace_with_different_sparsity!(model, previous, replacement, row)
     end
-    rhs = Xpress.getrhs(model.inner, rhs, Cint(row), Cint(row))
+    rhs = Xpress.getrhs(model.inner, rhs, row, row)
     rhs[1] -= replacement.constant - previous.constant
-    Xpress.chgrhs(model.inner, [Cint(row)], rhs)
+    Xpress.chgrhs(model.inner, [row], rhs)
     return
 end
 
