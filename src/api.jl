@@ -485,11 +485,11 @@ XPRSgetintcontrol,
 XPRSsetdblcontrol,
 XPRSsetstrcontrol.
 """
-function setintcontrol(prob::XpressProblem, _index::Integer, _ivalue::Integer)
+function setintcontrol(prob::XpressProblem, _index::Cint, _ivalue::Integer)
     @checked Lib.XPRSsetintcontrol(prob, _index, _ivalue)
 end
 
-function setintcontrol64(prob::XpressProblem, _index::Integer, _ivalue::Integer)
+function setintcontrol(prob::XpressProblem, _index::Int, _ivalue::Integer)
     @checked Lib.XPRSsetintcontrol64(prob, _index, _ivalue)
 end
 
@@ -3568,11 +3568,11 @@ The following examples retrieves the number of nonzero coefficients in all colum
 
 XPRSgetrows.
 """
-function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
+function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Cint, last::Cint)
     @checked Lib.XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
-function getcols64(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
+function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Int, last::Int)
     @checked Lib.XPRSgetcols64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
@@ -3620,7 +3620,7 @@ XPRSgetcols,
 XPRSgetrowrange,
 XPRSgetrowtype.
 """
-function getrows(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, first::Integer, last::Integer)
+function getrows(prob::XpressProblem, _mstart::Vector{Cint}, _mclind::Vector{Cint}, _dmatval::Array{Float64}, maxcoeffs, first::Cint, last::Cint)
     @checked Lib.XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, C_NULL, first - 1, last - 1)
     _mstart .+= 1
     _mclind .+= 1
@@ -3634,8 +3634,11 @@ function getrows_nnz(prob::XpressProblem, first::Integer, last::Integer)
 end
 
 # TODO
-function getrows64(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, first::Integer, last::Integer)
-    @checked Lib.XPRSgetrows64(prob, _mstart .- 1, _mclind .- 1, _dmatval, maxcoeffs, C_NULL, first - 1, last - 1)
+function getrows(prob::XpressProblem, _mstart::Vector{Int}, _mclind::Vector{Int}, _dmatval::Array{Float64}, maxcoeffs, first::Int, last::Int)
+    @checked Lib.XPRSgetrows64(prob, _mstart, _mclind, _dmatval, maxcoeffs, C_NULL, first - 1, last - 1)
+    _mstart .+= 1
+    _mclind .+= 1
+    return
 end
 
 """
@@ -3716,11 +3719,11 @@ XPRSchgmqobj,
 XPRSchgqobj,
 XPRSgetqobj.
 """
-function getmqobj(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
+function getmqobj(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first::Cint, last::Cint)
     @checked Lib.XPRSgetmqobj(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
-function getmqobj64(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
+function getmqobj(prob::XpressProblem, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first::Int, last::Int)
     @checked Lib.XPRSgetmqobj64(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
@@ -4608,7 +4611,7 @@ end
 
 """
 
-    addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int}, _mclind::Vector{Int}, _dmatval::Vector{Float64})
+    addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Cint}, _mclind::Vector{Cint}, _dmatval::Vector{Float64})
 
 *Purpose*
 
@@ -4669,7 +4672,7 @@ XPRSaddcuts,
 XPRSaddnames,
 XPRSdelrows.
 """
-function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int}, _mclind::Vector{Int}, _dmatval::Vector{Float64})
+function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Cint}, _mclind::Vector{Cint}, _dmatval::Vector{Float64})
     nrows = length(_drhs)
     # @assert nrows == length(_drng) # can be a C_NULL
     @assert nrows == length(_srowtype)
@@ -4679,8 +4682,14 @@ function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Fl
     @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mclind.-1, _dmatval)
 end
 
-function addrows64(prob::XpressProblem, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
-    @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
+function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int}, _mclind::Vector{Int}, _dmatval::Vector{Float64})
+    nrows = length(_drhs)
+    # @assert nrows == length(_drng) # can be a C_NULL
+    @assert nrows == length(_srowtype)
+    ncoeffs = length(_mclind)
+    @assert ncoeffs == length(_mstart)
+    @assert ncoeffs == length(_dmatval)
+    @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mclind.-1, _dmatval)
 end
 
 """
@@ -4716,7 +4725,7 @@ XPRSgetbasis,
 XPRSgetpivots,
 XPRSpivot.
 """
-function delrows(prob::XpressProblem, nrows::Int, _mindex::Vector{Int})
+function delrows(prob::XpressProblem, nrows::Int, _mindex::Vector{<:Integer})
     @checked Lib.XPRSdelrows(prob, nrows, _mindex)
 end
 
@@ -4795,7 +4804,7 @@ XPRSaddrows,
 XPRSdelcols,
 XPRSchgcoltype.
 """
-function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{Int}, _mrwind::Vector{Int}, _dmatval::Vector{Float64}, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
+function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{Cint}, _mrwind::Vector{Cint}, _dmatval::Vector{Float64}, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
     @assert length(_dbdl) == length(_dbdu)
     fixinfinity!(_dbdl)
     fixinfinity!(_dbdu)
@@ -4806,7 +4815,7 @@ function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{In
     @checked Lib.XPRSaddcols(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
 end
 
-function addcols64(prob::XpressProblem, _dobj, _mstart, _mrwind, _dmatval, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
+function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{Int}, _mrwind::Vector{Int}, _dmatval::Vector{Float64}, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
     @assert length(_dbdl) == length(_dbdu)
     fixinfinity!(_dbdl)
     fixinfinity!(_dbdu)
@@ -4846,7 +4855,7 @@ In this example, column
 XPRSaddcols,
 XPRSdelrows.
 """
-function delcols(prob::XpressProblem, _mindex::Vector{Int})
+function delcols(prob::XpressProblem, _mindex::Vector{<:Integer})
     ncols = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSdelcols(prob, ncols, _mindex)
@@ -4892,7 +4901,7 @@ XPRSchgrowtype,
 XPRSdelcols,
 XPRSgetcoltype.
 """
-function chgcoltype(prob::XpressProblem, _mindex::Vector{Int}, _coltype::Vector{Cchar})
+function chgcoltype(prob::XpressProblem, _mindex::Vector{<:Integer}, _coltype::Vector{Cchar})
     ncols = length(_mindex)
     _mindex = _mindex .- 1
     _coltype
@@ -4940,7 +4949,7 @@ XPRSdelrows,
 XPRSgetrowrange,
 XPRSgetrowtype.
 """
-function chgrowtype(prob::XpressProblem, _mindex::Vector{Int}, _srowtype::Vector{Cchar})
+function chgrowtype(prob::XpressProblem, _mindex::Vector{<:Integer}, _srowtype::Vector{Cchar})
     nrows = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgrowtype(prob, nrows, _mindex, _srowtype)
@@ -5026,7 +5035,7 @@ XPRSchgmqobj,
 XPRSchgqobj,
 XPRSgetobj.
 """
-function chgobj(prob::XpressProblem, _mindex::Vector{Int}, _dobj::Vector{Float64})
+function chgobj(prob::XpressProblem, _mindex::Vector{Integer}, _dobj::Vector{Float64})
     ncols = length(_dobj)
     @assert length(_mindex) == ncols
     _mindex = _mindex .- 1
@@ -5116,11 +5125,11 @@ XPRSchgrhs,
 XPRSgetcols,
 XPRSgetrhs.
 """
-function chgmcoef(prob::XpressProblem, ncoeffs, _mrow, _mcol, _dval)
+function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Cint, _mcol::Cint, _dval)
     @checked Lib.XPRSchgmcoef(prob, ncoeffs, _mrow, _mcol, _dval)
 end
 
-function chgmcoef64(prob::XpressProblem, ncoeffs, _mrow, _mcol, _dval)
+function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Int, _mcol::Int, _dval)
     @checked Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow, _mcol, _dval)
 end
 
@@ -5161,11 +5170,11 @@ XPRSchgobj,
 XPRSchgqobj,
 XPRSgetqobj.
 """
-function chgmqobj(prob::XpressProblem, ncols, _mcol1, _mcol2, _dval)
+function chgmqobj(prob::XpressProblem, ncols, _mcol1::Cint, _mcol2::Cint, _dval)
     @checked Lib.XPRSchgmqobj(prob, ncols, _mcol1, _mcol2, _dval)
 end
 
-function chgmqobj64(prob::XpressProblem, ncols, _mcol1, _mcol2, _dval)
+function chgmqobj(prob::XpressProblem, ncols, _mcol1::Int, _mcol2::Int, _dval)
     @checked Lib.XPRSchgmqobj64(prob, ncols, _mcol1, _mcol2, _dval)
 end
 
@@ -5247,7 +5256,7 @@ XPRSchgrhsrange,
 XPRSgetrhs,
 XPRSgetrhsrange.
 """
-function chgrhs(prob::XpressProblem, _mindex::Vector{Int}, _drhs::Vector{Float64})
+function chgrhs(prob::XpressProblem, _mindex::Vector{Cint}, _drhs::Vector{Float64})
     nrows = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgrhs(prob, nrows, _mindex, _drhs)
@@ -5286,7 +5295,7 @@ XPRSchgmcoef,
 XPRSchgrhs,
 XPRSgetrhsrange.
 """
-function chgrhsrange(prob::XpressProblem, nrows::Int, _mindex::Vector{Int}, _drng::Vector{Float64})
+function chgrhsrange(prob::XpressProblem, nrows::Int, _mindex::Vector{Cint}, _drng::Vector{Float64})
     @checked Lib.XPRSchgrhsrange(prob, nrows, _mindex, _drng)
 end
 
@@ -5352,7 +5361,7 @@ int XPRS_CC XPRSchgglblimit(XPRSprob prob, int ncols, const int mindex[], const 
 XPRSchgcoltype,
 XPRSgetglobal.
 """
-function chgglblimit(prob::XpressProblem, _mindex::Vector{Int}, _dlimit::Vector{Float64})
+function chgglblimit(prob::XpressProblem, _mindex::Vector{Cint}, _dlimit::Vector{Float64})
     ncols = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgglblimit(prob, _mindex, _dlimit)
@@ -5547,11 +5556,11 @@ XPRSloadcuts,
 XPRSstorecuts, Section
 Working with the Cut Manager.
 """
-function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
+function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart::Vector{Cint}, mcols::Vector{Cint}, dmatval)
     @checked Lib.XPRSaddcuts(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
 end
 
-function addcuts64(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
+function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart::Vector{Int}, mcols::Vector{Int}, dmatval)
     @checked Lib.XPRSaddcuts64(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
 end
 
@@ -5792,11 +5801,11 @@ XPRSgetcpcutlist,
 XPRSgetcutlist,
 Working with the Cut Manager.
 """
-function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
+function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart::Vector{Cint}, mcols::Vector{Cint}, dmatval, drhs)
     @checked Lib.XPRSgetcpcuts(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
 end
 
-function getcpcuts64(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
+function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart::Vector{Int}, mcols::Vector{Int}, dmatval, drhs)
     @checked Lib.XPRSgetcpcuts64(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
 end
 
@@ -5898,11 +5907,11 @@ XPRSaddcbestimate,
 XPRSaddcbsepnode,
 Working with the Cut Manager.
 """
-function storecuts(prob::XpressProblem, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
+function storecuts(prob::XpressProblem, ncuts, nodupl, mtype::Vector{Cint}, qrtype, drhs, mstart::Vector{Cint}, mindex, mcols::Vector{Cint}, dmatval)
     @checked Lib.XPRSstorecuts(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
 end
 
-function storecuts64(prob::XpressProblem, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
+function storecuts(prob::XpressProblem, ncuts, nodupl, mtype::Vector{Int}, qrtype, drhs, mstart::Vector{Int}, mindex, mcols::Vector{Int}, dmatval)
     @checked Lib.XPRSstorecuts64(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
 end
 
@@ -6424,11 +6433,11 @@ int XPRS_CC XPRSaddsets(XPRSprob prob, int newsets, int newnz, const char qrtype
 
 XPRSdelsets.
 """
-function addsets(prob::XpressProblem, newsets, newnz, qstype, msstart, mscols, dref)
+function addsets(prob::XpressProblem, newsets, newnz, qstype, msstart::Vector{Cint}, mscols::Vector{Cint}, dref)
     @checked Lib.XPRSaddsets(prob, newsets, newnz, qstype, msstart, mscols, dref)
 end
 
-function addsets64(prob::XpressProblem, newsets, newnz, qstype, msstart, mscols, dref)
+function addset(prob::XpressProblem, newsets, newnz, qstype, msstart::Vector{Int}, mscols::Vector{Int}, dref)
     @checked Lib.XPRSaddsets64(prob, newsets, newnz, qstype, msstart, mscols, dref)
 end
 
@@ -6471,7 +6480,7 @@ Suppose that the current LP relaxation has two integer columns (columns
 
 
 """
-function strongbranch(prob::XpressProblem, nbnds::Int, _mindex::Vector{Int}, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
+function strongbranch(prob::XpressProblem, nbnds::Int, _mindex::Vector{Cint}, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
     @checked Lib.XPRSstrongbranch(prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
 end
 
@@ -10228,11 +10237,11 @@ XPRSchgqobj,
 XPRSchgmqobj,
 XPRSgetqobj.
 """
-function addqmatrix(prob::XpressProblem, irow, nqtr, mqc1, mqc2, dqew)
+function addqmatrix(prob::XpressProblem, irow::Cint, nqtr::Cint, mqc1::Cint, mqc2::Cint, dqew)
     @checked Lib.XPRSaddqmatrix(prob, irow, nqtr, mqc1, mqc2, dqew)
 end
 
-function addqmatrix64(prob::XpressProblem, irow, nqtr, mqc1, mqc2, dqew)
+function addqmatrix(prob::XpressProblem, irow::Int, nqtr::Int, mqc1::Int, mqc2::Int, dqew)
     @checked Lib.XPRSaddqmatrix64(prob, irow, nqtr, mqc1, mqc2, dqew)
 end
 
