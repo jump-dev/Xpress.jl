@@ -28,6 +28,10 @@ end
                 (MOI.SingleVariable, MOI.Interval{Float64}),
                 (MOI.SingleVariable, MOI.GreaterThan{Float64}),
                 (MOI.SingleVariable, MOI.LessThan{Float64}),
+                (MOI.ScalarQuadraticFunction{Float64}, MOI.LessThan{Float64}),
+                (MOI.ScalarQuadraticFunction{Float64}, MOI.GreaterThan{Float64}),
+                (MOI.ScalarQuadraticFunction{Float64}, MOI.EqualTo{Float64}),
+                (MOI.ScalarQuadraticFunction{Float64}, MOI.Interval{Float64}),
             ]
         )
         MOIT.unittest(OPTIMIZER, CONFIG, [
