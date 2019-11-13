@@ -4893,7 +4893,8 @@ XPRSchgrowtype,
 XPRSdelcols,
 XPRSgetcoltype.
 """
-function chgcoltype(prob::XpressProblem, _mindex::Vector{Int}, _coltype::Vector{Cchar})
+function chgcoltype(prob::XpressProblem,
+    _mindex::Vector{I}, _coltype::Vector{Cchar}) where {I<:Integer}
     ncols = length(_mindex)
     _mindex = _mindex .- 1
     _coltype
