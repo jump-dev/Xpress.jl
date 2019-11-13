@@ -19,8 +19,8 @@ env:
   - DYLD_LIBRARY_PATH=$XPRESSDIR/lib:$DYLD_LIBRARY_PATH
   - secure: FYT4eu668AQnXDyN6jE5INuhOTpp3hNUJ5Y2fdg0AeIBNzxa5EghNa2mB67c0D4S0+Pb8bjipaimnvGZOYniyXCs4ANFw4/e/OXkgCaTiQzgAYL96SbbeJJaWDP5NtVUsavb9KyGDQeexUP4nvXcTZshwbkI3JGoqg/Vlr4IfQmNb6+uQ9Eyt6Pk/YxAEaLuu/bDEPXBms4BbknCEnfoDstJYo/RoeUgcdtg7MFTkOhPMPgYs+JAMSgue6W0dVsNg3bzAZKs0xR57ThvV6UvsSPSI8kG5nrgL4+H0Zj4Ald/HftcmUGmCE4/koyPVmIOc4PKD9GHbGwoyXR2086qhtD78mHuFZgQ4pKOT1gGdtvHilPKCT924zHstEmTIZhUrMSlwW6rqiJmBBunydZsntr6+9bMZS97u/tfZCiZe/5R4CwEoU3X0Y0wEQzVSZO9l292toN93Y6Ua735c2yvmEq/5/LRu8hGMb3vuCCMUC98TABcQ44TTpj3mIWNgd6SoA76cimLqicQBURoLB9OkCibluukWQ61NCQpRzZeycOlDyh9kV0ld77n+E3DsXEoDihee+aPuJZdLTM5ZlIlI4QOuZdsD0JVj90C7wYh+5m9WARfSM1yP2jK15T1SA/S8+eL7xTvStNCTBJYyaZudZRd/0qAJmp4bUCJLim1mFs=
 before_install:
-- wget $FILES
-- eval "$(ssh-agent -s)"
-- chmod 600 xpress_binkey
-- ssh-add xpress_binkey
-- git clone git@github.com:jd-lara/XPRESSBINFILES.git /Users/travis/XPRESSBINFILES
+  - wget $FILES
+  - eval "$(ssh-agent -s)"
+  - chmod 600 xpress_binkey
+  - ssh-add xpress_binkey
+  - git clone git@github.com:jd-lara/XPRESSBINFILES.git /Users/travis/XPRESSBINFILES
