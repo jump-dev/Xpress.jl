@@ -3621,7 +3621,7 @@ XPRSgetcols,
 XPRSgetrowrange,
 XPRSgetrowtype.
 """
-function getrows(prob::XpressProblem, _mstart::Vector{Cint}, _mrwind::Vector{Cint}, _dmatval::Array{Float64}, maxcoeffs::Integer, val::Integer, first::Cint, last::Cint)
+function getrows(prob::XpressProblem, _mstart::Vector{Cint}, _mrwind::Vector{Cint}, _dmatval::Vector{Float64}, maxcoeffs::Integer, first::Int, last::Int)
     @assert length(_mstart) >= last-first+2
     @assert length(_mrwind) == maxcoeffs
     @assert length(_dmatval) == maxcoeffs
@@ -3639,7 +3639,7 @@ function getrows_nnz(prob::XpressProblem, first::Integer, last::Integer)
 end
 
 # TODO
-function getrows(prob::XpressProblem, _mstart::Vector{Int}, _mrwind::Vector{Int}, _dmatval::Array{Float64}, maxcoeffs::Integer, val::Integer, first::Int, last::Int)
+function getrows(prob::XpressProblem, _mstart::Vector{Int}, _mrwind::Vector{Int}, _dmatval::Vector{Float64}, maxcoeffs::Integer, first::Int, last::Int)
     @assert length(_mstart) >= last-first+2
     @assert length(_mrwind) == maxcoeffs
     @assert length(_dmatval) == maxcoeffs
@@ -4685,8 +4685,8 @@ function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Fl
     nrows = length(_drhs)
     # @assert nrows == length(_drng) # can be a C_NULL
     @assert nrows == length(_srowtype)
+    @assert nrows == length(_mstart)
     ncoeffs = length(_mrwind)
-    @assert ncoeffs == length(_mstart)
     @assert ncoeffs == length(_dmatval)
     @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mrwind.-1, _dmatval)
 end
@@ -4695,8 +4695,8 @@ function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Fl
     nrows = length(_drhs)
     # @assert nrows == length(_drng) # can be a C_NULL
     @assert nrows == length(_srowtype)
+    @assert nrows == length(_mstart)
     ncoeffs = length(_mrwind)
-    @assert ncoeffs == length(_mstart)
     @assert ncoeffs == length(_dmatval)
     @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mrwind.-1, _dmatval)
 end
@@ -5004,7 +5004,7 @@ XPRSgetub,
 XPRSstorebounds.
 """
 function chgbounds(prob::XpressProblem,
-    _mindex::Vector{<:Integer}}, _sboundtype::Vector{Cchar},
+    _mindex::Vector{<:Integer}, _sboundtype::Vector{Cchar},
     _dbnd::Vector{Float64})
     nbnds = length(_mindex)
     _mindex = _mindex .- 1
