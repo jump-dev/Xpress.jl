@@ -316,7 +316,7 @@ XPRS_INT_CONTROLS = [
                         Lib.XPRS_TREECOMPRESSION
                         Lib.XPRS_TREEDIAGNOSTICS
                         Lib.XPRS_MAXGLOBALFILESIZE
-                        Lib.XPRS_TEMPBOUNDS
+                        Lib.XPRS_REPAIRINFEASMAXTIME
                         Lib.XPRS_IFCHECKCONVEXITY
                         Lib.XPRS_PRIMALUNSHIFT
                         Lib.XPRS_REPAIRINDEFINITEQ
