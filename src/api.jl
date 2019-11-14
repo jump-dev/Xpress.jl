@@ -5180,14 +5180,14 @@ XPRSchgobj,
 XPRSchgqobj,
 XPRSgetqobj.
 """
-function chgmqobj(prob::XpressProblem, _mcol1::Cint, _mcol2::Cint, _dval)
+function chgmqobj(prob::XpressProblem, _mcol1::Vector{Cint}, _mcol2::Vector{Cint}, _dval)
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
     @checked Lib.XPRSchgmqobj(prob, ncols, _mcol1, _mcol2, _dval)
 end
 
-function chgmqobj(prob::XpressProblem, _mcol1::Int, _mcol2::Int, _dval)
+function chgmqobj(prob::XpressProblem, _mcol1::Vector{Int}, _mcol2::Vector{Int}, _dval)
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
