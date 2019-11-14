@@ -3622,7 +3622,11 @@ XPRSgetrowrange,
 XPRSgetrowtype.
 """
 function getrows(prob::XpressProblem, _mstart, _mclind, _dmatval, maxcoeffs, first::Integer, last::Integer)
-    @checked Lib.XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, C_NULL, first - 1, last - 1)
+    @assert length(_mstart) >= last-first+2
+    @assert length(_mclind) == maxcoeffs
+    @assert length(_dmatval) == maxcoeffs
+    temp = zeros(Cint, 1)
+    @checked Lib.XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, temp, first - 1, last - 1)
     _mstart .+= 1
     _mclind .+= 1
     return
@@ -4670,7 +4674,9 @@ XPRSaddcuts,
 XPRSaddnames,
 XPRSdelrows.
 """
-function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int}, _mclind::Vector{Int}, _dmatval::Vector{Float64})
+function addrows(prob::XpressProblem, _srowtype::Vector{Cchar},
+    _drhs::Vector{Float64}, _drng, _mstart::Vector{I1}, _mclind::Vector{I2},
+    _dmatval::Vector{Float64}) where {I1<:Integer, I2<:Integer}
     nrows = length(_drhs)
     # @assert nrows == length(_drng) # can be a C_NULL
     @assert nrows == length(_srowtype)
@@ -4717,7 +4723,9 @@ XPRSgetbasis,
 XPRSgetpivots,
 XPRSpivot.
 """
-function delrows(prob::XpressProblem, nrows::Int, _mindex::Vector{Int})
+function delrows(prob::XpressProblem, _mindex::Vector{Int})
+    _mindex .-= 1
+    nrows = length(_mindex)
     @checked Lib.XPRSdelrows(prob, nrows, _mindex)
 end
 
@@ -5163,7 +5171,10 @@ XPRSchgobj,
 XPRSchgqobj,
 XPRSgetqobj.
 """
-function chgmqobj(prob::XpressProblem, ncols, _mcol1, _mcol2, _dval)
+function chgmqobj(prob::XpressProblem, _mcol1, _mcol2, _dval)
+    ncols = length(_mcol1)
+    @assert length(_mcol2) == ncols
+    @assert length(_dval) == ncols
     @checked Lib.XPRSchgmqobj(prob, ncols, _mcol1, _mcol2, _dval)
 end
 
