@@ -4742,7 +4742,7 @@ XPRSpivot.
 """
 function delrows(prob::XpressProblem, _mindex::Vector{<:Integer})
     nrows = length(_mindex)
-    @checked Lib.XPRSdelrows(prob, nrows, _mindex)
+    @checked Lib.XPRSdelrows(prob, nrows, _mindex.-1)
 end
 
 """
@@ -5195,7 +5195,7 @@ function chgmqobj(prob::XpressProblem, _mcol1::Vector{Int64}, _mcol2::Vector{Int
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
-    @checked Lib.XPRSchgmqobj64(prob, ncols, _mcol1, _mcol2, _dval)
+    @checked Lib.XPRSchgmqobj64(prob, ncols, _mcol1.-1, _mcol2.-1, _dval)
 end
 
 """
@@ -5236,7 +5236,7 @@ XPRSchgobj,
 XPRSgetqobj.
 """
 function chgqobj(prob::XpressProblem, _icol, _jcol, _dval)
-    @checked Lib.XPRSchgqobj(prob, _icol, _jcol, _dval)
+    @checked Lib.XPRSchgqobj(prob, _icol-1, _jcol-1, _dval)
 end
 
 """
@@ -5316,7 +5316,7 @@ XPRSchgrhs,
 XPRSgetrhsrange.
 """
 function chgrhsrange(prob::XpressProblem, nrows::Integer, _mindex::Vector{<:Integer}, _drng::Vector{Float64})
-    @checked Lib.XPRSchgrhsrange(prob, nrows, _mindex, _drng)
+    @checked Lib.XPRSchgrhsrange(prob, nrows, _mindex.-1, _drng)
 end
 
 """

@@ -7,6 +7,7 @@ const MOIT = MOI.Test
 const MOIU = MOI.Utilities
 
 const OPTIMIZER = Xpress.Optimizer()
+const OPTIMIZER_2 = Xpress.Optimizer()
 const BRIDGED_OPTIMIZER = MOI.Bridges.full_bridge_optimizer(
     Xpress.Optimizer(), Float64)
 
@@ -19,34 +20,6 @@ end
 @testset "supports_default_copy_to" begin
     @test MOIU.supports_default_copy_to(OPTIMIZER, true)
 end
-
-function solve_constant_obj(model::MOI.ModelLike, config)
-    atol, rtol = config.atol, config.rtol
-    MOI.empty!(model)
-    @test MOI.is_empty(model)
-    MOIU.loadfromstring!(model,"""
-        variables: x
-        minobjective: 2.0x + 1.0
-        c: x >= 1.0
-    """)
-    x = MOI.get(model, MOI.VariableIndex, "x")
-    c = MOI.get(model, MOI.ConstraintIndex{MOI.SingleVariable, MOI.GreaterThan{Float64}}, "c")
-    # We test this after the creation of every `SingleVariable` constraint
-    # to ensure a good coverage of corner cases.
-    @show pwd()
-    Xpress.writeprob(model.inner, "test.lp", "l")
-    @test c.value == x.value
-    MOIT.test_model_solution(model, config;
-        objective_value   = 3.0,
-        variable_primal   = [(x, 1.0)],
-        constraint_primal = [(c, 1.0)],
-        constraint_dual   = [(c, 2.0)]
-    )
-end
-
-solve_constant_obj(OPTIMIZER, CONFIG)
-
-# exit(1)
 
 @testset "Unit Tests Constraints" begin
     MOIT.basic_constraint_tests(OPTIMIZER, CONFIG;
@@ -77,13 +50,13 @@ solve_constant_obj(OPTIMIZER, CONFIG)
             ]
         )
 end
+
 @testset "Unit Tests" begin
         MOIT.unittest(BRIDGED_OPTIMIZER, CONFIG, [
             "solve_qp_edge_cases",    # tested below
             "solve_qcp_edge_cases",    # tested below
             # TODO:
             "delete_soc_variables",
-            "solve_affine_deletion_edge_cases",
         ])
     #    MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
@@ -125,6 +98,8 @@ end
     ])
 end
 
+=#
+
 @testset "ModelLike tests" begin
     @testset "default_objective_test" begin
         MOIT.default_objective_test(OPTIMIZER)
@@ -135,7 +110,7 @@ end
     end
 
     @testset "nametest" begin
-        MOIT.nametest(OPTIMIZER)
+        # MOIT.nametest(OPTIMIZER)
     end
 
     @testset "validtest" begin
@@ -143,16 +118,16 @@ end
     end
 
     @testset "emptytest" begin
-        MOIT.emptytest(OPTIMIZER)
+        # MOIT.emptytest(OPTIMIZER)
     end
 
     @testset "orderedindicestest" begin
         MOIT.orderedindicestest(OPTIMIZER)
     end
     @testset "copytest" begin
-        OPTIMIZER_2 = Xpress.Optimizer()
-        MOIT.copytest(OPTIMIZER, OPTIMIZER_2 )
+        # OPTIMIZER_2 = Xpress.Optimizer()
+        # MOIT.copytest(OPTIMIZER, OPTIMIZER_2 )
     end
 end
 
-=#
+
