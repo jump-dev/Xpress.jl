@@ -5004,8 +5004,8 @@ XPRSgetub,
 XPRSstorebounds.
 """
 function chgbounds(prob::XpressProblem,
-    _mindex::Vector{I}, _sboundtype::Vector{Cchar},
-    _dbnd::Vector{Float64}) where {I<:Integer}
+    _mindex::Vector{<:Integer}}, _sboundtype::Vector{Cchar},
+    _dbnd::Vector{Float64})
     nbnds = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgbounds(prob, nbnds, _mindex, _sboundtype, _dbnd)
