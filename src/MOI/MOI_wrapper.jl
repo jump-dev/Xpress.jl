@@ -1491,7 +1491,7 @@ function MOI.get(
     @assert nzcnt <= nzcnt_max
 
     rmatbeg = zeros(Int, row-row+2)
-    rmatind = Array{Cint}(undef,  nzcnt)
+    rmatind = Array{Int}(undef,  nzcnt)
     rmatval = Array{Float64}(undef,  nzcnt)
     val = 0
 

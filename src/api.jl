@@ -3640,7 +3640,11 @@ end
 
 # TODO
 function getrows(prob::XpressProblem, _mstart::Vector{Int}, _mrwind::Vector{Int}, _dmatval::Array{Float64}, maxcoeffs::Integer, val::Integer, first::Int, last::Int)
-    @checked Lib.XPRSgetrows64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, val, first - 1, last - 1)
+    @assert length(_mstart) >= last-first+2
+    @assert length(_mclind) == maxcoeffs
+    @assert length(_dmatval) == maxcoeffs
+    temp = zeros(Int, 1)
+    @checked Lib.XPRSgetrows64(prob, _mstart, _mclind, _dmatval, maxcoeffs, temp, first - 1, last - 1)
     _mstart .+= 1
     _mrwind .+= 1
     return
