@@ -603,13 +603,13 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::MOI.ObjectiveSense)
-    sense = Xpress.getcontrol(model.inner, Xpress.Lib.XPRS_OBJSENSE)
+    sense = Xpress.objective_sense(model.inner)
     if model.is_feasibility
         return MOI.FEASIBILITY_SENSE
-    elseif sense == Xpress.Lib.XPRS_OBJ_MAXIMIZE
+    elseif sense == :maximize
         return MOI.MAX_SENSE
     else
-        @assert sense == Xpress.Lib.XPRS_OBJ_MINIMIZE
+        @assert sense == :minimize
         return MOI.MIN_SENSE
     end
 end
@@ -1447,7 +1447,7 @@ function MOI.delete(
     c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, <:Any}
 )
     row = _info(model, c).row
-    Xpress.delrows(model.inner, 1, [row])
+    Xpress.delrows(model.inner, [row])
     for (key, info) in model.affine_constraint_info
         if info.row > row
             info.row -= 1
@@ -1490,7 +1490,7 @@ function MOI.get(
 
     @assert nzcnt <= nzcnt_max
 
-    rmatbeg = zeros(Cint, 1)
+    rmatbeg = zeros(Cint, row-row+2)
     rmatind = Array{Cint}(undef,  nzcnt)
     rmatval = Array{Float64}(undef,  nzcnt)
 
@@ -1957,10 +1957,10 @@ function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
     stop_str = STOPSTATUS_STRING[stop]
     if Xpress.is_mixedinteger(model.inner)
         stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_MIPSTATUS)
-        return Xpress.MIP_STATUS_STRING[stat] * " - " * stop_str
+        return Xpress.MIPSTATUS_STRING[stat] * " - " * stop_str
     else
         stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_LPSTATUS)
-        return Xpress.LP_STATUS_STRING[stat] * " - " * stop_str
+        return Xpress.LPSTATUS_STRING[stat] * " - " * stop_str
     end
 end
 
@@ -2027,6 +2027,7 @@ function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
             return MOI.INVALID_OPTION
         end
     end
+    return MOI.OTHER_ERROR
 end
 
 function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
@@ -2252,13 +2253,7 @@ function MOI.get(model::Optimizer, attr::MOI.RelativeGap)
 end
 
 function MOI.get(model::Optimizer, attr::MOI.DualObjectiveValue)
-    _throw_if_optimize_in_progress(model, attr)
-    MOI.check_result_index_bounds(model, attr)
-    if Xpress.is_mixedinteger(model.inner)
-        return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_MIPBESTOBJVAL)
-    else
-        return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_LPOBJVAL)
-    end
+    MOI.get(model, MOI.ObjectiveValue())
 end
 
 function MOI.get(model::Optimizer, attr::MOI.ResultCount)
@@ -2271,7 +2266,7 @@ function MOI.get(model::Optimizer, attr::MOI.ResultCount)
         return 1
     else
         st = MOI.get(model, MOI.PrimalStatus())
-        return st == MOI.OPTIMAL ? 1 : 0
+        return st == MOI.FEASIBLE_POINT ? 1 : 0
     end
 end
 
@@ -2282,7 +2277,7 @@ end
 function MOI.set(model::Optimizer, ::MOI.Silent, flag::Bool)
     model.silent = flag
     # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html
-    if Sys.iswindows
+    if Sys.iswindows()
         @warn "Silent has no effect on windows. See https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html"
     end
     MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), flag ? 0 : 1)
