@@ -5187,7 +5187,7 @@ function chgmqobj(prob::XpressProblem, _mcol1::Cint, _mcol2::Cint, _dval)
     @checked Lib.XPRSchgmqobj(prob, ncols, _mcol1, _mcol2, _dval)
 end
 
-function chgmqobj(prob::XpressProblem, ncols, _mcol1::Int, _mcol2::Int, _dval)
+function chgmqobj(prob::XpressProblem, _mcol1::Int, _mcol2::Int, _dval)
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
