@@ -305,13 +305,14 @@ function MOI.supports_constraint(
     return true
 end
 
+# TODO enable later
 function MOI.supports_constraint(
     ::Optimizer, ::Type{MOI.ScalarQuadraticFunction{Float64}}, ::Type{F}
 ) where {F <: Union{
     MOI.LessThan{Float64}, MOI.GreaterThan{Float64}
 }}
     # Note: Xpress does not support quadratic equality constraints.
-    return true
+    return false
 end
 
 MOI.supports(::Optimizer, ::MOI.VariableName, ::Type{MOI.VariableIndex}) = true
@@ -650,7 +651,7 @@ function MOI.set(
         obj[column] += term.coefficient
     end
     Xpress.chgobj(model.inner, collect(1:num_vars), obj)
-    Xpress.chgobj(model.inner, [0], [f.constant])
+    Xpress.chgobj(model.inner, [0], [-f.constant])
     model.objective_type = SCALAR_AFFINE
     return
 end
@@ -700,7 +701,10 @@ end
 function MOI.get(
     model::Optimizer,
     ::MOI.ObjectiveFunction{MOI.ScalarQuadraticFunction{Float64}}
-)
+)   
+    aff_obj = MOI.get(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}())
+    quad_obj = convert(MOI.ScalarQuadraticFunction{Float64}, aff_obj)
+    return quad_obj
     # TODO
     error("Not supporting quadratics")
     dest = zeros(length(model.variable_info))
@@ -739,7 +743,7 @@ function MOI.modify(
     ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
     chg::MOI.ScalarConstantChange{Float64}
 )
-    Xpress.chgobj(model.inner, [0], [chg.new_constant])
+    Xpress.chgobj(model.inner, [0], [-chg.new_constant])
     return
 end
 
@@ -1490,10 +1494,9 @@ function MOI.get(
 
     @assert nzcnt <= nzcnt_max
 
-    rmatbeg = zeros(Int, row-row+2)
-    rmatind = Array{Int}(undef,  nzcnt)
+    rmatbeg = zeros(Cint, row-row+2)
+    rmatind = Array{Cint}(undef,  nzcnt)
     rmatval = Array{Float64}(undef,  nzcnt)
-    val = 0
 
     Xpress.getrows(
         model.inner,
@@ -1501,7 +1504,6 @@ function MOI.get(
         rmatind,#_mclind,
         rmatval,#_dmatval,
         nzcnt,#maxcoeffs,
-        val,
         row,#first::Integer,
         row,#last::Integer
         )
@@ -1907,7 +1909,8 @@ function MOI.optimize!(model::Optimizer)
     model.cached_solution.solve_time = solve_time
 
     if Xpress.is_mixedinteger(model.inner)
-        Xpress.getmipsol(model.inner,
+        Xpress.getmipsol
+        Xpress.Lib.XPRSgetmipsol(model.inner,
             model.cached_solution.variable_primal,
             model.cached_solution.linear_primal) # TODO
             fill!(model.cached_solution.linear_dual, NaN)
@@ -2254,7 +2257,9 @@ function MOI.get(model::Optimizer, attr::MOI.RelativeGap)
 end
 
 function MOI.get(model::Optimizer, attr::MOI.DualObjectiveValue)
-    MOI.get(model, MOI.ObjectiveValue())
+    _throw_if_optimize_in_progress(model, attr)
+    MOI.check_result_index_bounds(model, attr)
+    MOI.get(model, MOI.ObjectiveValue(attr.result_index))
 end
 
 function MOI.get(model::Optimizer, attr::MOI.ResultCount)
