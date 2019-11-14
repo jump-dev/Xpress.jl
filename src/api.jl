@@ -3623,10 +3623,10 @@ XPRSgetrowtype.
 """
 function getrows(prob::XpressProblem, _mstart::Vector{Cint}, _mrwind::Vector{Cint}, _dmatval::Array{Float64}, maxcoeffs::Integer, val::Integer, first::Cint, last::Cint)
     @assert length(_mstart) >= last-first+2
-    @assert length(_mclind) == maxcoeffs
+    @assert length(_mrwind) == maxcoeffs
     @assert length(_dmatval) == maxcoeffs
     temp = zeros(Cint, 1)
-    @checked Lib.XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, temp, first - 1, last - 1)
+    @checked Lib.XPRSgetrows(prob, _mstart, _mrwind, _dmatval, maxcoeffs, temp, first - 1, last - 1)
     _mstart .+= 1
     _mrwind .+= 1
     return
@@ -3641,10 +3641,10 @@ end
 # TODO
 function getrows(prob::XpressProblem, _mstart::Vector{Int}, _mrwind::Vector{Int}, _dmatval::Array{Float64}, maxcoeffs::Integer, val::Integer, first::Int, last::Int)
     @assert length(_mstart) >= last-first+2
-    @assert length(_mclind) == maxcoeffs
+    @assert length(_mrwind) == maxcoeffs
     @assert length(_dmatval) == maxcoeffs
     temp = zeros(Int, 1)
-    @checked Lib.XPRSgetrows64(prob, _mstart, _mclind, _dmatval, maxcoeffs, temp, first - 1, last - 1)
+    @checked Lib.XPRSgetrows64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, temp, first - 1, last - 1)
     _mstart .+= 1
     _mrwind .+= 1
     return
@@ -4734,7 +4734,8 @@ XPRSgetbasis,
 XPRSgetpivots,
 XPRSpivot.
 """
-function delrows(prob::XpressProblem, nrows::Integer, _mindex::Vector{<:Integer})
+function delrows(prob::XpressProblem, _mindex::Vector{<:Integer})
+    nrows = length(_mindex)
     @checked Lib.XPRSdelrows(prob, nrows, _mindex)
 end
 
