@@ -5135,11 +5135,11 @@ XPRSchgrhs,
 XPRSgetcols,
 XPRSgetrhs.
 """
-function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Cint, _mcol::Cint, _dval)
+function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{Cint}, _mcol::Vector{Cint}, _dval)
     @checked Lib.XPRSchgmcoef(prob, ncoeffs, _mrow, _mcol, _dval)
 end
 
-function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Int, _mcol::Int, _dval)
+function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{Int}, _mcol::Vector{Int}, _dval)
     @checked Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow, _mcol, _dval)
 end
 
@@ -5377,7 +5377,7 @@ int XPRS_CC XPRSchgglblimit(XPRSprob prob, int ncols, const int mindex[], const 
 XPRSchgcoltype,
 XPRSgetglobal.
 """
-function chgglblimit(prob::XpressProblem, _mindex::Vector{Cint}, _dlimit::Vector{Float64})
+function chgglblimit(prob::XpressProblem, _mindex::Vector{<:Integer}, _dlimit::Vector{Float64})
     ncols = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgglblimit(prob, _mindex, _dlimit)
@@ -6496,7 +6496,7 @@ Suppose that the current LP relaxation has two integer columns (columns
 
 
 """
-function strongbranch(prob::XpressProblem, nbnds::Int, _mindex::Vector{Cint}, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
+function strongbranch(prob::XpressProblem, nbnds::Int, _mindex::Vector{<:Integer}, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
     @checked Lib.XPRSstrongbranch(prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
 end
 
