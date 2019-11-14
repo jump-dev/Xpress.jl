@@ -5035,7 +5035,7 @@ XPRSchgmqobj,
 XPRSchgqobj,
 XPRSgetobj.
 """
-function chgobj(prob::XpressProblem, _mindex::Vector{Integer}, _dobj::Vector{Float64})
+function chgobj(prob::XpressProblem, _mindex::Vector{<:Integer}, _dobj::Vector{Float64})
     ncols = length(_dobj)
     @assert length(_mindex) == ncols
     _mindex = _mindex .- 1
