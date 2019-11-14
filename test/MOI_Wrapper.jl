@@ -32,6 +32,13 @@ end
                 (MOI.ScalarQuadraticFunction{Float64}, MOI.GreaterThan{Float64}),
                 (MOI.ScalarQuadraticFunction{Float64}, MOI.EqualTo{Float64}),
                 (MOI.ScalarQuadraticFunction{Float64}, MOI.Interval{Float64}),
+                #
+                (MOI.VectorOfVariables, MOI.SecondOrderCone),
+                (MOI.VectorOfVariables, MOI.RotatedSecondOrderCone),
+                (MOI.VectorOfVariables, MOI.GeometricMeanCone),
+                (MOI.VectorAffineFunction{Float64}, MOI.SecondOrderCone),
+                (MOI.VectorAffineFunction{Float64}, MOI.RotatedSecondOrderCone),
+                (MOI.VectorAffineFunction{Float64}, MOI.GeometricMeanCone),
             ]
         )
         MOIT.unittest(OPTIMIZER, CONFIG, [
