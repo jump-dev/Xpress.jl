@@ -1382,6 +1382,7 @@ function MOI.add_constraint(
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s)
     indices, coefficients = _indices_and_coefficients(model, f)
+    sense, rhs = _sense_and_rhs(s)
     Xpress.addrows(
         model.inner,
         [sense],#_srowtype,
