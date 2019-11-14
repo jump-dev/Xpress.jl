@@ -4690,7 +4690,9 @@ function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Fl
     @assert nrows == length(_mstart)
     ncoeffs = length(_mrwind)
     @assert ncoeffs == length(_dmatval)
-    @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mrwind.-1, _dmatval)
+    _mstart .-= 1
+    _mrwind .-= 1
+    @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mrwind, _dmatval)
 end
 
 function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int64}, _mrwind::Vector{Int64}, _dmatval::Vector{Float64})
@@ -4700,7 +4702,9 @@ function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Fl
     @assert nrows == length(_mstart)
     ncoeffs = length(_mrwind)
     @assert ncoeffs == length(_dmatval)
-    @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart.-1, _mrwind.-1, _dmatval)
+    _mstart .-= 1
+    _mrwind .-= 1
+    @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mrwind, _dmatval)
 end
 
 """
