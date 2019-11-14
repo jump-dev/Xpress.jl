@@ -701,7 +701,7 @@ end
 function MOI.get(
     model::Optimizer,
     ::MOI.ObjectiveFunction{MOI.ScalarQuadraticFunction{Float64}}
-)   
+)
     aff_obj = MOI.get(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}())
     quad_obj = convert(MOI.ScalarQuadraticFunction{Float64}, aff_obj)
     return quad_obj
@@ -1388,8 +1388,8 @@ function MOI.add_constraint(
         [sense],#_srowtype,
         [rhs],#_drhs,
         C_NULL,#_drng,
-        [1],#_mstart,
-        indices,#_mclind,
+        Cint[1],#_mstart,
+        Cint.(indices),#_mclind,
         coefficients,#_dmatval
         )
     return MOI.ConstraintIndex{typeof(f), typeof(s)}(model.last_constraint_index)

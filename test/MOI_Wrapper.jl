@@ -82,7 +82,6 @@ end
             "solve_qp_edge_cases",    # tested below
             "solve_qcp_edge_cases",    # tested below
             # TODO:
-            "solve_affine_interval",
             "delete_soc_variables",
             "solve_affine_deletion_edge_cases",
         ])
