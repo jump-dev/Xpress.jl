@@ -464,7 +464,7 @@ function delq!(prob::XpressProblem)
         end
     end
 
-    Xpress.chgqobj(prob, qr, qc, qv)
+    Xpress.chgmqobj(prob, qr, qc, qv)
 end
 
 const MIPSTATUS_STRING = Dict{Int,String}(
