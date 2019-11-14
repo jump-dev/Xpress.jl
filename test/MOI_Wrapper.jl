@@ -20,33 +20,75 @@ end
     @test MOIU.supports_default_copy_to(OPTIMIZER, true)
 end
 
-@testset "Unit Tests" begin
+function solve_constant_obj(model::MOI.ModelLike, config)
+    atol, rtol = config.atol, config.rtol
+    MOI.empty!(model)
+    @test MOI.is_empty(model)
+    MOIU.loadfromstring!(model,"""
+        variables: x
+        minobjective: 2.0x + 1.0
+        c: x >= 1.0
+    """)
+    x = MOI.get(model, MOI.VariableIndex, "x")
+    c = MOI.get(model, MOI.ConstraintIndex{MOI.SingleVariable, MOI.GreaterThan{Float64}}, "c")
+    # We test this after the creation of every `SingleVariable` constraint
+    # to ensure a good coverage of corner cases.
+    @show pwd()
+    Xpress.writeprob(model.inner, "test.lp", "l")
+    @test c.value == x.value
+    MOIT.test_model_solution(model, config;
+        objective_value   = 3.0,
+        variable_primal   = [(x, 1.0)],
+        constraint_primal = [(c, 1.0)],
+        constraint_dual   = [(c, 2.0)]
+    )
+end
+
+solve_constant_obj(OPTIMIZER, CONFIG)
+
+# exit(1)
+
+@testset "Unit Tests Constraints" begin
     MOIT.basic_constraint_tests(OPTIMIZER, CONFIG;
             exclude = [
-                (MOI.SingleVariable, MOI.Integer),
-                (MOI.SingleVariable, MOI.EqualTo{Float64}),
-                (MOI.SingleVariable, MOI.Interval{Float64}),
-                (MOI.SingleVariable, MOI.GreaterThan{Float64}),
-                (MOI.SingleVariable, MOI.LessThan{Float64}),
-                (MOI.ScalarQuadraticFunction{Float64}, MOI.LessThan{Float64}),
-                (MOI.ScalarQuadraticFunction{Float64}, MOI.GreaterThan{Float64}),
-                (MOI.ScalarQuadraticFunction{Float64}, MOI.EqualTo{Float64}),
-                (MOI.ScalarQuadraticFunction{Float64}, MOI.Interval{Float64}),
+                # (MOI.SingleVariable, MOI.Integer),
+                # (MOI.SingleVariable, MOI.EqualTo{Float64}),
+                # (MOI.SingleVariable, MOI.Interval{Float64}),
+                # (MOI.SingleVariable, MOI.GreaterThan{Float64}),
+                # (MOI.SingleVariable, MOI.LessThan{Float64}),
+                # (MOI.ScalarQuadraticFunction{Float64}, MOI.LessThan{Float64}),
+                # (MOI.ScalarQuadraticFunction{Float64}, MOI.GreaterThan{Float64}),
+                # (MOI.ScalarQuadraticFunction{Float64}, MOI.EqualTo{Float64}),
+                # (MOI.ScalarQuadraticFunction{Float64}, MOI.Interval{Float64}),
+                # (MOI.ScalarAffineFunction{Float64}, MOI.Interval{Float64}),
                 #
-                (MOI.VectorOfVariables, MOI.SecondOrderCone),
-                (MOI.VectorOfVariables, MOI.RotatedSecondOrderCone),
-                (MOI.VectorOfVariables, MOI.GeometricMeanCone),
-                (MOI.VectorAffineFunction{Float64}, MOI.SecondOrderCone),
-                (MOI.VectorAffineFunction{Float64}, MOI.RotatedSecondOrderCone),
-                (MOI.VectorAffineFunction{Float64}, MOI.GeometricMeanCone),
+                # (MOI.VectorOfVariables, MOI.Nonnegatives),
+                # (MOI.VectorOfVariables, MOI.Nonpositives),
+                # (MOI.VectorOfVariables, MOI.Zeros),
+                # (MOI.VectorAffineFunction{Float64}, MOI.Nonnegatives),
+                # (MOI.VectorAffineFunction{Float64}, MOI.Nonpositives),
+                # (MOI.VectorAffineFunction{Float64}, MOI.Zeros),
+                # (MOI.VectorOfVariables, MOI.SecondOrderCone),
+                # (MOI.VectorOfVariables, MOI.RotatedSecondOrderCone),
+                # (MOI.VectorOfVariables, MOI.GeometricMeanCone),
+                # (MOI.VectorAffineFunction{Float64}, MOI.SecondOrderCone),
+                # (MOI.VectorAffineFunction{Float64}, MOI.RotatedSecondOrderCone),
+                # (MOI.VectorAffineFunction{Float64}, MOI.GeometricMeanCone),
             ]
         )
-        MOIT.unittest(OPTIMIZER, CONFIG, [
+end
+@testset "Unit Tests" begin
+        MOIT.unittest(BRIDGED_OPTIMIZER, CONFIG, [
             "solve_qp_edge_cases",    # tested below
-            "solve_qcp_edge_cases"    # tested below
+            "solve_qcp_edge_cases",    # tested below
+            # TODO:
+            "solve_affine_interval",
+            "delete_soc_variables",
+            "solve_affine_deletion_edge_cases",
         ])
     #    MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
+
 #=
 @testset "Linear tests" begin
     @testset "Default Solver"  begin
