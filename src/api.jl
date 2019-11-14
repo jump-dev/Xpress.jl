@@ -4734,7 +4734,7 @@ XPRSgetbasis,
 XPRSgetpivots,
 XPRSpivot.
 """
-function delrows(prob::XpressProblem, nrows::Int, _mindex::Vector{<:Integer})
+function delrows(prob::XpressProblem, nrows::Integer, _mindex::Vector{<:Integer})
     @checked Lib.XPRSdelrows(prob, nrows, _mindex)
 end
 
