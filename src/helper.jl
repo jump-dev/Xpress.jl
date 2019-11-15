@@ -1,6 +1,8 @@
 struct XpressError <: Exception
     errorcode::Int
     msg::String
+    # TODO try to append string from Xpress.getlasterror(model) here
+    # only possible on call that had the model as parameter
 end
 
 function Base.showerror(io::IO, err::XpressError)
@@ -22,7 +24,7 @@ function Base.showerror(io::IO, err::XpressError)
     else
         print(io, "Unrecoverable error.")
     end
-    print(io, " $(err.msg)")
+    print(io, "$(err.msg) Try calling Xpress.getlasterror(model) for more information.")
 end
 
 function fixinfinity(val::Float64)
