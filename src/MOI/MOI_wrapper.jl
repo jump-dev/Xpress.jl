@@ -1909,14 +1909,14 @@ function MOI.optimize!(model::Optimizer)
     model.cached_solution.solve_time = solve_time
 
     if Xpress.is_mixedinteger(model.inner)
-        Xpress.getmipsol
+        #Xpress.getmipsol
         Xpress.Lib.XPRSgetmipsol(model.inner,
             model.cached_solution.variable_primal,
             model.cached_solution.linear_primal) # TODO
             fill!(model.cached_solution.linear_dual, NaN)
             fill!(model.cached_solution.variable_dual, NaN)
     else
-        Xpress.getlpsol(model.inner,
+        Xpress.Lib.XPRSgetlpsol(model.inner,
             model.cached_solution.variable_primal,
             model.cached_solution.linear_primal, # TODO
             model.cached_solution.linear_dual,
@@ -3012,3 +3012,21 @@ end
 
 include("MOI_callbacks.jl")
 =#
+function extension(str::String)
+     try
+         match(r"\.[A-Za-z0-9]+$", str).match
+     catch
+         ""
+     end
+ end
+
+ function MOI.write_to_file(model::Optimizer, name::String)
+     ext = extension(name)
+     if ext == ".lp"
+         Xpress.writeprob(model.inner, name, "l")
+     elseif ext == ".mps"
+         Xpress.writeprob(model.inner, name)
+     else
+         Xpress.writeprob(model.inner, name, "l")
+     end
+ end

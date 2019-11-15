@@ -4695,7 +4695,7 @@ function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Fl
     @assert ncoeffs == length(_dmatval)
     _mstart .-= 1
     _mrwind .-= 1
-    @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, Cint.(_mstart), Cint.(_mrwind), _dmatval)
+    @checked Lib.XPRSaddrows(prob, nrows, Cint(ncoeffs), _srowtype, _drhs, _drng, Cint.(_mstart), Cint.(_mrwind), _dmatval)
 end
 
 #= Disable 64Bit versions do to reliability issues.
@@ -5017,7 +5017,7 @@ XPRSstorebounds.
 function chgbounds(prob::XpressProblem, _mindex::Vector{<:Integer}, _sboundtype::Vector{Cchar}, _dbnd::Vector{Float64})
     nbnds = length(_mindex)
     _mindex = _mindex .- 1
-    @checked Lib.XPRSchgbounds(prob, nbnds, _mindex, _sboundtype, _dbnd)
+    @checked Lib.XPRSchgbounds(prob, Cint(nbnds), _mindex, _sboundtype, _dbnd)
 end
 
 """
@@ -5057,8 +5057,8 @@ XPRSgetobj.
 function chgobj(prob::XpressProblem, _mindex::Vector{<:Integer}, _dobj::Vector{Float64})
     ncols = length(_dobj)
     @assert length(_mindex) == ncols
-    _mindex = _mindex .- 1
-    @checked Lib.XPRSchgobj(prob, ncols, _mindex, _dobj)
+    _mindex .-= 1
+    @checked Lib.XPRSchgobj(prob, Cint(ncols), Cint.(_mindex), _dobj)
 end
 
 """
@@ -5194,7 +5194,7 @@ function chgmqobj(prob::XpressProblem, _mcol1::Vector{<:Integer}, _mcol2::Vector
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
-    @checked Lib.XPRSchgmqobj(prob, ncols, Cint.(_mcol1), Cint.(_mcol2), _dval)
+    @checked Lib.XPRSchgmqobj(prob, Cint(ncols), Cint.(_mcol1), Cint.(_mcol2), _dval)
 end
 
 #= Disable 64Bit versions do to reliability issues.
@@ -5286,7 +5286,7 @@ XPRSgetrhsrange.
 function chgrhs(prob::XpressProblem, _mindex::Vector{<:Integer}, _drhs::Vector{Float64})
     nrows = length(_mindex)
     _mindex = _mindex .- 1
-    @checked Lib.XPRSchgrhs(prob, nrows, Cint.(_mindex), _drhs)
+    @checked Lib.XPRSchgrhs(prob, Cint(nrows), Cint.(_mindex), _drhs)
 end
 
 """

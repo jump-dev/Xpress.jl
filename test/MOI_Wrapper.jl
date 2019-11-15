@@ -61,16 +61,40 @@ end
         MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
 
-#=
+SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
+@testset "First" begin
+    MOIT.linear12test(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
+    MOIT.linear15test(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
+    MOIT.linear8btest(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
+    MOIT.linear8ctest(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
+    MOIT.linear8atest(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
+    MOIT.linear3test(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
+    MOIT.linear9test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+    MOIT.linear14test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+    MOIT.linear4test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+    MOIT.linear1test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+    MOIT.linear2test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+    MOIT.linear10test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+    MOIT.linear5test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+    MOIT.linear11test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+    MOIT.linear6test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+end
+
+#= @show "end"
+ exit(1)
 @testset "Linear tests" begin
     @testset "Default Solver"  begin
-        MOIT.contlineartest(OPTIMIZER, MOIT.TestConfig(basis = true), [
+        MOIT.contlineartest(BRIDGED_OPTIMIZER, MOIT.TestConfig(
+        basis = false, # TODO change to true
+        infeas_certificates=false # TODO remove this
+        ), [
             # This requires an infeasiblity certificate for a variable bound.
-            "linear12"
+            "linear12",
+
         ])
     end
     @testset "No certificate" begin
-        MOIT.linear12test(OPTIMIZER, MOIT.TestConfig(infeas_certificates=false))
+        MOIT.linear12test(BRIDGED_OPTIMIZER, MOIT.TestConfig(infeas_certificates=false))
     end
 end
 
