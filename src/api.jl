@@ -4746,7 +4746,7 @@ XPRSpivot.
 """
 function delrows(prob::XpressProblem, _mindex::Vector{<:Integer})
     nrows = length(_mindex)
-    @checked Lib.XPRSdelrows(prob, nrows, _mindex.-1)
+    @checked Lib.XPRSdelrows(prob, nrows, Cint.(_mindex .- 1))
 end
 
 """
@@ -5323,7 +5323,7 @@ XPRSchgrhs,
 XPRSgetrhsrange.
 """
 function chgrhsrange(prob::XpressProblem, nrows::Integer, _mindex::Vector{<:Integer}, _drng::Vector{Float64})
-    @checked Lib.XPRSchgrhsrange(prob, nrows, _mindex.-1, _drng)
+    @checked Lib.XPRSchgrhsrange(prob, Cint(nrows), Cint.(_mindex .- 1), _drng)
 end
 
 """
@@ -5391,7 +5391,7 @@ XPRSgetglobal.
 function chgglblimit(prob::XpressProblem, _mindex::Vector{<:Integer}, _dlimit::Vector{Float64})
     ncols = length(_mindex)
     _mindex = _mindex .- 1
-    @checked Lib.XPRSchgglblimit(prob, _mindex, _dlimit)
+    @checked Lib.XPRSchgglblimit(prob, Cint.(_mindex), _dlimit)
 end
 
 """
@@ -6464,7 +6464,7 @@ int XPRS_CC XPRSaddsets(XPRSprob prob, int newsets, int newnz, const char qrtype
 XPRSdelsets.
 """
 function addsets(prob::XpressProblem, newsets, newnz, qstype, msstart::Vector{<:Integer}, mscols::Vector{<:Integer}, dref)
-    @checked Lib.XPRSaddsets(prob, newsets, newnz, qstype, Cint.(msstart), Cint.(mscols), dref)
+    @checked Lib.XPRSaddsets(prob, newsets, newnz, qstype, Cint.(msstart), Cint.(mscols .- 1), dref)
 end
 
 #= Disable 64Bit versions do to reliability issues.
@@ -6512,7 +6512,7 @@ Suppose that the current LP relaxation has two integer columns (columns
 
 """
 function strongbranch(prob::XpressProblem, nbnds::Integer, _mindex::Vector{<:Integer}, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
-    @checked Lib.XPRSstrongbranch(prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
+    @checked Lib.XPRSstrongbranch(prob, nbnds, Cint.(_mindex .- 1), _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
 end
 
 """
