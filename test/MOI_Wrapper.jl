@@ -58,7 +58,7 @@ end
             # TODO:
             "delete_soc_variables",
         ])
-    #    MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
+        MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
 
 #=
@@ -129,5 +129,3 @@ end
         # MOIT.copytest(OPTIMIZER, OPTIMIZER_2 )
     end
 end
-
-

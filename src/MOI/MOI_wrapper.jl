@@ -2607,7 +2607,7 @@ function MOI.set(
     else
         _replace_with_different_sparsity!(model, previous, replacement, row)
     end
-    rhs = Xpress.getrhs(model.inner, rhs, row, row)
+    rhs = Xpress.getrhs(model.inner, row, row)
     rhs[1] -= replacement.constant - previous.constant
     Xpress.chgrhs(model.inner, [row], rhs)
     return

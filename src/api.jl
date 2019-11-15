@@ -5100,8 +5100,8 @@ XPRSchgrhs,
 XPRSgetcols,
 XPRSgetrows.
 """
-function chgcoef(prob::XpressProblem, _irow, _icol, _dval)
-    @checked Lib.XPRSchgcoef(prob, _irow, _icol, _dval)
+function chgcoef(prob::XpressProblem, _irow::Integer, _icol::Integer, _dval)
+    @checked Lib.XPRSchgcoef(prob, Cint(_irow - 1), Cint(_icol - 1), _dval)
 end
 
 """
@@ -5145,7 +5145,7 @@ XPRSgetcols,
 XPRSgetrhs.
 """
 function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{<:Integer}, _mcol::Vector{<:Integer}, _dval)
-    @checked Lib.XPRSchgmcoef(prob, ncoeffs, Cint(_mrow), Cint(_mcol), _dval)
+    @checked Lib.XPRSchgmcoef(prob, ncoeffs, Cint(_mrow .- 1), Cint(_mcol .- 1), _dval)
 end
 
 #= Disable 64Bit versions do to reliability issues.
@@ -5283,10 +5283,10 @@ XPRSchgrhsrange,
 XPRSgetrhs,
 XPRSgetrhsrange.
 """
-function chgrhs(prob::XpressProblem, _mindex::Vector{Cint}, _drhs::Vector{Float64})
+function chgrhs(prob::XpressProblem, _mindex::Vector{<:Integer}, _drhs::Vector{Float64})
     nrows = length(_mindex)
     _mindex = _mindex .- 1
-    @checked Lib.XPRSchgrhs(prob, nrows, _mindex, _drhs)
+    @checked Lib.XPRSchgrhs(prob, nrows, Cint.(_mindex), _drhs)
 end
 
 """
