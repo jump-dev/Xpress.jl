@@ -1914,7 +1914,7 @@ function addnames(prob::XpressProblem, _itype::Integer, first::Integer, names::V
         _cnames = string(_cnames, join(Base.Iterators.take(str,NAMELENGTH)), "\0")
     end
 
-    @checked Lib.XPRSaddnames(prob, _itype, _cnames, first, last)
+    @checked Lib.XPRSaddnames(prob, Cint(_itype), _cnames, Cint(first), Cint(last))
 end
 function addnames(prob::XpressProblem, _itype::Integer, _sname::Vector{String})
     addnames(prob, _itype, 1, _sname)
@@ -4879,7 +4879,7 @@ XPRSdelrows.
 function delcols(prob::XpressProblem, _mindex::Vector{<:Integer})
     ncols = length(_mindex)
     _mindex = _mindex .- 1
-    @checked Lib.XPRSdelcols(prob, ncols, _mindex)
+    @checked Lib.XPRSdelcols(prob, ncols, Cint.(_mindex))
 end
 
 """
@@ -4926,7 +4926,7 @@ function chgcoltype(prob::XpressProblem, _mindex::Vector{<:Integer}, _coltype::V
     ncols = length(_mindex)
     _mindex = _mindex .- 1
     _coltype
-    @checked Lib.XPRSchgcoltype(prob, ncols, _mindex, _coltype)
+    @checked Lib.XPRSchgcoltype(prob, ncols, Cint.(_mindex), _coltype)
 end
 
 """
@@ -4973,7 +4973,7 @@ XPRSgetrowtype.
 function chgrowtype(prob::XpressProblem, _mindex::Vector{<:Integer}, _srowtype::Vector{Cchar})
     nrows = length(_mindex)
     _mindex = _mindex .- 1
-    @checked Lib.XPRSchgrowtype(prob, nrows, _mindex, _srowtype)
+    @checked Lib.XPRSchgrowtype(prob, nrows, Cint.(_mindex), _srowtype)
 end
 
 """
@@ -5017,7 +5017,7 @@ XPRSstorebounds.
 function chgbounds(prob::XpressProblem, _mindex::Vector{<:Integer}, _sboundtype::Vector{Cchar}, _dbnd::Vector{Float64})
     nbnds = length(_mindex)
     _mindex = _mindex .- 1
-    @checked Lib.XPRSchgbounds(prob, Cint(nbnds), _mindex, _sboundtype, _dbnd)
+    @checked Lib.XPRSchgbounds(prob, Cint(nbnds), Cint.(_mindex), _sboundtype, _dbnd)
 end
 
 """
@@ -7292,7 +7292,7 @@ int XPRS_CC XPRSstrongbranchcb(XPRSprob prob, const int nbnds, const int mbndind
 
 """
 function strongbranchcb(prob::XpressProblem, nbnds::Integer, _mindex::Vector{Float64}, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus, sbsolvecb, vContext)
-    @checked Lib.XPRSstrongbranchcb(prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus, sbsolvecb, vContext)
+    @checked Lib.XPRSstrongbranchcb(prob, nbnds, Cint.(_mindex.-1), _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus, sbsolvecb, vContext)
 end
 
 function setcblplog(prob::XpressProblem, f_lplog, p)
