@@ -486,14 +486,15 @@ XPRSgetintcontrol,
 XPRSsetdblcontrol,
 XPRSsetstrcontrol.
 """
-function setintcontrol(prob::XpressProblem, _index::Cint, _ivalue::Integer)
-    @checked Lib.XPRSsetintcontrol(prob, _index, _ivalue)
+function setintcontrol(prob::XpressProblem, _index::Integer, _ivalue::Integer)
+    @checked Lib.XPRSsetintcontrol(prob, Cint(_index), _ivalue)
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function setintcontrol(prob::XpressProblem, _index::Int64, _ivalue::Integer)
     @checked Lib.XPRSsetintcontrol64(prob, _index, _ivalue)
 end
-
+=#
 """
 
     setdblcontrol(prob::XpressProblem, _index, _dvalue)
@@ -3571,14 +3572,15 @@ The following examples retrieves the number of nonzero coefficients in all colum
 
 XPRSgetrows.
 """
-function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Cint, last::Cint)
-    @checked Lib.XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
+function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
+    @checked Lib.XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, Cint(first), Cint(last))
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Int64, last::Int64)
     @checked Lib.XPRSgetcols64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
-
+=#
 """
 
     getrows(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
@@ -3623,12 +3625,12 @@ XPRSgetcols,
 XPRSgetrowrange,
 XPRSgetrowtype.
 """
-function getrows(prob::XpressProblem, _mstart::Vector{Cint}, _mrwind::Vector{Cint}, _dmatval::Vector{Float64}, maxcoeffs::Integer, first::Int, last::Int)
+function getrows(prob::XpressProblem, _mstart::Vector{<:Integer}, _mrwind::Vector{<:Integer}, _dmatval::Vector{Float64}, maxcoeffs::Integer, first::Integer, last::Integer)
     @assert length(_mstart) >= last-first+2
     @assert length(_mrwind) == maxcoeffs
     @assert length(_dmatval) == maxcoeffs
     temp = zeros(Cint, 1)
-    @checked Lib.XPRSgetrows(prob, _mstart, _mrwind, _dmatval, maxcoeffs, temp, first - 1, last - 1)
+    @checked Lib.XPRSgetrows(prob, _mstart, _mrwind, _dmatval, maxcoeffs, temp, Cint(first - 1), Cint(last - 1))
     _mstart .+= 1
     _mrwind .+= 1
     return
@@ -3640,7 +3642,7 @@ function getrows_nnz(prob::XpressProblem, first::Integer, last::Integer)
     return nzcnt[]
 end
 
-# TODO
+#= Disable 64Bit versions do to reliability issues.
 function getrows(prob::XpressProblem, _mstart::Vector{Int64}, _mrwind::Vector{Int64}, _dmatval::Array{Float64}, maxcoeffs::Integer, val::Integer, first::Int64, last::Int64)
     @assert length(_mstart) >= last-first+2
     @assert length(_mrwind) == maxcoeffs
@@ -3651,7 +3653,7 @@ function getrows(prob::XpressProblem, _mstart::Vector{Int64}, _mrwind::Vector{In
     _mrwind .+= 1
     return
 end
-
+=#
 """
 
     getcoef(prob::XpressProblem, _irow, _icol, _dval)
@@ -3730,14 +3732,15 @@ XPRSchgmqobj,
 XPRSchgqobj,
 XPRSgetqobj.
 """
-function getmqobj(prob::XpressProblem, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first::Cint, last::Cint)
-    @checked Lib.XPRSgetmqobj(prob, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first, last)
+function getmqobj(prob::XpressProblem, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
+    @checked Lib.XPRSgetmqobj(prob, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, Cint(first), Cint(last))
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function getmqobj(prob::XpressProblem, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first::Int64, last::Int64)
     @checked Lib.XPRSgetmqobj64(prob, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first, last)
 end
-
+=#
 """
 
     crossoverlpsol(prob::XpressProblem, status)
@@ -4683,7 +4686,7 @@ XPRSaddcuts,
 XPRSaddnames,
 XPRSdelrows.
 """
-function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Cint}, _mrwind::Vector{Cint}, _dmatval::Vector{Float64})
+function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{<:Integer}, _mrwind::Vector{<:Integer}, _dmatval::Vector{Float64})
     nrows = length(_drhs)
     # @assert nrows == length(_drng) # can be a C_NULL
     @assert nrows == length(_srowtype)
@@ -4692,9 +4695,10 @@ function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Fl
     @assert ncoeffs == length(_dmatval)
     _mstart .-= 1
     _mrwind .-= 1
-    @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mrwind, _dmatval)
+    @checked Lib.XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, Cint.(_mstart), Cint.(_mrwind), _dmatval)
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int64}, _mrwind::Vector{Int64}, _dmatval::Vector{Float64})
     nrows = length(_drhs)
     # @assert nrows == length(_drng) # can be a C_NULL
@@ -4706,7 +4710,7 @@ function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Fl
     _mrwind .-= 1
     @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mrwind, _dmatval)
 end
-
+=#
 """
 
     delrows(prob::XpressProblem, nrows, _mindex)
@@ -4820,7 +4824,7 @@ XPRSaddrows,
 XPRSdelcols,
 XPRSchgcoltype.
 """
-function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{Cint}, _mrwind::Vector{Cint}, _dmatval::Vector{Float64}, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
+function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{<:Integer}, _mrwind::Vector{<:Integer}, _dmatval::Vector{Float64}, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
     @assert length(_dbdl) == length(_dbdu)
     fixinfinity!(_dbdl)
     fixinfinity!(_dbdu)
@@ -4828,9 +4832,10 @@ function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{Ci
     ncoeffs = length(_dmatval)
     _mstart = _mstart .- 1
     _mrwind = _mrwind .- 1
-    @checked Lib.XPRSaddcols(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
+    @checked Lib.XPRSaddcols(prob, ncols, ncoeffs, _dobj, Cint.(_mstart), Cint.(_mrwind), _dmatval, _dbdl, _dbdu)
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{Int64}, _mrwind::Vector{Int64}, _dmatval::Vector{Float64}, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
     @assert length(_dbdl) == length(_dbdu)
     fixinfinity!(_dbdl)
@@ -4841,7 +4846,7 @@ function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{In
     _mrwind = _mrwind .- 1
     @checked Lib.XPRSaddcols64(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
 end
-
+=#
 """
 
     delcols(prob::XpressProblem, ncols, _mindex)
@@ -5139,14 +5144,15 @@ XPRSchgrhs,
 XPRSgetcols,
 XPRSgetrhs.
 """
-function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{Cint}, _mcol::Vector{Cint}, _dval)
-    @checked Lib.XPRSchgmcoef(prob, ncoeffs, _mrow, _mcol, _dval)
+function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{<:Integer}, _mcol::Vector{<:Integer}, _dval)
+    @checked Lib.XPRSchgmcoef(prob, ncoeffs, Cint(_mrow), Cint(_mcol), _dval)
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{Int64}, _mcol::Vector{Int64}, _dval)
     @checked Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow, _mcol, _dval)
 end
-
+=#
 """
 
     chgmqobj(prob::XpressProblem, ncols, _mcol1, _mcol2, _dval)
@@ -5184,20 +5190,21 @@ XPRSchgobj,
 XPRSchgqobj,
 XPRSgetqobj.
 """
-function chgmqobj(prob::XpressProblem, _mcol1::Vector{Cint}, _mcol2::Vector{Cint}, _dval)
+function chgmqobj(prob::XpressProblem, _mcol1::Vector{<:Integer}, _mcol2::Vector{<:Integer}, _dval)
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
-    @checked Lib.XPRSchgmqobj(prob, ncols, _mcol1, _mcol2, _dval)
+    @checked Lib.XPRSchgmqobj(prob, ncols, Cint.(_mcol1), Cint.(_mcol2), _dval)
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function chgmqobj(prob::XpressProblem, _mcol1::Vector{Int64}, _mcol2::Vector{Int64}, _dval)
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
     @checked Lib.XPRSchgmqobj64(prob, ncols, _mcol1.-1, _mcol2.-1, _dval)
 end
-
+=#
 """
 
     chgqobj(prob::XpressProblem, _icol, _jcol, _dval)
@@ -5576,14 +5583,15 @@ XPRSloadcuts,
 XPRSstorecuts, Section
 Working with the Cut Manager.
 """
-function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart::Vector{Cint}, mcols::Vector{Cint}, dmatval)
-    @checked Lib.XPRSaddcuts(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
+function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart::Vector{<:Integer}, mcols::Vector{<:Integer}, dmatval)
+    @checked Lib.XPRSaddcuts(prob, ncuts, mtype, qrtype, drhs, Cint.(mstart), Cint.(mcols), dmatval)
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart::Vector{Int64}, mcols::Vector{Int64}, dmatval)
     @checked Lib.XPRSaddcuts64(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
 end
-
+=#
 """
 
     delcuts(prob::XpressProblem, ibasis, itype, interp, delta, ncuts, mcutind)
@@ -5821,14 +5829,15 @@ XPRSgetcpcutlist,
 XPRSgetcutlist,
 Working with the Cut Manager.
 """
-function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart::Vector{Cint}, mcols::Vector{Cint}, dmatval, drhs)
-    @checked Lib.XPRSgetcpcuts(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
+function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart::Vector{<:Integer}, mcols::Vector{<:Integer}, dmatval, drhs)
+    @checked Lib.XPRSgetcpcuts(prob, mindex, ncuts, size, mtype, qrtype, Cint.(mstart), Cint.(mcols), dmatval, drhs)
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart::Vector{Int64}, mcols::Vector{Int64}, dmatval, drhs)
     @checked Lib.XPRSgetcpcuts64(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
 end
-
+=#
 """
 
     loadcuts(prob::XpressProblem, itype, interp, ncuts, mcutind)
@@ -5927,14 +5936,15 @@ XPRSaddcbestimate,
 XPRSaddcbsepnode,
 Working with the Cut Manager.
 """
-function storecuts(prob::XpressProblem, ncuts, nodupl, mtype::Vector{Cint}, qrtype, drhs, mstart::Vector{Cint}, mindex, mcols::Vector{Cint}, dmatval)
-    @checked Lib.XPRSstorecuts(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
+function storecuts(prob::XpressProblem, ncuts, nodupl, mtype::Vector{<:Integer}, qrtype, drhs::Vector{Float64}, mstart::Vector{<:Integer}, mindex, mcols::Vector{<:Integer}, dmatval)
+    @checked Lib.XPRSstorecuts(prob, ncuts, nodupl, Cint.(mtype), qrtype, drhs, Cint.(mstart), mindex, Cint.(cols), dmatval)
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function storecuts(prob::XpressProblem, ncuts, nodupl, mtype::Vector{Int64}, qrtype, drhs, mstart::Vector{Int64}, mindex, mcols::Vector{Int64}, dmatval)
     @checked Lib.XPRSstorecuts64(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
 end
-
+=#
 """
 
     presolverow(prob::XpressProblem, qrtype, nzo, mcolso, dvalo, drhso, maxcoeffs, nzp, mcolsp, dvalp, drhsp, status)
@@ -6453,14 +6463,15 @@ int XPRS_CC XPRSaddsets(XPRSprob prob, int newsets, int newnz, const char qrtype
 
 XPRSdelsets.
 """
-function addsets(prob::XpressProblem, newsets, newnz, qstype, msstart::Vector{Cint}, mscols::Vector{Cint}, dref)
-    @checked Lib.XPRSaddsets(prob, newsets, newnz, qstype, msstart, mscols, dref)
+function addsets(prob::XpressProblem, newsets, newnz, qstype, msstart::Vector{<:Integer}, mscols::Vector{<:Integer}, dref)
+    @checked Lib.XPRSaddsets(prob, newsets, newnz, qstype, Cint.(msstart), Cint.(mscols), dref)
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function addset(prob::XpressProblem, newsets, newnz, qstype, msstart::Vector{Int64}, mscols::Vector{Int64}, dref)
     @checked Lib.XPRSaddsets64(prob, newsets, newnz, qstype, msstart, mscols, dref)
 end
-
+=#
 """
 
     strongbranch(prob::XpressProblem, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
@@ -10257,14 +10268,15 @@ XPRSchgqobj,
 XPRSchgmqobj,
 XPRSgetqobj.
 """
-function addqmatrix(prob::XpressProblem, irow::Cint, nqtr::Cint, mqc1::Cint, mqc2::Cint, dqew)
-    @checked Lib.XPRSaddqmatrix(prob, irow, nqtr, mqc1, mqc2, dqew)
+function addqmatrix(prob::XpressProblem, irow::Integer, nqtr::Integer, mqc1::Integer, mqc2::Integer, dqew)
+    @checked Lib.XPRSaddqmatrix(prob, Cint(irow), Cint(nqtr), Cint(mqc1), Cint(mqc2), dqew)
 end
 
+#= Disable 64Bit versions do to reliability issues.
 function addqmatrix(prob::XpressProblem, irow::Int64, nqtr::Int64, mqc1::Int64, mqc2::Int64, dqew)
     @checked Lib.XPRSaddqmatrix64(prob, irow, nqtr, mqc1, mqc2, dqew)
 end
-
+=#
 """
 
     delqmatrix(prob::XpressProblem, irow)

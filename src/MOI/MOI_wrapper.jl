@@ -1388,8 +1388,8 @@ function MOI.add_constraint(
         [sense],#_srowtype,
         [rhs],#_drhs,
         C_NULL,#_drng,
-        Cint[1],#_mstart,
-        Cint.(indices),#_mclind,
+        [1],#_mstart,
+        (indices),#_mclind,
         coefficients,#_dmatval
         )
     return MOI.ConstraintIndex{typeof(f), typeof(s)}(model.last_constraint_index)
