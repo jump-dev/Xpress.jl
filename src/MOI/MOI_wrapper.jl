@@ -566,7 +566,13 @@ function MOI.set(
     info.name = name
     if isascii(name) && length(name) > 0
         # TODO not do this always
-        Xpress.addnames(model.inner, 2, info.column, [name])
+        # duplicate names are not accepted by Xpress
+        # we should store name separately
+        try
+            Xpress.addnames(model.inner, 2, info.column, [name])
+        catch
+            @warn getlasterror(model.inner)
+        end
     end
     model.name_to_variable = nothing
     return
@@ -1539,7 +1545,13 @@ function MOI.set(
     info.name = name
     if isascii(name) && length(name) > 0
         # TODO not do this always
-        Xpress.addnames(model.inner, 1, info.row, [name])
+        # duplicate names are not accepted by Xpress
+        # we should store name separately
+        try
+            Xpress.addnames(model.inner, 1, info.row, [name])
+        catch
+            @warn getlasterror(model.inner)
+        end
     end
     model.name_to_constraint_index = nothing
     return
@@ -3013,20 +3025,20 @@ end
 include("MOI_callbacks.jl")
 =#
 function extension(str::String)
-     try
-         match(r"\.[A-Za-z0-9]+$", str).match
-     catch
-         ""
-     end
- end
+    try
+        match(r"\.[A-Za-z0-9]+$", str).match
+    catch
+        ""
+    end
+end
 
- function MOI.write_to_file(model::Optimizer, name::String)
-     ext = extension(name)
-     if ext == ".lp"
-         Xpress.writeprob(model.inner, name, "l")
-     elseif ext == ".mps"
-         Xpress.writeprob(model.inner, name)
-     else
-         Xpress.writeprob(model.inner, name, "l")
-     end
- end
+function MOI.write_to_file(model::Optimizer, name::String)
+    ext = extension(name)
+    if ext == ".lp"
+        Xpress.writeprob(model.inner, name, "l")
+    elseif ext == ".mps"
+        Xpress.writeprob(model.inner, name)
+    else
+        Xpress.writeprob(model.inner, name, "l")
+    end
+end
