@@ -82,8 +82,7 @@ SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
     MOIT.linear15test(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
 end
 
-#= @show "end"
- exit(1)
+#=
 @testset "Linear tests" begin
     @testset "Default Solver"  begin
         MOIT.contlineartest(BRIDGED_OPTIMIZER, MOIT.TestConfig(
@@ -116,15 +115,19 @@ end
     MOIT.rsoctest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
     MOIT.geomeantest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
 end
-
+=#
 @testset "Integer Linear tests" begin
-    MOIT.intlineartest(OPTIMIZER, CONFIG, [
-        # Indicator sets not supported.
-        "indicator1", "indicator2", "indicator3"
+    MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG, [
+        #"knapsack",
+        "int1",
+        "int2",
+        "int3",
+        "indicator1",
+        "indicator2",
+        "indicator3",
+        "indicator4"
     ])
 end
-
-=#
 
 @testset "ModelLike tests" begin
     @testset "default_objective_test" begin
