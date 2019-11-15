@@ -5057,7 +5057,7 @@ XPRSgetobj.
 function chgobj(prob::XpressProblem, _mindex::Vector{<:Integer}, _dobj::Vector{Float64})
     ncols = length(_dobj)
     @assert length(_mindex) == ncols
-    _mindex = _mindex .- 1
+    _mindex .-= 1
     @checked Lib.XPRSchgobj(prob, ncols, _mindex, _dobj)
 end
 
@@ -5150,7 +5150,7 @@ end
 
 #= Disable 64Bit versions do to reliability issues.
 function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{Int64}, _mcol::Vector{Int64}, _dval)
-    @checked Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow, _mcol, _dval)
+    @checked Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow.-1, _mcol.-1, _dval)
 end
 =#
 """
@@ -5194,7 +5194,7 @@ function chgmqobj(prob::XpressProblem, _mcol1::Vector{<:Integer}, _mcol2::Vector
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
-    @checked Lib.XPRSchgmqobj(prob, ncols, Cint.(_mcol1), Cint.(_mcol2), _dval)
+    @checked Lib.XPRSchgmqobj(prob, Cint(ncols), Cint.(_mcol1), Cint.(_mcol2), _dval)
 end
 
 #= Disable 64Bit versions do to reliability issues.
