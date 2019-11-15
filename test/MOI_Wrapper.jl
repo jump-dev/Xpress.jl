@@ -22,33 +22,7 @@ end
 end
 
 @testset "Unit Tests Constraints" begin
-    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG;
-            exclude = [
-                # (MOI.SingleVariable, MOI.Integer),
-                # (MOI.SingleVariable, MOI.EqualTo{Float64}),
-                # (MOI.SingleVariable, MOI.Interval{Float64}),
-                # (MOI.SingleVariable, MOI.GreaterThan{Float64}),
-                # (MOI.SingleVariable, MOI.LessThan{Float64}),
-                # (MOI.ScalarQuadraticFunction{Float64}, MOI.LessThan{Float64}),
-                # (MOI.ScalarQuadraticFunction{Float64}, MOI.GreaterThan{Float64}),
-                # (MOI.ScalarQuadraticFunction{Float64}, MOI.EqualTo{Float64}),
-                # (MOI.ScalarQuadraticFunction{Float64}, MOI.Interval{Float64}),
-                # (MOI.ScalarAffineFunction{Float64}, MOI.Interval{Float64}),
-                #
-                # (MOI.VectorOfVariables, MOI.Nonnegatives),
-                # (MOI.VectorOfVariables, MOI.Nonpositives),
-                # (MOI.VectorOfVariables, MOI.Zeros),
-                # (MOI.VectorAffineFunction{Float64}, MOI.Nonnegatives),
-                # (MOI.VectorAffineFunction{Float64}, MOI.Nonpositives),
-                # (MOI.VectorAffineFunction{Float64}, MOI.Zeros),
-                # (MOI.VectorOfVariables, MOI.SecondOrderCone),
-                # (MOI.VectorOfVariables, MOI.RotatedSecondOrderCone),
-                # (MOI.VectorOfVariables, MOI.GeometricMeanCone),
-                # (MOI.VectorAffineFunction{Float64}, MOI.SecondOrderCone),
-                # (MOI.VectorAffineFunction{Float64}, MOI.RotatedSecondOrderCone),
-                # (MOI.VectorAffineFunction{Float64}, MOI.GeometricMeanCone),
-            ]
-        )
+    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG)
 end
 
 @testset "Unit Tests" begin
@@ -62,27 +36,7 @@ end
 end
 
 SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
-@testset "First" begin
-    MOIT.linear1test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear2test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear3test(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
-    MOIT.linear4test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear5test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear6test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear7test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear8atest(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
-    MOIT.linear8btest(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
-    MOIT.linear8ctest(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
-    MOIT.linear9test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear10test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear11test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear12test(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
-    MOIT.linear13test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear14test(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    MOIT.linear15test(BRIDGED_OPTIMIZER, MOIT.TestConfig(basis = false, infeas_certificates=false))
-end
 
-#=
 @testset "Linear tests" begin
     @testset "Default Solver"  begin
         MOIT.contlineartest(BRIDGED_OPTIMIZER, MOIT.TestConfig(
@@ -99,14 +53,17 @@ end
     end
 end
 
+#=
 @testset "Quadratic tests" begin
     MOIT.contquadratictest(OPTIMIZER, MOIT.TestConfig(atol=1e-3, rtol=1e-3), [
         "ncqcp"  # Gurobi doesn't support non-convex problems.
     ])
 end
-
+=#
 @testset "Conic tests" begin
-    MOIT.lintest(OPTIMIZER, CONFIG)
+    # TODO enable certificates
+    MOIT.lintest(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+    #=
     MOIT.soctest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3), ["soc3"])
     MOIT.soc3test(
         OPTIMIZER,
@@ -114,8 +71,9 @@ end
     )
     MOIT.rsoctest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
     MOIT.geomeantest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
+    =#
 end
-=#
+
 @testset "Integer Linear tests" begin
     MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG, [
         #"knapsack",
@@ -139,7 +97,7 @@ end
     end
 
     @testset "nametest" begin
-        # MOIT.nametest(OPTIMIZER)
+        MOIT.nametest(BRIDGED_OPTIMIZER)
     end
 
     @testset "validtest" begin
@@ -147,14 +105,15 @@ end
     end
 
     @testset "emptytest" begin
-        # MOIT.emptytest(OPTIMIZER)
+        MOIT.emptytest(BRIDGED_OPTIMIZER)
     end
 
     @testset "orderedindicestest" begin
         MOIT.orderedindicestest(OPTIMIZER)
     end
     @testset "copytest" begin
-        # OPTIMIZER_2 = Xpress.Optimizer()
-        # MOIT.copytest(OPTIMIZER, OPTIMIZER_2 )
+        BRIDGED_OPTIMIZER_2 = MOI.Bridges.full_bridge_optimizer(
+                                            Xpress.Optimizer(), Float64)
+        MOIT.copytest(BRIDGED_OPTIMIZER, BRIDGED_OPTIMIZER_2 )
     end
 end
