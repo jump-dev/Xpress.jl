@@ -119,9 +119,9 @@ end
 @testset "Integer Linear tests" begin
     MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG, [
         #"knapsack",
-        "int1",
-        "int2",
-        "int3",
+        #"int1",
+        "int2", # Requires SOS
+        #"int3",
         "indicator1",
         "indicator2",
         "indicator3",
