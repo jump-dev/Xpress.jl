@@ -451,8 +451,8 @@ function delq!(prob::XpressProblem)
     n = n_variables(prob)
     k = n*(n+1)÷2
 
-    qr = zeros(Int, k)
-    qc = zeros(Int, k)
+    qr = zeros(Cint, k)
+    qc = zeros(Cint, k)
     qv = zeros(k)
 
     cont = 1

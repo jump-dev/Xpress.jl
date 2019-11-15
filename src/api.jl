@@ -5052,7 +5052,7 @@ XPRSgetobj.
 function chgobj(prob::XpressProblem, _mindex::Vector{<:Integer}, _dobj::Vector{Float64})
     ncols = length(_dobj)
     @assert length(_mindex) == ncols
-    _mindex = _mindex .- 1
+    _mindex .-= 1
     @checked Lib.XPRSchgobj(prob, ncols, _mindex, _dobj)
 end
 
@@ -5096,7 +5096,7 @@ XPRSgetcols,
 XPRSgetrows.
 """
 function chgcoef(prob::XpressProblem, _irow, _icol, _dval)
-    @checked Lib.XPRSchgcoef(prob, _irow, _icol, _dval)
+    @checked Lib.XPRSchgcoef(prob, _irow-1, _icol-1, _dval)
 end
 
 """
@@ -5140,11 +5140,11 @@ XPRSgetcols,
 XPRSgetrhs.
 """
 function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{Cint}, _mcol::Vector{Cint}, _dval)
-    @checked Lib.XPRSchgmcoef(prob, ncoeffs, _mrow, _mcol, _dval)
+    @checked Lib.XPRSchgmcoef(prob, ncoeffs, _mrow.-1, _mcol.-1, _dval)
 end
 
 function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{Int64}, _mcol::Vector{Int64}, _dval)
-    @checked Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow, _mcol, _dval)
+    @checked Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow.-1, _mcol.-1, _dval)
 end
 
 """
@@ -5188,7 +5188,7 @@ function chgmqobj(prob::XpressProblem, _mcol1::Vector{Cint}, _mcol2::Vector{Cint
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
-    @checked Lib.XPRSchgmqobj(prob, ncols, _mcol1, _mcol2, _dval)
+    @checked Lib.XPRSchgmqobj(prob, Cint(ncols), _mcol1.-1, _mcol2.-1, _dval)
 end
 
 function chgmqobj(prob::XpressProblem, _mcol1::Vector{Int64}, _mcol2::Vector{Int64}, _dval)

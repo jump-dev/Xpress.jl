@@ -580,8 +580,8 @@ function _zero_objective(model::Optimizer)
     num_vars = length(model.variable_info)
     obj = zeros(Float64, num_vars)
     Xpress.delq!(model.inner) # TODO - only delete when needed
-    Xpress.chgobj(model.inner, collect(1:num_vars), obj)
-    Xpress.chgobj(model.inner, [0], [0.0])
+    Xpress.chgobj(model.inner, Cint.(collect(1:num_vars)), obj)
+    Xpress.chgobj(model.inner, Cint[0], [0.0])
     return
 end
 
@@ -650,8 +650,8 @@ function MOI.set(
         column = _info(model, term.variable_index).column
         obj[column] += term.coefficient
     end
-    Xpress.chgobj(model.inner, collect(1:num_vars), obj)
-    Xpress.chgobj(model.inner, [0], [-f.constant])
+    Xpress.chgobj(model.inner, Cint.(collect(1:num_vars)), obj)
+    Xpress.chgobj(model.inner, Cint[0], [-f.constant])
     model.objective_type = SCALAR_AFFINE
     return
 end
@@ -743,7 +743,7 @@ function MOI.modify(
     ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
     chg::MOI.ScalarConstantChange{Float64}
 )
-    Xpress.chgobj(model.inner, [0], [-chg.new_constant])
+    Xpress.chgobj(model.inner, Cint[0], [-chg.new_constant])
     return
 end
 
@@ -973,7 +973,7 @@ function _set_bounds(
             push!(values, upper)
         end
     end
-    Xpress.chgbounds(model.inner, columns, senses, values)
+    Xpress.chgbounds(model.inner, Cint.(columns), senses, values)
     return
 end
 
@@ -1008,7 +1008,7 @@ function _set_variable_lower_bound(model, info, value)
     if info.num_soc_constraints == 0
         # No SOC constraints, set directly.
         @assert isnan(info.lower_bound_if_soc)
-        Xpress.chgbounds(model.inner, [info.column], Cchar['L'], [value])
+        Xpress.chgbounds(model.inner, Cint[info.column], Cchar['L'], [value])
     else
         # TODO
         error("SOC not currently supported")
@@ -1054,7 +1054,7 @@ function _get_variable_lower_bound(model, info)
 end
 
 function _set_variable_upper_bound(model, info, value)
-    Xpress.chgbounds(model.inner, [info.column], Cchar['U'], [value])
+    Xpress.chgbounds(model.inner, Cint[info.column], Cchar['U'], [value])
     return
 end
 
@@ -1439,8 +1439,8 @@ function MOI.add_constraints(
         senses,#_srowtype,
         rhss,#_drhs,
         C_NULL,#_drng,
-        row_starts,#_mstart,
-        columns,#_mclind,
+        Cint.(row_starts),#_mstart,
+        Cint.(columns),#_mclind,
         coefficients,#_dmatval
         )
     return indices
@@ -1478,7 +1478,7 @@ function MOI.set(
     ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}, s::S
 ) where {S}
-    Xpress.chgrhs(model.inner, [_info(model, c).row], [MOI.constant(s)])
+    Xpress.chgrhs(model.inner, Cint[_info(model, c).row], [MOI.constant(s)])
     return
 end
 
@@ -1909,14 +1909,15 @@ function MOI.optimize!(model::Optimizer)
     model.cached_solution.solve_time = solve_time
 
     if Xpress.is_mixedinteger(model.inner)
-        Xpress.getmipsol
+        # Xpress.getmipsol TODO use API
         Xpress.Lib.XPRSgetmipsol(model.inner,
             model.cached_solution.variable_primal,
             model.cached_solution.linear_primal) # TODO
             fill!(model.cached_solution.linear_dual, NaN)
             fill!(model.cached_solution.variable_dual, NaN)
     else
-        Xpress.getlpsol(model.inner,
+        # Xpress.getlpsol TODO use API
+        Xpress.Lib.XPRSgetlpsol(model.inner,
             model.cached_solution.variable_primal,
             model.cached_solution.linear_primal, # TODO
             model.cached_solution.linear_dual,
@@ -2491,7 +2492,7 @@ function MOI.modify(
     chg::MOI.ScalarCoefficientChange{Float64}
 )
     column = _info(model, chg.variable).column
-    Xpress.chgobj(model.inner, [column], [chg.new_coefficient])
+    Xpress.chgobj(model.inner, Cint[column], [chg.new_coefficient])
     return
 end
 
@@ -2609,7 +2610,7 @@ function MOI.set(
     end
     rhs = Xpress.getrhs(model.inner, rhs, row, row)
     rhs[1] -= replacement.constant - previous.constant
-    Xpress.chgrhs(model.inner, [row], rhs)
+    Xpress.chgrhs(model.inner, Cint[row], rhs)
     return
 end
 
@@ -3012,3 +3013,21 @@ end
 
 include("MOI_callbacks.jl")
 =#
+
+function extension(str::String)
+    try
+        match(r"\.[A-Za-z0-9]+$", str).match
+    catch
+        ""
+    end
+end
+function MOI.write_to_file(model::Optimizer, name::String)
+    ext = extension(name)
+    if ext == ".lp"
+        Xpress.writeprob(model.inner, name, "l")
+    elseif ext == ".mps"
+        Xpress.writeprob(model.inner, name)
+    else
+        Xpress.writeprob(model.inner, name, "l")
+    end
+end
