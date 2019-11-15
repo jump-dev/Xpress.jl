@@ -5194,7 +5194,7 @@ function chgmqobj(prob::XpressProblem, _mcol1::Vector{<:Integer}, _mcol2::Vector
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
-    @checked Lib.XPRSchgmqobj(prob, Cint(ncols), Cint.(_mcol1), Cint.(_mcol2), _dval)
+    @checked Lib.XPRSchgmqobj(prob, Cint(ncols), Cint.(_mcol1 .- 1), Cint.(_mcol2 .- 1), _dval)
 end
 
 #= Disable 64Bit versions do to reliability issues.
