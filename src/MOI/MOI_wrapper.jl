@@ -285,12 +285,16 @@ function MOI.supports_constraint(
     return true
 end
 
-# TODO
-# function MOI.supports_constraint(
-#     ::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{F}
-# ) where {F <: Union{MOI.SOS1{Float64}, MOI.SOS2{Float64}, MOI.SecondOrderCone}}
-#     return true
-# end
+function MOI.supports_constraint(
+    ::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{F}
+) where {F <: Union{
+    MOI.SOS1{Float64},
+    # MOI.SOS2{Float64},
+    # MOI.SecondOrderCone
+    }
+}
+    return true
+end
 
 # TODO
 # We choose _not_ to support ScalarAffineFunction-in-Interval and
@@ -1758,8 +1762,6 @@ end
 ### VectorOfVariables-in-SOS{I|II}
 ###
 
-#=
-
 const SOS = Union{MOI.SOS1{Float64}, MOI.SOS2{Float64}}
 
 function _info(
@@ -1772,8 +1774,8 @@ function _info(
     throw(MOI.InvalidIndex(key))
 end
 
-_sos_type(::MOI.SOS1) = :SOS1
-_sos_type(::MOI.SOS2) = :SOS2
+_sos_type(::MOI.SOS1) = convert(Cchar, '1')
+_sos_type(::MOI.SOS2) = convert(Cchar, '2')
 
 function MOI.is_valid(
     model::Optimizer,
@@ -1791,7 +1793,16 @@ function MOI.add_constraint(
     model::Optimizer, f::MOI.VectorOfVariables, s::SOS
 )
     columns = Int[_info(model, v).column for v in f.variables]
-    CPLEX.add_sos!(model.inner, _sos_type(s), columns, s.weights)
+    index = [0, 0]
+    Xpress.addsets(
+        model.inner, # prob
+        1, # newsets
+        length(columns), # newnz
+        Cchar[_sos_type(s)], # qstype
+        index, # msstart
+        columns, # mscols
+        s.weights, # dref
+    )
     model.last_constraint_index += 1
     index = MOI.ConstraintIndex{MOI.VectorOfVariables, typeof(s)}(model.last_constraint_index)
     model.sos_constraint_info[index.value] = ConstraintInfo(
@@ -1804,7 +1815,8 @@ function MOI.delete(
     model::Optimizer, c::MOI.ConstraintIndex{MOI.VectorOfVariables, <:SOS}
 )
     row = _info(model, c).row
-    CPLEX.c_api_delsos(model.inner, row - 1, row - 1)
+    error("Not implemented yet.")
+    # CPLEX.c_api_delsos(model.inner, row - 1, row - 1)
     for (key, info) in model.sos_constraint_info
         if info.row > row
             info.row -= 1
@@ -1840,7 +1852,8 @@ function MOI.get(
     ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
 ) where {S <: SOS}
-    _, weights, _ = CPLEX.c_api_getsos(model.inner, _info(model, c).row - 1)
+    error("Not implemented yet.")
+    # _, weights, _ = CPLEX.c_api_getsos(model.inner, _info(model, c).row - 1)
     return S(weights)
 end
 
@@ -1848,13 +1861,12 @@ function MOI.get(
     model::Optimizer, ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
 ) where {S <: SOS}
-    cols, _, _ = CPLEX.c_api_getsos(model.inner, _info(model, c).row - 1)
+    error("Not implemented yet.")
+    # cols, _, _ = CPLEX.c_api_getsos(model.inner, _info(model, c).row - 1)
     return MOI.VectorOfVariables([
         model.variable_info[CleverDicts.LinearIndex(i + 1)].index for i in cols
     ])
 end
-
-=#
 
 ###
 ### Optimize methods.

@@ -75,15 +75,15 @@ end
 end
 
 @testset "Integer Linear tests" begin
-    MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG, [
+    MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG, #= excludes =# [
         #"knapsack",
         #"int1",
-        "int2", # Requires SOS
+        #"int2",
         #"int3",
         "indicator1",
         "indicator2",
         "indicator3",
-        "indicator4"
+        "indicator4",
     ])
 end
 
