@@ -6449,11 +6449,9 @@ int XPRS_CC XPRSaddsets(XPRSprob prob, int newsets, int newnz, const char qrtype
 `qrtype`: Character array of length newsets containing the set types:
 `1`: indicates a SOS1;
 `2`: indicates a SOS2;
-`msstart`: Integer array of length
-`newsets containing the offsets in the`: mclind and
-`dref arrays of the start of the elements for each set.`: mclind
-`Integer array of length`: newnz containing the (contiguous) column indices for the elements in each set.
-`dref`: Double array of length
+`msstart`: Integer array of length `newsets` containing the offsets in the`mclind` and `dref` arrays of the start of the elements for each set.
+`mclind`: Integer array of length `newnz` containing the (contiguous) column indices for the elements in each set.
+`dref`: Double array of length `newnz` containing the (contiguous) reference values.
 
 *Example*
 
