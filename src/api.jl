@@ -4897,16 +4897,13 @@ int XPRS_CC XPRSchgcoltype(XPRSprob prob, int nels, const int mindex[], const ch
 `C`: indicates a continuous column;
 `B`: indicates a binary column;
 `I`: indicates an integer column.
-`S`: indicates a semiâcontinuous column. The semiâcontinuous lower bound will be set to
-`1.0.`: R
-`indicates a semiâinteger column. The semiâinteger lower bound will be set to`: 1.0.
-`P`: indicates a partial integer column. The partial integer bound will be set to
+`S`: indicates a semi-continuous column. The semi-continuous lower bound will be set to 1.0.
+`R`: indicates a semi-integer column. The semi-integer lower bound will be set to 1.0.
+`P`: indicates a partial integer column. The partial integer bound will be set to 1.0.
 
 *Example*
 
-The following changes columns
-3 and
-5 of the matrix to be integer and binary respectively:
+The following changes columns 3 and 5 of the matrix to be integer and binary respectively:
 
 *Related*
 
@@ -4918,7 +4915,6 @@ XPRSgetcoltype.
 function chgcoltype(prob::XpressProblem, _mindex::Vector{<:Integer}, _coltype::Vector{Cchar})
     ncols = length(_mindex)
     _mindex = _mindex .- 1
-    _coltype
     @checked Lib.XPRSchgcoltype(prob, ncols, Cint.(_mindex), _coltype)
 end
 

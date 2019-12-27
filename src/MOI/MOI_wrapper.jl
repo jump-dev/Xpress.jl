@@ -485,12 +485,12 @@ end
 
 function MOI.add_variables(model::Optimizer, N::Int)
     Xpress.addcols(model.inner,
-                    zeros(N),#_dobj::Vector{Float64},
-                    Int[],#_mstart::Vector{Int},
-                    Int[],#_mrwind::Vector{Int},
-                    Float64[],#_dmatval::Vector{Float64},
-                    fill(-Inf, N),#_dbdl::Vector{Float64},
-                    fill(Inf, N),#_dbdu::Vector{Float64}
+                    zeros(N),# _dobj::Vector{Float64},
+                    Int[],# _mstart::Vector{Int},
+                    Int[],# _mrwind::Vector{Int},
+                    Float64[],# _dmatval::Vector{Float64},
+                    fill(-Inf, N),# _dbdl::Vector{Float64},
+                    fill(Inf, N),# _dbdu::Vector{Float64}
                     )
     indices = Vector{MOI.VariableIndex}(undef, N)
     num_variables = length(model.variable_info)
