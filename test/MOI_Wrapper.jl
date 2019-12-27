@@ -22,7 +22,7 @@ end
 end
 
 @testset "Unit Tests Constraints" begin
-    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG)
+    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG, delete = false) # TODO: remove `delete = false`
 end
 
 @testset "Unit Tests" begin
