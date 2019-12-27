@@ -289,8 +289,8 @@ function MOI.supports_constraint(
     ::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{F}
 ) where {F <: Union{
     MOI.SOS1{Float64},
-    # MOI.SOS2{Float64},
-    # MOI.SecondOrderCone
+    MOI.SOS2{Float64},
+    # MOI.SecondOrderCone, # TODO
     }
 }
     return true
