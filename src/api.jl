@@ -4239,29 +4239,22 @@ int XPRS_CC XPRSgetglobal(XPRSprob prob, int *nglents, int *sets, char qgtype[],
 *Arguments*
 
 `prob`: The current problem.
-`nglents`: Pointer to the integer where the number of binary, integer, semi-continuous, semi-continuous integer and partial integer entities will be returned. This is equal to the problem attribute
-`MIPENTS.`: sets
-`Pointer to the integer where the number of SOS1 and SOS2 sets will be returned. It can be retrieved from the problem attribute`: SETS.
-`qgtype`: Character array of length
-`nglents where the entity types will be returned. The types will be one of:`: B
-`binary variables;`: I
-`integer variables;`: P
-`partial integer variables;`: S
-`semi-continuous variables;`: R
-`semi-continuous integer variables.`: mgcols
-`Integer array of length`: nglents where the column indices of the global entities will be returned.
-`dlim`: Double array of length
-`nglents where the limits for the partial integer variables and lower bounds for the semi-continuous and semi-continuous integer variables will be returned (any entries in the positions corresponding to binary and integer variables will be meaningless).`: qstype
-`Character array of length`: sets where the set types will be returned. The set types will be one of:
-`1`: SOS1 type sets;
-`2`: SOS2 type sets.
-`msstart`: Integer array where the offsets into the
-`mscols and`: dref arrays indicating the start of the sets will be returned. This array must be of length
-`sets+1, the final element will contain the offset where set`: sets+1 would start and equals the length of the
-`mscols and`: dref arrays,
-`SETMEMBERS.`: mscols
-`Integer array of length`: SETMEMBERS where the columns in each set will be returned.
-`dref`: Double array of length
+`nglents`: Pointer to the integer where the number of binary, integer, semi-continuous, semi-continuous integer and partial integer entities will be returned. This is equal to the problem attribute `MIPENTS`.
+`sets`: Pointer to the integer where the number of SOS1 and SOS2 sets will be returned. It can be retrieved from the problem attribute `SETS`.
+`qgtype`: Character array of length `nglents` where the entity types will be returned. The types will be one of
+    `B`: binary variables;
+    `I`: integer variables;
+    `P`: partial integer variables;
+    `S`: semi-continuous variables;
+    `R`: semi-continuous integer variables.
+`mgcols`: Integer array of length: `nglents` where the column indices of the global entities will be returned.
+`dlim`: Double array of length `nglents` where the limits for the partial integer variables and lower bounds for the semi-continuous and semi-continuous integer variables will be returned (any entries in the positions corresponding to binary and integer variables will be meaningless).
+`qstype`: Character array of length `sets` where the set types will be returned. The set types will be one of:
+    `1`: SOS1 type sets;
+    `2`: SOS2 type sets.
+`msstart`: Integer array where the offsets into the `mscols` and `dref` arrays indicating the start of the sets will be returned. This array must be of length `sets+1`, the final element will contain the offset where set:sets+1 would start and equals the length of the `mscols` and `dref` arrays, `SETMEMBERS.`
+`mscols`: Integer array of length `SETMEMBERS` where the columns in each set will be returned.
+`dref`: Double array of length `SETMEMBERS` where the reference row entries for each member of the sets will be returned.
 
 *Example*
 
