@@ -21,7 +21,6 @@ Xpress.initialize()
     @test Xpress.getcontrol(xp, :XPRS_PRESOLVE) == 0
     @test Xpress.setcontrol!(xp, Xpress.Lib.XPRS_PRESOLVE, 1) == nothing
     @test Xpress.getcontrol(xp, Xpress.Lib.XPRS_PRESOLVE) == 1
-
     iob = IOBuffer()
     show(iob, xp)
     @test String(take!(iob)) == """
@@ -40,9 +39,10 @@ Xpress Problem:
 
 end
 
-tests = ["MOI_Wrapper",
-        #  "wordhunt"
-         ]
+tests = [
+    "MOI_Wrapper",
+    #  "wordhunt"
+]
 
 for t in tests
     fp = "$(t).jl"

@@ -1815,8 +1815,9 @@ function MOI.delete(
     model::Optimizer, c::MOI.ConstraintIndex{MOI.VectorOfVariables, <:SOS}
 )
     row = _info(model, c).row
-    error("Not implemented yet.")
-    # CPLEX.c_api_delsos(model.inner, row - 1, row - 1)
+    idx = collect(row:row)
+    numdel = length(idx)
+    delsets(model.inner, numdel, idx .- 1)
     for (key, info) in model.sos_constraint_info
         if info.row > row
             info.row -= 1
@@ -1852,19 +1853,71 @@ function MOI.get(
     ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
 ) where {S <: SOS}
-    error("Not implemented yet.")
-    # _, weights, _ = CPLEX.c_api_getsos(model.inner, _info(model, c).row - 1)
-    return S(weights)
+    nnz = n_setmembers(model.inner)
+    nsos = n_special_ordered_sets(model.inner)
+    n = n_variables(model.inner)
+
+    settypes = Array{Cchar}(undef, nsos)
+    setstart = Array{Cint}(undef, nsos+1)
+    setcols = Array{Cint}(undef, nnz)
+    setvals = Array{Float64}(undef, nnz)
+
+    intents = Array{Cint}(undef, 1)
+    nsets = Array{Cint}(undef, 1)
+
+    Xpress.getglobal(
+        model.inner, intents, nsets, C_NULL, C_NULL, C_NULL, settypes, setstart, setcols, setvals
+    )
+
+    setstart[end] = nnz
+
+    I = Array{Int}(undef,  nnz)
+    J = Array{Int}(undef,  nnz)
+    V = Array{Float64}(undef,  nnz)
+    for i in 1:length(setstart)-1
+        for j in (setstart[i]+1):setstart[i+1]
+            I[j] = i
+            J[j] = setcols[j]+1
+            V[j] = setvals[j]
+        end
+    end
+    return S(V)
 end
 
 function MOI.get(
     model::Optimizer, ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
 ) where {S <: SOS}
-    error("Not implemented yet.")
-    # cols, _, _ = CPLEX.c_api_getsos(model.inner, _info(model, c).row - 1)
+    nnz = n_setmembers(model.inner)
+    nsos = n_special_ordered_sets(model.inner)
+    n = n_variables(model.inner)
+
+    settypes = Array{Cchar}(undef, nsos)
+    setstart = Array{Cint}(undef, nsos+1)
+    setcols = Array{Cint}(undef, nnz)
+    setvals = Array{Float64}(undef, nnz)
+
+    intents = Array{Cint}(undef, 1)
+    nsets = Array{Cint}(undef, 1)
+
+    getglobal(
+        model.inner, intents, nsets, C_NULL, C_NULL, C_NULL, settypes, setstart, setcols, setvals
+    )
+
+    setstart[end] = nnz
+
+    I = Array{Int}(undef,  nnz)
+    J = Array{Int}(undef,  nnz)
+    V = Array{Float64}(undef,  nnz)
+    for i in 1:length(setstart)-1
+        for j in (setstart[i]+1):setstart[i+1]
+            I[j] = i
+            J[j] = setcols[j]+1
+            V[j] = setvals[j]
+        end
+    end
     return MOI.VectorOfVariables([
-        model.variable_info[CleverDicts.LinearIndex(i + 1)].index for i in cols
+        model.variable_info[CleverDicts.LinearIndex(i)].index for i in J
     ])
 end
 
