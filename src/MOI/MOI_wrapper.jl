@@ -1,4 +1,5 @@
 import MathOptInterface
+using SparseArrays
 
 const MOI = MathOptInterface
 const CleverDicts = MOI.Utilities.CleverDicts
@@ -1793,13 +1794,13 @@ function MOI.add_constraint(
     model::Optimizer, f::MOI.VectorOfVariables, s::SOS
 )
     columns = Int[_info(model, v).column for v in f.variables]
-    index = [0, 0]
+    idx = [0, 0]
     Xpress.addsets(
         model.inner, # prob
         1, # newsets
         length(columns), # newnz
         Cchar[_sos_type(s)], # qstype
-        index, # msstart
+        idx, # msstart
         columns, # mscols
         s.weights, # dref
     )
@@ -1848,17 +1849,13 @@ function MOI.set(
     return
 end
 
-function MOI.get(
-    model::Optimizer,
-    ::MOI.ConstraintSet,
-    c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
-) where {S <: SOS}
+function _get_sparse_sos(model)
     nnz = n_setmembers(model.inner)
     nsos = n_special_ordered_sets(model.inner)
     n = n_variables(model.inner)
 
     settypes = Array{Cchar}(undef, nsos)
-    setstart = Array{Cint}(undef, nsos+1)
+    setstart = Array{Cint}(undef, nsos + 1)
     setcols = Array{Cint}(undef, nnz)
     setvals = Array{Float64}(undef, nnz)
 
@@ -1874,50 +1871,33 @@ function MOI.get(
     I = Array{Int}(undef,  nnz)
     J = Array{Int}(undef,  nnz)
     V = Array{Float64}(undef,  nnz)
-    for i in 1:length(setstart)-1
+    for i in 1:length(setstart) - 1
         for j in (setstart[i]+1):setstart[i+1]
             I[j] = i
-            J[j] = setcols[j]+1
+            J[j] = setcols[j] + 1
             V[j] = setvals[j]
         end
     end
-    return S(V)
+    return sparse(I, J, V, nsets[1], n)
+end
+
+function MOI.get(
+    model::Optimizer,
+    ::MOI.ConstraintSet,
+    c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
+) where {S <: SOS}
+    A = _get_sparse_sos(model)
+    return S(A[_info(model, c).row, :].nzval)
 end
 
 function MOI.get(
     model::Optimizer, ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
 ) where {S <: SOS}
-    nnz = n_setmembers(model.inner)
-    nsos = n_special_ordered_sets(model.inner)
-    n = n_variables(model.inner)
-
-    settypes = Array{Cchar}(undef, nsos)
-    setstart = Array{Cint}(undef, nsos+1)
-    setcols = Array{Cint}(undef, nnz)
-    setvals = Array{Float64}(undef, nnz)
-
-    intents = Array{Cint}(undef, 1)
-    nsets = Array{Cint}(undef, 1)
-
-    getglobal(
-        model.inner, intents, nsets, C_NULL, C_NULL, C_NULL, settypes, setstart, setcols, setvals
-    )
-
-    setstart[end] = nnz
-
-    I = Array{Int}(undef,  nnz)
-    J = Array{Int}(undef,  nnz)
-    V = Array{Float64}(undef,  nnz)
-    for i in 1:length(setstart)-1
-        for j in (setstart[i]+1):setstart[i+1]
-            I[j] = i
-            J[j] = setcols[j]+1
-            V[j] = setvals[j]
-        end
-    end
+    A = _get_sparse_sos(model)
+    indices = SparseArrays.nonzeroinds(A[_info(model, c).row, :])
     return MOI.VectorOfVariables([
-        model.variable_info[CleverDicts.LinearIndex(i)].index for i in J
+        model.variable_info[CleverDicts.LinearIndex(i)].index for i in indices
     ])
 end
 
