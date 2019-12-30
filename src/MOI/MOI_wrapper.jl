@@ -268,7 +268,7 @@ function MOI.supports(
 ) where {F <: Union{
     MOI.SingleVariable,
     MOI.ScalarAffineFunction{Float64},
-    #MOI.ScalarQuadraticFunction{Float64}, # TODO
+    MOI.ScalarQuadraticFunction{Float64},
 }}
     return true
 end
@@ -689,8 +689,6 @@ end
 function MOI.set(
     model::Optimizer, ::MOI.ObjectiveFunction{F}, f::F
 ) where {F <: MOI.ScalarQuadraticFunction{Float64}}
-    # TODO
-    error("Not supporting quadratics")
     affine_indices, affine_coefficients, I, J, V = _indices_and_coefficients(
         model, f
     )
@@ -698,14 +696,12 @@ function MOI.set(
     for (i, c) in zip(affine_indices, affine_coefficients)
         obj[i] = c
     end
-    # CPLEX.c_api_chgobj(model.inner, Cint[1:length(obj);], obj)
-    # CPLEX.c_api_chgobjoffset(model.inner, f.constant)
     for i = 1:length(I)
         if I[i] == J[i]
-            V[i] *= 2
+            V[i] *= 2 # TODO: Is is required?
         end
     end
-    # CPLEX.add_qpterms!(model.inner, I, J, V)
+    Xpress.chgmqobj(model.inner, I, J, V)
     model.objective_type = SCALAR_QUADRATIC
     return
 end
@@ -714,40 +710,42 @@ function MOI.get(
     model::Optimizer,
     ::MOI.ObjectiveFunction{MOI.ScalarQuadraticFunction{Float64}}
 )
-    aff_obj = MOI.get(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}())
-    quad_obj = convert(MOI.ScalarQuadraticFunction{Float64}, aff_obj)
-    return quad_obj
-    # TODO
-    error("Not supporting quadratics")
     dest = zeros(length(model.variable_info))
-    # CPLEX.c_api_getobj(model.inner, dest, Cint(1), Cint(length(dest)))
-    terms = MOI.ScalarAffineTerm{Float64}[]
-    for (index, info) in model.variable_info
-        coefficient = dest[info.column]
-        iszero(coefficient) && continue
-        push!(terms, MOI.ScalarAffineTerm(coefficient, index))
-    end
-    # constant = Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_OBJRHS)
-    q_terms = MOI.ScalarQuadraticTerm{Float64}[]
-    # qmatbeg, qmatind, qmatval = CPLEX.c_api_getquad(model.inner)
-    row = 0
-    for (i, (col, val)) in enumerate(zip(qmatind, qmatval))
-        if row < length(qmatbeg) && i == (qmatbeg[row + 1] + 1)
-            row += 1
+    nnz = n_quadratic_elements(model.inner)
+    n = n_variables(model.inner)
+    nels = Array{Cint}(undef, 1)
+    nels[1] = nnz
+    mstart = Array{Cint}(undef, n + 1)
+    mclind = Array{Cint}(undef, nnz)
+    dobjval = Array{Float64}(undef, nnz)
+    getmqobj(model.inner, mstart, mclind, dobjval, nnz, nels, 0, n - 1)
+    triangle_nnz = nels[1]
+    mstart[end] = triangle_nnz
+    I = Array{Int}(undef, triangle_nnz)
+    J = Array{Int}(undef, triangle_nnz)
+    V = Array{Float64}(undef, triangle_nnz)
+    for i in 1:length(mstart)-1
+        for j in (mstart[i]+1):mstart[i+1]
+            I[j] = i
+            J[j] = mclind[j]+1
+            V[j] = dobjval[j]
         end
-        iszero(val) && continue
+    end
+    q_terms = MOI.ScalarQuadraticTerm{Float64}[]
+    row = 0
+    for (i, j, coeff) in zip(I, J, V)
+        iszero(coeff) && continue
         push!(
             q_terms,
             MOI.ScalarQuadraticTerm(
-                row == col + 1 ? val : 0.5 * val,
-                model.variable_info[CleverDicts.LinearIndex(row)].index,
-                model.variable_info[CleverDicts.LinearIndex(col + 1)].index
+                i == j ? 2 * coeff : coeff,
+                model.variable_info[CleverDicts.LinearIndex(i)].index,
+                model.variable_info[CleverDicts.LinearIndex(j)].index
             )
         )
     end
-    return MOI.Utilities.canonical(
-        MOI.ScalarQuadraticFunction(terms, q_terms, constant)
-    )
+    # TODO: get affine terms
+    return MOI.ScalarQuadraticFunction(MOI.ScalarAffineTerm{Float64}[], q_terms, 0.0)
 end
 
 function MOI.modify(
@@ -1671,13 +1669,7 @@ function MOI.add_constraint(
     indices, coefficients, I, J, V = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
     Xpress.addrows(
-        model.inner,
-        [sense], # _srowtype,
-        [rhs], # _drhs,
-        C_NULL, # _drng,
-        [1], # _mstart,
-        (indices), # _mclind,
-        coefficients, # _dmatval
+        model.inner, [sense], [rhs], C_NULL, [1], indices, coefficients
     )
     n = Xpress.n_constraints(model.inner)
     Xpress.addqmatrix(model.inner, n-1, length(I), I .- 1, J .- 1, V)
@@ -1727,22 +1719,17 @@ function MOI.get(
     ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
 ) where {S}
-    error("Not implemented yet.")
-    affine_cols, affine_coefficients, I, J, V = CPLEX.c_api_getqconstr(model.inner, _info(model, c).row)
-    affine_terms = MOI.ScalarAffineTerm{Float64}[]
-    for (col, coef) in zip(affine_cols, affine_coefficients)
-        iszero(coef) && continue
-        push!(
-            affine_terms,
-            MOI.ScalarAffineTerm(
-                coef,
-                model.variable_info[CleverDicts.LinearIndex(col + 1)].index
-                )
-        )
-    end
+    row = _info(model, c).row
+    nqelem = Array{Cint}(undef, 1)
+    getqrowqmatrixtriplets(model.inner, row - 1, nqelem, C_NULL, C_NULL, C_NULL)
+    mqcol1 = Array{Cint}(undef,  nqelem[1])
+    mqcol2 = Array{Cint}(undef,  nqelem[1])
+    dqe = Array{Float64}(undef,  nqelem[1])
+    getqrowqmatrixtriplets(model.inner, row - 1, nqelem, mqcol1, mqcol2, dqe)
+    # TODO: Get the Affine Function terms
     quadratic_terms = MOI.ScalarQuadraticTerm{Float64}[]
-    for (i, j, coef) in zip(I, J, V)
-        new_coef = i == j ? 2coef : coef
+    for (i, j, coef) in zip(mqcol1, mqcol2, dqe)
+        new_coef = i == j ? 2 * coef : coef
         push!(
             quadratic_terms,
             MOI.ScalarQuadraticTerm(
@@ -1752,7 +1739,7 @@ function MOI.get(
             )
         )
     end
-    return MOI.ScalarQuadraticFunction(affine_terms, quadratic_terms, 0.0)
+    return MOI.ScalarQuadraticFunction(MOI.ScalarAffineTerm{Float64}[], quadratic_terms, 0.0)
 end
 
 function MOI.get(
