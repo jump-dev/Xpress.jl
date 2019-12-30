@@ -744,8 +744,9 @@ function MOI.get(
             )
         )
     end
-    # TODO: get affine terms
-    return MOI.ScalarQuadraticFunction(MOI.ScalarAffineTerm{Float64}[], q_terms, 0.0)
+    affine_terms = MOI.get(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}()).terms
+    constant = Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_OBJRHS)
+    return MOI.ScalarQuadraticFunction(affine_terms, q_terms, constant)
 end
 
 function MOI.modify(
@@ -1709,8 +1710,7 @@ function MOI.get(
     ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
 ) where {S}
-    error("Not implemented yet.")
-    _, _, _, _, _, _, rhs = CPLEX.c_api_getqconstr(model.inner, _info(model, c).row)
+    rhs = Xpress.getrhs(model.inner, _info(model, c).row, _info(model, c).row)[1]
     return S(rhs)
 end
 
