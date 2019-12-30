@@ -65,6 +65,8 @@ mutable struct VariableInfo
     # second order cone.
     lower_bound_if_soc::Float64
     num_soc_constraints::Int
+    previous_lower_bound::Float64
+    previous_upper_bound::Float64
     function VariableInfo(index::MOI.VariableIndex, column::Int)
         return new(
             index,
@@ -1180,6 +1182,8 @@ function MOI.add_constraint(
     model::Optimizer, f::MOI.SingleVariable, ::MOI.ZeroOne
 )
     info = _info(model, f.variable)
+    info.previous_lower_bound = _get_variable_lower_bound(model, info)
+    info.previous_upper_bound = _get_variable_upper_bound(model, info)
     Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
     info.type = BINARY
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.ZeroOne}(f.variable.value)
@@ -1191,6 +1195,8 @@ function MOI.delete(
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
     Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
+    _set_variable_lower_bound(model, info, info.previous_lower_bound)
+    _set_variable_upper_bound(model, info, info.previous_upper_bound)
     info.type = CONTINUOUS
     info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
