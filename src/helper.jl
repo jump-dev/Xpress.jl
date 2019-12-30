@@ -54,12 +54,16 @@ mutable struct XpressProblem <: CWrapper
     ptr::Lib.XPRSprob
     callback::Vector{Any}
     time::Float64
-    function XpressProblem()
+    logfile::String
+    function XpressProblem(; logfile = "")
         ref = Ref{Lib.XPRSprob}()
         createprob(ref)
-        ptr = ref[]
-        @assert ptr != C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
-        p = new(ptr, Any[], 0.0)
+        @assert ref[] != C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
+       if logfile == ""
+           logfile, _ = mktemp()
+       end
+        p = new(ref[], Any[], 0.0, logfile)
+        setlogfile(p, logfile)
         atexit(() -> destroyprob(p))
         return p
     end
