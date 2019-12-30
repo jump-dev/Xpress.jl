@@ -4635,8 +4635,8 @@ int XPRS_CC XPRSaddrows(XPRSprob prob, int newrow, int newnz, const char qrtype[
 `newrow`: Number of new rows.
 `newnz`: Number of new nonzeros in the added rows.
 `qrtype`: Character array of length newrow containing the row types:
-`L`: indicates a â¤ row;
-`G`: indicates â¥ row;
+`L`: indicates a ≤ row;
+`G`: indicates â ≥ row;
 `E`: indicates an = row.
 `R`: indicates a range constraint;
 `N`: indicates a nonbinding constraint.
@@ -10255,8 +10255,8 @@ XPRSchgqobj,
 XPRSchgmqobj,
 XPRSgetqobj.
 """
-function addqmatrix(prob::XpressProblem, irow::Integer, nqtr::Integer, mqc1::Integer, mqc2::Integer, dqew)
-    @checked Lib.XPRSaddqmatrix(prob, Cint(irow), Cint(nqtr), Cint(mqc1), Cint(mqc2), dqew)
+function addqmatrix(prob::XpressProblem, irow::Integer, nqtr::Integer, mqc1, mqc2, dqew)
+    @checked Lib.XPRSaddqmatrix(prob, Cint(irow), Cint(nqtr), mqc1, mqc2, dqew)
 end
 
 #= Disable 64Bit versions do to reliability issues.
