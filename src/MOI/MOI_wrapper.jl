@@ -312,14 +312,13 @@ function MOI.supports_constraint(
     return true
 end
 
-# TODO enable later
 function MOI.supports_constraint(
     ::Optimizer, ::Type{MOI.ScalarQuadraticFunction{Float64}}, ::Type{F}
 ) where {F <: Union{
     MOI.LessThan{Float64}, MOI.GreaterThan{Float64}
 }}
     # Note: Xpress does not support quadratic equality constraints.
-    return false
+    return true
 end
 
 MOI.supports(::Optimizer, ::MOI.VariableName, ::Type{MOI.VariableIndex}) = true
@@ -1652,7 +1651,6 @@ end
 ### ScalarQuadraticFunction-in-SCALAR_SET
 ###
 
-#=
 function _info(
     model::Optimizer,
     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
@@ -1672,7 +1670,17 @@ function MOI.add_constraint(
     end
     indices, coefficients, I, J, V = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
-    CPLEX.add_qconstr!(model.inner, indices, coefficients, I, J, V, sense, rhs)
+    Xpress.addrows(
+        model.inner,
+        [sense], # _srowtype,
+        [rhs], # _drhs,
+        C_NULL, # _drng,
+        [1], # _mstart,
+        (indices), # _mclind,
+        coefficients, # _dmatval
+    )
+    n = Xpress.n_constraints(model.inner)
+    Xpress.addqmatrix(model.inner, n-1, length(I), I .- 1, J .- 1, V)
     model.last_constraint_index += 1
     model.quadratic_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.quadratic_constraint_info) + 1, s)
@@ -1692,6 +1700,7 @@ function MOI.delete(
     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
 ) where {S}
     info = _info(model, c)
+    error("Not implemented yet.")
     CPLEX.c_api_delqconstrs(model.inner, Cint(info.row - 1), Cint(info.row - 1))
     for (key, info_2) in model.quadratic_constraint_info
         if info_2.row > info.row
@@ -1708,6 +1717,7 @@ function MOI.get(
     ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
 ) where {S}
+    error("Not implemented yet.")
     _, _, _, _, _, _, rhs = CPLEX.c_api_getqconstr(model.inner, _info(model, c).row)
     return S(rhs)
 end
@@ -1717,6 +1727,7 @@ function MOI.get(
     ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
 ) where {S}
+    error("Not implemented yet.")
     affine_cols, affine_coefficients, I, J, V = CPLEX.c_api_getqconstr(model.inner, _info(model, c).row)
     affine_terms = MOI.ScalarAffineTerm{Float64}[]
     for (col, coef) in zip(affine_cols, affine_coefficients)
@@ -1762,8 +1773,6 @@ function MOI.set(
     model.name_to_constraint_index = nothing
     return
 end
-
-=#
 
 ###
 ### VectorOfVariables-in-SOS{I|II}
