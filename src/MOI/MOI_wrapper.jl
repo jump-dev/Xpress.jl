@@ -170,15 +170,23 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     user_cut_callback::Union{Nothing, Function}
     heuristic_callback::Union{Nothing, Function}
 
+    params::Dict{Any, Any}
+
     """
         Optimizer()
 
     Create a new Optimizer object.
     """
-    function Optimizer()
+    function Optimizer(; kwargs...)
         model = new()
+        model.params = Dict{Any,Any}()
         model.inner = XpressProblem()
         Xpress.loadlp(model.inner)
+        for (name,value) in kwargs
+            model.params[name] = value
+            dbl = getfield(Xpress.Lib, Symbol("XPRS_$(name)"))
+            Xpress.setdblcontrol(model.inner, dbl, value)
+        end
         MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), 1)
         MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_MPSNAMELENGTH), 64)
         MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_CALLBACKFROMMASTERTHREAD), 1) #cannot be changed in julia
@@ -192,6 +200,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         return model
     end
 end
+
 
 function CachedSolution(model::Optimizer)
     num_variables = length(model.variable_info)

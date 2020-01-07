@@ -111,4 +111,8 @@ module Xpress
     # include("XpressSolverInterface.jl")
     include("MOI/MOI_Wrapper.jl")
 
+    function __init__()
+        Xpress.initialize()
+    end
+
 end

@@ -1,7 +1,5 @@
 using Xpress, Test
 
-Xpress.initialize()
-
 @testset "Xpress API" begin
 
     @test Xpress.getversion() isa VersionNumber
