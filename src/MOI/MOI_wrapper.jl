@@ -192,6 +192,16 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
         model.callback_variable_primal = Float64[]
         MOI.empty!(model)  # MOI.empty!(model) re-sets the `.inner` field.
+
+        # TODO: use MOI.set MOI.RawParameter instead
+        for (name, value) in kwargs
+            if name == :logfile
+                continue
+            end
+            model.params[name] = value
+            Xpress.setcontrol!(model.inner, Symbol("XPRS_$(name)"), value)
+        end
+
         return model
     end
 end
