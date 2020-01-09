@@ -683,9 +683,6 @@ end
 function MOI.get(
     model::Optimizer, ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}
 )
-    if model.objective_type == SCALAR_QUADRATIC
-        error("Unable to get objective function. Currently: $(model.objective_type).")
-    end
     dest = zeros(length(model.variable_info))
     @checked Lib.XPRSgetobj(model.inner, dest, 0, Xpress.n_variables(model.inner)-1)
     terms = MOI.ScalarAffineTerm{Float64}[]
@@ -750,7 +747,7 @@ function MOI.get(
         push!(
             q_terms,
             MOI.ScalarQuadraticTerm(
-                i == j ? 2 * coeff : coeff,
+                i == j ? coeff : coeff, # TODO: Why does this not require a `* 2` or a `/ 2`
                 model.variable_info[CleverDicts.LinearIndex(i)].index,
                 model.variable_info[CleverDicts.LinearIndex(j)].index
             )
