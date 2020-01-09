@@ -1728,6 +1728,42 @@ function MOI.get(
     ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
 ) where {S}
+    # TODO:  this code is repeated from `MOI.get(model::Optimizer, ::MOI.ConstraintFunction, c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S)`
+    # Can we call that function instead?
+
+    row = _info(model, c).row
+    nzcnt_max = Xpress.n_non_zero_elements(model.inner)
+
+    nzcnt = Xpress.getrows_nnz(model.inner, row, row)
+
+    @assert nzcnt <= nzcnt_max
+
+    rmatbeg = zeros(Cint, row-row+2)
+    rmatind = Array{Cint}(undef,  nzcnt)
+    rmatval = Array{Float64}(undef,  nzcnt)
+
+    Xpress.getrows(
+        model.inner,
+        rmatbeg,#_mstart,
+        rmatind,#_mclind,
+        rmatval,#_dmatval,
+        nzcnt,#maxcoeffs,
+        row,#first::Integer,
+        row,#last::Integer
+        )
+
+    affine_terms = MOI.ScalarAffineTerm{Float64}[]
+    for i = 1:nzcnt
+        iszero(rmatval[i]) && continue
+        push!(
+            affine_terms,
+            MOI.ScalarAffineTerm(
+                rmatval[i],
+                model.variable_info[CleverDicts.LinearIndex(rmatind[i])].index
+            )
+        )
+    end
+
     row = _info(model, c).row
     nqelem = Array{Cint}(undef, 1)
     getqrowqmatrixtriplets(model.inner, row - 1, nqelem, C_NULL, C_NULL, C_NULL)
@@ -1735,7 +1771,7 @@ function MOI.get(
     mqcol2 = Array{Cint}(undef,  nqelem[1])
     dqe = Array{Float64}(undef,  nqelem[1])
     getqrowqmatrixtriplets(model.inner, row - 1, nqelem, mqcol1, mqcol2, dqe)
-    # TODO: Get the Affine Function terms
+
     quadratic_terms = MOI.ScalarQuadraticTerm{Float64}[]
     for (i, j, coef) in zip(mqcol1, mqcol2, dqe)
         new_coef = i == j ? 2 * coef : coef
@@ -1748,7 +1784,7 @@ function MOI.get(
             )
         )
     end
-    return MOI.ScalarQuadraticFunction(MOI.ScalarAffineTerm{Float64}[], quadratic_terms, 0.0)
+    return MOI.ScalarQuadraticFunction(affine_terms, quadratic_terms, 0.0)
 end
 
 function MOI.get(
