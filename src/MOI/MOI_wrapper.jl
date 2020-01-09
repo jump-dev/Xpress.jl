@@ -1684,8 +1684,8 @@ function MOI.add_constraint(
     n = Xpress.n_constraints(model.inner)
     Xpress.addqmatrix(model.inner, n-1, length(I), I .- 1, J .- 1, V)
     model.last_constraint_index += 1
-    model.quadratic_constraint_info[model.last_constraint_index] =
-        ConstraintInfo(length(model.quadratic_constraint_info) + 1, s)
+    model.affine_constraint_info[model.last_constraint_index] = ConstraintInfo(length(model.affine_constraint_info) + 1, s)
+    model.quadratic_constraint_info[model.last_constraint_index] = ConstraintInfo(length(model.quadratic_constraint_info) + 1, s)
     return MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, typeof(s)}(model.last_constraint_index)
 end
 
@@ -1728,41 +1728,8 @@ function MOI.get(
     ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
 ) where {S}
-    # TODO:  this code is repeated from `MOI.get(model::Optimizer, ::MOI.ConstraintFunction, c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S)`
-    # Can we call that function instead?
 
-    row = _info(model, c).row
-    nzcnt_max = Xpress.n_non_zero_elements(model.inner)
-
-    nzcnt = Xpress.getrows_nnz(model.inner, row, row)
-
-    @assert nzcnt <= nzcnt_max
-
-    rmatbeg = zeros(Cint, row-row+2)
-    rmatind = Array{Cint}(undef,  nzcnt)
-    rmatval = Array{Float64}(undef,  nzcnt)
-
-    Xpress.getrows(
-        model.inner,
-        rmatbeg,#_mstart,
-        rmatind,#_mclind,
-        rmatval,#_dmatval,
-        nzcnt,#maxcoeffs,
-        row,#first::Integer,
-        row,#last::Integer
-        )
-
-    affine_terms = MOI.ScalarAffineTerm{Float64}[]
-    for i = 1:nzcnt
-        iszero(rmatval[i]) && continue
-        push!(
-            affine_terms,
-            MOI.ScalarAffineTerm(
-                rmatval[i],
-                model.variable_info[CleverDicts.LinearIndex(rmatind[i])].index
-            )
-        )
-    end
+    affine_terms = MOI.get(model, MOI.ConstraintFunction(), MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}(c.value)).terms
 
     row = _info(model, c).row
     nqelem = Array{Cint}(undef, 1)
