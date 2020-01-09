@@ -697,6 +697,7 @@ end
 function MOI.set(
     model::Optimizer, ::MOI.ObjectiveFunction{F}, f::F
 ) where {F <: MOI.ScalarQuadraticFunction{Float64}}
+    MOI.set(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(), MOI.ScalarAffineFunction(f.affine_terms, f.constant))
     affine_indices, affine_coefficients, I, J, V = _indices_and_coefficients(
         model, f
     )
