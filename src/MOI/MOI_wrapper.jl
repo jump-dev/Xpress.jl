@@ -227,8 +227,6 @@ end
 Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 
 function MOI.empty!(model::Optimizer)
-    model.inner = XpressProblem()
-    Xpress.loadlp(model.inner)
     MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_MPSNAMELENGTH), 64)
     MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_CALLBACKFROMMASTERTHREAD), 1)
     model.name = ""
