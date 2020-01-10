@@ -6327,21 +6327,10 @@ int XPRS_CC XPRSgetlpsol(XPRSprob prob, double x[], double slack[], double dual[
 *Arguments*
 
 `prob`: The current problem.
-`x`: Double array of length
-`COLS where the values of the primal variables will be returned. May be`: NULL if not required.
-`slack`: Double array of length
-`ROWS where the values of the slack variables will be returned. May be`: NULL if not required.
-`dual`: Double array of length
-`ROWS where the values of the dual variables (`: cBTB-1) will be returned. May be
-`NULL if not required.`: dj
-`Double array of length`: COLS where the reduced cost for each variable (
-`cT-cBTB-1A) will be returned. May be`: NULL if not required.
-
-*Example*
-
-The following sequence of commands will get the LP solution (
-x) at the top node of a MIP and the optimal MIP solution (
-y):
+`x`: Double array of length `COLS` where the values of the primal variables will be returned. May be `NULL` if not required.
+`slack`: Double array of length `ROWS` where the values of the slack variables will be returned. May be `NULL` if not required.
+`dual`: Double array of length `ROWS` where the values of the dual variables (`: cBTB-1) will be returned. May be `NULL` if not required.
+`dj`: Double array of length `COLS` where the reduced cost for each variable (`cT-cBTB-1A`) will be returned. May be `NULL` if not required.
 
 *Related*
 
@@ -10228,7 +10217,7 @@ function getqrows(prob::XpressProblem)
     @checked Lib.XPRSgetqrows(prob, qmn, C_NULL)
     qcrows = Array{Cint}(undef, qmn[])
     @checked Lib.XPRSgetqrows(prob, qmn, qcrows)
-    return qmn, qcrows
+    return qmn[], qcrows
 end
 
 """

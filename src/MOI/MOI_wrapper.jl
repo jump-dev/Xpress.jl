@@ -1985,9 +1985,20 @@ function MOI.optimize!(model::Optimizer)
             model.cached_solution.linear_dual,
             model.cached_solution.variable_dual)
     end
+
     rhs = Xpress.getrhs(model.inner)
 
     model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
+
+    empty!(model.cached_solution.quadratic_primal)
+    nrows, qcrows = getqrows(model.inner)
+    for row in qcrows
+        # we need row + 1 here because row is an Xpress Matrix Row index
+        push!(model.cached_solution.quadratic_primal, model.cached_solution.linear_primal[row + 1])
+    end
+    for row in qcrows
+        deleteat!(model.cached_solution.linear_primal, row + 1)
+    end
 
     # status = MOI.get(model, MOI.PrimalStatus())
     # if status == MOI.FEASIBLE_POINT
