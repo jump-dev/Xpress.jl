@@ -1676,13 +1676,12 @@ function MOI.add_constraint(
     if !iszero(f.constant)
         throw(MOI.ScalarFunctionConstantNotZero{Float64, typeof(f), typeof(s)}(f.constant))
     end
-    indices, coefficients, I, J, V = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
+    indices, coefficients, I, J, V = _indices_and_coefficients(model, f)
     Xpress.addrows(
         model.inner, [sense], [rhs], C_NULL, [1], indices, coefficients
     )
-    n = Xpress.n_constraints(model.inner)
-    Xpress.addqmatrix(model.inner, n-1, length(I), I .- 1, J .- 1, V)
+    Xpress.addqmatrix(model.inner, I, J, V)
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] = ConstraintInfo(length(model.affine_constraint_info) + 1, s)
     model.quadratic_constraint_info[model.last_constraint_index] = ConstraintInfo(length(model.quadratic_constraint_info) + 1, s)
@@ -1731,26 +1730,21 @@ function MOI.get(
 
     affine_terms = MOI.get(model, MOI.ConstraintFunction(), MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}(c.value)).terms
 
-    row = _info(model, c).row
-    nqelem = Array{Cint}(undef, 1)
-    getqrowqmatrixtriplets(model.inner, row - 1, nqelem, C_NULL, C_NULL, C_NULL)
-    mqcol1 = Array{Cint}(undef,  nqelem[1])
-    mqcol2 = Array{Cint}(undef,  nqelem[1])
-    dqe = Array{Float64}(undef,  nqelem[1])
-    getqrowqmatrixtriplets(model.inner, row - 1, nqelem, mqcol1, mqcol2, dqe)
+    mqcol1, mqcol2, dqe = getqrowqmatrixtriplets(model.inner, _info(model, c).row)
 
     quadratic_terms = MOI.ScalarQuadraticTerm{Float64}[]
     for (i, j, coef) in zip(mqcol1, mqcol2, dqe)
-        new_coef = i == j ? 2 * coef : coef
+        new_coef = i == j ? coef : coef
         push!(
             quadratic_terms,
             MOI.ScalarQuadraticTerm(
                 new_coef,
-                model.variable_info[CleverDicts.LinearIndex(i + 1)].index,
-                model.variable_info[CleverDicts.LinearIndex(j + 1)].index
+                model.variable_info[CleverDicts.LinearIndex(i)].index,
+                model.variable_info[CleverDicts.LinearIndex(j)].index
             )
         )
     end
+
     return MOI.ScalarQuadraticFunction(affine_terms, quadratic_terms, 0.0)
 end
 

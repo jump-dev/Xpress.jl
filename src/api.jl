@@ -10135,8 +10135,17 @@ XPRSchgqobj,
 XPRSchgmqobj,
 XPRSgetqobj.
 """
-function getqrowqmatrixtriplets(prob::XpressProblem, irow, nqelem, mqcol1, mqcol2, dqe)
-    @checked Lib.XPRSgetqrowqmatrixtriplets(prob, irow, nqelem, mqcol1, mqcol2, dqe)
+function getqrowqmatrixtriplets(prob::XpressProblem, irow)
+    _, qcrows = getqrows(prob)
+    nqelem = Ref{Cint}()
+    @checked Lib.XPRSgetqrowqmatrixtriplets(prob, qcrows[irow], nqelem, C_NULL, C_NULL, C_NULL)
+    mqcol1 = Array{Cint}(undef,  nqelem[])
+    mqcol2 = Array{Cint}(undef,  nqelem[])
+    dqe = Array{Float64}(undef,  nqelem[])
+    @checked Lib.XPRSgetqrowqmatrixtriplets(prob, qcrows[irow], nqelem, mqcol1, mqcol2, dqe)
+    mqcol1 .+= 1
+    mqcol2 .+= 1
+    return mqcol1, mqcol2, dqe
 end
 
 """
@@ -10214,8 +10223,12 @@ XPRSchgqobj,
 XPRSchgmqobj,
 XPRSgetqobj.
 """
-function getqrows(prob::XpressProblem, qmn, qcrows)
+function getqrows(prob::XpressProblem)
+    qmn = Ref{Cint}()
+    @checked Lib.XPRSgetqrows(prob, qmn, C_NULL)
+    qcrows = Array{Cint}(undef, qmn[])
     @checked Lib.XPRSgetqrows(prob, qmn, qcrows)
+    return qmn, qcrows
 end
 
 """
@@ -10255,15 +10268,16 @@ XPRSchgqobj,
 XPRSchgmqobj,
 XPRSgetqobj.
 """
-function addqmatrix(prob::XpressProblem, irow::Integer, nqtr::Integer, mqc1, mqc2, dqew)
-    @checked Lib.XPRSaddqmatrix(prob, Cint(irow), Cint(nqtr), mqc1, mqc2, dqew)
+function addqmatrix(prob::XpressProblem, mqc1, mqc2, dqew)
+    irow = Xpress.n_constraints(prob)
+    @checked Lib.XPRSaddqmatrix(prob, irow - 1, length(mqc1), mqc1 .- 1, mqc2 .- 1, dqew)
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function addqmatrix(prob::XpressProblem, irow::Int64, nqtr::Int64, mqc1::Int64, mqc2::Int64, dqew)
-    @checked Lib.XPRSaddqmatrix64(prob, irow, nqtr, mqc1, mqc2, dqew)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function addqmatrix(prob::XpressProblem, irow::Int64, nqtr::Int64, mqc1::Int64, mqc2::Int64, dqew)
+#    @checked Lib.XPRSaddqmatrix64(prob, irow, nqtr, mqc1, mqc2, dqew)
+# end
+
 """
 
     delqmatrix(prob::XpressProblem, irow)
