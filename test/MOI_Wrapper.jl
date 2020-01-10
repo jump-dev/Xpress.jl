@@ -84,9 +84,25 @@ SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
         basis = false, # TODO change to true
         infeas_certificates=false # TODO remove this
         ), [
-            # This requires an infeasiblity certificate for a variable bound.
-            "linear12",
-
+            # "linear1",
+            # "linear2",
+            # "linear3",
+            # "linear4",
+            # "linear5",
+            # "linear6",
+            # "linear7",
+            # "linear8a",
+            # "linear8b",
+            # "linear8c",
+            # "linear9",
+            # "linear10",
+            # "linear10b",
+            # "linear11",
+            "linear12", # TODO: This requires an infeasiblity certificate for a variable bound.
+            # "linear13",
+            # "linear14",
+            # "linear15",
+            # "partial_start",
         ])
     end
     @testset "No certificate" begin
