@@ -110,25 +110,31 @@ SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
     end
 end
 
-#=
 @testset "Quadratic tests" begin
-    MOIT.contquadratictest(OPTIMIZER, MOIT.TestConfig(atol=1e-3, rtol=1e-3), [
-        "ncqcp"  # Gurobi doesn't support non-convex problems.
+    MOIT.contquadratictest(BRIDGED_OPTIMIZER, MOIT.TestConfig(atol=1e-3, rtol=1e-3), [
+        "qp1",
+        "qp2",
+        "qp3",
+        "qcp1",
+        "qcp2",
+        "qcp3",
+        # "qcp4",
+        # "qcp5",
+        # "socp1",
+        "ncqcp",  # Gurobi doesn't support non-convex problems.
     ])
 end
-=#
+
 @testset "Conic tests" begin
     # TODO enable certificates
     MOIT.lintest(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
-    #=
-    MOIT.soctest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3), ["soc3"])
-    MOIT.soc3test(
-        OPTIMIZER,
-        MOIT.TestConfig(duals = false, infeas_certificates = false, atol = 1e-3)
-    )
-    MOIT.rsoctest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
-    MOIT.geomeantest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
-    =#
+    # MOIT.soctest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3), ["soc3"])
+    # MOIT.soc3test(
+    #     OPTIMIZER,
+    #     MOIT.TestConfig(duals = false, infeas_certificates = false, atol = 1e-3)
+    # )
+    # MOIT.rsoctest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
+    # MOIT.geomeantest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
 end
 
 @testset "Integer Linear tests" begin
