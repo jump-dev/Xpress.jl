@@ -1991,13 +1991,16 @@ function MOI.optimize!(model::Optimizer)
     model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
 
     empty!(model.cached_solution.quadratic_primal)
+    empty!(model.cached_solution.quadratic_dual)
     nrows, qcrows = getqrows(model.inner)
     for row in qcrows
         # we need row + 1 here because row is an Xpress Matrix Row index
         push!(model.cached_solution.quadratic_primal, model.cached_solution.linear_primal[row + 1])
+        push!(model.cached_solution.quadratic_dual, model.cached_solution.linear_dual[row + 1])
     end
     for row in qcrows
         deleteat!(model.cached_solution.linear_primal, row + 1)
+        deleteat!(model.cached_solution.linear_dual, row + 1)
     end
 
     # status = MOI.get(model, MOI.PrimalStatus())
@@ -2274,15 +2277,15 @@ function MOI.get(
     return _dual_multiplier(model) * model.cached_solution.linear_dual[row]
 end
 
-# function MOI.get(
-#     model::Optimizer, attr::MOI.ConstraintDual,
-#     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, <:Any}
-# )
-#     _throw_if_optimize_in_progress(model, attr)
-#     MOI.check_result_index_bounds(model, attr)
-#     pi = model.cached_solution.quadratic_dual[_info(model, c).row]
-#     return _dual_multiplier(model) * pi
-# end
+function MOI.get(
+    model::Optimizer, attr::MOI.ConstraintDual,
+    c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, <:Any}
+)
+    _throw_if_optimize_in_progress(model, attr)
+    MOI.check_result_index_bounds(model, attr)
+    pi = model.cached_solution.quadratic_dual[_info(model, c).row]
+    return _dual_multiplier(model) * pi
+end
 
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
     _throw_if_optimize_in_progress(model, attr)
