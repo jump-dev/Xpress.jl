@@ -435,7 +435,7 @@ function _indices_and_coefficients(
         #   MOI needs:
         #     [SQT(4.0, x, x), SQT(1.0, x, y), SQT(2.0, y, y)]
         if I[i] == J[i]
-            V[i] *= 1 # TODO: does Xpress need the multiply diagonals by 2.0 / multiply by 0.5?
+            V[i] *= 0.5 # TODO: does Xpress need the multiply diagonals by 2.0 / multiply by 0.5?
         end
     end
     for (i, term) in enumerate(f.affine_terms)
@@ -747,7 +747,7 @@ function MOI.get(
         push!(
             q_terms,
             MOI.ScalarQuadraticTerm(
-                i == j ? coeff : coeff, # TODO: Why does this not require a `* 2` or a `/ 2`
+                i == j ? coeff * 2 : coeff, # TODO: Why does this not require a `* 2` or a `/ 2`
                 model.variable_info[CleverDicts.LinearIndex(i)].index,
                 model.variable_info[CleverDicts.LinearIndex(j)].index
             )
@@ -1734,17 +1734,15 @@ function MOI.get(
 
     quadratic_terms = MOI.ScalarQuadraticTerm{Float64}[]
     for (i, j, coef) in zip(mqcol1, mqcol2, dqe)
-        new_coef = i == j ? coef : coef
         push!(
             quadratic_terms,
             MOI.ScalarQuadraticTerm(
-                new_coef,
+                i == j ? coef * 2 : coef, # TODO: check if this is required
                 model.variable_info[CleverDicts.LinearIndex(i)].index,
                 model.variable_info[CleverDicts.LinearIndex(j)].index
             )
         )
     end
-
     return MOI.ScalarQuadraticFunction(affine_terms, quadratic_terms, 0.0)
 end
 
