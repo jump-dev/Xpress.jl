@@ -64,7 +64,7 @@ mutable struct XpressProblem <: CWrapper
         end
         p = new(ref[], Any[], 0.0, logfile)
         setlogfile(p, logfile)
-        atexit(() -> destroyprob(p))
+        finalize(() -> destroyprob(p))
         return p
     end
 end

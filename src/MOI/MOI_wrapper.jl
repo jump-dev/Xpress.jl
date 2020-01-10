@@ -181,10 +181,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model = new()
         model.params = Dict{Any,Any}()
         model.inner = XpressProblem(logfile = get(kwargs, :logfile, nothing))
-        Xpress.loadlp(model.inner)
-        MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), 1)
-        MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_MPSNAMELENGTH), 64)
-        MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_CALLBACKFROMMASTERTHREAD), 1) #cannot be changed in julia
         model.silent = false
         model.variable_info = CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}()
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
@@ -229,13 +225,18 @@ Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 function MOI.empty!(model::Optimizer)
     # Is there a better way to do this?
     # When MOI.empty! is called, we need to clear the memory associated with the XpressProblem
-    model.inner = XpressProblem()
+    # This is also a destructor callback in the XpressProblem constructor
+    # Xpress.destroyprob(model.inner)
+    # We cannot call it twice, finalize is called before atexit
+    model.inner = XpressProblem(logfile = model.inner.logfile)
     Xpress.loadlp(model.inner)
     MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_MPSNAMELENGTH), 64)
     MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_CALLBACKFROMMASTERTHREAD), 1)
     model.name = ""
     if model.silent
         MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), 0)
+    else
+        MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), 1)
     end
     model.objective_type = SCALAR_AFFINE
     model.is_feasibility = true
