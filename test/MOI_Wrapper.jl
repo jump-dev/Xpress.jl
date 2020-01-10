@@ -112,16 +112,16 @@ end
 
 @testset "Quadratic tests" begin
     MOIT.contquadratictest(BRIDGED_OPTIMIZER, MOIT.TestConfig(atol=1e-3, rtol=1e-3), [
-        "qp1",
-        "qp2",
-        "qp3",
-        "qcp1",
-        "qcp2",
-        "qcp3",
-        # "qcp4",
-        # "qcp5",
-        # "socp1",
-        "ncqcp",  # Gurobi doesn't support non-convex problems.
+        # "qp1",
+        # "qp2",
+        # "qp3",
+        # "qcp1",
+        # "qcp2",
+        # "qcp3",
+        "qcp4",   # TODO: Xpress throws an error
+        "qcp5",   # TODO: Xpress throws an error
+        "socp1",  # TODO: Does Xpress support socp1
+        "ncqcp",  # TODO: Does Xpress support ncqcp
     ])
 end
 
