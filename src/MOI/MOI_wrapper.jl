@@ -334,6 +334,7 @@ function MOI.supports_constraint(
 ) where {F <: Union{
     MOI.LessThan{Float64}, MOI.GreaterThan{Float64}
 }}
+    # TODO: Add MOI.EqualTo{Float64} in the future
     # Note: Xpress does not support quadratic equality constraints.
     return true
 end
@@ -752,7 +753,7 @@ function MOI.get(
         push!(
             q_terms,
             MOI.ScalarQuadraticTerm(
-                i == j ? coeff * 2 : coeff, # TODO: Why does this not require a `* 2` or a `/ 2`
+                i == j ? coeff : coeff, # TODO: Why does this not require a `* 2` or a `/ 2`
                 model.variable_info[CleverDicts.LinearIndex(i)].index,
                 model.variable_info[CleverDicts.LinearIndex(j)].index
             )

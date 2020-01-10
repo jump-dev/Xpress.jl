@@ -24,7 +24,7 @@ function Base.showerror(io::IO, err::XpressError)
     else
         print(io, "Unrecoverable error.")
     end
-    print(io, "$(err.msg) Try calling Xpress.getlasterror(model) for more information.")
+    print(io, " $(err.msg)")
 end
 
 function fixinfinity(val::Float64)
