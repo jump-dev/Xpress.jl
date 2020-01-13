@@ -1,7 +1,7 @@
 """
     int XPRS_CC XPRScopycallbacks(XPRSprob dest, XPRSprob src);
 
-Copies callback functions defined for one problem to another.
+Copies  callback functions defined for one problem to another.
 
 ### Arguments
 
@@ -16,7 +16,7 @@ end
 """
     int XPRS_CC XPRScopycontrols(XPRSprob dest, XPRSprob src);
 
-Copies controls defined for one problem to another.
+Copies  controls defined for one problem to another.
 
 ### Arguments
 
@@ -32,7 +32,7 @@ end
 """
     int XPRS_CC XPRScopyprob(XPRSprob dest, XPRSprob src, const char *probname);
 
-Copies information defined for one problem to another.
+Copies information defined for one  problem to another.
 
 ### Arguments
 
@@ -49,7 +49,7 @@ end
 """
     int XPRS_CC XPRScreateprob(XPRSprob *prob);
 
-Sets up a new problem within the Optimizer.
+Sets up a new  problem within the Optimizer.
 
 """
 function createprob(_probholder)
@@ -59,7 +59,7 @@ end
 """
     int XPRS_CC XPRSdestroyprob(XPRSprob prob);
 
-Removes a given problem and frees any memory associated with it following manipulation and optimization.
+Removes a given  problem and frees any  memory associated with it following manipulation and optimization.
 
 """
 function destroyprob(prob::XpressProblem)
@@ -79,7 +79,7 @@ end
 """
     int XPRS_CC XPRSfree(void);
 
-Frees any allocated memory and closes all open files.
+Frees any allocated  memory and closes all open files.
 
 """
 function free()
@@ -131,7 +131,7 @@ end
 """
     int XPRS_CC XPRSgetcheckedmode(int* r_checked_mode);
 
-You can use this function to interrogate whether checking and validation of all Optimizer function calls is enabled for the current process. Checking and validation is enabled by default but can be disabled by XPRSsetcheckedmode.
+You can use this function to interrogate whether checking and validation of all Optimizer function calls is enabled for the current process. Checking and validation is enabled by default but can be disabled by  XPRSsetcheckedmode.
 
 """
 function getcheckedmode(r_checked_mode)
@@ -172,7 +172,7 @@ end
 """
     int XPRS_CC XPRSsetlogfile(XPRSprob prob, const char *filename);
 
-This directs all Optimizer output to a log file.
+This directs all Optimizer output to a  log file.
 
 ### Arguments
 
@@ -187,24 +187,24 @@ end
 """
     int XPRS_CC XPRSsetintcontrol(XPRSprob prob, int ipar, int isval);
 
-Sets the value of a given integer  control parameter.
+Sets the value of a given integer   control parameter.
 
 """
     int XPRS_CC XPRSsetintcontrol(XPRSprob prob, int ipar, int isval);
 
-Sets the value of a given integer  control parameter.
+Sets the value of a given integer   control parameter.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `ipar`: Control parameter whose value is to be set. A full list of all controls may be found in Control Parameters , or from the list in the `xprs.h` header file.
+- `ipar`: Control parameter whose value is to be set. A full list of all controls may be found in _Control Parameters_ , or from the list in the `xprs.h` header file.
 - `isval`: Value to which the control parameter is to be set.
 
 """
 ### Arguments
 
 - `prob`: The current problem.
-- `ipar`: Control parameter whose value is to be set. A full list of all controls may be found in Control Parameters , or from the list in the `xprs.h` header file.
+- `ipar`: Control parameter whose value is to be set. A full list of all controls may be found in _Control Parameters_ , or from the list in the `xprs.h` header file.
 - `isval`: Value to which the control parameter is to be set.
 
 """
@@ -220,12 +220,12 @@ end
 """
     int XPRS_CC XPRSsetdblcontrol(XPRSprob prob, int ipar, double dsval);
 
-Sets the value of a given double control parameter.
+Sets the value of a given double  control parameter.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `ipar`: Control parameter whose value is to be set. A full list of all controls may be found in Control Parameters , or from the list in the `xprs.h` header file.
+- `ipar`: Control parameter whose value is to be set. A full list of all controls may be found in _Control Parameters_ , or from the list in the `xprs.h` header file.
 - `dsval`: Value to which the control parameter is to be set.
 
 """
@@ -241,7 +241,7 @@ Interrupts the Optimizer algorithms.
 ### Arguments
 
 - `prob`: The current problem.
-- `reason`: The reason for stopping. Possible reasons are:
+- `reason`: The reason for stopping. Possible reasons are:`XPRS_STOP_TIMELIMIT`: time limit hit;`XPRS_STOP_CTRLC`: control C hit;`XPRS_STOP_NODELIMIT`: node limit hit;`XPRS_STOP_ITERLIMIT`: iteration limit hit;`XPRS_STOP_MIPGAP`: MIP gap is sufficiently small;`XPRS_STOP_SOLLIMIT`: solution limit hit;`XPRS_STOP_USER`: user interrupt.
 
 """
 function interrupt(prob::XpressProblem, reason)
@@ -251,7 +251,7 @@ end
 """
     int XPRS_CC XPRSgetprobname(XPRSprob prob, char *probname);
 
-Returns the current problem name.
+Returns the current  problem name.
 
 ### Arguments
 
@@ -266,7 +266,7 @@ end
 """
     int XPRS_CC XPRSgetqobj(XPRSprob prob, int icol, int jcol, double *dval);
 
-Returns a single  quadratic objective function coefficient corresponding to the variable pair `(icol, jcol)` of the Hessian matrix.
+Returns a single   quadratic objective function coefficient corresponding to the variable pair  `(icol, jcol)` of the  Hessian matrix.
 
 ### Arguments
 
@@ -283,7 +283,7 @@ end
 """
     int XPRS_CC XPRSsetprobname(XPRSprob prob, const char *probname);
 
-Sets the current default problem name. This command is rarely used.
+Sets the current default  problem name. This command is rarely used.
 
 ### Arguments
 
@@ -298,12 +298,12 @@ end
 """
     int XPRS_CC XPRSsetstrcontrol(XPRSprob prob, int ipar, const char *csval);
 
-Used to set the value of a given string control parameter.
+Used to set the value of a given string  control parameter.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `ipar`: Control parameter whose value is to be set. A full list of all controls may be found in Control Parameters , or from the list in the `xprs.h` header file.
+- `ipar`: Control parameter whose value is to be set. A full list of all controls may be found in _Control Parameters_ , or from the list in the `xprs.h` header file.
 - `csval`: A string containing the value to which the control is to be set (plus a null terminator).
 
 """
@@ -314,12 +314,12 @@ end
 """
     int XPRS_CC XPRSgetintcontrol(XPRSprob prob, int ipar, int *igval);
 
-Enables users to recover the values of various integer control parameters
+Enables users to recover the values of various integer  control parameters
 
 ### Arguments
 
 - `prob`: The current problem.
-- `ipar`: Control parameter whose value is to be returned. A full list of all controls may be found in Chapter Control Parameters , or from the list in the `xprs.h` header file.
+- `ipar`: Control parameter whose value is to be returned. A full list of all controls may be found in Chapter _Control Parameters_ , or from the list in the `xprs.h` header file.
 - `igval`: Pointer to an integer where the value of the control will be returned.
 
 """
@@ -336,12 +336,12 @@ end
 """
     int XPRS_CC XPRSgetdblcontrol(XPRSprob prob, int ipar, double *dgval);
 
-Retrieves the value of a given double control parameter.
+Retrieves the value of a given double  control parameter.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `ipar`: Control parameter whose value is to be returned. A full list of all controls may be found in Chapter Control Parameters , or from the list in the `xprs.h` header file.
+- `ipar`: Control parameter whose value is to be returned. A full list of all controls may be found in Chapter _Control Parameters_ , or from the list in the `xprs.h` header file.
 - `dgval`: Pointer to the location where the control value will be returned.
 
 """
@@ -352,12 +352,12 @@ end
 """
     int XPRS_CC XPRSgetstrcontrol(XPRSprob prob, int ipar, char *cgval);
 
-Returns the value of a given string control parameters.
+Returns the value of a given string  control parameters.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `ipar`: Control parameter whose value is to be returned. A full list of all controls may be found in Control Parameters , or from the list in the `xprs.h` header file.
+- `ipar`: Control parameter whose value is to be returned. A full list of all controls may be found in _Control Parameters_ , or from the list in the `xprs.h` header file.
 - `cgval`: Pointer to a string where the value of the control (plus null terminator) will be returned.
 - `cgvalsize`: Maximum number of bytes to be written into the cgval argument.
 - `controlsize`: Returns the length of the string control including the null terminator.
@@ -374,12 +374,12 @@ end
 """
     int XPRS_CC XPRSgetintattrib(XPRSprob prob, int ipar, int *ival);
 
-Enables users to recover the values of various integer  problem attributes. Problem attributes are set during loading and optimization of a problem.
+Enables users to recover the values of various integer   problem attributes. Problem attributes are set during loading and optimization of a problem.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `ipar`: Problem attribute whose value is to be returned. A full list of all problem attributes may be found in Chapter Problem Attributes , or from the list in the `xprs.h` header file.
+- `ipar`: Problem attribute whose value is to be returned. A full list of all problem attributes may be found in Chapter _Problem Attributes_ , or from the list in the `xprs.h` header file.
 - `ival`: Pointer to an integer where the value of the problem attribute will be returned.
 
 """
@@ -394,12 +394,12 @@ end
 """
     int XPRS_CC XPRSgetstrattrib(XPRSprob prob, int ipar, char *cval);
 
-Enables users to recover the values of various string problem attributes. Problem attributes are set during loading and optimization of a problem.
+Enables users to recover the values of various string  problem attributes. Problem attributes are set during loading and optimization of a problem.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `ipar`: Problem attribute whose value is to be returned. A full list of all problem attributes may be found in Problem Attributes , or from the list in the `xprs.h` header file.
+- `ipar`: Problem attribute whose value is to be returned. A full list of all problem attributes may be found in _Problem Attributes_ , or from the list in the `xprs.h` header file.
 - `cval`: Pointer to a string where the value of the attribute (plus null terminator) will be returned.
 - `cgvalsize`: Maximum number of bytes to be written into the cgval argument.
 - `controlsize`: Returns the length of the string control including the null terminator.
@@ -416,12 +416,12 @@ end
 """
     int XPRS_CC XPRSgetdblattrib(XPRSprob prob, int ipar, double *dval);
 
-Enables users to retrieve the values of various double  problem attributes. Problem attributes are set during loading and optimization of a problem.
+Enables users to retrieve the values of various double   problem attributes. Problem attributes are set during loading and optimization of a problem.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `ipar`: Problem attribute whose value is to be returned. A full list of all available problem attributes may be found in Chapter Problem Attributes , or from the list in the `xprs.h` header file.
+- `ipar`: Problem attribute whose value is to be returned. A full list of all available problem attributes may be found in Chapter _Problem Attributes_ , or from the list in the `xprs.h` header file.
 - `dval`: Pointer to a double where the value of the problem attribute will be returned.
 
 """
@@ -448,7 +448,7 @@ end
 """
     int XPRS_CC XPRSsetdefaults(XPRSprob prob);
 
-Sets all controls to their default values. Must be called before the problem is read or loaded by XPRSreadprob, XPRSloadglobal, XPRSloadlp, XPRSloadqglobal, XPRSloadqp.
+Sets all controls to their default values. Must be called before the problem is read or loaded by  XPRSreadprob,  XPRSloadglobal,  XPRSloadlp,  XPRSloadqglobal,  XPRSloadqp.
 
 """
 function setdefaults(prob::XpressProblem)
@@ -458,12 +458,12 @@ end
 """
     int XPRS_CC XPRSgetcontrolinfo(XPRSprob prob, const char* sCaName, int* iHeaderId, int* iTypeinfo);
 
-Accesses the id number and the type information of a control given its name. A control name may be for example `XPRS_PRESOLVE`. Names are case-insensitive and may or may not have the `XPRS_` prefix. The id number is the constant used to identify the control for calls to functions such as XPRSgetintcontrol. The function will return an id number of `0` and a type value of `XPRS_TYPE_NOTDEFINED` if the name is not recognized as a control name. Note that this will occur if the name is an attribute name and not a control name. The type information returned will be one of the below integer constants defined in the `xprs.h` header file.
+Accesses the id number and the type information of a control given its name. A control name may be for example  `XPRS_PRESOLVE`. Names are case-insensitive and may or may not have the  `XPRS_` prefix. The id number is the constant used to identify the control for calls to functions such as  XPRSgetintcontrol. The function will return an id number of  `0` and a type value of  `XPRS_TYPE_NOTDEFINED` if the name is not recognized as a control name. Note that this will occur if the name is an attribute name and not a control name. The type information returned will be one of the below integer constants defined in the  `xprs.h` header file.    `XPRS_TYPE_NOTDEFINED`: The name was not recognized.`XPRS_TYPE_INT`: 32 bit integer.`XPRS_TYPE_INT64`: 64 bit integer.`XPRS_TYPE_DOUBLE`: Double precision floating point.`XPRS_TYPE_STRING`: String.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `sCaName`: The name of the control to be queried. Names are case-insensitive and may or may not have the `XPRS_` prefix. A full list of all controls may be found in Control Parameters , or from the list in the `xprs.h` header file.
+- `sCaName`: The name of the control to be queried. Names are case-insensitive and may or may not have the `XPRS_` prefix. A full list of all controls may be found in _Control Parameters_ , or from the list in the `xprs.h` header file.
 - `iHeaderId`: Pointer to an integer where the id number will be returned.
 - `iTypeInfo`: Pointer to an integer where the type information will be returned.
 
@@ -475,12 +475,12 @@ end
 """
     int XPRS_CC XPRSgetattribinfo(XPRSprob prob, const char* sCaName, int* iHeaderId, int* iTypeinfo);
 
-Accesses the id number and the type information of an attribute given its name. An attribute name may be for example `XPRS_ROWS`. Names are case-insensitive and may or may not have the `XPRS_` prefix. The id number is the constant used to identify the attribute for calls to functions such as XPRSgetintattrib. The type information returned will be one of the below integer constants defined in the `xprs.h` header file. The function will return an id number of 0 and a type value of `XPRS_TYPE_NOTDEFINED` if the name is not recognized as an attribute name. Note that this will occur if the name is a control name and not an attribute name.
+Accesses the id number and the type information of an attribute given its name. An attribute name may be for example  `XPRS_ROWS`. Names are case-insensitive and may or may not have the  `XPRS_` prefix. The id number is the constant used to identify the attribute for calls to functions such as  XPRSgetintattrib. The type information returned will be one of the below integer constants defined in the  `xprs.h` header file. The function will return an id number of 0 and a type value of  `XPRS_TYPE_NOTDEFINED` if the name is not recognized as an attribute name. Note that this will occur if the name is a control name and not an attribute name.    `XPRS_TYPE_NOTDEFINED`: The name was not recognized.`XPRS_TYPE_INT`: 32 bit integer.`XPRS_TYPE_INT64`: 64 bit integer.`XPRS_TYPE_DOUBLE`: Double precision floating point.`XPRS_TYPE_STRING`: String.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `sCaName`: The name of the attribute to be queried. Names are case-insensitive and may or may not have the `XPRS_` prefix. A full list of all attributes may be found in Chapter Control Parameters , or from the list in the `xprs.h` header file.
+- `sCaName`: The name of the attribute to be queried. Names are case-insensitive and may or may not have the `XPRS_` prefix. A full list of all attributes may be found in Chapter _Control Parameters_ , or from the list in the `xprs.h` header file.
 - `iHeaderId`: Pointer to an integer where the id number will be returned.
 - `iTypeInfo`: Pointer to an integer where the type id will be returned.
 
@@ -492,13 +492,13 @@ end
 """
     int XPRS_CC XPRSgoal(XPRSprob prob, const char *filename, const char *flags);
 
-This function is deprecated, and will be removed in future releases. Perform goal programming.
+This function is deprecated, and will be removed in future releases. Perform  goal programming.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name from which the directives are to be read (a `.gol` extension will be added).
-- `flags`: Flags to pass to `XPRSgoal` ( `GOAL` ):
+- `flags`: Flags to pass to `XPRSgoal` ( `GOAL` ):`o`: optimization process logs to be displayed;`l`: treat integer variables as linear;`f`: write output into a file `filename.grp` .
 
 """
 function goal(prob::XpressProblem, _filename::String, _sflags::String="")
@@ -508,13 +508,13 @@ end
 """
     int XPRS_CC XPRSreadprob(XPRSprob prob, const char *probname, const char *flags);
 
-Reads an (X)MPS or LP format matrix from file.
+Reads an (X)MPS or LP format  matrix from file.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `probname`: The path and file name from which the problem is to be read. Limited to MAXPROBNAMELENGTH characters. If omitted (console users only), the default problem_name is used with various extensions - see below.
-- `flags`: Flags to be passed:
+- `probname`: The path and file name from which the problem is to be read. Limited to MAXPROBNAMELENGTH characters. If omitted (console users only), the default _problem_name_ is used with various extensions - see below.
+- `flags`: Flags to be passed:`l`: only `probname.lp` is searched for;`z`: read input file in gzip format from a `.gz` file [ Console only ]
 
 """
 function readprob(prob::XpressProblem, _sprobname::String, _sflags::String="")
@@ -524,7 +524,7 @@ end
 """
     int XPRS_CC XPRSloadlp(XPRSprob prob, const char *probname, int ncol, int nrow, const char qrtype[], const double rhs[], const double range[], const double obj[], const int mstart[], const int mnel[], const int mrwind[], const double dmatval[], const double dlb[], const double dub[]);
 
-Enables the user to pass a matrix directly to the Optimizer, rather than reading the matrix from a file.
+Enables the user to pass a  matrix directly to the  Optimizer, rather than reading the matrix from a file.
 
 ### Arguments
 
@@ -532,8 +532,8 @@ Enables the user to pass a matrix directly to the Optimizer, rather than reading
 - `probname`: A string of up to MAXPROBNAMELENGTH characters containing a names for the problem.
 - `ncol`: Number of structural columns in the matrix.
 - `nrow`: Number of rows in the matrix (not including the objective). Objective coefficients must be supplied in the `obj` array, and the objective function should not be included in any of the other arrays.
-- `qrtype`: Character array of length `nrow` containing the row types:
-- `rhs`: Double array of length `nrow` containing the right hand side coefficients of the rows. The right hand side value for a range row gives the upper bound on the row.
+- `qrtype`: Character array of length `nrow` containing the row types:`L`: indicates a ≤ constraint;`E`: indicates an = constraint;`G`: indicates a ≥ constraint;`R`: indicates a range constraint;`N`: indicates a nonbinding constraint.
+- `rhs`: Double array of length `nrow` containing the right hand side coefficients of the rows. The right hand side value for a range row gives the *upper* bound on the row.
 - `range`: Double array of length `nrow` containing the range values for range rows. Values for all other rows will be ignored. May be `NULL` if not required. The lower bound on a range row is the right hand side value minus the range value. The sign of the range value is ignored - the absolute value is used in all cases.
 - `obj`: Double array of length `ncol` containing the objective function coefficients.
 - `mstart`: Integer array containing the offsets in the `mrwind` and `dmatval` arrays of the start of the elements for each column. This array is of length `ncol` or, if `mnel` is `NULL` , length `ncol+1` . If `mnel` is `NULL` , the extra entry of `mstart` , `mstart[ncol]` , contains the position in the `mrwind` and `dmatval` arrays at which an extra column would start, if it were present. In C, this value is also the length of the `mrwind` and `dmatval` arrays.
@@ -555,7 +555,7 @@ end
 """
     int XPRS_CC XPRSloadqp(XPRSprob prob, const char *probname, int ncol, int nrow, const char qrtype[], const double rhs[], const double range[], const double obj[], const int mstart[], const int mnel[], const int mrwind[], const double dmatval[], const double dlb[], const double dub[], int nqtr, const int mqc1[], const int mqc2[], const double dqe[]);
 
-Used to load a quadratic problem into the Optimizer data structure. Such a problem may have quadratic terms in its objective function, although not in its constraints.
+Used to load a  quadratic problem into the Optimizer data structure. Such a problem may have quadratic terms in its  objective function, although not in its constraints.
 
 ### Arguments
 
@@ -563,8 +563,8 @@ Used to load a quadratic problem into the Optimizer data structure. Such a probl
 - `probname`: A string of up to MAXPROBNAMELENGTH characters containing a names for the problem.
 - `ncol`: Number of structural columns in the matrix.
 - `nrow`: Number of rows in the matrix (not including the objective row). Objective coefficients must be supplied in the `obj` array, and the objective function should not be included in any of the other arrays.
-- `qrtype`: Character array of length `nrow` containing the row types:
-- `rhs`: Double array of length `nrow` containing the right hand side coefficients of the rows. The right hand side value for a range row gives the upper bound on the row.
+- `qrtype`: Character array of length `nrow` containing the row types:`L`: indicates a ≤ constraint;`E`: indicates an = constraint;`G`: indicates a ≥ constraint;`R`: indicates a range constraint;`N`: indicates a nonbinding constraint.
+- `rhs`: Double array of length `nrow` containing the right hand side coefficients of the rows. The right hand side value for a range row gives the *upper* bound on the row.
 - `range`: Double array of length `nrow` containing the range values for range rows. Values for all other rows will be ignored. May be `NULL` if there are no ranged constraints. The lower bound on a range row is the right hand side value minus the range value. The sign of the range value is ignored - the absolute value is used in all cases.
 - `obj`: Double array of length `ncol` containing the objective function coefficients.
 - `mstart`: Integer array containing the offsets in the `mrwind` and `dmatval` arrays of the start of the elements for each column. This array is of length `ncol` or, if `mnel` is `NULL` , length `ncol+1` . If `mnel` is `NULL` the extra entry of `mstart` , `mstart[ncol]` , contains the position in the `mrwind` and `dmatval` arrays at which an extra column would start, if it were present. In C, this value is also the length of the `mrwind` and `dmatval` arrays.
@@ -590,7 +590,7 @@ end
 """
     int XPRS_CC XPRSloadqglobal(XPRSprob prob, const char *probname, int ncol, int nrow, const char qrtype[], const double rhs[], const double range[], const double obj[], const int mstart[], const int mnel[], const int mrwind[], const double dmatval[], const double dlb[], const double dub[], int nqtr, const int mqc1[], const int mqc2[], const double dqe[], const int ngents, const int nsets, const char qgtype[], const int mgcols[], const double dlim[], const char qstype[], const int msstart[], const int mscols[], const double dref[]);
 
-Used to load a  global problem with quadratic  objective coefficients in to the Optimizer data structures. Integer, binary, partial integer, semi-continuous and semi-continuous integer variables can be defined, together with sets of type 1 and 2. The reference row values for the set members are passed as an array rather than specifying a reference row.
+Used to load a   global problem with quadratic   objective coefficients in to the Optimizer data structures.  Integer,  binary,  partial integer,  semi-continuous and  semi-continuous integer variables can be defined, together with  sets of type 1 and 2. The reference row values for the set members are passed as an array rather than specifying a reference row.
 
 ### Arguments
 
@@ -598,8 +598,8 @@ Used to load a  global problem with quadratic  objective coefficients in to the 
 - `probname`: A string of up to MAXPROBNAMELENGTH characters containing a name for the problem.
 - `ncol`: Number of structural columns in the matrix.
 - `nrow`: Number of rows in the matrix (not including the objective). Objective coefficients must be supplied in the `obj` array, and the objective function should not be included in any of the other arrays.
-- `qrtype`: Character array of length `nrow` containing the row type:
-- `rhs`: Double array of length `nrow` containing the right hand side coefficients. The right hand side value for a range row gives the upper bound on the row.
+- `qrtype`: Character array of length `nrow` containing the row type:`L`: indicates a ≤ constraint;`E`: indicates an = constraint;`G`: indicates a ≥ constraint;`R`: indicates a range constraint;`N`: indicates a nonbinding constraint.
+- `rhs`: Double array of length `nrow` containing the right hand side coefficients. The right hand side value for a range row gives the *upper* bound on the row.
 - `range`: Double array of length `nrow` containing the range values for range rows. The values in the range array will only be read for `R` type rows. The entries for other type rows will be ignored. May be `NULL` if not required. The lower bound on a range row is the right hand side value minus the range value. The sign of the range value is ignored - the absolute value is used in all cases.
 - `obj`: Double array of length `ncol` containing the objective function coefficients.
 - `mstart`: Integer array containing the offsets in the `mrwind` and `dmatval` arrays of the start of the elements for each column. This array is of length `ncol` or, if `mnel` is `NULL` , length `ncol+1` .
@@ -614,10 +614,10 @@ Used to load a  global problem with quadratic  objective coefficients in to the 
 - `dqe`: Double array of size `nqtr` containing the quadratic coefficients.
 - `ngents`: Number of binary, integer, semi-continuous, semi-continuous integer and partial integer entities.
 - `nsets`: Number of SOS1 and SOS2 sets.
-- `qgtype`: Character array of length `ngents` containing the entity types:
+- `qgtype`: Character array of length `ngents` containing the entity types:`B`: binary variables;`I`: integer variables;`P`: partial integer variables;`S`: semi-continuous variables;`R`: semi-continuous integers.
 - `mgcols`: Integer array of length `ngents` containing the column indices of the global entities.
 - `dlim`: Double array of length `ngents` containing the integer limits for the partial integer variables and lower bounds for semi-continuous and semi-continuous integer variables (any entries in the positions corresponding to binary and integer variables will be ignored). May be `NULL` if not required.
-- `qstype`: Character array of length `nsets` containing:
+- `qstype`: Character array of length `nsets` containing:`1`: SOS1 type sets;`2`: SOS2 type sets.May be `NULL` if not required.
 - `msstart`: Integer array containing the offsets in the `mscols` and `dref` arrays indicating the start of the sets. This array is of length `nsets+1` , the last member containing the offset where set `nsets+1` would start. May be `NULL` if not required.
 - `mscols`: Integer array of length `msstart[nsets]-1` containing the columns in each set. May be `NULL` if not required.
 - `dref`: Double array of length `msstart[nsets]-1` containing the reference row entries for each member of the sets. May be `NULL` if not required.
@@ -634,13 +634,13 @@ end
 """
     int XPRS_CC XPRSfixglobals(XPRSprob prob, int ifround);
 
-Fixes all the  global entities to the values of the last found MIP solution. This is useful for finding the reduced costs for the continuous variables after the global variables have been fixed to their optimal values.
+Fixes all the   global entities to the values of the last found MIP solution. This is useful for finding the  reduced costs for the continuous variables after the global variables have been fixed to their optimal values.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `ifround`: If all global entities should be rounded to the nearest discrete value in the solution before being fixed.
-- `flags`: Flags to pass to FIXGLOBALS:
+- `flags`: Flags to pass to FIXGLOBALS:`r`: round all global entities to the nearest feasible value in the solution before being fixed;
 
 """
 function fixglobals(prob::XpressProblem, ifround::Bool)
@@ -650,7 +650,7 @@ end
 """
     int XPRS_CC XPRSloadmodelcuts(XPRSprob prob, int nmod, const int mrows[]);
 
-Specifies that a set of rows in the matrix will be treated as model cuts.
+Specifies that a set of  rows in the  matrix will be treated as model cuts.
 
 ### Arguments
 
@@ -682,7 +682,7 @@ end
 """
     int XPRS_CC XPRSloaddirs(XPRSprob prob, int ndir, const int mcols[], const int mpri[], const char qbr[], const double dupc[], const double ddpc[]);
 
-Loads directives into the matrix.
+Loads  directives into the matrix.
 
 ### Arguments
 
@@ -690,7 +690,7 @@ Loads directives into the matrix.
 - `ndir`: Number of directives.
 - `mcols`: Integer array of length `ndir` containing the column numbers. A negative value indicates a set number (the first set being `-1` , the second `-2` , and so on).
 - `mpri`: Integer array of length `ndir` containing the priorities for the columns or sets. Priorities must be between 0 and 1000, where columns/sets with smallest priority will be branched on first. May be `NULL` if not required.
-- `qbr`: Character array of length `ndir` specifying the branching direction for each column or set:
+- `qbr`: Character array of length `ndir` specifying the branching direction for each column or set:`U`: the entity is to be forced up;`D`: the entity is to be forced down;`N`: not specified.May be `NULL` if not required.
 - `dupc`: Double array of length `ndir` containing the up pseudo costs for the columns or sets. May be `NULL` if not required.
 - `ddpc`: Double array of length `ndir` containing the down pseudo costs for the columns or sets. May be `NULL` if not required.
 
@@ -719,7 +719,7 @@ end
 """
     int XPRS_CC XPRSloadpresolvedirs(XPRSprob prob, int ndir, const int mcols[], const int mpri[], const char qbr[], const double dupc[], const double ddpc[]);
 
-Loads directives into the presolved matrix.
+Loads  directives into the  presolved matrix.
 
 ### Arguments
 
@@ -727,7 +727,7 @@ Loads directives into the presolved matrix.
 - `ndir`: Number of directives.
 - `mcols`: Integer array of length `ndir` containing the column numbers. A negative value indicates a set number ( `-1` being the first set, `-2` the second, and so on).
 - `mpri`: Integer array of length `ndir` containing the priorities for the columns or sets. May be `NULL` if not required.
-- `qbr`: Character array of length `ndir` specifying the branching direction for each column or set:
+- `qbr`: Character array of length `ndir` specifying the branching direction for each column or set:`U`: the entity is to be forced up;`D`: the entity is to be forced down;`N`: not specified.May be `NULL` if not required.
 - `dupc`: Double array of length `ndir` containing the up pseudo costs for the columns or sets. May be `NULL` if not required.
 - `ddpc`: Double array of length `ndir` containing the down pseudo costs for the columns or sets. May be `NULL` if not required.
 
@@ -739,7 +739,7 @@ end
 """
     int XPRS_CC XPRSgetdirs(XPRSprob prob, int *ndir, int mcols[], int mpri[], char qbr[], double dupc[], double ddpc[]);
 
-Used to return the directives that have been loaded into a matrix. Priorities, forced branching directions and pseudo costs can be returned. If called after presolve, `XPRSgetdirs` will get the directives for the presolved problem.
+Used to return the  directives that have been loaded into a matrix.  Priorities, forced  branching directions and  pseudo costs can be returned. If called after presolve,  `XPRSgetdirs` will get the directives for the  presolved problem.
 
 ### Arguments
 
@@ -747,7 +747,7 @@ Used to return the directives that have been loaded into a matrix. Priorities, f
 - `ndir`: Pointer to an integer where the number of directives will be returned.
 - `mcols`: Integer array of length `ndir` containing the column numbers ( `0` , `1` , `2` ,...) or negative values corresponding to special ordered sets (the first set numbered `-1` , the second numbered `-2` ,...). May be NULL if not required.
 - `mpri`: Integer array of length `ndir` containing the priorities for the columns and sets, where columns/sets with smallest priority will be branched on first. May be NULL if not required.
-- `qbr`: Character array of length `ndir` specifying the branching direction for each column or set:
+- `qbr`: Character array of length `ndir` specifying the branching direction for each column or set:`U`: the entity is to be forced up;`D`: the entity is to be forced down;`N`: not specified.
 - `dupc`: Double array of length `ndir` containing the up pseudo costs for the columns and sets. May be NULL if not required.
 - `ddpc`: Double array of length `ndir` containing the down pseudo costs for the columns and sets. May be NULL if not required.
 
@@ -759,7 +759,7 @@ end
 """
     int XPRS_CC XPRSloadglobal(XPRSprob prob, const char *probname, int ncol, int nrow, const char qrtype[], const double rhs[], const double range[], const double obj[], const int mstart[], const int mnel[], const int mrwind[], const double dmatval[], const double dlb[], const double dub[], int ngents, int nsets, const char qgtype[], const int mgcols[], const double dlim[], const char qstype[], const int msstart[], const int mscols[], const double dref[]);
 
-Used to load a global problem in to the Optimizer data structures. Integer, binary, partial integer, semi-continuous and semi-continuous integer variables can be defined, together with sets of type 1 and 2. The reference row values for the set members are passed as an array rather than specifying a reference row.
+Used to load a  global problem in to the Optimizer data structures.  Integer,  binary,  partial integer,  semi-continuous and  semi-continuous integer variables can be defined, together with  sets of type 1 and 2. The reference row values for the set members are passed as an array rather than specifying a reference row.
 
 ### Arguments
 
@@ -767,8 +767,8 @@ Used to load a global problem in to the Optimizer data structures. Integer, bina
 - `probname`: A string of up to MAXPROBNAMELENGTH characters containing a name for the problem.
 - `ncol`: Number of structural columns in the matrix.
 - `nrow`: Number of rows in the matrix not (including the objective row). Objective coefficients must be supplied in the `obj` array, and the objective function should not be included in any of the other arrays.
-- `qrtype`: Character array of length `nrow` containing the row types:
-- `rhs`: Double array of length `nrow` containing the right hand side coefficients. The right hand side value for a range row gives the upper bound on the row.
+- `qrtype`: Character array of length `nrow` containing the row types:`L`: indicates a ≤ constraint;`E`: indicates an = constraint;`G`: indicates a ≥ constraint;`R`: indicates a range constraint;`N`: indicates a nonbinding constraint.
+- `rhs`: Double array of length `nrow` containing the right hand side coefficients. The right hand side value for a range row gives the *upper* bound on the row.
 - `range`: Double array of length `nrow` containing the range values for range rows. Values for all other rows will be ignored. May be `NULL` if not required. The lower bound on a range row is the right hand side value minus the range value. The sign of the range value is ignored - the absolute value is used in all cases.
 - `obj`: Double array of length `ncol` containing the objective function coefficients.
 - `mstart`: Integer array containing the offsets in the `mrwind` and `dmatval` arrays of the start of the elements for each column. This array is of length `ncol` or, if `mnel` is `NULL` , length `ncol+1` . If `mnel` is `NULL` , the extra entry of `mstart` , `mstart[ncol]` , contains the position in the `mrwind` and `dmatval` arrays at which an extra column would start, if it were present. In C, this value is also the length of the `mrwind` and `dmatval` arrays.
@@ -779,10 +779,10 @@ Used to load a global problem in to the Optimizer data structures. Integer, bina
 - `dub`: Double array of length `ncol` containing the upper bounds on the columns. Use `XPRS_PLUSINFINITY` to represent an upper bound of plus infinity.
 - `ngents`: Number of binary, integer, semi-continuous, semi-continuous integer and partial integer entities.
 - `nsets`: Number of SOS1 and SOS2 sets.
-- `qgtype`: Character array of length `ngents` containing the entity types:
+- `qgtype`: Character array of length `ngents` containing the entity types:`B`: binary variables;`I`: integer variables;`P`: partial integer variables;`S`: semi-continuous variables;`R`: semi-continuous integer variables.
 - `mgcols`: Integer array of length `ngents` containing the column indices of the global entities.
 - `dlim`: Double array of length `ngents` containing the integer limits for the partial integer variables and lower bounds for semi-continuous and semi-continuous integer variables (any entries in the positions corresponding to binary and integer variables will be ignored). May be `NULL` if not required.
-- `qstype`: Character array of length `nsets` containing the set types:
+- `qstype`: Character array of length `nsets` containing the set types:`1`: SOS1 type sets;`2`: SOS2 type sets.May be `NULL` if not required.
 - `msstart`: Integer array containing the offsets in the `mscols` and `dref` arrays indicating the start of the sets. This array is of length `nsets+1` , the last member containing the offset where set `nsets+1` would start. May be `NULL` if not required.
 - `mscols`: Integer array of length `msstart[nsets]-1` containing the columns in each set. May be `NULL` if not required.
 - `dref`: Double array of length `msstart[nsets]-1` containing the reference row entries for each member of the sets. May be `NULL` if not required.
@@ -799,12 +799,12 @@ end
 """
     int XPRS_CC XPRSaddnames(XPRSprob prob, int type, const char cnames[], int first, int last);
 
-When a model is loaded, the rows, columns and sets of the model may not have names associated with them. This may not be important as the rows, columns and sets can be referred to by their sequence numbers. However, if you wish row, column and set names to appear in the ASCII solutions files, the names for a range of rows or columns can be added with `XPRSaddnames`.
+When a model is loaded, the rows, columns and sets of the model may not have  names associated with them. This may not be important as the rows, columns and sets can be referred to by their sequence numbers. However, if you wish row, column and set names to appear in the ASCII solutions files, the names for a range of rows or columns can be added with  `XPRSaddnames`.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `type`:
+- `type`: `1`: for row names;`2`: for column names.`3`: for set names.
 - `cnames`: Character buffer containing the null-terminated string names.
 - `first`: Start of the range of rows, columns or sets.
 - `last`: End of the range of rows, columns or sets.
@@ -814,12 +814,12 @@ function addnames(prob::XpressProblem, _itype::Integer, first::Integer, names::V
 """
     int XPRS_CC XPRSaddnames(XPRSprob prob, int type, const char cnames[], int first, int last);
 
-When a model is loaded, the rows, columns and sets of the model may not have names associated with them. This may not be important as the rows, columns and sets can be referred to by their sequence numbers. However, if you wish row, column and set names to appear in the ASCII solutions files, the names for a range of rows or columns can be added with `XPRSaddnames`.
+When a model is loaded, the rows, columns and sets of the model may not have  names associated with them. This may not be important as the rows, columns and sets can be referred to by their sequence numbers. However, if you wish row, column and set names to appear in the ASCII solutions files, the names for a range of rows or columns can be added with  `XPRSaddnames`.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `type`:
+- `type`: `1`: for row names;`2`: for column names.`3`: for set names.
 - `cnames`: Character buffer containing the null-terminated string names.
 - `first`: Start of the range of rows, columns or sets.
 - `last`: End of the range of rows, columns or sets.
@@ -846,7 +846,7 @@ end
 """
     int XPRS_CC XPRSaddsetnames(XPRSprob prob, const char names[], int first, int last);
 
-When a model with global entities is loaded, any special ordered sets may not have names associated with them. If you wish names to appear in the ASCII solutions files, the names for a range of sets can be added with this function.
+When a model with global entities is loaded, any special ordered sets may not have  names associated with them. If you wish names to appear in the ASCII solutions files, the names for a range of sets can be added with this function.
 
 ### Arguments
 
@@ -863,7 +863,7 @@ end
 """
     int XPRS_CC XPRSscale(XPRSprob prob, const int mrscal[], const int mcscal[]);
 
-Re-scales  the current matrix.
+Re-scales   the current  matrix.
 
 ### Arguments
 
@@ -879,12 +879,12 @@ end
 """
     int XPRS_CC XPRSreaddirs(XPRSprob prob, const char *filename);
 
-Reads a  directives file to help direct the global search.
+Reads a   directives file to help direct the  global search.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name from which the directives are to be read. If omitted (or `NULL` ), the default problem_name is used with a `.dir` extension.
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name from which the directives are to be read. If omitted (or `NULL` ), the default _problem_name_ is used with a `.dir` extension.
 
 """
 function readdirs(prob::XpressProblem, _sfilename::String)
@@ -899,7 +899,7 @@ Writes the global search directives from the current problem to a directives fil
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the directives should be written. If omitted (or NULL), the default problem_name is used with a `.dir` extension.
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the directives should be written. If omitted (or NULL), the default _problem_name_ is used with a `.dir` extension.
 
 """
 function writedirs(prob::XpressProblem, _sfilename::String)
@@ -909,7 +909,7 @@ end
 """
     int XPRS_CC XPRSsetindicators(XPRSprob prob, int nrows, const int mrows[], const int inds[], const int comps[]);
 
-Specifies that a set of rows in the matrix will be treated as indicator constraints, during a global search. An indicator constraint is made of a `condition` and a `linear constraint`. The `condition` is of the type " `bin = value`", where `bin` is a binary variable and `value` is either 0 or 1. The `linear constraint` is any linear row. During global search, a row configured as an indicator constraint is enforced only when condition holds, that is only if the indicator variable `bin` has the specified value.
+Specifies that a set of rows in the matrix will be treated as indicator constraints, during a global search. An indicator constraint is made of a  `condition` and a  `linear constraint`. The  `condition` is of the type "  `bin = value`", where  `bin` is a binary variable and  `value` is either 0 or 1. The  `linear constraint` is any linear row. During global search, a row configured as an indicator constraint is enforced only when condition holds, that is only if the indicator variable  `bin` has the specified value.
 
 ### Arguments
 
@@ -917,7 +917,7 @@ Specifies that a set of rows in the matrix will be treated as indicator constrai
 - `nrows`: The number of indicator constraints.
 - `mrows`: Integer array of length `nrows` containing the indices of the rows that define the linear constraint part for the indicator constraints.
 - `inds`: Integer array of length `nrows` containing the column indices of the indicator variables.
-- `comps`: Integer array of length `nrows` with the complement flags:
+- `comps`: Integer array of length `nrows` with the complement flags:`0`: not an indicator constraint (in this case the corresponding entry in the `inds` array is ignored);`1`: for indicator constraints with condition " `bin = 1` ";`-1`: for indicator constraints with condition " `bin = 0` ";
 
 """
 function setindicators(prob::XpressProblem, nrows, _mrows, _inds, _comps)
@@ -933,7 +933,7 @@ Returns the indicator constraint condition (indicator variable and complement fl
 
 - `prob`: The current problem.
 - `inds`: Integer array of length `last-first+1` where the column indices of the indicator variables are to be placed.
-- `comps`: Integer array of length `last-first+1` where the indicator complement flags will be returned:
+- `comps`: Integer array of length `last-first+1` where the indicator complement flags will be returned:`0`: not an indicator constraint (in this case the corresponding entry in the `inds` array is ignored);`1`: for indicator constraints with condition " `bin = 1` ";`-1`: for indicator constraints with condition " `bin = 0` ";
 - `first`: First row in the range.
 - `last`: Last row in the range (inclusive).
 
@@ -975,12 +975,12 @@ end
 """
     int XPRS_CC XPRSmaxim(XPRSprob prob, const char *flags);
 
-Begins a search for the optimal LP solution. These functions are deprecated and might be removed in a future release. XPRSlpoptimize or XPRSmipoptimize should be used instead.
+Begins a search for the optimal LP  solution. These functions are deprecated and might be removed in a future release.  XPRSlpoptimize or  XPRSmipoptimize should be used instead.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `flags`: Flags to pass to `XPRSmaxim` ( `MAXIM` ) or `XPRSminim` ( `MINIM` ). The default is `""` or `NULL` , in which case the algorithm used is determined by the DEFAULTALG control. If the argument includes:
+- `flags`: Flags to pass to `XPRSmaxim` ( `MAXIM` ) or `XPRSminim` ( `MINIM` ). The default is `""` or `NULL` , in which case the algorithm used is determined by the DEFAULTALG control. If the argument includes:`b`: the model will be solved using the Newton barrier method;`p`: the model will be solved using the primal simplex algorithm;`d`: the model will be solved using the dual simplex algorithm;`l`: (lower case `L` ), the model will be solved as a linear model ignoring the discreteness of global variables;`n`: (lower case `N` ), the network part of the model will be identified and solved using the network simplex algorithm;`g`: the global model will be solved, calling XPRSglobal ( GLOBAL ).Certain combinations of options may be used where this makes sense so, for example, `pg` will solve the LP with the primal algorithm and then go on to perform the global search.
 
 """
 function maxim(prob::XpressProblem, _sflags::String="")
@@ -990,12 +990,12 @@ end
 """
     int XPRS_CC XPRSlpoptimize(XPRSprob prob, const char *flags);
 
-This function begins a search for the optimal continuous (LP) solution. The direction of optimization is given by OBJSENSE. The status of the problem when the function completes can be checked using LPSTATUS. Any global entities in the problem will be ignored.
+This function begins a search for the optimal continuous (LP) solution. The direction of optimization is given by  OBJSENSE. The status of the problem when the function completes can be checked using  LPSTATUS. Any global entities in the problem will be ignored.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `flags`: Flags to pass to `XPRSlpoptimize` ( `LPOPTIMIZE` ). The default is `""` or `NULL` , in which case the algorithm used is determined by the DEFAULTALG control. If the argument includes:
+- `flags`: Flags to pass to `XPRSlpoptimize` ( `LPOPTIMIZE` ). The default is `""` or `NULL` , in which case the algorithm used is determined by the DEFAULTALG control. If the argument includes:`b`: the model will be solved using the Newton barrier method;`p`: the model will be solved using the primal simplex algorithm;`d`: the model will be solved using the dual simplex algorithm;`n`: (lower case `N` ), the network part of the model will be identified and solved using the network simplex algorithm;
 
 """
 function lpoptimize(prob::XpressProblem, _sflags::String="")
@@ -1005,12 +1005,12 @@ end
 """
     int XPRS_CC XPRSmipoptimize(XPRSprob prob, const char *flags);
 
-This function begins a global search for the optimal MIP solution. The direction of optimization is given by OBJSENSE. The status of the problem when the function completes can be checked using MIPSTATUS.
+This function begins a global search for the optimal MIP solution. The direction of optimization is given by  OBJSENSE. The status of the problem when the function completes can be checked using  MIPSTATUS.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `flags`: Flags to pass to XPRSmipoptimize ( MIPOPTIMIZE ), which specifies how to solve the initial continuous problem where the global entities are relaxed. If the argument includes:
+- `flags`: Flags to pass to XPRSmipoptimize ( MIPOPTIMIZE ), which specifies how to solve the initial continuous problem where the global entities are relaxed. If the argument includes:`b`: the initial continuous relaxation will be solved using the Newton barrier method;`p`: the initial continuous relaxation will be solved using the primal simplex algorithm;`d`: the initial continuous relaxation will be solved using the dual simplex algorithm;`n`: the network part of the initial continuous relaxation will be identified and solved using the network simplex algorithm;`l`: stop after having solved the initial continous relaxation.
 
 """
 function mipoptimize(prob::XpressProblem, _sflags::String="")
@@ -1020,7 +1020,7 @@ end
 """
     int XPRS_CC XPRSrange(XPRSprob prob);
 
-Calculates the  ranging information for a problem and saves it to the binary ranging file problem_name`.rng`.
+Calculates the   ranging information for a problem and saves it to the binary ranging file  *problem_name*`.rng`.
 
 """
 function range(prob::XpressProblem)
@@ -1030,7 +1030,7 @@ end
 """
     int XPRS_CC XPRSgetrowrange(XPRSprob prob, double upact[], double loact[], double uup[], double udn[]);
 
-Returns the row  ranges computed by XPRSrange.
+Returns the row   ranges computed by  XPRSrange.
 
 ### Arguments
 
@@ -1048,7 +1048,7 @@ end
 """
     int XPRS_CC XPRSgetcolrange(XPRSprob prob, double upact[], double loact[], double uup[], double udn[], double ucost[], double lcost[]);
 
-Returns the column ranges computed by XPRSrange.
+Returns the column  ranges computed by  XPRSrange.
 
 ### Arguments
 
@@ -1068,7 +1068,7 @@ end
 """
     int XPRS_CC XPRSgetpivotorder(XPRSprob prob, int mpiv[]);
 
-Returns the  pivot order of the basic variables.
+Returns the   pivot order of the basic variables.
 
 ### Arguments
 
@@ -1099,13 +1099,13 @@ end
 """
     int XPRS_CC XPRSreadbasis(XPRSprob prob, const char *filename, const char *flags);
 
-Instructs the Optimizer to read in a previously saved basis from a file.
+Instructs the Optimizer to read in a previously saved  basis from a file.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name from which the basis is to be read. If omitted, the default problem_name is used with a `.bss` extension.
-- `flags`: Flags to pass to `XPRSreadbasis` ( `READBASIS` ):
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name from which the basis is to be read. If omitted, the default _problem_name_ is used with a `.bss` extension.
+- `flags`: Flags to pass to `XPRSreadbasis` ( `READBASIS` ):`i`: output the internal presolved basis.`t`: input a compact advanced form of the basis.
 
 """
 function readbasis(prob::XpressProblem, _sfilename::String, _sflags::String="")
@@ -1115,13 +1115,13 @@ end
 """
     int XPRS_CC XPRSwritebasis(XPRSprob prob, const char *filename, const char *flags);
 
-Writes the current basis to a file for later input into the Optimizer.
+Writes the current  basis to a file for later input into the Optimizer.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name from which the basis is to be written. If omitted, the default problem_name is used with a `.bss` extension.
-- `flags`: Flags to pass to `XPRSwritebasis` ( `WRITEBASIS` ):
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name from which the basis is to be written. If omitted, the default _problem_name_ is used with a `.bss` extension.
+- `flags`: Flags to pass to `XPRSwritebasis` ( `WRITEBASIS` ):`i`: output the internal presolved basis.`t`: output a compact advanced form of the basis.`n`: output basis file containing current solution values.`h`: output values in single precision.`p`: obsolete flag (now default behavior).
 
 """
 function writebasis(prob::XpressProblem, _sfilename::String, _sflags::String="")
@@ -1135,7 +1135,7 @@ end
 """
     int XPRS_CC XPRSinitglobal(XPRSprob prob);
 
-Reinitializes the  global tree search. By default if a global search is interrupted and called again the global search will continue from where it left off. If `XPRSinitglobal` is called after the first call to `XPRSmipoptimize`, the global search will start from the top node when `XPRSmipoptimize` is called again. This function is deprecated and might be removed in a future release.  should be used instead.
+Reinitializes the   global tree search. By default if a global search is interrupted and called again the global search will continue from where it left off. If  `XPRSinitglobal` is called after the first call to  `XPRSmipoptimize`, the global search will start from the top node when  `XPRSmipoptimize` is called again.  This function is deprecated and might be removed in a future release. XPRSpostsolve should be used instead.
 
 """
 function initglobal(prob::XpressProblem)
@@ -1145,13 +1145,13 @@ end
 """
     int XPRS_CC XPRSwriteprtsol(XPRSprob prob, const char *filename, const char *flags);
 
-Writes the current solution to a fixed format ASCII file, problem_name`.prt`.
+Writes the current  solution to a  fixed format ASCII file,  *problem_name*`.prt`.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the solution is to be written. If omitted, the default problem_name will be used. The extension `.prt` will be appended.
-- `flags`: Flags for `XPRSwriteprtsol` ( `WRITEPRTSOL` ) are:
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the solution is to be written. If omitted, the default _problem_name_ will be used. The extension `.prt` will be appended.
+- `flags`: Flags for `XPRSwriteprtsol` ( `WRITEPRTSOL` ) are:`x`: write the LP solution instead of the current MIP solution.
 
 """
 function writeprtsol(prob::XpressProblem, _sfilename::String, _sflags::String="")
@@ -1161,12 +1161,12 @@ end
 """
     int XPRS_CC XPRSalter(XPRSprob prob, const char *filename);
 
-Alters or changes  matrix elements, right hand sides and constraint senses in the current problem.
+Alters or changes   matrix elements, right hand sides and  constraint senses in the current problem.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters specifying the file to be read. If omitted, the default problem_name is used with a `.alt` extension.
+- `filename`: A string of up to MAXPROBNAMELENGTH characters specifying the file to be read. If omitted, the default _problem_name_ is used with a `.alt` extension.
 
 """
 function alter(prob::XpressProblem, _sfilename::String)
@@ -1176,13 +1176,13 @@ end
 """
     int XPRS_CC XPRSwritesol(XPRSprob prob, const char *filename, const char *flags);
 
-Writes the current solution to a CSV format ASCII file, problem_name`.asc` (and `.hdr`).
+Writes the current  solution to a  CSV format ASCII file,  _problem_name_`.asc` (and  `.hdr`).
 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the solution is to be written. If omitted, the default problem_name will be used. The extensions `.hdr` and `.asc` will be appended.
-- `flags`: Flags to control which optional fields are output:
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the solution is to be written. If omitted, the default _problem_name_ will be used. The extensions `.hdr` and `.asc` will be appended.
+- `flags`: Flags to control which optional fields are output:`s`: sequence number;`n`: name;`t`: type;`b`: basis status;`a`: activity;`c`: cost (columns), slack (rows);`l`: lower bound;`u`: upper bound;`d`: dj (column; reduced costs), dual value (rows; shadow prices);`r`: right hand side (rows).If no flags are specified, all fields are output.  Additional flags:`p`: outputs in full precision;`q`: only outputs vectors with nonzero optimum value;`x`: output the current LP solution instead of the MIP solution.
 
 """
 function writesol(prob::XpressProblem, _sfilename::String, _sflags="")
@@ -1197,8 +1197,8 @@ Writes the current MIP or LP solution to a binary solution file for later input 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the solution is to be written. If omitted, the default problem_name is used with a `.sol` extension.
-- `flags`: Flags to pass to `XPRSwritebinsol` ( `WRITEBINSOL` ):
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the solution is to be written. If omitted, the default _problem_name_ is used with a `.sol` extension.
+- `flags`: Flags to pass to `XPRSwritebinsol` ( `WRITEBINSOL` ):`x`: output the LP solution.
 
 """
 function writebinsol(prob::XpressProblem, _sfilename::String, _sflags)
@@ -1213,8 +1213,8 @@ Reads a solution from a binary solution file.
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name from which the solution is to be read. If omitted, the default problem_name is used with a `.sol` extension.
-- `flags`: Flags to pass to `XPRSreadbinsol` ( `READBINSOL` ):
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name from which the solution is to be read. If omitted, the default _problem_name_ is used with a `.sol` extension.
+- `flags`: Flags to pass to `XPRSreadbinsol` ( `READBINSOL` ):`m`: load the solution as a solution for the MIP.
 
 """
 function readbinsol(prob::XpressProblem, _sfilename::String, _sflags)
@@ -1224,13 +1224,13 @@ end
 """
     int XPRS_CC XPRSwriteslxsol(XPRSprob prob, const char *filename, const char *flags);
 
-Creates an ASCII solution file ( `.slx`) using a similar format to MPS files. These files can be read back into the Optimizer using the XPRSreadslxsol function.
+Creates an ASCII solution file (  `.slx`) using a similar format to MPS files. These files can be read back into the Optimizer using the  XPRSreadslxsol function.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the solution is to be written. If omitted, the default problem_name is used with a `.slx` extension.
-- `flags`: Flags to pass to `XPRSwriteslxsol` ( `WRITESLXSOL` ):
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the solution is to be written. If omitted, the default _problem_name_ is used with a `.slx` extension.
+- `flags`: Flags to pass to `XPRSwriteslxsol` ( `WRITESLXSOL` ):`l`: write the LP solution in case of a MIP problem;`m`: write the MIP solution;`p`: use full precision for numerical values;`d`: LP solution only: including dual variables;`s`: LP solution only: including slack variables;`r`: LP solution only: including reduced cost.
 
 """
 function writeslxsol(prob::XpressProblem, _sfilename::String, _sflags)
@@ -1240,13 +1240,13 @@ end
 """
     int XPRS_CC XPRSreadslxsol(XPRSprob prob, const char *filename, const char *flags);
 
-Reads an ASCII solution file ( `.slx`) created by the XPRSwriteslxsol function.
+Reads an ASCII solution file (  `.slx`) created by the  XPRSwriteslxsol function.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the solution is to be read. If omitted, the default problem_name is used with a `.slx` extension.
-- `flags`: Flags to pass to `XPRSwriteslxsol` ( `WRITESLXSOL` ):
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the solution is to be read. If omitted, the default _problem_name_ is used with a `.slx` extension.
+- `flags`: Flags to pass to `XPRSwriteslxsol` ( `WRITESLXSOL` ):`l`: read the solution as an LP solution in case of a MIP problem;`m`: read the solution as a solution for the MIP problem;`a`: reads multiple MIP solutions from the `.slx` file and adds them to the MIP problem;
 
 """
 function readslxsol(prob::XpressProblem, _sfilename::String, _sflags)
@@ -1256,7 +1256,7 @@ end
 """
     int XPRS_CC XPRSwriteprtrange(XPRSprob prob);
 
-Writes the ranging information to a fixed format ASCII file, problem_name`.rrt`. The binary range file ( `.rng`) must already exist, created by `XPRSrange`( `RANGE`).
+Writes the ranging information to a  fixed format ASCII file,  _problem_name_`.rrt`. The binary range file (  `.rng`) must already exist, created by  `XPRSrange`(  `RANGE`).
 
 """
 function writeprtrange(prob::XpressProblem)
@@ -1266,13 +1266,13 @@ end
 """
     int XPRS_CC XPRSwriterange(XPRSprob prob, const char *filename, const char *flags);
 
-Writes the ranging information to a CSV format ASCII file, problem_name`.rsc` (and `.hdr`). The binary range file ( `.rng`) must already exist, created by XPRSrange ( RANGE) and an associated header file.
+Writes the ranging information to a  CSV format ASCII file,  _problem_name_`.rsc` (and  `.hdr`). The binary range file (  `.rng`) must already exist, created by  XPRSrange (  RANGE) and an associated header file.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the ranging information is to be written. If omitted, the default problem_name will be used. The extensions `.hdr` and `.rsc` will be appended to the filename.
-- `flags`: Flags to control which optional fields are output:
+- `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which the ranging information is to be written. If omitted, the default _problem_name_ will be used. The extensions `.hdr` and `.rsc` will be appended to the filename.
+- `flags`: Flags to control which optional fields are output:`s`: sequence number;`n`: name;`t`: type;`b`: basis status;`a`: activity;`c`: cost (column), slack (row).If no flags are specified, all fields are output.
 
 """
 function writerange(prob::XpressProblem, _sfilename::String, _sflags)
@@ -1304,7 +1304,7 @@ end
 """
     int XPRS_CC XPRSgetinfeas(XPRSprob prob, int *npv, int *nps, int *nds, int *ndv, int mx[], int mslack[], int mdual[], int mdj[]);
 
-Returns a list of infeasible primal and dual variables.
+Returns a list of infeasible primal and dual  variables.
 
 ### Arguments
 
@@ -1326,7 +1326,7 @@ end
 """
     int XPRS_CC XPRSgetscaledinfeas(XPRSprob prob, int *npv, int *nps, int *nds, int *ndv, int mx[], int mslack[], int mdual[], int mdj[]);
 
-Returns a list of scaled infeasible primal and dual variables for the original problem. If the problem is currently presolved, it is postsolved before the function returns.
+Returns a list of scaled infeasible primal and dual  variables for the original problem. If the problem is currently  presolved, it is postsolved before the function returns.
 
 ### Arguments
 
@@ -1348,7 +1348,7 @@ end
 """
     int XPRS_CC XPRSgetunbvec(XPRSprob prob, int *junb);
 
-Returns the index vector which causes the primal simplex or dual simplex algorithm to determine that a matrix is primal or dual unbounded respectively.
+Returns the index vector which causes the primal simplex or dual simplex algorithm to determine that a matrix is primal or dual  unbounded respectively.
 
 ### Arguments
 
@@ -1393,7 +1393,7 @@ end
 """
     int XPRS_CC XPRSgetobj(XPRSprob prob, double obj[], int first, int last);
 
-Returns the  objective function coefficients for the columns in a given range.
+Returns the   objective function coefficients for the columns in a given range.
 
 ### Arguments
 
@@ -1415,7 +1415,7 @@ end
 """
     int XPRS_CC XPRSgetrhs(XPRSprob prob, double rhs[], int first, int last);
 
-Returns the right hand side elements for the rows in a given range.
+Returns the  right hand side elements for the rows in a given range.
 
 ### Arguments
 
@@ -1443,7 +1443,7 @@ end
 """
     int XPRS_CC XPRSgetrhsrange(XPRSprob prob, double range[], int first, int last);
 
-Returns the  right hand side range values for the rows in a given range.
+Returns the   right hand side range values for the rows in a given range.
 
 ### Arguments
 
@@ -1460,7 +1460,7 @@ end
 """
     int XPRS_CC XPRSgetlb(XPRSprob prob, double lb[], int first, int last);
 
-Returns the lower  bounds for the  columns in a given range.
+Returns the lower   bounds for the   columns in a given range.
 
 ### Arguments
 
@@ -1488,7 +1488,7 @@ end
 """
     int XPRS_CC XPRSgetub(XPRSprob prob, double ub[], int first, int last);
 
-Returns the upper bounds for the columns in a given range.
+Returns the upper  bounds for the columns in a given range.
 
 ### Arguments
 
@@ -1516,12 +1516,12 @@ end
 """
     int XPRS_CC XPRSgetcols(XPRSprob prob, int mstart[], int mrwind[], double dmatval[], int size, int *nels, int first, int last);
 
-Returns the nonzeros in the constraint matrix for the columns in a given range.
+Returns the nonzeros in the constraint  matrix for the  columns in a given range.
 
 """
     int XPRS_CC XPRSgetcols(XPRSprob prob, int mstart[], int mrwind[], double dmatval[], int size, int *nels, int first, int last);
 
-Returns the nonzeros in the constraint matrix for the columns in a given range.
+Returns the nonzeros in the constraint  matrix for the  columns in a given range.
 
 ### Arguments
 
@@ -1559,7 +1559,7 @@ end
 """
     int XPRS_CC XPRSgetrows(XPRSprob prob, int mstart[], int mclind[], double dmatval[], int size, int *nels, int first, int last);
 
-Returns the  nonzeros in the constraint matrix for the rows in a given range.
+Returns the   nonzeros in the constraint matrix for the rows in a given range.
 
 ### Arguments
 
@@ -1577,7 +1577,7 @@ function getrows(prob::XpressProblem, _mstart::Vector{<:Integer}, _mrwind::Vecto
 """
     int XPRS_CC XPRSgetrows(XPRSprob prob, int mstart[], int mclind[], double dmatval[], int size, int *nels, int first, int last);
 
-Returns the  nonzeros in the constraint matrix for the rows in a given range.
+Returns the   nonzeros in the constraint matrix for the rows in a given range.
 
 ### Arguments
 
@@ -1639,12 +1639,12 @@ end
 """
     int XPRS_CC XPRSgetmqobj (XPRSprob prob, int mstart[], int mclind[], double dobjval[], int size, int *nels, int first, int last);
 
-Returns the nonzeros in the quadratic objective coefficients matrix for the columns in a given range. To achieve maximum efficiency, `XPRSgetmqobj` returns the lower triangular part of this matrix only.
+Returns the nonzeros in the quadratic objective coefficients matrix for the columns in a given range. To achieve maximum efficiency,  `XPRSgetmqobj` returns the lower triangular part of this matrix only.
 
 """
     int XPRS_CC XPRSgetmqobj (XPRSprob prob, int mstart[], int mclind[], double dobjval[], int size, int *nels, int first, int last);
 
-Returns the nonzeros in the quadratic objective coefficients matrix for the columns in a given range. To achieve maximum efficiency, `XPRSgetmqobj` returns the lower triangular part of this matrix only.
+Returns the nonzeros in the quadratic objective coefficients matrix for the columns in a given range. To achieve maximum efficiency,  `XPRSgetmqobj` returns the lower triangular part of this matrix only.
 
 ### Arguments
 
@@ -1687,7 +1687,7 @@ Provides a basic optimal solution for a given solution of an LP problem. This fu
 ### Arguments
 
 - `prob`: The current problem.
-- `status`: Pointer to an `int` where the status will be returned. The status is one of:
+- `status`: Pointer to an `int` where the status will be returned. The status is one of:`0`: The crossover is successful.`1`: The crossover is not performed because the problem has no solution.
 
 """
 function crossoverlpsol(prob::XpressProblem, status)
@@ -1733,7 +1733,7 @@ end
 """
     int XPRS_CC XPRSiisnext(XPRSprob prob, int *status_code);
 
-Continues the search for further Irreducible Infeasible Sets (IIS), or calls XPRSiisfirst ( IIS) if no IIS has been identified yet.
+Continues the search for further Irreducible Infeasible Sets (IIS), or calls  XPRSiisfirst (  IIS) if no IIS has been identified yet.
 
 ### Arguments
 
@@ -1751,7 +1751,7 @@ end
 """
     int XPRS_CC XPRSiisstatus(XPRSprob prob, int *iiscount, int rowsizes[], int colsizes[], double suminfeas[], int numinfeas[]);
 
-Returns statistics on the Irreducible Infeasible Sets (IIS) found so far by XPRSiisfirst ( IIS), XPRSiisnext ( IIS`-n`) or XPRSiisall ( IIS`-a`).
+Returns statistics on the Irreducible Infeasible Sets (IIS) found so far by  XPRSiisfirst (  IIS),  XPRSiisnext (  IIS`-n`) or  XPRSiisall (  IIS`-a`).
 
 ### Arguments
 
@@ -1825,12 +1825,12 @@ Returns information for an Irreducible Infeasible Set: size, variables (row and 
 - `colnumber`: Pointer to an integer where the number of bounds in the IIS will be returned.
 - `miisrow`: Indices of rows in the IIS. Can be NULL if not required.
 - `miiscol`: Indices of bounds (columns) in the IIS. Can be NULL if not required.
-- `constrainttype`: Sense of rows in the IIS:
-- `colbndtype`: Sense of bound in the IIS:
+- `constrainttype`: Sense of rows in the IIS:`L`: for less or equal row;`G`: for greater or equal row.`E`: for an equality row (for a non LP IIS);`1`: for a SOS1 row;`2`: for a SOS2 row;`I`: for an indicator row.Can be NULL if not required.
+- `colbndtype`: Sense of bound in the IIS:`U`: for upper bound;`L`: for lower bound.`F`: for fixed columns (for a non LP IIS);`B`: for a binary column;`I`: for an integer column;`P`: for a partial integer columns;`S`: for a semi-continuous column;`R`: for a semi-continuous integer column.Can be NULL if not required.
 - `duals`: The dual multipliers associated with the rows. Can be NULL if not required.
 - `rdcs`: The dual multipliers (reduced costs) associated with the bounds. Can be NULL if not required.
-- `isolationrows`: The isolation status of the rows:
-- `isolationcols`: The isolation status of the bounds:
+- `isolationrows`: The isolation status of the rows:`-1`: if isolation information is not available for row (run iis isolations);`0`: if row is not in isolation;`1`: if row is in isolation.Can be NULL if not required.
+- `isolationcols`: The isolation status of the bounds:`-1`: if isolation information is not available for column (run iis isolations);`0`: if column is not in isolation;`1`: if column is in isolation. Can be NULL if not required.
 
 """
 function getiisdata(prob::XpressProblem, number, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, duals, rdcs, isolationrows, isolationcols)
@@ -1844,13 +1844,13 @@ end
 """
     int XPRS_CC XPRSgetpresolvebasis(XPRSprob prob, int rstatus[], int cstatus[]);
 
-Returns the current  basis from memory into the user's data areas. If the problem is presolved, the presolved basis will be returned. Otherwise the original basis will be returned.
+Returns the current   basis from memory into the user's data areas. If the problem is presolved, the presolved basis will be returned. Otherwise the original basis will be returned.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `rstatus`: Integer array of length ROWS to the basis status of the stack, surplus or artificial variable associated with each row. The status will be one of:
-- `cstatus`: Integer array of length COLS to hold the basis status of the columns in the constraint matrix. The status will be one of:
+- `rstatus`: Integer array of length ROWS to the basis status of the stack, surplus or artificial variable associated with each row. The status will be one of:`0`: slack, surplus or artificial is non-basic at lower bound;`1`: slack, surplus or artificial is basic;`2`: slack or surplus is non-basic at upper bound.May be `NULL` if not required.
+- `cstatus`: Integer array of length COLS to hold the basis status of the columns in the constraint matrix. The status will be one of:`0`: variable is non-basic at lower bound, or superbasic at zero if the variable has no lower bound;`1`: variable is basic;`2`: variable is at upper bound;`3`: variable is super-basic.May be `NULL` if not required.
 
 """
 function getpresolvebasis(prob::XpressProblem, _mrowstatus, _mcolstatus)
@@ -1860,13 +1860,13 @@ end
 """
     int XPRS_CC XPRSloadpresolvebasis(XPRSprob prob, const int rstatus[], const int cstatus[]);
 
-Loads a presolved basis from the user's areas.
+Loads a  presolved  basis from the user's areas.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `rstatus`: Integer array of length ROWS containing the basis status of the slack, surplus or artificial variable associated with each row. The status must be one of:
-- `cstatus`: Integer array of length COLS containing the basis status of each of the columns in the matrix. The status must be one of:
+- `rstatus`: Integer array of length ROWS containing the basis status of the slack, surplus or artificial variable associated with each row. The status must be one of:`0`: slack, surplus or artificial is non-basic at lower bound;`1`: slack, surplus or artificial is basic;`2`: slack or surplus is non-basic at upper bound.
+- `cstatus`: Integer array of length COLS containing the basis status of each of the columns in the matrix. The status must be one of:`0`: variable is non-basic at lower bound or superbasic at zero if the variable has no lower bound;`1`: variable is basic;`2`: variable is at upper bound;`3`: variable is super-basic.
 
 """
 function loadpresolvebasis(prob::XpressProblem, _mrowstatus, _mcolstatus)
@@ -1876,17 +1876,17 @@ end
 """
     int XPRS_CC XPRSgetglobal(XPRSprob prob, int *nglents, int *sets, char qgtype[], int mgcols[], double dlim[], char qstype[], int msstart[], int mscols[], double dref[]);
 
-Retrieves  global information about a problem. It must be called before XPRSmipoptimize if the presolve option is used.
+Retrieves   global information about a problem. It must be called before  XPRSmipoptimize if the presolve option is used.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `nglents`: Pointer to the integer where the number of binary, integer, semi-continuous, semi-continuous integer and partial integer entities will be returned. This is equal to the problem attribute MIPENTS .
 - `sets`: Pointer to the integer where the number of SOS1 and SOS2 sets will be returned. It can be retrieved from the problem attribute `SETS` .
-- `qgtype`: Character array of length `nglents` where the entity types will be returned. The types will be one of:
+- `qgtype`: Character array of length `nglents` where the entity types will be returned. The types will be one of:`B`: binary variables;`I`: integer variables;`P`: partial integer variables;`S`: semi-continuous variables;`R`: semi-continuous integer variables.
 - `mgcols`: Integer array of length `nglents` where the column indices of the global entities will be returned.
 - `dlim`: Double array of length `nglents` where the limits for the partial integer variables and lower bounds for the semi-continuous and semi-continuous integer variables will be returned (any entries in the positions corresponding to binary and integer variables will be meaningless).
-- `qstype`: Character array of length `sets` where the set types will be returned. The set types will be one of:
+- `qstype`: Character array of length `sets` where the set types will be returned. The set types will be one of:`1`: SOS1 type sets;`2`: SOS2 type sets.
 - `msstart`: Integer array where the offsets into the `mscols` and `dref` arrays indicating the start of the sets will be returned. This array must be of length `sets+1` , the final element will contain the offset where set `sets+1` would start and equals the length of the `mscols` and `dref` arrays, SETMEMBERS .
 - `mscols`: Integer array of length `SETMEMBERS` where the columns in each set will be returned.
 - `dref`: Double array of length `SETMEMBERS` where the reference row entries for each member of the sets will be returned.
@@ -1903,13 +1903,13 @@ end
 """
     int XPRS_CC XPRSwriteprob(XPRSprob prob, const char *filename, const char *flags);
 
-Writes the current problem to an MPS or LP file.
+Writes the current  problem to an MPS or LP file.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `filename`: A string of up to MAXPROBNAMELENGTH characters to contain the file name to which the problem is to be written. If omitted, the default problem_name is used with a `.mps` extension, unless the `l` flag is used in which case the extension is `.lp` .
-- `flags`: Flags, which can be one or more of the following:
+- `filename`: A string of up to MAXPROBNAMELENGTH characters to contain the file name to which the problem is to be written. If omitted, the default _problem_name_ is used with a `.mps` extension, unless the `l` flag is used in which case the extension is `.lp` .
+- `flags`: Flags, which can be one or more of the following:`o`: one element per line;`n`: scaled;`s`: scrambled vector names;`l`: output in LP format;`p`: full precision of numerical values (obsolete as this is now default behavior).`t`: omit the Xpress header in LP format;
 
 """
 function writeprob(prob::XpressProblem, _sfilename::String, _sflags="")
@@ -1919,12 +1919,12 @@ end
 """
     int XPRS_CC XPRSgetnames(XPRSprob prob, int type, char names[], int first, int last);
 
-Returns the names for the  rows,  columns or  set in a given range. The names will be returned in a character buffer, each name being separated by a null character.
+Returns the names for the   rows,   columns or   set in a given range. The names will be returned in a character buffer, each name being separated by a null character.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `type`:
+- `type`: `1`: if row names are required;`2`: if column names are required.`3`: if set names are required.
 - `names`: Buffer long enough to hold the names. Since each name is `8*NAMELENGTH` characters long (plus a null terminator), the array, `names` , would be required to be at least as long as ( `first-last+1` )*( `8*NAMELENGTH+1` ) characters. The names of the row/column/set `first+i` will be written into the `names` buffer starting at position `i*8*NAMELENGTH+i` .
 - `first`: First row, column or set in the range.
 - `last`: Last row, column or set in the range.
@@ -1937,12 +1937,12 @@ end
 """
     int XPRS_CC XPRSgetrowtype(XPRSprob prob, char qrtype[], int first, int last);
 
-Returns the row types for the rows in a given range.
+Returns the  row types for the rows in a given range.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `qrtype`: Character array of length `last-first+1` characters where the row types will be returned:
+- `qrtype`: Character array of length `last-first+1` characters where the row types will be returned:`N`: indicates a free constraint;`L`: indicates a ≤ constraint;`E`: indicates an = constraint;`G`: indicates a ≥ constraint;`R`: indicates a range constraint.
 - `first`: First row in the range.
 - `last`: Last row in the range.
 
@@ -1965,7 +1965,7 @@ end
 """
     int XPRS_CC XPRSloadsecurevecs(XPRSprob prob, int nr, int nc, const int mrow[], const int mcol[]);
 
-Allows the user to mark rows and columns in order to prevent the presolve removing these rows and columns from the matrix.
+Allows the user to mark rows and columns in order to prevent the  presolve removing these rows and columns from the matrix.
 
 ### Arguments
 
@@ -1983,12 +1983,12 @@ end
 """
     int XPRS_CC XPRSgetcoltype(XPRSprob prob, char coltype[], int first, int last);
 
-Returns the column types for the columns in a given range.
+Returns the column types for the  columns in a given range.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `coltype`: Character array of length `last-first+1` where the column types will be returned:
+- `coltype`: Character array of length `last-first+1` where the column types will be returned:`C`: indicates a continuous variable;`I`: indicates an integer variable;`B`: indicates a binary variable;`S`: indicates a semi-continuous variable;`R`: indicates a semi-continuous integer variable;`P`: indicates a partial integer variable.
 - `first`: First column in the range.
 - `last`: Last column in the range.
 
@@ -2016,8 +2016,8 @@ Returns the current basis into the user's data arrays.
 ### Arguments
 
 - `prob`: The current problem.
-- `rstatus`: Integer array of length ROWS to the basis status of the slack, surplus or artificial variable associated with each row. The status will be one of:
-- `cstatus`: Integer array of length COLS to hold the basis status of the columns in the constraint matrix. The status will be one of:
+- `rstatus`: Integer array of length ROWS to the basis status of the slack, surplus or artificial variable associated with each row. The status will be one of:`0`: slack, surplus or artificial is non-basic at lower bound;`1`: slack, surplus or artificial is basic;`2`: slack or surplus is non-basic at upper bound.`3`: slack or surplus is super-basic.May be `NULL` if not required.
+- `cstatus`: Integer array of length COLS to hold the basis status of the columns in the constraint matrix. The status will be one of:`0`: variable is non-basic at lower bound, or superbasic at zero if the variable has no lower bound;`1`: variable is basic;`2`: variable is non-basic at upper bound;`3`: variable is super-basic.May be `NULL` if not required.
 
 """
 function getbasis(prob::XpressProblem, _mrowstatus, _mcolstatus)
@@ -2027,13 +2027,13 @@ end
 """
     int XPRS_CC XPRSloadbasis(XPRSprob prob, const int rstatus[], const int cstatus[]);
 
-Loads a basis from the user's areas.
+Loads a  basis from the user's areas.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `rstatus`: Integer array of length ROWS containing the basis status of the slack, surplus or artificial variable associated with each row. The status must be one of:
-- `cstatus`: Integer array of length COLS containing the basis status of each of the columns in the constraint matrix. The status must be one of:
+- `rstatus`: Integer array of length ROWS containing the basis status of the slack, surplus or artificial variable associated with each row. The status must be one of:`0`: slack, surplus or artificial is non-basic at lower bound;`1`: slack, surplus or artificial is basic;`2`: slack or surplus is non-basic at upper bound.`3`: slack or surplus is super-basic.
+- `cstatus`: Integer array of length COLS containing the basis status of each of the columns in the constraint matrix. The status must be one of:`0`: variable is non-basic at lower bound or superbasic at zero if the variable has no lower bound;`1`: variable is basic;`2`: variable is at upper bound;`3`: variable is super-basic.
 
 """
 function loadbasis(prob::XpressProblem, _mrowstatus, _mcolstatus)
@@ -2043,12 +2043,12 @@ end
 """
     int XPRS_CC XPRSgetindex(XPRSprob prob, int type, const char *name, int *seq);
 
-Returns the index for a specified  row or column name.
+Returns the index for a specified   row or  column name.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `type`:
+- `type`: `1`: if a row index is required;`2`: if a column index is required.
 - `name`: Null terminated string.
 - `seq`: Pointer of the integer where the row or column index number will be returned. A value of `-1` will be returned if the row or column does not exist.
 
@@ -2060,27 +2060,27 @@ end
 """
     int XPRS_CC XPRSaddrows(XPRSprob prob, int newrow, int newnz, const char qrtype[], const double rhs[], const double range[], const int mstart[], const int mclind[], const double dmatval[]);
 
-Allows rows to be added to the matrix after passing it to the Optimizer using the input routines.
+Allows  rows to be added to the matrix after passing it to the Optimizer using the input routines.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `newrow`: Number of new rows.
 - `newnz`: Number of new nonzeros in the added rows.
-- `qrtype`: Character array of length newrow containing the row types:
+- `qrtype`: Character array of length newrow containing the row types:`L`: indicates a ≤ row;`G`: indicates ≥ row;`E`: indicates an = row.`R`: indicates a range constraint;`N`: indicates a nonbinding constraint.
 - `rhs`: Double array of length `newrow` containing the right hand side elements.
 - `range`: Double array of length `newrow` containing the row range elements. This may be `NULL` if there are no ranged constraints. The values in the `range` array will only be read for `R` type rows. The entries for other type rows will be ignored.
 """
     int XPRS_CC XPRSaddrows(XPRSprob prob, int newrow, int newnz, const char qrtype[], const double rhs[], const double range[], const int mstart[], const int mclind[], const double dmatval[]);
 
-Allows rows to be added to the matrix after passing it to the Optimizer using the input routines.
+Allows  rows to be added to the matrix after passing it to the Optimizer using the input routines.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `newrow`: Number of new rows.
 - `newnz`: Number of new nonzeros in the added rows.
-- `qrtype`: Character array of length newrow containing the row types:
+- `qrtype`: Character array of length newrow containing the row types:`L`: indicates a ≤ row;`G`: indicates ≥ row;`E`: indicates an = row.`R`: indicates a range constraint;`N`: indicates a nonbinding constraint.
 - `rhs`: Double array of length `newrow` containing the right hand side elements.
 - `range`: Double array of length `newrow` containing the row range elements. This may be `NULL` if there are no ranged constraints. The values in the `range` array will only be read for `R` type rows. The entries for other type rows will be ignored.
 - `mstart`: Integer array of length `newrow` containing the offsets in the `mclind` and `dmatval` arrays of the start of the elements for each row.
@@ -2121,7 +2121,7 @@ end
 """
     int XPRS_CC XPRSdelrows(XPRSprob prob, int nrows, const int mindex[]);
 
-Delete rows from a matrix.
+Delete rows from a  matrix.
 
 ### Arguments
 
@@ -2138,7 +2138,7 @@ end
 """
     int XPRS_CC XPRSaddcols(XPRSprob prob, int newcol, int newnz, const double objx[], const int mstart[], const int mrwind[], const double dmatval[], const double bdl[], const double bdu[]);
 
-Allows columns to be added to the  matrix after passing it to the Optimizer using the input routines.
+Allows columns to be added to the   matrix after passing it to the Optimizer using the input routines.
 
 ### Arguments
 
@@ -2150,7 +2150,7 @@ Allows columns to be added to the  matrix after passing it to the Optimizer usin
 """
     int XPRS_CC XPRSaddcols(XPRSprob prob, int newcol, int newnz, const double objx[], const int mstart[], const int mrwind[], const double dmatval[], const double bdl[], const double bdu[]);
 
-Allows columns to be added to the  matrix after passing it to the Optimizer using the input routines.
+Allows columns to be added to the   matrix after passing it to the Optimizer using the input routines.
 
 ### Arguments
 
@@ -2197,7 +2197,7 @@ end
 """
     int XPRS_CC XPRSdelcols(XPRSprob prob, int ncols, const int mindex[]);
 
-Delete columns from a matrix.
+Delete columns from a  matrix.
 
 ### Arguments
 
@@ -2222,7 +2222,7 @@ Used to change the type of a column in the matrix.
 - `prob`: The current problem.
 - `nels`: Number of columns to change.
 - `mindex`: Integer array of length `nels` containing the indices of the columns.
-- `qctype`: Character array of length `nels` giving the new column types:
+- `qctype`: Character array of length `nels` giving the new column types:`C`: indicates a continuous column;`B`: indicates a binary column;`I`: indicates an integer column.`S`: indicates a semi–continuous column. The semi–continuous lower bound will be set to `1.0` .`R`: indicates a semi–integer column. The semi–integer lower bound will be set to `1.0` .`P`: indicates a partial integer column. The partial integer bound will be set to `1.0` .
 
 """
 function chgcoltype(prob::XpressProblem, _mindex::Vector{<:Integer}, _coltype::Vector{Cchar})
@@ -2234,14 +2234,14 @@ end
 """
     int XPRS_CC XPRSchgrowtype(XPRSprob prob, int nels, const int mindex[], const char qrtype[]);
 
-Used to change the type of a row in the matrix.
+Used to change the type of a row in the  matrix.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `nels`: Number of rows to change.
 - `mindex`: Integer array of length `nels` containing the indices of the rows.
-- `qrtype`: Character array of length `nels` giving the new row types:
+- `qrtype`: Character array of length `nels` giving the new row types:`L`: indicates a ≤ row;`E`: indicates an = row;`G`: indicates a ≥ row;`R`: indicates a range row;`N`: indicates a free row.
 
 """
 function chgrowtype(prob::XpressProblem, _mindex::Vector{<:Integer}, _srowtype::Vector{Cchar})
@@ -2253,14 +2253,14 @@ end
 """
     int XPRS_CC XPRSchgbounds(XPRSprob prob, int nbnds, const int mindex[], const char qbtype[], const double bnd[]);
 
-Used to change the bounds on columns in the matrix.
+Used to change the  bounds on columns in the  matrix.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `nbnds`: Number of bounds to change.
 - `mindex`: Integer array of size `nbnds` containing the indices of the columns on which the bounds will change.
-- `qbtype`: Character array of length `nbnds` indicating the type of bound to change:
+- `qbtype`: Character array of length `nbnds` indicating the type of bound to change:`U`: indicates change the upper bound;`L`: indicates change the lower bound;`B`: indicates change both bounds, i.e. fix the column.
 - `bnd`: Double array of length `nbnds` giving the new bound values.
 
 """
@@ -2273,7 +2273,7 @@ end
 """
     int XPRS_CC XPRSchgobj(XPRSprob prob, int nels, const int mindex[], const double obj[]);
 
-Used to change the  objective function coefficients.
+Used to change the   objective function coefficients.
 
 ### Arguments
 
@@ -2293,7 +2293,7 @@ end
 """
     int XPRS_CC XPRSchgcoef(XPRSprob prob, int irow, int icol, double dval);
 
-Used to change a single coefficient in the matrix. If the coefficient does not already exist, a new coefficient will be added to the matrix. If many coefficients are being added to a row of the matrix, it may be more efficient to delete the old row of the matrix and add a new row.
+Used to change a single coefficient in the  matrix. If the coefficient does not already exist, a new coefficient will be added to the matrix. If many coefficients are being added to a row of the matrix, it may be more efficient to delete the old row of the matrix and add a new row.
 
 ### Arguments
 
@@ -2310,12 +2310,12 @@ end
 """
     int XPRS_CC XPRSchgmcoef(XPRSprob prob, int nels, const int mrow[], const int mcol[], const double dval[]);
 
-Used to change multiple coefficients in the matrix. If any coefficient does not already exist, it will be added to the matrix. If many coefficients are being added to a row of the matrix, it may be more efficient to delete the old row of the matrix and add a new one.
+Used to change multiple coefficients in the  matrix. If any coefficient does not already exist, it will be added to the matrix. If many coefficients are being added to a row of the matrix, it may be more efficient to delete the old row of the matrix and add a new one.
 
 """
     int XPRS_CC XPRSchgmcoef(XPRSprob prob, int nels, const int mrow[], const int mcol[], const double dval[]);
 
-Used to change multiple coefficients in the matrix. If any coefficient does not already exist, it will be added to the matrix. If many coefficients are being added to a row of the matrix, it may be more efficient to delete the old row of the matrix and add a new one.
+Used to change multiple coefficients in the  matrix. If any coefficient does not already exist, it will be added to the matrix. If many coefficients are being added to a row of the matrix, it may be more efficient to delete the old row of the matrix and add a new one.
 
 ### Arguments
 
@@ -2347,7 +2347,7 @@ end
 """
     int XPRS_CC XPRSchgmqobj(XPRSprob prob, int nels, const int mqcol1[], const int mqcol2[], const double dval[]);
 
-Used to change multiple  quadratic coefficients in the  objective function. If any of the coefficients does not exist already, new coefficients will be added to the objective function.
+Used to change multiple   quadratic coefficients in the   objective function. If any of the coefficients does not exist already, new coefficients will be added to the objective function.
 
 ### Arguments
 
@@ -2355,7 +2355,7 @@ Used to change multiple  quadratic coefficients in the  objective function. If a
 """
     int XPRS_CC XPRSchgmqobj(XPRSprob prob, int nels, const int mqcol1[], const int mqcol2[], const double dval[]);
 
-Used to change multiple  quadratic coefficients in the  objective function. If any of the coefficients does not exist already, new coefficients will be added to the objective function.
+Used to change multiple   quadratic coefficients in the   objective function. If any of the coefficients does not exist already, new coefficients will be added to the objective function.
 
 ### Arguments
 
@@ -2390,7 +2390,7 @@ end
 """
     int XPRS_CC XPRSchgqobj(XPRSprob prob, int icol, int jcol, double dval);
 
-Used to change a single  quadratic coefficient in the  objective function corresponding to the variable pair `(icol,jcol)` of the Hessian matrix.
+Used to change a single   quadratic coefficient in the   objective function corresponding to the variable pair  `(icol,jcol)` of the  Hessian matrix.
 
 ### Arguments
 
@@ -2407,7 +2407,7 @@ end
 """
     int XPRS_CC XPRSchgrhs(XPRSprob prob, int nels, const int mindex[], const double rhs[]);
 
-Used to change right–hand side values of the problem.
+Used to change  right–hand side values of the  problem.
 
 ### Arguments
 
@@ -2426,7 +2426,7 @@ end
 """
     int XPRS_CC XPRSchgrhsrange(XPRSprob prob, int nels, const int mindex[], const double rng[]);
 
-Used to change the range for a row of the problem matrix.
+Used to change the  range for a row of the problem  matrix.
 
 ### Arguments
 
@@ -2495,13 +2495,13 @@ end
 """
     int XPRS_CC XPRSrestore(XPRSprob prob, const char *probname, const char *flags);
 
-Restores the Optimizer's data structures from a file created by XPRSsave( SAVE). Optimization may then recommence from the point at which the file was created.
+Restores the Optimizer's data structures from a file created by  XPRSsave(  SAVE). Optimization may then recommence from the point at which the file was created.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `probname`: A string of up to MAXPROBNAMELENGTH characters containing the problem name.
-- `flags`:
+- `flags`: `f`: Force the restoring of a save file even if it is from a different version.
 
 """
 function restore(prob::XpressProblem, _sprobname, _force)
@@ -2511,7 +2511,7 @@ end
 """
     int XPRS_CC XPRSpivot(XPRSprob prob, int in, int out);
 
-Performs a simplex pivot by bringing variable `in` into the basis and removing `out`.
+Performs a simplex pivot by bringing variable  `in` into the basis and removing  `out`.
 
 ### Arguments
 
@@ -2527,7 +2527,7 @@ end
 """
     int XPRS_CC XPRSgetpivots(XPRSprob prob, int in, int outlist[], double x[], double *dobj, int *npiv, int maxpiv);
 
-Returns a list of potential  leaving variables if a specified variable enters the basis.
+Returns a list of potential   leaving variables if a specified variable enters the basis.
 
 ### Arguments
 
@@ -2547,19 +2547,19 @@ end
 """
     int XPRS_CC XPRSaddcuts(XPRSprob prob, int ncuts, const int mtype[], const char qrtype[], const double drhs[], const int mstart[], const int mcols[], const double dmatval[]);
 
-Adds cuts directly to the matrix at the current node. Any cuts added to the matrix at the current node and not deleted at the current node will be automatically added to the cut pool. The cuts added to the cut pool will be automatically restored at descendant nodes.
+Adds  cuts directly to the matrix at the current node. Any cuts added to the matrix at the current node and not deleted at the current node will be automatically added to the  cut pool. The cuts added to the cut pool will be automatically restored at descendant nodes.
 
 """
     int XPRS_CC XPRSaddcuts(XPRSprob prob, int ncuts, const int mtype[], const char qrtype[], const double drhs[], const int mstart[], const int mcols[], const double dmatval[]);
 
-Adds cuts directly to the matrix at the current node. Any cuts added to the matrix at the current node and not deleted at the current node will be automatically added to the cut pool. The cuts added to the cut pool will be automatically restored at descendant nodes.
+Adds  cuts directly to the matrix at the current node. Any cuts added to the matrix at the current node and not deleted at the current node will be automatically added to the  cut pool. The cuts added to the cut pool will be automatically restored at descendant nodes.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `ncuts`: Number of cuts to add.
 - `mtype`: Integer array of length `ncuts` containing the user assigned cut types. The cut types can be any integer chosen by the user, and are used to identify the cuts in other cut manager routines using user supplied parameters. The cut type can be interpreted as an integer or a bitmap - see XPRSdelcuts .
-- `qrtype`: Character array of length `ncuts` containing the row types:
+- `qrtype`: Character array of length `ncuts` containing the row types:`L`: indicates a ≤ row;`G`: indicates a ≥ row;`E`: indicates an = row.
 - `drhs`: Double array of length `ncuts` containing the right hand side elements for the cuts.
 - `mstart`: Integer array containing offset into the `mcols` and `dmatval` arrays indicating the start of each cut. This array is of length `ncuts+1` with the last element, `mstart[ncuts]` , being where cut `ncuts+1` would start.
 - `mcols`: Integer array of length `mstart[ncuts]` containing the column indices in the cuts.
@@ -2571,7 +2571,7 @@ Adds cuts directly to the matrix at the current node. Any cuts added to the matr
 - `prob`: The current problem.
 - `ncuts`: Number of cuts to add.
 - `mtype`: Integer array of length `ncuts` containing the user assigned cut types. The cut types can be any integer chosen by the user, and are used to identify the cuts in other cut manager routines using user supplied parameters. The cut type can be interpreted as an integer or a bitmap - see XPRSdelcuts .
-- `qrtype`: Character array of length `ncuts` containing the row types:
+- `qrtype`: Character array of length `ncuts` containing the row types:`L`: indicates a ≤ row;`G`: indicates a ≥ row;`E`: indicates an = row.
 - `drhs`: Double array of length `ncuts` containing the right hand side elements for the cuts.
 - `mstart`: Integer array containing offset into the `mcols` and `dmatval` arrays indicating the start of each cut. This array is of length `ncuts+1` with the last element, `mstart[ncuts]` , being where cut `ncuts+1` would start.
 - `mcols`: Integer array of length `mstart[ncuts]` containing the column indices in the cuts.
@@ -2590,14 +2590,14 @@ end
 """
     int XPRS_CC XPRSdelcuts(XPRSprob prob, int ibasis, int itype, int interp, double delta, int num, const XPRScut mcutind[]);
 
-Deletes cuts from the matrix at the current node. Cuts from the parent  node which have been automatically restored may be deleted as well as cuts added to the current node using XPRSaddcuts or XPRSloadcuts. The cuts to be deleted can be specified in a number of ways. If a cut is ruled out by any one of the criteria it will not be deleted.
+Deletes  cuts from the  matrix at the current  node. Cuts from the parent   node which have been automatically restored may be deleted as well as cuts added to the current node using  XPRSaddcuts or  XPRSloadcuts. The cuts to be deleted can be specified in a number of ways. If a cut is ruled out by any one of the criteria it will not be deleted.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `ibasis`: Ensures the basis will be valid if set to `1` . If set to `0` , cuts with non-basic slacks may be deleted.
 - `itype`: User defined type of the cut to be deleted.
-- `interp`: Way in which the cut `itype` is interpreted:
+- `interp`: Way in which the cut `itype` is interpreted:`-1`: match all cut types;`1`: treat cut types as numbers;`2`: treat cut types as bit maps - delete if any bit matches any bit set in `itype` ;`3`: treat cut types as bit maps - delete if all bits match those set in `itype` .
 - `delta`: Only delete cuts with an absolute slack value greater than `delta` . To delete all the cuts, this argument should be set to `XPRS_MINUSINFINITY` .
 - `num`: Number of cuts to drop if a list of cuts is provided. A value of `-1` indicates all cuts.
 - `mcutind`: Array containing pointers to the cuts which are to be deleted. This array may be `NULL` if `num` is set to `-1` otherwise it has length `num` .
@@ -2610,13 +2610,13 @@ end
 """
     int XPRS_CC XPRSdelcpcuts(XPRSprob prob, int itype, int interp, int ncuts, const XPRScut mcutind[]);
 
-During the branch and bound search, cuts are stored in the cut pool to be applied at descendant nodes. These cuts may be removed from a given node using XPRSdelcuts, but if this is to be applied in a large number of cases, it may be preferable to remove the cut completely from the cut pool. This is achieved using `XPRSdelcpcuts`.
+During the branch and bound search, cuts are stored in the  cut pool to be applied at descendant nodes. These cuts may be removed from a given node using  XPRSdelcuts, but if this is to be applied in a large number of cases, it may be preferable to remove the cut completely from the cut pool. This is achieved using  `XPRSdelcpcuts`.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `itype`: User defined cut type to match against.
-- `interp`: Way in which the cut `itype` is interpreted:
+- `interp`: Way in which the cut `itype` is interpreted:`-1`: match all cut types;`1`: treat cut types as numbers;`2`: treat cut types as bit maps - delete if any bit matches any bit set in `itype` ;`3`: treat cut types as bit maps - delete if all bits match those set in `itype` .
 - `ncuts`: The number of cuts to delete. A value of `-1` indicates delete all cuts.
 - `mcutind`: Array containing pointers to the cuts which are to be deleted. This array may be `NULL` if `ncuts` is `-1` , otherwise it has length `ncuts` .
 
@@ -2628,13 +2628,13 @@ end
 """
     int XPRS_CC XPRSgetcutlist(XPRSprob prob, int itype, int interp, int *ncuts, int size, XPRScut mcutind[]);
 
-Retrieves a list of cut pointers for the cuts active at the current node.
+Retrieves a list of cut pointers for the  cuts active at the current  node.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `itype`: User defined type of the cuts to be returned. A value of `-1` indicates return all active cuts.
-- `interp`: Way in which the cut type is interpreted:
+- `interp`: Way in which the cut type is interpreted:`-1`: get all cuts;`1`: treat cut types as numbers;`2`: treat cut types as bit maps - get cut if any bit matches any bit set in `itype` ;`3`: treat cut types as bit maps - get cut if all bits match those set in `itype` .
 - `ncuts`: Pointer to the integer where the number of active cuts of type `itype` will be returned.
 - `size`: Maximum number of cuts to be retrieved.
 - `mcutind`: Array of length `size` where the pointers to the cuts will be returned.
@@ -2647,13 +2647,13 @@ end
 """
     int XPRS_CC XPRSgetcpcutlist(XPRSprob prob, int itype, int interp, double delta, int *ncuts, int size, XPRScut mcutind[], double dviol[]);
 
-Returns a list of cut indices from the cut pool.
+Returns a list of cut indices from the  cut pool.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `itype`: The user defined type of the cuts to be returned.
-- `interp`: Way in which the cut type is interpreted:
+- `interp`: Way in which the cut type is interpreted:`-1`: get all cuts;`1`: treat cut types as numbers;`2`: treat cut types as bit maps - get cut if any bit matches any bit set in `itype` ;`3`: treat cut types as bit maps - get cut if all bits match those set in `itype` .
 - `delta`: Only those cuts with a signed violation greater than delta will be returned.
 - `ncuts`: Pointer to the integer where the number of cuts of type `itype` in the cut pool will be returned.
 - `size`: Maximum number of cuts to be returned.
@@ -2668,12 +2668,12 @@ end
 """
     int XPRS_CC XPRSgetcpcuts(XPRSprob prob, const XPRScut mindex[], int ncuts, int size, int mtype[], char qrtype[], int mstart[], int mcols[], double dmatval[], double drhs[]);
 
-Returns cuts from the  cut pool. A list of cut pointers in the array `mindex` must be passed to the routine. The columns and elements of the cut will be returned in the regions pointed to by the `mcols` and `dmatval` parameters. The columns and elements will be stored contiguously and the starting point of each cut will be returned in the region pointed to by the `mstart` parameter.
+Returns cuts from the   cut pool. A list of cut pointers in the array  `mindex` must be passed to the routine. The columns and elements of the cut will be returned in the regions pointed to by the  `mcols` and  `dmatval` parameters. The columns and elements will be stored contiguously and the starting point of each cut will be returned in the region pointed to by the  `mstart` parameter.
 
 """
     int XPRS_CC XPRSgetcpcuts(XPRSprob prob, const XPRScut mindex[], int ncuts, int size, int mtype[], char qrtype[], int mstart[], int mcols[], double dmatval[], double drhs[]);
 
-Returns cuts from the  cut pool. A list of cut pointers in the array `mindex` must be passed to the routine. The columns and elements of the cut will be returned in the regions pointed to by the `mcols` and `dmatval` parameters. The columns and elements will be stored contiguously and the starting point of each cut will be returned in the region pointed to by the `mstart` parameter.
+Returns cuts from the   cut pool. A list of cut pointers in the array  `mindex` must be passed to the routine. The columns and elements of the cut will be returned in the regions pointed to by the  `mcols` and  `dmatval` parameters. The columns and elements will be stored contiguously and the starting point of each cut will be returned in the region pointed to by the  `mstart` parameter.
 
 ### Arguments
 
@@ -2715,13 +2715,13 @@ end
 """
     int XPRS_CC XPRSloadcuts(XPRSprob prob, int itype, int interp, int ncuts, const XPRScut mcutind[]);
 
-Loads cuts from the cut pool into the matrix. Without calling `XPRSloadcuts` the cuts will remain in the cut pool but will not be active at the node. Cuts loaded at a node remain active at all descendant nodes unless they are deleted using XPRSdelcuts.
+Loads cuts from the  cut pool into the matrix. Without calling  `XPRSloadcuts` the cuts will remain in the cut pool but will not be active at the  node. Cuts loaded at a node remain active at all descendant nodes unless they are deleted using  XPRSdelcuts.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `itype`: Cut type.
-- `interp`: The way in which the cut type is interpreted:
+- `interp`: The way in which the cut type is interpreted:`-1`: load all cuts;`1`: treat cut types as numbers;`2`: treat cut types as bit maps - load cut if any bit matches any bit set in `itype` ;`3`: treat cut types as bit maps - `0` load cut if all bits match those set in `itype` .
 - `ncuts`: Number of cuts to load.
 - `mcutind`: Array of length `ncuts` containing pointers to the cuts to be loaded into the matrix. These are pointers returned by either XPRSstorecuts or XPRSgetcpcutlist .
 
@@ -2733,20 +2733,20 @@ end
 """
     int XPRS_CC XPRSstorecuts(XPRSprob prob, int ncuts, int nodupl, const int mtype[], const char qrtype[], const double drhs[], const int mstart[], XPRScut mindex[], const int mcols[], const double dmatval[]);
 
-Stores cuts into the cut pool, but does not apply them to the current node. These cuts must be explicitly loaded into the matrix using XPRSloadcuts or XPRSsetbranchcuts before they become active.
+Stores cuts into the  cut pool, but does not apply them to the current node. These cuts must be explicitly loaded into the matrix using  XPRSloadcuts or  XPRSsetbranchcuts before they become active.
 
 """
     int XPRS_CC XPRSstorecuts(XPRSprob prob, int ncuts, int nodupl, const int mtype[], const char qrtype[], const double drhs[], const int mstart[], XPRScut mindex[], const int mcols[], const double dmatval[]);
 
-Stores cuts into the cut pool, but does not apply them to the current node. These cuts must be explicitly loaded into the matrix using XPRSloadcuts or XPRSsetbranchcuts before they become active.
+Stores cuts into the  cut pool, but does not apply them to the current node. These cuts must be explicitly loaded into the matrix using  XPRSloadcuts or  XPRSsetbranchcuts before they become active.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `ncuts`: Number of cuts to add.
-- `nodupl`:
+- `nodupl`: `0`: do not exclude duplicates from the cut pool;`1`: duplicates are to be excluded from the cut pool;`2`: duplicates are to be excluded from the cut pool, ignoring cut type.
 - `mtype`: Integer array of length `ncuts` containing the cut types. The cut types can be any integer and are used to identify the cuts.
-- `qrtype`: Character array of length `ncuts` containing the row types:
+- `qrtype`: Character array of length `ncuts` containing the row types:`L`: indicates a ≤ row;`E`: indicates an = row;`G`: indicates a ≥ row.
 - `drhs`: Double array of length `ncuts` containing the right hand side elements for the cuts.
 - `mstart`: Integer array containing offsets into the `mcols` and `dmtval` arrays indicating the start of each cut. This array is of length `ncuts+1` with the last element `mstart[ncuts]` being where cut `ncuts+1` would start.
 - `mindex`: Array of length `ncuts` where the pointers to the cuts will be returned.
@@ -2758,9 +2758,9 @@ Stores cuts into the cut pool, but does not apply them to the current node. Thes
 
 - `prob`: The current problem.
 - `ncuts`: Number of cuts to add.
-- `nodupl`:
+- `nodupl`: `0`: do not exclude duplicates from the cut pool;`1`: duplicates are to be excluded from the cut pool;`2`: duplicates are to be excluded from the cut pool, ignoring cut type.
 - `mtype`: Integer array of length `ncuts` containing the cut types. The cut types can be any integer and are used to identify the cuts.
-- `qrtype`: Character array of length `ncuts` containing the row types:
+- `qrtype`: Character array of length `ncuts` containing the row types:`L`: indicates a ≤ row;`E`: indicates an = row;`G`: indicates a ≥ row.
 - `drhs`: Double array of length `ncuts` containing the right hand side elements for the cuts.
 - `mstart`: Integer array containing offsets into the `mcols` and `dmtval` arrays indicating the start of each cut. This array is of length `ncuts+1` with the last element `mstart[ncuts]` being where cut `ncuts+1` would start.
 - `mindex`: Array of length `ncuts` where the pointers to the cuts will be returned.
@@ -2785,7 +2785,7 @@ Presolves a row formulated in terms of the original variables such that it can b
 ### Arguments
 
 - `prob`: The current problem.
-- `qrtype`: The type of the row:
+- `qrtype`: The type of the row:`L`: indicates a ≤ row;`G`: indicates a ≥ row.
 - `nzo`: Number of elements in the `mcolso` and `dvalo` arrays.
 - `mcolso`: Integer array of length `nzo` containing the column indices of the row to presolve.
 - `dvalo`: Double array of length `nzo` containing the non-zero coefficients of the row to presolve.
@@ -2795,7 +2795,7 @@ Presolves a row formulated in terms of the original variables such that it can b
 - `mcolsp`: Integer array which will be filled with the column indices of the presolved row. It must be allocated to hold at least `COLS` elements.
 - `dvalp`: Double array which will be filled with the coefficients of the presolved row. It must be allocated to hold at least `COLS` elements.
 - `drhsp`: Pointer to the double where the presolved right-hand side will be returned.
-- `status`: Status of the presolved row:
+- `status`: Status of the presolved row:`-3`: Failed to presolve the row due to presolve dual reductions;`-2`: Failed to presolve the row due to presolve duplicate column reductions;`-1`: Failed to presolve the row due to an error. Check the Optimizer error code for the cause;`0`: The row was successfully presolved;`1`: The row was presolved, but may be relaxed.
 
 """
 function presolverow(prob::XpressProblem, qrtype, nzo, mcolso, dvalo, drhso, maxcoeffs, nzp, mcolsp, dvalp, drhsp, status)
@@ -2814,7 +2814,7 @@ Loads an LP solution for the problem into the Optimizer.
 - `slack`: Optional: double array of length ROWS containing the values of slack variables.
 - `dual`: Optional: double array of length ROWS containing the values of dual variables.
 - `dj`: Optional: double array of length COLS containing the values of reduced costs.
-- `status`: Pointer to an `int` where the status will be returned. The status is one of:
+- `status`: Pointer to an `int` where the status will be returned. The status is one of:`0`: Solution is loaded.`1`: Solution is not loaded because the problem is in presolved status.
 
 """
 function loadlpsol(prob::XpressProblem, _dx, _dslack, _dual, _dj, status)
@@ -2870,7 +2870,7 @@ Stores bounds for node separation using user separate callback function.
 - `prob`: The current problem.
 - `nbnds`: Number of bounds to store.
 - `mcols`: Array containing the column indices.
-- `qbtype`: Array containing the bounds types:
+- `qbtype`: Array containing the bounds types:`U`: indicates an upper bound;`L`: indicates a lower bound.
 - `dbds`: Array containing the bound values.
 - `mindex`: Pointer that the user will use to reference the stored bounds for the Optimizer in XPRSsetbranchbounds .
 
@@ -2882,7 +2882,7 @@ end
 """
     int XPRS_CC XPRSsetbranchcuts(XPRSprob prob, int ncuts, const XPRScut mindex[]);
 
-Specifies the pointers to cuts in the cut pool that are to be applied in order to branch on a user  global entity. This routine can only be called from the user separate callback function, XPRSaddcbsepnode.
+Specifies the pointers to cuts in the cut pool that are to be applied in order to branch on a user   global entity. This routine can only be called from the user separate callback function,  XPRSaddcbsepnode.
 
 ### Arguments
 
@@ -2898,7 +2898,7 @@ end
 """
     int XPRS_CC XPRSsetbranchbounds(XPRSprob prob, void *mindex);
 
-Specifies the bounds previously stored using XPRSstorebounds that are to be applied in order to branch on a user  global entity. This routine can only be called from the user separate callback function, XPRSaddcbsepnode.
+Specifies the bounds previously stored using  XPRSstorebounds that are to be applied in order to branch on a user   global entity. This routine can only be called from the user separate callback function,  XPRSaddcbsepnode.
 
 ### Arguments
 
@@ -2928,7 +2928,7 @@ end
 """
     int XPRS_CC XPRSbasiscondition(XPRSprob prob, double *condnum, double *scondnum);
 
-This function is deprecated, and will be removed in future releases. Please use the XPRSbasisstability function instead. Calculates the condition number of the current basis after solving the LP relaxation.
+This function is deprecated, and will be removed in future releases. Please use the  XPRSbasisstability function instead.  Calculates the condition number of the current basis after solving the LP relaxation.
 
 ### Arguments
 
@@ -2944,7 +2944,7 @@ end
 """
     int XPRS_CC XPRSgetmipsol(XPRSprob prob, double x[], double slack[]);
 
-Used to obtain the solution values of the last MIP solution that was found.
+Used to obtain the  solution values of the last MIP solution that was found.
 
 ### Arguments
 
@@ -2967,8 +2967,8 @@ Used to obtain the LP solution values following optimization.
 - `prob`: The current problem.
 - `x`: Double array of length COLS where the values of the primal variables will be returned. May be `NULL` if not required.
 - `slack`: Double array of length ROWS where the values of the slack variables will be returned. May be `NULL` if not required.
-- `dual`: Double array of length `ROWS` where the values of the dual variables ( cB ) will be returned. May be `NULL` if not required.
-- `dj`: Double array of length `COLS` where the reduced cost for each variable ( c-cBA ) will be returned. May be `NULL` if not required.
+- `dual`: Double array of length `ROWS` where the values of the dual variables ( _c\_B^TB^-1_ ) will be returned. May be `NULL` if not required.
+- `dj`: Double array of length `COLS` where the reduced cost for each variable ( _c^T-c\_B^TB^-1A_ ) will be returned. May be `NULL` if not required.
 
 """
 function getlpsol(prob::XpressProblem, _dx, _dslack, _dual, _dj)
@@ -2988,7 +2988,7 @@ end
 """
     int XPRS_CC XPRSdelsets(XPRSprob prob, int nsets, const int mindex[]);
 
-Delete sets from a problem.
+Delete sets from a  problem.
 
 ### Arguments
 
@@ -3004,14 +3004,14 @@ end
 """
     int XPRS_CC XPRSaddsets(XPRSprob prob, int newsets, int newnz, const char qrtype[], const int msstart[], const int mclind[], const double dref[]);
 
-Allows sets to be added to the problem after passing it to the Optimizer using the input routines.
+Allows  sets to be added to the problem after passing it to the Optimizer using the input routines.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `newsets`: Number of new sets.
 - `newnz`: Number of new nonzeros in the added sets.
-- `qrtype`: Character array of length newsets containing the set types:
+- `qrtype`: Character array of length newsets containing the set types:`1`: indicates a SOS1;`2`: indicates a SOS2;
 - `msstart`: Integer array of length `newsets` containing the offsets in the `mclind` and `dref` arrays of the start of the elements for each set.
 - `mclind`: Integer array of length `newnz` containing the (contiguous) column indices for the elements in each set.
 - `dref`: Double array of length `newnz` containing the (contiguous) reference values.
@@ -3029,14 +3029,14 @@ end
 """
     int XPRS_CC XPRSstrongbranch(XPRSprob prob, const int nbnds, const int mbndind[], const char cbndtype[], const double dbndval[], const int itrlimit, double dsobjval[], int msbstatus[]);
 
-Performs strong branching iterations on all specified bound changes. For each candidate bound change, `XPRSstrongbranch` performs dual simplex iterations starting from the current optimal solution of the base LP, and returns both the status and objective value reached after these iterations.
+Performs strong branching iterations on all specified bound changes. For each candidate bound change,  `XPRSstrongbranch` performs dual simplex iterations starting from the current optimal solution of the base LP, and returns both the status and objective value reached after these iterations.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `nbnds`: Number of bound changes to try.
 - `mbndind`: Integer array of size `nbnds` containing the indices of the columns on which the bounds will change.
-- `cbndtype`: Character array of length `nbnds` indicating the type of bound to change:
+- `cbndtype`: Character array of length `nbnds` indicating the type of bound to change:`U`: indicates change the upper bound;`L`: indicates change the lower bound;`B`: indicates change both bounds, i.e. fix the column.
 - `dbndval`: Double array of length `nbnds` giving the new bound values.
 - `itrlimit`: Maximum number of LP iterations to perform for each bound change.
 - `dsobjval`: Objective value of each LP after performing the strong branching iterations.
@@ -3106,7 +3106,7 @@ Manages suppression of messages.
 ### Arguments
 
 - `prob`: The problem for which message `errcode` is to have its suppression status changed; pass `NULL` if the message should have the status apply globally to all problems.
-- `errcode`: The id number of the message. Refer to the section Return Codes and Error Messages for a list of possible message numbers.
+- `errcode`: The id number of the message. Refer to the section _Return Codes and Error Messages_ for a list of possible message numbers.
 - `status`: Non-zero if the message is not suppressed; `0` otherwise. If a value for `status` is not supplied in the command-line call then the console Optimizer prints the value of the suppression status to screen i.e., non-zero if the message is not suppressed; `0` otherwise.
 
 """
@@ -3122,7 +3122,7 @@ Retrieves the current suppression status of a message.
 ### Arguments
 
 - `prob`: The problem to check for the suppression status of the message error code. Use `NULL` to check for the global suppression status of the message errcode.
-- `errcode`: The id number of the message. Refer to Chapter Return Codes and Error Messages for a list of possible message numbers.
+- `errcode`: The id number of the message. Refer to Chapter _Return Codes and Error Messages_ for a list of possible message numbers.
 - `status`: Non-zero if the message is not suppressed; `0` otherwise.
 
 """
@@ -3133,17 +3133,17 @@ end
 """
     int XPRS_CC XPRSrepairweightedinfeas(XPRSprob prob, int * scode, const double lrp_array[], const double grp_array[], const double lbp_array[], const double ubp_array[], char phase2, double delta, const char *optflags);
 
-By relaxing a set of selected constraints and bounds of an infeasible problem, it attempts to identify a 'solution' that violates the selected set of constraints and bounds minimally, while satisfying all other constraints and bounds. Among such solution candidates, it selects one that is optimal regarding to the original objective function. For the console version, see REPAIRINFEAS.
+By relaxing a set of selected constraints and bounds of an infeasible problem, it attempts to identify a 'solution' that violates the selected set of constraints and bounds minimally, while satisfying all other constraints and bounds. Among such solution candidates, it selects one that is optimal regarding to the original objective function. For the console version, see  REPAIRINFEAS.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `scode`: The status after the relaxation:
+- `scode`: The status after the relaxation:`1`: relaxed problem is infeasible;`2`: relaxed problem is unbounded;`3`: solution of the relaxed problem regarding the original objective is nonoptimal;`4`: error (when return code is nonzero);`5`: numerical instability;`6`: analysis of an infeasible relaxation was performed, but the relaxation is feasible.
 - `lrp_array`: Array of size `ROWS` containing the preferences for relaxing the less or equal side of row.
 - `grp_array`: Array of size `ROWS` containing the preferences for relaxing the greater or equal side of a row.
 - `lbp_array`: Array of size `COLS` containing the preferences for relaxing lower bounds.
 - `ubp_array`: Array of size `COLS` containing preferences for relaxing upper bounds.
-- `phase2`: Controls the second phase of optimization:
+- `phase2`: Controls the second phase of optimization:`o`: use the objective sense of the original problem (default);`x`: maximize the relaxed problem using the original objective;`f`: skip optimization regarding the original objective;`n`: minimize the relaxed problem using the original objective;`i`: if the relaxation is infeasible, generate an irreducible infeasible subset for the analys of the problem;`a`: if the relaxation is infeasible, generate all irreducible infeasible subsets for the analys of the problem.
 - `delta`: The relaxation multiplier in the second phase -1.
 - `optflags`: Specifies flags to be passed to the Optimizer.
 
@@ -3155,12 +3155,12 @@ end
 """
     int XPRS_CC XPRSrepairweightedinfeasbounds(XPRSprob prob, int * scode, const double lrp_array[], const double grp_array[], const double lbp_array[], const double ubp_array[], const double lrb_array[], const double grb_array[], const double lbb_array[], const double ubb_array[], char phase2, double delta, const char *optflags);
 
-An extended version of XPRSrepairweightedinfeas that allows for bounding the level of relaxation allowed.
+An extended version of  XPRSrepairweightedinfeas that allows for bounding the level of relaxation allowed.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `scode`: The status after the relaxation:
+- `scode`: The status after the relaxation:`1`: relaxed problem is infeasible;`2`: relaxed problem is unbounded;`3`: solution of the relaxed problem regarding the original objective is nonoptimal;`4`: error (when return code is nonzero);`5`: numerical instability;`6`: analysis of an infeasible relaxation was performed, but the relaxation is feasible.
 - `lrp_array`: Array of size `ROWS` containing the preferences for relaxing the less or equal side of row. For the console use `-lrp` value.
 - `grp_array`: Array of size `ROWS` containing the preferences for relaxing the greater or equal side of a row. For the console use `-grp` value.
 - `lbp_array`: Array of size `COLS` containing the preferences for relaxing lower bounds. For the console use `-lbp` value.
@@ -3169,7 +3169,7 @@ An extended version of XPRSrepairweightedinfeas that allows for bounding the lev
 - `grb_array`: Array of size `ROWS` containing the upper bounds on the amount the greater or equal side of a row can be relaxed. For the console use `-grb` value.
 - `lbb_array`: Array of size `COLS` containing the upper bounds on the amount the lower bounds can be relaxed. For the console use `-lbb` value.
 - `ubb_array`: Array of size `COLS` containing the upper bounds on the amount the upper bounds can be relaxed. For the console use `-ubb` value.
-- `phase2`: Controls the second phase of optimization:
+- `phase2`: Controls the second phase of optimization:`o`: use the objective sense of the original problem (default);`x`: maximize the relaxed problem using the original objective;`f`: skip optimization regarding the original objective;`n`: minimize the relaxed problem using the original objective;`i`: if the relaxation is infeasible, generate an irreducible infeasible subset for the analys of the problem;`a`: if the relaxation is infeasible, generate all irreducible infeasible subsets for the analys of the problem.
 - `delta`: The relaxation multiplier in the second phase -1.
 - `optflags`: Specifies flags to be passed to the Optimizer.
 - `r`: If a summary of the violated variables and constraints should be printed after the relaxed solution is determined.
@@ -3182,15 +3182,15 @@ end
 """
     int XPRS_CC XPRSrepairinfeas (XPRSprob prob, int *scode, char pflags, char oflags, char gflags, double lrp, double grp, double lbp, double ubp, double delta);
 
-Provides a simplified interface for XPRSrepairweightedinfeas.
+Provides a simplified interface for  XPRSrepairweightedinfeas.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `scode`: The status after the relaxation:
-- `pflags`: The type of penalties created from the preferences:
-- `oflags`: Controls the second phase of optimization:
-- `gflags`: Specifies if the global search should be done:
+- `scode`: The status after the relaxation:`0`: relaxed optimum found;`1`: relaxed problem is infeasible;`2`: relaxed problem is unbounded;`3`: solution of the relaxed problem regarding the original objective is nonoptimal;`4`: error (when return code is nonzero);`5`: numerical instability;`6`: analysis of an infeasible relaxation was performed, but the relaxation is feasible.
+- `pflags`: The type of penalties created from the preferences:`c`: each penalty is the reciprocal of the preference (default);`s`: the penalties are placed in the scaled problem.
+- `oflags`: Controls the second phase of optimization:`o`: use the objective sense of the original problem (default);`x`: maximize the relaxed problem using the original objective;`f`: skip optimization regarding the original objective;`n`: minimize the relaxed problem using the original objective;`i`: if the relaxation is infeasible, generate an irreducible infeasible subset for the analys of the problem;`a`: if the relaxation is infeasible, generate all irreducible infeasible subsets for the analys of the problem.
+- `gflags`: Specifies if the global search should be done:`g`: do the global search (default);`l`: solve as a linear model ignoring the discreteness of variables.
 - `lrp`: Preference for relaxing the less or equal side of row.
 - `grp`: Preference for relaxing the greater or equal side of a row.
 - `lbp`: Preferences for relaxing lower bounds.
@@ -3243,11 +3243,11 @@ Calculates various measures for the stability of the current basis, including th
 ### Arguments
 
 - `prob`: The current problem.
-- `type`:
-- `norm`:
+- `type`: `0`: Condition number of the basis.`1`: Stability measure for the solution relative to the current basis.`2`: Stability measure for the duals relative to the current basis.`3`: Stability measure for the right hand side relative to the current basis.`4`: Stability measure for the basic part of the objective relative to the current basis.
+- `norm`: `0`: Use the infinity norm.`1`: Use the 1 norm.`2`: Use the Euclidian norm for vectors, and the Frobenius norm for matrices.
 - `ifscaled`: If the stability values are to be calculated in the scaled, or the unscaled matrix.
 - `dval`: Pointer to a double, where the calculated value is to be returned.
-- `flags`:
+- `flags`: `x`: Stability measure for the solution and right–hand side values relative to the current basis.`d`: Stability measure for the duals and the basic part of the objective relative to the current basis.`c`: Condition number of the basis (default).`i`: Use the infinity norm (default).`o`: Use the one norm.`e`: Use the Euclidian norm for vectors, and the Frobenius norm for matrices.`u`: Calculate values in the unscaled matrix.
 
 """
 function basisstability(prob::XpressProblem, typecode, norm, ifscaled::Bool, dval)
@@ -3311,11 +3311,11 @@ Executes the MIP solution refiner.
 ### Arguments
 
 - `prob`: The current problem.
-- `options`: Refinement options:
+- `options`: Refinement options:`0`: Reducing MIP fractionality is priority.`1`: Reducing LP infeasibility is priority
 - `flags`: Flags passed to any optimization calls during refinement.
 - `solution`: The MIP solution to refine. Must be a valid MIP solution.
 - `refined_solution`: The refined MIP solution in case of success
-- `refinestatus`: Refinement results:
+- `refinestatus`: Refinement results:`0`: An error has occurred`1`: The solution has been refined`2`: Current solution meets target criteria`3`: Solution cannot be refined
 
 """
 function refinemipsol(prob::XpressProblem, options, _sflags, solution, refined_solution, refinestatus)
@@ -3332,7 +3332,7 @@ Calculates the required property of a solution, like maximum infeasibility of a 
 - `prob`: The current problem.
 - `solution`: Double array of length COLS that holds the solution.
 - `dual`: Double array of length ROWS that holds the dual solution.
-- `Property`:
+- `Property`: `XPRS_SOLINFO_ABSPRIMALINFEAS`: the calculated maximum absolute primal infeasibility is returned.`XPRS_SOLINFO_RELPRIMALINFEAS`: the calculated maximum relative primal infeasibility is returned.`XPRS_SOLINFO_ABSDUALINFEAS`: the calculated maximum absolute dual infeasibility is returned.`XPRS_SOLINFO_RELDUALINFEAS`: the calculated maximum relative dual infeasibility is returned.`XPRS_SOLINFO_MAXMIPFRACTIONAL`: the calculated maximum absolute MIP infeasibility (fractionality) is returned.
 - `Value`: Pointer to a double where the calculated value is returned.
 
 """
@@ -3348,7 +3348,7 @@ Returns the names for the rows, columns or sets in a given range. The names will
 ### Arguments
 
 - `prob`: The current problem.
-- `type`:
+- `type`: `1`: if row names are required;`2`: if column names are required.`3`: if set names are required.
 - `names`: A buffer into which the names will be returned as a sequence of null-terminated strings. The buffer should be of length `names_len` bytes. May be NULL if `names_len` is `0` .
 - `names_len`: The maximum number of bytes that may be written to the buffer `names` .
 - `names_len_reqd`: A pointer to a variable into which will be written the number of bytes required to contain the names in the specified range. May be NULL if not required.
@@ -3363,12 +3363,12 @@ end
 """
     int XPRS_CC XPRSgetnamelistobject(XPRSprob prob, int itype, XPRSnamelist *r_nml);
 
-Returns the `XPRSnamelist` object for the rows, columns or sets of a problem. The names stored in this object can be queried using the `XPRS_nml_` functions.
+Returns the  `XPRSnamelist` object for the rows, columns or sets of a problem. The names stored in this object can be queried using the  `XPRS_nml_` functions.
 
 ### Arguments
 
 - `prob`: The current problem.
-- `itype`:
+- `itype`: `1`: if the row name list is required;`2`: if the column name list is required;`3`: if the set name list is required.
 - `r_nml`: Pointer to a variable holding the name list contained by the problem.
 
 """
@@ -3383,7 +3383,7 @@ end
 """
     int XPRS_CC XPRSgetobjecttypename(XPRSobject object, const char **sObjectName);
 
-Function to access the type name of an object referenced using the generic Optimizer object pointer `XPRSobject`.
+Function to access the type name of an object referenced using the generic Optimizer object pointer  `XPRSobject`.
 
 ### Arguments
 
@@ -3398,14 +3398,14 @@ end
 """
     int XPRS_CC XPRSstrongbranchcb(XPRSprob prob, const int nbnds, const int mbndind[], const char cbndtype[], const double dbndval[], const int itrlimit, double dsbobjval[], int msbstatus[], int (XPRS_CC *sbsolvecb)(XPRSprob prob, void* vContext, int ibnd), void* vContext);
 
-Performs strong branching iterations on all specified bound changes. For each candidate bound change, `XPRSstrongbranchcb` performs dual simplex iterations starting from the current optimal solution of the base LP, and returns both the status and objective value reached after these iterations.
+Performs strong branching iterations on all specified bound changes. For each candidate bound change,  `XPRSstrongbranchcb` performs dual simplex iterations starting from the current optimal solution of the base LP, and returns both the status and objective value reached after these iterations.
 
 ### Arguments
 
 - `prob`: The current problem.
 - `nbnds`: Number of bound changes to try.
 - `mbndind`: Integer array of size `nbnds` containing the indices of the columns on which the bounds will change.
-- `cbndtype`: Character array of length `nbnds` indicating the type of bound to change:
+- `cbndtype`: Character array of length `nbnds` indicating the type of bound to change:`U`: indicates change the upper bound;`L`: indicates change the lower bound;`B`: indicates change both bounds, i.e. fix the column.
 - `dbndval`: Double array of length `nbnds` giving the new bound values.
 - `itrlimit`: Maximum number of LP iterations to perform for each bound change.
 - `dsobjval`: Objective value of each LP after performing the strong branching iterations.
@@ -3430,7 +3430,7 @@ end
 """
     int XPRS_CC XPRSaddcblplog(XPRSprob prob, int (XPRS_CC *f_lplog)(XPRSprob my_prob, void* my_object), void* object, int priority);
 
-Declares a simplex log callback function which is called after every `LPLOG` iterations of the simplex algorithm. This callback function will be called in addition to any callbacks already added by XPRSaddcblplog.
+Declares a  simplex log  callback function which is called after every  `LPLOG` iterations of the simplex algorithm. This callback function will be called in addition to any callbacks already added by XPRSaddcblplog.
 
 ### Arguments
 
@@ -3449,7 +3449,7 @@ end
 """
     int XPRS_CC XPRSremovecblplog(XPRSprob prob, int (XPRS_CC *f_lplog)(XPRSprob prob, void* object), void* object);
 
-Removes a simplex log callback function previously added by `XPRSaddcblplog`. The specified callback function will no longer be called after it has been removed.
+Removes a  simplex log  callback function previously added by  `XPRSaddcblplog`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3473,7 +3473,7 @@ end
 """
     int XPRS_CC XPRSaddcbgloballog(XPRSprob prob, int (XPRS_CC *f_globallog)(XPRSprob my_prob, void *my_object), void *object, int priority);
 
-Declares a global log callback function, called each time the global log is printed. This callback function will be called in addition to any callbacks already added by XPRSaddcbgloballog.
+Declares a global log  callback function, called each time the  global log is printed. This callback function will be called in addition to any callbacks already added by XPRSaddcbgloballog.
 
 ### Arguments
 
@@ -3492,7 +3492,7 @@ end
 """
     int XPRS_CC XPRSremovecbgloballog(XPRSprob prob, int (XPRS_CC *f_globallog)(XPRSprob prob, void* vContext), void* object);
 
-Removes a global log  callback function previously added by `XPRSaddcbgloballog`. The specified callback function will no longer be called after it has been removed.
+Removes a global log   callback function previously added by  `XPRSaddcbgloballog`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3535,7 +3535,7 @@ end
 """
     int XPRS_CC XPRSremovecbcutlog(XPRSprob prob, int (XPRS_CC *f_cutlog)(XPRSprob prob, void* object), void* object);
 
-Removes a cut log callback function previously added by `XPRSaddcbcutlog`. The specified callback function will no longer be called after it has been removed.
+Removes a cut log callback function previously added by  `XPRSaddcbcutlog`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3559,7 +3559,7 @@ end
 """
     int XPRS_CC XPRSaddcbbarlog (XPRSprob prob, int (XPRS_CC *f_barlog)(XPRSprob my_prob, void *my_object), void *object, int priority);
 
-Declares a barrier log callback function, called at each iteration during the interior point algorithm. This callback function will be called in addition to any barrier log callbacks already added by XPRSaddcbbarlog.
+Declares a  barrier log  callback function, called at each iteration during the interior point algorithm. This callback function will be called in addition to any barrier log callbacks already added by XPRSaddcbbarlog.
 
 ### Arguments
 
@@ -3578,7 +3578,7 @@ end
 """
     int XPRS_CC XPRSremovecbbarlog(XPRSprob prob, int (XPRS_CC *f_barlog)(XPRSprob prob, void* object), void* object);
 
-Removes a Newton barrier log callback function previously added by `XPRSaddcbbarlog`. The specified callback function will no longer be called after it has been removed.
+Removes a Newton barrier log callback function previously added by  `XPRSaddcbbarlog`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3602,7 +3602,7 @@ end
 """
     int XPRS_CC XPRSaddcbcutmgr(XPRSprob prob, int (XPRS_CC *f_cutmgr)(XPRSprob my_prob, void *my_object), void *object, int priority);
 
-This function is deprecated and may be removed in future releases. Please use  instead. Declares a user-defined  cut manager routine, called at each  node of the branch and bound search. This callback function will be called in addition to any callbacks already added by XPRSaddcbcutmgr.
+_This function is deprecated and may be removed in future releases. Please useXPRSaddcboptnodeinstead._ Declares a user-defined   cut manager routine, called at each   node of the branch and bound search. This callback function will be called in addition to any callbacks already added by XPRSaddcbcutmgr.
 
 ### Arguments
 
@@ -3621,7 +3621,7 @@ end
 """
     int XPRS_CC XPRSremovecbcutmgr(XPRSprob prob, int (XPRS_CC *f_cutmgr)(XPRSprob prob, void* object), void* object);
 
-Removes a cut manager callback function previously added by `XPRSaddcbcutmgr`. The specified callback function will no longer be called after it has been removed.
+Removes a cut manager callback function previously added by  `XPRSaddcbcutmgr`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3645,7 +3645,7 @@ end
 """
     int XPRS_CC XPRSaddcbchgnode(XPRSprob prob, void (XPRS_CC *f_chgnode)(XPRSprob my_prob, void *my_object, int *nodnum), void *object, int priority);
 
-This function is deprecated and may be removed in future releases. Declares a  node selection  callback function. This is called every time the code backtracks to select a new node during the MIP search. This callback function will be called in addition to any callbacks already added by XPRSaddcbchgnode.
+_This function is deprecated and may be removed in future releases._ Declares a   node selection   callback function. This is called every time the code backtracks to select a new node during the MIP  search. This callback function will be called in addition to any callbacks already added by XPRSaddcbchgnode.
 
 ### Arguments
 
@@ -3665,7 +3665,7 @@ end
 """
     int XPRS_CC XPRSremovecbchgnode(XPRSprob prob, void (XPRS_CC *f_chgnode)(XPRSprob prob, void* object, int* nodnum), void* object);
 
-This function is deprecated and may be removed in future releases. Please use branching objects instead. Removes a node selection callback function previously added by `XPRSaddcbchgnode`. The specified callback function will no longer be called after it has been removed.
+_This function is deprecated and may be removed in future releases. Please use branching objects instead._ Removes a node selection callback function previously added by  `XPRSaddcbchgnode`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3689,7 +3689,7 @@ end
 """
     int XPRS_CC XPRSaddcboptnode(XPRSprob prob, void (XPRS_CC *f_optnode)(XPRSprob my_prob, void *my_object, int *feas), void *object, int priority);
 
-Declares an optimal node callback function, called during the branch and bound search, after the LP relaxation has been solved for the current node, and after any internal cuts and heuristics have been applied, but before the Optimizer checks if the current node should be branched. This callback function will be called in addition to any callbacks already added by XPRSaddcboptnode.
+Declares an optimal  node  callback function, called during the branch and bound search, after the LP relaxation has been solved for the current node, and after any internal cuts and heuristics have been applied, but before the Optimizer checks if the current node should be branched. This callback function will be called in addition to any callbacks already added by XPRSaddcboptnode.
 
 ### Arguments
 
@@ -3709,7 +3709,7 @@ end
 """
     int XPRS_CC XPRSremovecboptnode(XPRSprob prob, void (XPRS_CC *f_optnode)(XPRSprob my_prob, void *my_object, int *feas), void* object);
 
-Removes a node-optimal callback function previously added by `XPRSaddcboptnode`. The specified callback function will no longer be called after it has been removed.
+Removes a node-optimal callback function previously added by  `XPRSaddcboptnode`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3733,7 +3733,7 @@ end
 """
     int XPRS_CC XPRSaddcbprenode(XPRSprob prob, void (XPRS_CC *f_prenode)(XPRSprob my_prob, void *my_object, int *nodinfeas), void *object, int priority);
 
-Declares a preprocess node  callback function, called before the  LP relaxation of a node has been optimized, so the solution at the node will not be available. This callback function will be called in addition to any callbacks already added by XPRSaddcbprenode.
+Declares a preprocess node   callback function, called before the   LP relaxation of a node has been optimized, so the solution at the node will not be available. This callback function will be called in addition to any callbacks already added by XPRSaddcbprenode.
 
 ### Arguments
 
@@ -3753,7 +3753,7 @@ end
 """
     int XPRS_CC XPRSremovecbprenode(XPRSprob prob, void (XPRS_CC *f_prenode)(XPRSprob prob, void* my_object, int* nodinfeas), void* object);
 
-Removes a preprocess node callback function previously added by `XPRSaddcbprenode`. The specified callback function will no longer be called after it has been removed.
+Removes a preprocess node callback function previously added by  `XPRSaddcbprenode`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3777,7 +3777,7 @@ end
 """
     int XPRS_CC XPRSaddcbinfnode(XPRSprob prob, void (XPRS_CC *f_infnode)(XPRSprob my_prob, void *my_object), void *object, int priority);
 
-Declares a user infeasible  node callback function, called after the current node has been found to be infeasible during the Branch and Bound search. This callback function will be called in addition to any callbacks already added by XPRSaddcbinfnode.
+Declares a user infeasible   node callback function, called after the current node has been found to be infeasible during the Branch and Bound  search. This callback function will be called in addition to any callbacks already added by XPRSaddcbinfnode.
 
 ### Arguments
 
@@ -3796,7 +3796,7 @@ end
 """
     int XPRS_CC XPRSremovecbinfnode(XPRSprob prob, void (XPRS_CC *f_infnode)(XPRSprob prob, void* object), void* object);
 
-Removes a user infeasible node callback function previously added by `XPRSaddcbinfnode`. The specified callback function will no longer be called after it has been removed.
+Removes a user infeasible node callback function previously added by  `XPRSaddcbinfnode`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3820,7 +3820,7 @@ end
 """
     int XPRS_CC XPRSaddcbnodecutoff(XPRSprob prob, void (XPRS_CC *f_nodecutoff)(XPRSprob my_prob, void *my_object, int node), void *object, int priority);
 
-Declares a user node cutoff callback function, called every time a node is cut off as a result of an improved integer solution being found during the branch and bound search. This callback function will be called in addition to any callbacks already added by XPRSaddcbnodecutoff.
+Declares a user node  cutoff  callback function, called every time a node is cut off as a result of an improved  integer solution being found during the branch and bound search. This callback function will be called in addition to any callbacks already added by XPRSaddcbnodecutoff.
 
 ### Arguments
 
@@ -3840,7 +3840,7 @@ end
 """
     int XPRS_CC XPRSremovecbnodecutoff(XPRSprob prob, void (XPRS_CC *f_nodecutoff)(XPRSprob my_prob, void *my_object, int nodnum), void* object);
 
-Removes a node-cutoff callback function previously added by `XPRSaddcbnodecutoff`. The specified callback function will no longer be called after it has been removed.
+Removes a node-cutoff callback function previously added by  `XPRSaddcbnodecutoff`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3864,7 +3864,7 @@ end
 """
     int XPRS_CC XPRSaddcbintsol(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob my_prob, void *my_object), void *object, int priority);
 
-Declares a user integer solution  callback function, called every time an integer solution is found by heuristics or during the Branch and Bound search. This callback function will be called in addition to any callbacks already added by XPRSaddcbintsol.
+Declares a user integer solution   callback function, called every time an integer solution is found by heuristics or during the Branch and Bound search. This callback function will be called in addition to any callbacks already added by XPRSaddcbintsol.
 
 ### Arguments
 
@@ -3883,7 +3883,7 @@ end
 """
     int XPRS_CC XPRSremovecbintsol(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob prob, void* my_object), void* object);
 
-Removes an integer solution callback function previously added by `XPRSaddcbintsol`. The specified callback function will no longer be called after it has been removed.
+Removes an integer solution callback function previously added by  `XPRSaddcbintsol`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3915,7 +3915,7 @@ Declares a user integer solution callback function, called when an integer solut
 - `f_preintsol`: The callback function which takes five arguments, `my_prob` , `my_object` , `soltype` , `ifreject` and `cutoff` , and has no return value. This function is called when an integer solution is found, but before the solution is accepted by the Optimizer, allowing the user to reject the solution.
 - `my_prob`: The problem passed to the callback function, `f_preintsol` .
 - `my_object`: The user-defined object passed as object when setting up the callback with `XPRSaddcbpreintsol` .
-- `soltype`: The type of MIP solution that has been found: Set to 1 if the solution was found using a heuristic. Otherwise, it will be the global feasible solution to the current node of the global search.
+- `soltype`: The type of MIP solution that has been found: Set to 1 if the solution was found using a heuristic. Otherwise, it will be the global feasible solution to the current node of the global search.`0`: The continuous relaxation solution to the current node of the global search, which has been found to be global feasible.`1`: A MIP solution found by a heuristic.`2`: A MIP solution provided by the user.`3`: A solution resulting from refinement of primal or dual violations of a previous MIP solution.
 - `ifreject`: Set this to 1 if the solution should be rejected.
 - `cutoff`: The new `cutoff` value that the Optimizer will use if the solution is accepted. If the user changes `cutoff` , the new value will be used instead. The `cutoff` value will not be updated if the solution is rejected.
 - `object`: A user-defined object to be passed to the callback function, `f_preintsol` .
@@ -3929,7 +3929,7 @@ end
 """
     int XPRS_CC XPRSremovecbpreintsol(XPRSprob prob, void (XPRS_CC *f_preintsol)(XPRSprob my_prob, void *my_object, int soltype, int *ifreject, double *cutoff), void* object);
 
-Removes a pre-integer solution callback function previously added by `XPRSaddcbpreintsol`. The specified callback function will no longer be called after it has been removed.
+Removes a pre-integer solution callback function previously added by  `XPRSaddcbpreintsol`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3953,7 +3953,7 @@ end
 """
     int XPRS_CC XPRSaddcbchgbranch(XPRSprob prob, void (XPRS_CC *f_chgbranch)(XPRSprob my_prob, void *my_object, int *entity, int *up, double *estdeg), void *object, int priority);
 
-This function is deprecated and may be removed in future releases. Please use  instead. Declares a branching variable  callback function, called every time a new  branching variable is set or selected during the branch and bound search. This callback function will be called in addition to any change branch callbacks already added by XPRSaddcbchgbranch.
+_This function is deprecated and may be removed in future releases. Please useXPRSaddcbchgbranchobjectinstead._ Declares a branching variable   callback function, called every time a new   branching variable is set or selected during the branch and bound  search. This callback function will be called in addition to any change branch callbacks already added by XPRSaddcbchgbranch.
 
 ### Arguments
 
@@ -3975,7 +3975,7 @@ end
 """
     int XPRS_CC XPRSremovecbchgbranch(XPRSprob prob, void (XPRS_CC *f_chgbranch)(XPRSprob prob, void* vContext, int* entity, int* up, double* estdeg), void* object);
 
-Removes a variable branching callback function previously added by `XPRSaddcbchgbranch`. The specified callback function will no longer be called after it has been removed.
+Removes a variable branching callback function previously added by  `XPRSaddcbchgbranch`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -3999,7 +3999,7 @@ end
 """
     int XPRS_CC XPRSaddcbestimate(XPRSprob prob, int (XPRS_CC *f_estimate)(XPRSprob my_prob, void *my_object, int *iglsel, int *iprio, double *degbest, double *degworst, double *curval, int *ifupx, int *nglinf, double *degsum, int *nbr), void *object, int priority);
 
-This function is deprecated and may be removed in future releases. Please use branching objects instead. Declares an estimate  callback function. If defined, it will be called at each node of the branch and bound tree to determine the estimated  degradation from  branching the user's global entities. This callback function will be called in addition to any callbacks already added by XPRSaddcbestimate.
+_This function is deprecated and may be removed in future releases. Please use branching objects instead._ Declares an estimate   callback function. If defined, it will be called at each node of the branch and bound tree to determine the estimated   degradation from   branching the user's global entities. This callback function will be called in addition to any callbacks already added by XPRSaddcbestimate.
 
 ### Arguments
 
@@ -4008,7 +4008,7 @@ This function is deprecated and may be removed in future releases. Please use br
 - `my_prob`: The problem passed to the callback function, `f_estimate` .
 - `my_object`: The user-defined object passed as `object` when setting up the callback with `XPRSaddcbestimate` .
 - `iglsel`: Selected user global entity. Must be non-negative or -1 to indicate that there is no user global entity candidate for branching. If set to -1, all other arguments, except for `nglinf` and `degsum` are ignored. This argument is initialized to -1.
-- `iprio`: Priority of selected user global entity. This argument is initialized to a value larger (i.e., lower priority) than the default priority for global entities (see Section Variable Selection for Branching in Section Branch and Bound ).
+- `iprio`: Priority of selected user global entity. This argument is initialized to a value larger (i.e., lower priority) than the default priority for global entities (see Section _Variable Selection for Branching_ in Section _Branch and Bound_ ).
 - `degbest`: Estimated degradation from branching on selected user entity in preferred direction.
 - `degworst`: Estimated degradation from branching on selected user entity in worst direction.
 - `curval`: Current value of user global entities.
@@ -4027,7 +4027,7 @@ end
 """
     int XPRS_CC XPRSremovecbestimate(XPRSprob prob, int (XPRS_CC *f_estimate)(XPRSprob prob, void* vContext, int* iglsel, int* iprio, double* degbest, double* degworst, double* curval, int* ifupx, int* nglinf, double* degsum, int* nbr), void* object);
 
-Removes an estimate callback function previously added by `XPRSaddcbestimate`. The specified callback function will no longer be called after it has been removed.
+Removes an estimate callback function previously added by  `XPRSaddcbestimate`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -4051,7 +4051,7 @@ end
 """
     int XPRS_CC XPRSaddcbsepnode(XPRSprob prob, int (XPRS_CC *f_sepnode)(XPRSprob my_prob, void *my_object, int ibr, int iglsel, int ifup, double curval), void *object, int priority);
 
-This function is deprecated and may be removed in future releases. Please use branching objects instead. Declares a separate  callback function to specify how to branch on a  node in the branch and bound tree using a global object. A node can be branched by applying either cuts or bounds to each node. These are stored in the cut pool. This callback function will be called in addition to any callbacks already added by XPRSaddcbsepnode.
+_This function is deprecated and may be removed in future releases. Please use branching objects instead._ Declares a separate   callback function to specify how to branch on a   node in the branch and bound tree using a global object. A node can be branched by applying either  cuts or  bounds to each node. These are stored in the  cut pool. This callback function will be called in addition to any callbacks already added by XPRSaddcbsepnode.
 
 ### Arguments
 
@@ -4074,7 +4074,7 @@ end
 """
     int XPRS_CC XPRSremovecbsepnode(XPRSprob prob, int (XPRS_CC *f_sepnode)(XPRSprob prob, void* vContext, int ibr, int iglsel, int ifup, double curval), void* object);
 
-This function is deprecated and may be removed in future releases. Please use branching objects instead. Removes a pre-integer solution callback function previously added by `XPRSaddcbsepnode`. The specified callback function will no longer be called after it has been removed.
+_This function is deprecated and may be removed in future releases. Please use branching objects instead._ Removes a pre-integer solution callback function previously added by  `XPRSaddcbsepnode`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -4098,7 +4098,7 @@ end
 """
     int XPRS_CC XPRSaddcbmessage(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob my_prob, void *my_object, const char *msg, int len, int msgtype), void *object, int priority);
 
-Declares an output callback function, called every time a text line relating to the given XPRSprob is output by the Optimizer. This callback function will be called in addition to any callbacks already added by XPRSaddcbmessage.
+Declares an output  callback function, called every time a text line relating to the given XPRSprob is output by the Optimizer. This callback function will be called in addition to any callbacks already added by XPRSaddcbmessage.
 
 ### Arguments
 
@@ -4108,7 +4108,7 @@ Declares an output callback function, called every time a text line relating to 
 - `my_object`: The user-defined object passed as `object` when setting up the callback with `XPRSaddcbmessage` .
 - `msg`: A null terminated character array (string) containing the message, which may simply be a new line.
 - `len`: The length of the message string, excluding the null terminator.
-- `msgtype`: Indicates the type of output message:
+- `msgtype`: Indicates the type of output message:`1`: information messages;`2`: (not used);`3`: warning messages;`4`: error messages.A negative value indicates that the Optimizer is about to finish and the buffers should be flushed at this time if the output is being redirected to a file.
 - `object`: A user-defined object to be passed to the callback function.
 - `priority`: An integer that determines the order in which callbacks of this type will be invoked. The callback added with a higher priority will be called before a callback with a lower priority. Set to 0 if not required.
 
@@ -4120,7 +4120,7 @@ end
 """
     int XPRS_CC XPRSremovecbmessage(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob prob, void* vContext, const char* msg, int len, int msgtype), void* object);
 
-Removes a message callback function previously added by `XPRSaddcbmessage`. The specified callback function will no longer be called after it has been removed.
+Removes a message callback function previously added by  `XPRSaddcbmessage`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -4164,7 +4164,7 @@ end
 """
     int XPRS_CC XPRSremovecbmipthread(XPRSprob prob, void (XPRS_CC *f_mipthread)(XPRSprob master_prob, void* vContext, XPRSprob prob), void* object);
 
-Removes a callback function previously added by `XPRSaddcbmipthread`. The specified callback function will no longer be called after it has been removed.
+Removes a callback function previously added by  `XPRSaddcbmipthread`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -4207,7 +4207,7 @@ end
 """
     int XPRS_CC XPRSremovecbdestroymt(XPRSprob prob, void (XPRS_CC *f_destroymt)(XPRSprob prob, void* vContext), void* object);
 
-Removes a slave thread destruction callback function previously added by `XPRSaddcbdestroymt`. The specified callback function will no longer be called after it has been removed.
+Removes a slave thread destruction callback function previously added by  `XPRSaddcbdestroymt`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -4253,7 +4253,7 @@ end
 """
     int XPRS_CC XPRSremovecbnewnode(XPRSprob prob, void (XPRS_CC *f_newnode)(XPRSprob my_prob, void* my_object, int parentnode, int newnode, int branch), void* object);
 
-Removes a new-node callback function previously added by `XPRSaddcbnewnode`. The specified callback function will no longer be called after it has been removed.
+Removes a new-node callback function previously added by  `XPRSaddcbnewnode`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -4285,7 +4285,7 @@ Declares a barrier iteration callback function, called after each iteration duri
 - `f_bariteration`: The callback function itself. This takes three arguments, `my_prob` , `my_object` , and `barrier_action` serving as an integer return value. This function is called at every barrier iteration.
 - `my_prob`: The problem passed to the callback function, `f_bariteration` .
 - `my_object`: The user-defined object passed as `object` when setting up the callback with `XPRSaddcbbariteration` .
-- `barrier_action`: Defines a return value controlling barrier:
+- `barrier_action`: Defines a return value controlling barrier:`<0`: continue with the next iteration;`=0`: let barrier decide (use default stopping criteria);`1`: barrier stops with status not defined;`2`: barrier stops with optimal status;`3`: barrier stops with dual infeasible status;`4`: barrier stops wih primal infeasible status;
 - `object`: A user-defined object to be passed to the callback function, `f_bariteration` .
 - `priority`: An integer that determines the order in which callbacks of this type will be invoked. The callback added with a higher priority will be called before a callback with a lower priority. Set to 0 if not required.
 
@@ -4297,7 +4297,7 @@ end
 """
     int XPRS_CC XPRSremovecbbariteration(XPRSprob prob, void (XPRS_CC *f_bariteration)(XPRSprob prob, void* vContext, int* barrier_action), void* object);
 
-Removes a barrier iteration callback function previously added by `XPRSaddcbbariteration`. The specified callback function will no longer be called after it has been removed.
+Removes a barrier iteration callback function previously added by  `XPRSaddcbbariteration`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -4342,7 +4342,7 @@ end
 """
     int XPRS_CC XPRSremovecbchgbranchobject(XPRSprob prob, void (XPRS_CC *f_chgbranchobject)(XPRSprob my_prob, void* my_object, XPRSbranchobject obranch, XPRSbranchobject* p_newobject), void* object);
 
-Removes a callback function previously added by `XPRSaddcbchgbranchobject`. The specified callback function will no longer be called after it has been removed.
+Removes a callback function previously added by  `XPRSaddcbchgbranchobject`. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -4366,7 +4366,7 @@ end
 """
     int XPRS_CC XPRSaddcbgapnotify(XPRSprob prob, void (XPRS_CC *f_gapnotify)(XPRSprob my_prob, void* my_object, double* newRelGapNotifyTarget, double* newAbsGapNotifyTarget, double* newAbsGapNotifyObjTarget, double* newAbsGapNotifyBoundTarget), void* object, int priority);
 
-Declares a gap notification callback, to be called when a MIP solve reaches a predefined target, set using the MIPRELGAPNOTIFY, MIPABSGAPNOTIFY, MIPABSGAPNOTIFYOBJ and/or MIPABSGAPNOTIFYBOUND controls.
+Declares a gap notification callback, to be called when a MIP solve reaches a predefined target, set using the  MIPRELGAPNOTIFY,  MIPABSGAPNOTIFY,  MIPABSGAPNOTIFYOBJ and/or  MIPABSGAPNOTIFYBOUND controls.
 
 ### Arguments
 
@@ -4389,7 +4389,7 @@ end
 """
     int XPRS_CC XPRSremovecbgapnotify(XPRSprob prob, void (XPRS_CC *f_gapnotify)(XPRSprob prob, void* vContext, double* newRelGapNotifyTarget, double* newAbsGapNotifyTarget, double* newAbsGapNotifyObjTarget, double* newAbsGapNotifyBoundTarget), void* p);
 
-Removes a callback function previously added by XPRSaddcbgapnotify. The specified callback function will no longer be removed after it has been returned.
+Removes a callback function previously added by  XPRSaddcbgapnotify. The specified callback function will no longer be removed after it has been returned.
 
 ### Arguments
 
@@ -4413,7 +4413,7 @@ end
 """
     int XPRS_CC XPRSaddcbusersolnotify(XPRSprob prob, void (XPRS_CC *f_usersolnotify)(XPRSprob my_prob, void* my_object, const char* solname, int status), void* object, int priority);
 
-Declares a callback function to be called each time a solution added by XPRSaddmipsol has been processed. This callback function will be called in addition to any callbacks already added by `XPRSaddcbusersolnotify`.
+Declares a callback function to be called each time a solution added by  XPRSaddmipsol has been processed. This callback function will be called in addition to any callbacks already added by  `XPRSaddcbusersolnotify`.
 
 ### Arguments
 
@@ -4422,7 +4422,7 @@ Declares a callback function to be called each time a solution added by XPRSaddm
 - `my_prob`: The problem passed to the callback function, `f_usersolnotify` .
 - `my_object`: The user-defined object passed as object when setting up the callback with `XPRSaddcbusersolnotify` .
 - `solname`: The string name assigned to the solution when it was loaded into the Optimizer using XPRSaddmipsol .
-- `status`: One of the following status values:
+- `status`: One of the following status values:`0`: An error occurred while processing the solution.`1`: Solution is feasible.`2`: Solution is feasible after reoptimizing with fixed globals.`3`: A local search heuristic was applied and a feasible solution discovered.`4`: A local search heuristic was applied but a feasible solution was not found.`5`: Solution is infeasible and a local search could not be applied.`6`: Solution is partial and a local search could not be applied.`7`: Failed to reoptimize the problem with globals fixed to the provided solution. Likely because a time or iteration limit was reached.`8`: Solution is dropped. This can happen if the MIP problem is changed or solved to completion before the solution could be processed.
 - `object`: A user-defined object to be passed to the callback function, `f_usersolnotify` .
 - `priority`: An integer that determines the order in which multiple callbacks will be invoked. The callback added with a higher priority will be called before a callback with a lower priority. Set to `0` if not required.
 
@@ -4434,7 +4434,7 @@ end
 """
     int XPRS_CC XPRSremovecbusersolnotify(XPRSprob prob, void (XPRS_CC *f_usersolnotify)(XPRSprob my_prob, void* my_object, const char* solname, int status), void* object);
 
-Removes a user solution notification callback previously added by XPRSaddcbusersolnotify. The specified callback function will no longer be called after it has been removed.
+Removes a user solution notification callback previously added by  XPRSaddcbusersolnotify. The specified callback function will no longer be called after it has been removed.
 
 ### Arguments
 
@@ -4698,7 +4698,7 @@ end
 """
     int XPRS_CC XPRSgetqrowcoeff (XPRSprob prob, int row, int icol, int jcol, double *dval);
 
-Returns a single quadratic constraint coefficient corresponding to the variable pair ( `icol`, `jcol`) of the Hessian of a given constraint.
+Returns a single quadratic constraint coefficient corresponding to the variable pair (  `icol`,  `jcol`) of the Hessian of a given constraint.
 
 ### Arguments
 
@@ -4716,7 +4716,7 @@ end
 """
     int XPRS_CC XPRSgetqrowqmatrix(XPRSprob prob, int irow, int mstart[], int mclind[], double dqe[], int size, int * nels, int first, int last);
 
-Returns the nonzeros in a quadratic constraint coefficients matrix for the columns in a given range. To achieve maximum efficiency, `XPRSgetqrowqmatrix` returns the lower triangular part of this matrix only.
+Returns the nonzeros in a quadratic constraint coefficients matrix for the columns in a given range. To achieve maximum efficiency,  `XPRSgetqrowqmatrix` returns the lower triangular part of this matrix only.
 
 ### Arguments
 
@@ -4738,7 +4738,7 @@ end
 """
     int XPRS_CC XPRSgetqrowqmatrixtriplets(XPRSprob prob, int irow, int * nqelem, int mqcol1[], int mqcol2[], double dqe[]);
 
-Returns the nonzeros in a quadratic constraint coefficients matrix as triplets (index pairs with coefficients). To achieve maximum efficiency, `XPRSgetqrowqmatrixtriplets` returns the lower triangular part of this matrix only.
+Returns the nonzeros in a quadratic constraint coefficients matrix as triplets (index pairs with coefficients). To achieve maximum efficiency,  `XPRSgetqrowqmatrixtriplets` returns the lower triangular part of this matrix only.
 
 ### Arguments
 
@@ -4867,8 +4867,8 @@ Used to load a quadratic problem with quadratic side constraints into the Optimi
 - `probname`: A string of up to MAXPROBNAMELENGTH characters containing a name for the problem.
 - `ncol`: Number of structural columns in the matrix.
 - `nrow`: Number of rows in the matrix (not including the objective row). Objective coefficients must be supplied in the `obj` array, and the objective function should not be included in any of the other arrays.
-- `qrtype`: Character array of length `nrow` containing the row types:
-- `rhs`: Double array of length `nrow` containing the right hand side coefficients of the rows. The right hand side value for a range row gives the upper bound on the row.
+- `qrtype`: Character array of length `nrow` containing the row types:`L`: indicates a `<=` constraint (use this one for quadratic constraints as well);`E`: indicates an `=` constraint;`G`: indicates a `>=` constraint;`R`: indicates a range constraint;`N`: indicates a nonbinding constraint.
+- `rhs`: Double array of length `nrow` containing the right hand side coefficients of the rows. The right hand side value for a range row gives the *upper* bound on the row.
 - `range`: Double array of length `nrow` containing the range values for range rows. Values for all other rows will be ignored. May be NULL if there are no ranged constraints. The lower bound on a range row is the right hand side value minus the range value. The sign of the range value is ignored - the absolute value is used in all cases.
 - `obj`: Double array of length `ncol` containing the objective function coefficients.
 - `mstart`: Integer array containing the offsets in the `mrwind` and `dmatval` arrays of the start of the elements for each column. This array is of length `ncol` or, if `mnel` is NULL, `length ncol+1` . If `mnel` is NULL the extra entry of `mstart` , `mstart[ncol]` , contains the position in the `mrwind` and `dmatval` arrays at which an extra column would start, if it were present. In C, this value is also the length of the `mrwind` and `dmatval` arrays.
@@ -4908,8 +4908,8 @@ Used to load a global, quadratic problem with quadratic side constraints into th
 - `probname`: A string of up to MAXPROBNAMELENGTH characters containing a name for the problem.
 - `ncol`: Number of structural columns in the matrix.
 - `nrow`: Number of rows in the matrix (not including the objective row). Objective coefficients must be supplied in the `obj` array, and the objective function should not be included in any of the other arrays.
-- `qrtype`: Character array of length `nrow` containing the row types:
-- `rhs`: Double array of length `nrow` containing the right hand side coefficients of the rows. The right hand side value for a range row gives the upper bound on the row.
+- `qrtype`: Character array of length `nrow` containing the row types:`L`: indicates a `<=` constraint (use this one for quadratic constraints as well);`E`: indicates an `=` constraint;`G`: indicates a `>=` constraint;`R`: indicates a range constraint;`N`: indicates a nonbinding constraint.
+- `rhs`: Double array of length `nrow` containing the right hand side coefficients of the rows. The right hand side value for a range row gives the *upper* bound on the row.
 - `range`: Double array of length `nrow` containing the range values for range rows. Values for all other rows will be ignored. May be NULL if there are no ranged constraints. The lower bound on a range row is the right hand side value minus the range value. The sign of the range value is ignored - the absolute value is used in all cases.
 - `obj`: Double array of length `ncol` containing the objective function coefficients.
 - `mstart`: Integer array containing the offsets in the `mrwind` and `dmatval` arrays of the start of the elements for each column. This array is of length `ncol` or, if `mnel` is NULL, `length ncol+1` . If `mnel` is NULL the extra entry of `mstart` , `mstart[ncol]` , contains the position in the `mrwind` and `dmatval` arrays at which an extra column would start, if it were present. In C, this value is also the length of the `mrwind` and `dmatval` arrays.
@@ -4930,10 +4930,10 @@ Used to load a global, quadratic problem with quadratic side constraints into th
 - `qcdqval`: Integer array of size `nqcelem` , containing the coefficients for the quadratic constraint matrices.
 - `ngents`: Number of binary, integer, semi-continuous, semi-continuous integer and partial integer entities.
 - `nsets`: Number of SOS1 and SOS2 sets.
-- `qgtype`: Character array of length `ngents` containing the entity types:
+- `qgtype`: Character array of length `ngents` containing the entity types:`B`: binary variables;`I`: integer variables;`P`: partial integer variables;`S`: semi-continuous variables;`R`: semi-continuous integer variables.
 - `mgcols`: Integer array of length `ngents` containing the column indices of the global entities.
 - `dlim`: Double array of length `ngents` containing the integer limits for the partial integer variables and lower bounds for semi-continuous and semi-continuous integer variables (any entries in the positions corresponding to binary and integer variables will be ignored). May be `NULL` if not required.
-- `qstype`: Character array of length `nsets` containing the set types:
+- `qstype`: Character array of length `nsets` containing the set types:`1`: SOS1 type sets;`2`: SOS2 type sets.May be `NULL` if not required.
 - `msstart`: Integer array containing the offsets in the `mscols` and `dref` arrays indicating the start of the sets. This array is of length `nsets+1` , the last member containing the offset where set `nsets+1` would start. May be `NULL` if not required.
 - `mscols`: Integer array of length `msstart[nsets]-1` containing the columns in each set. May be `NULL` if not required.
 - `dref`: Double array of length `msstart[nsets]-1` containing the reference row entries for each member of the sets. May be `NULL` if not required.

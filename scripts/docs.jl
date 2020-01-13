@@ -94,8 +94,8 @@ function generate_documentation(symbols)
         end
 
         documentation[n] = Dict()
-        documentation[n]["purpose"] = strip(replace(join(text.(get_data(doc, "Purpose").children)), "\n" => ""))
-        documentation[n]["synopsis"] = strip(replace(join(text.(get_synopsis(doc).children)), "\n" => ""))
+        documentation[n]["purpose"] = strip(replace(join(text.(get_data(doc, "Purpose").children)), "\n" => " "))
+        documentation[n]["synopsis"] = strip(replace(join(text.(get_synopsis(doc).children)), "\n" => " "))
         documentation[n]["arguments"] = []
 
         tbl = get_arguments(doc)
@@ -104,13 +104,13 @@ function generate_documentation(symbols)
             while length(tbody.children) > 0
                 tr = popfirst!(tbody.children)
                 kw = text(popfirst!(tr.children).children[1])
-                docstring = strip(replace(join(strip.(text.(popfirst!(tr.children).children[1].children)), " "), "\n" => ""))
+                docstring = join(strip(text(tr.children[1])))
                 push!(documentation[n]["arguments"], kw => docstring)
             end
         end
         rt = get_data(doc, "Related topics")
         if !isnothing(rt)
-            documentation[n]["related"] = strip(replace(join(text.(rt.children)), "\n" => ""))
+            documentation[n]["related"] = strip(replace(join(text.(rt.children)), "\n" => " "))
         end
     end
 
@@ -118,21 +118,43 @@ function generate_documentation(symbols)
 
 end
 
-text(elem::HTMLElement{:td}) = strip(join(text.(elem.children)))
-text(elem::HTMLElement{:tr}) = strip(join(text.(elem.children)))
-text(elem::HTMLElement{:code}) = strip(join(text.(elem.children)))
+function text(elem::HTMLElement{:table})
+    body = String[]
+    push!(body, "\n")
+    if length(elem.children) > 0
+        tbody = elem.children[1]
+        for row in tbody.children
+            arg = strip(replace(text(popfirst!(row.children)), "\n" => ""))
+            docstring = strip(replace(text(popfirst!(row.children)), "\n" => ""))
+            push!(body, "`$arg`: $docstring")
+        end
+        push!(body, "\n")
+    end
+    return " $(join(body))"
+end
+
+text(elem::HTMLElement{:em}) = "*$(strip(join(strip.(text.(elem.children)))))*"
+text(elem::HTMLElement{:i}) = "_$(strip(join(strip.(text.(elem.children)))))_"
+text(elem::HTMLElement{:br}) = strip(join(strip.(text.(elem.children))))
+text(elem::HTMLElement{:div}) = strip(join(strip.(text.(elem.children)), " "))
+function text(elem::HTMLElement{:td})
+    return strip(join(strip.(text.(elem.children))))
+end
+text(elem::HTMLElement{:tr}) = strip(join(strip.(text.(elem.children))))
+text(elem::HTMLElement{:code}) = strip(join(strip.(text.(elem.children))))
 function text(elem::HTMLElement{:span})
     if "class" ∈ keys(elem.attributes) && elem.attributes["class"] == "code"
-        return "`$(strip(join(text.(elem.children))))`"
+        return "`$(strip(join(strip.(text.(elem.children)))))`"
     else
-        return join(text.(elem.children))
+        return strip(join(strip.(text.(elem.children))))
     end
 end
 text(elem::HTMLElement{:a}) = strip(join(text.(elem.children)))
+text(elem::HTMLElement{:p}) = strip(join(text.(elem.children)))
+text(elem::HTMLElement{:sub}) = "\\_$(strip(join(strip.(text.(elem.children)))))"
+text(elem::HTMLElement{:sup}) = "^$(strip(join(strip.(text.(elem.children)))))"
 
-documentation = generate_documentation(get_symbols())
-
-function write_docstring(sym)
+function write_docstring(documentation, sym)
     f = joinpath(@__DIR__, "../src/api.jl")
     original_lines = collect(readlines(f))
     lines = deepcopy(original_lines)
@@ -166,8 +188,16 @@ function write_docstring(sym)
     close(b)
 end
 
-for n in get_symbols()
-    if n ∈ keys(documentation)
-        write_docstring(n)
+function main()
+
+    documentation = generate_documentation(get_symbols())
+
+    for n in get_symbols()
+        if n ∈ keys(documentation)
+            write_docstring(documentation, n)
+        end
     end
+
 end
+
+main()
