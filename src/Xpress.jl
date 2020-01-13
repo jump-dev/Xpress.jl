@@ -89,26 +89,7 @@ module Xpress
         init() # Call XPRSinit for initialization
         atexit(free) # Call free when process terminates
     end
-    # include("xprs_full_defines.jl")
 
-    # include("xprs_common.jl")
-    # include("xprs_env.jl")
-
-    # include("xprs_model.jl")
-    # include("xprs_params.jl")
-    # include("xprs_attrs.jl")
-
-    # include("xprs_vars.jl")
-
-    # include("xprs_constrs.jl")
-    # include("xprs_quad.jl")
-    # include("xprs_highlevel.jl")
-
-    # include("xprs_solve.jl")
-    # include("xprs_callbacks.jl")
-    # include("xprs_iis.jl")
-
-    # include("XpressSolverInterface.jl")
     include("MOI/MOI_Wrapper.jl")
 
     function __init__()
