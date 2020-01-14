@@ -189,20 +189,6 @@ end
 
 Sets the value of a given integer   control parameter.
 
-"""
-    int XPRS_CC XPRSsetintcontrol(XPRSprob prob, int ipar, int isval);
-
-Sets the value of a given integer   control parameter.
-
-### Arguments
-
-- `prob`: The current problem.
-- `ipar`: Control parameter whose value is to be set. A full list of all controls may be found in _Control Parameters_ , or from the list in the `xprs.h` header file.
-- `isval`: Value to which the control parameter is to be set.
-
-"""
-### Arguments
-
 - `prob`: The current problem.
 - `ipar`: Control parameter whose value is to be set. A full list of all controls may be found in _Control Parameters_ , or from the list in the `xprs.h` header file.
 - `isval`: Value to which the control parameter is to be set.
@@ -212,11 +198,11 @@ function setintcontrol(prob::XpressProblem, _index::Integer, _ivalue::Integer)
     @checked Lib.XPRSsetintcontrol(prob, Cint(_index), _ivalue)
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function setintcontrol(prob::XpressProblem, _index::Int64, _ivalue::Integer)
-    @checked Lib.XPRSsetintcontrol64(prob, _index, _ivalue)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function setintcontrol(prob::XpressProblem, _index::Int64, _ivalue::Integer)
+#    @checked Lib.XPRSsetintcontrol64(prob, _index, _ivalue)
+# end
+
 """
     int XPRS_CC XPRSsetdblcontrol(XPRSprob prob, int ipar, double dsval);
 
@@ -1518,23 +1504,6 @@ end
 
 Returns the nonzeros in the constraint  matrix for the  columns in a given range.
 
-"""
-    int XPRS_CC XPRSgetcols(XPRSprob prob, int mstart[], int mrwind[], double dmatval[], int size, int *nels, int first, int last);
-
-Returns the nonzeros in the constraint  matrix for the  columns in a given range.
-
-### Arguments
-
-- `prob`: The current problem.
-- `mstart`: Integer array which will be filled with the indices indicating the starting offsets in the `mrwind` and `dmatval` arrays for each requested column. It must be of length at least `last-first+2` . Column `i` starts at position `mstart[i]` in the `mrwind` and `dmatval` arrays, and has `mstart[i+1]-mstart[i]` elements in it. May be `NULL` if not required.
-- `mrwind`: Integer array of length `size` which will be filled with the row indices of the nonzero coefficents for each column. May be `NULL` if not required.
-- `dmatval`: Double array of length `size` which will be filled with the nonzero coefficient values. May be `NULL` if not required.
-- `size`: The size of the `mrwind` and `dmatval` arrays. This is the maximum number of nonzero coefficients that the Optimizer is allowed to return.
-- `nels`: Pointer to an integer where the number of nonzero coefficients in the selected columns will be returned. If `nels` exceeds `size` , only the `size` first nonzero coefficients will be returned.
-- `first`: First column in the range.
-- `last`: Last column in the range.
-
-"""
 ### Arguments
 
 - `prob`: The current problem.
@@ -1551,11 +1520,11 @@ function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, nco
     @checked Lib.XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, Cint(first), Cint(last))
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Int64, last::Int64)
-    @checked Lib.XPRSgetcols64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Int64, last::Int64)
+#     @checked Lib.XPRSgetcols64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
+# end
+
 """
     int XPRS_CC XPRSgetrows(XPRSprob prob, int mstart[], int mclind[], double dmatval[], int size, int *nels, int first, int last);
 
@@ -1607,18 +1576,18 @@ function getrows_nnz(prob::XpressProblem, first::Integer, last::Integer)
     return nzcnt[]
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function getrows(prob::XpressProblem, _mstart::Vector{Int64}, _mrwind::Vector{Int64}, _dmatval::Array{Float64}, maxcoeffs::Integer, val::Integer, first::Int64, last::Int64)
-    @assert length(_mstart) >= last-first+2
-    @assert length(_mrwind) == maxcoeffs
-    @assert length(_dmatval) == maxcoeffs
-    temp = zeros(Int, 1)
-    @checked Lib.XPRSgetrows64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, temp, first - 1, last - 1)
-    _mstart .+= 1
-    _mrwind .+= 1
-    return
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function getrows(prob::XpressProblem, _mstart::Vector{Int64}, _mrwind::Vector{Int64}, _dmatval::Array{Float64}, maxcoeffs::Integer, val::Integer, first::Int64, last::Int64)
+#     @assert length(_mstart) >= last-first+2
+#     @assert length(_mrwind) == maxcoeffs
+#     @assert length(_dmatval) == maxcoeffs
+#     temp = zeros(Int, 1)
+#     @checked Lib.XPRSgetrows64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, temp, first - 1, last - 1)
+#     _mstart .+= 1
+#     _mrwind .+= 1
+#     return
+# end
+
 """
     int XPRS_CC XPRSgetcoef(XPRSprob prob, int irow, int icol, double *dval);
 
@@ -1641,23 +1610,6 @@ end
 
 Returns the nonzeros in the quadratic objective coefficients matrix for the columns in a given range. To achieve maximum efficiency,  `XPRSgetmqobj` returns the lower triangular part of this matrix only.
 
-"""
-    int XPRS_CC XPRSgetmqobj (XPRSprob prob, int mstart[], int mclind[], double dobjval[], int size, int *nels, int first, int last);
-
-Returns the nonzeros in the quadratic objective coefficients matrix for the columns in a given range. To achieve maximum efficiency,  `XPRSgetmqobj` returns the lower triangular part of this matrix only.
-
-### Arguments
-
-- `prob`: The current problem.
-- `mstart`: Integer array which will be filled with indices indicating the starting offsets in the `mclind` and `dobjval` arrays for each requested column. It must be length of at least `last-first+2` . Column `i` starts at position `mstart[i]` in the `mrwind` and `dmatval` arrays, and has `mstart[i+1]-mstart[i]` elements in it. May be NULL if `size` is `0` .
-- `mclind`: Integer array of length `size` which will be filled with the column indices of the nonzero elements in the lower triangular part of `Q` . May be `NULL` if `size` is `0` .
-- `dobjval`: Double array of length `size` which will be filled with the nonzero element values. May be `NULL` if `size` is `0` .
-- `size`: The maximum number of elements to be returned (size of the arrays).
-- `nels`: Pointer to an integer where the number of nonzero quadratic objective coefficients will be returned. If the number of nonzero coefficients is greater than `size` , then only `size` elements will be returned. If `nels` is smaller than `size` , then only `nels` will be returned.
-- `first`: First column in the range.
-- `last`: Last column in the range.
-
-"""
 ### Arguments
 
 - `prob`: The current problem.
@@ -1674,11 +1626,11 @@ function getmqobj(prob::XpressProblem, _mstart, _mrwind, _dobjval, maxcoeffs, nc
     @checked Lib.XPRSgetmqobj(prob, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, Cint(first), Cint(last))
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function getmqobj(prob::XpressProblem, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first::Int64, last::Int64)
-    @checked Lib.XPRSgetmqobj64(prob, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first, last)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function getmqobj(prob::XpressProblem, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first::Int64, last::Int64)
+#     @checked Lib.XPRSgetmqobj64(prob, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first, last)
+# end
+
 """
     int XPRS_CC XPRScrossoverlpsol(XPRSprob prob, int *status);
 
@@ -2070,24 +2022,6 @@ Allows  rows to be added to the matrix after passing it to the Optimizer using t
 - `qrtype`: Character array of length newrow containing the row types:`L`: indicates a ≤ row;`G`: indicates ≥ row;`E`: indicates an = row.`R`: indicates a range constraint;`N`: indicates a nonbinding constraint.
 - `rhs`: Double array of length `newrow` containing the right hand side elements.
 - `range`: Double array of length `newrow` containing the row range elements. This may be `NULL` if there are no ranged constraints. The values in the `range` array will only be read for `R` type rows. The entries for other type rows will be ignored.
-"""
-    int XPRS_CC XPRSaddrows(XPRSprob prob, int newrow, int newnz, const char qrtype[], const double rhs[], const double range[], const int mstart[], const int mclind[], const double dmatval[]);
-
-Allows  rows to be added to the matrix after passing it to the Optimizer using the input routines.
-
-### Arguments
-
-- `prob`: The current problem.
-- `newrow`: Number of new rows.
-- `newnz`: Number of new nonzeros in the added rows.
-- `qrtype`: Character array of length newrow containing the row types:`L`: indicates a ≤ row;`G`: indicates ≥ row;`E`: indicates an = row.`R`: indicates a range constraint;`N`: indicates a nonbinding constraint.
-- `rhs`: Double array of length `newrow` containing the right hand side elements.
-- `range`: Double array of length `newrow` containing the row range elements. This may be `NULL` if there are no ranged constraints. The values in the `range` array will only be read for `R` type rows. The entries for other type rows will be ignored.
-- `mstart`: Integer array of length `newrow` containing the offsets in the `mclind` and `dmatval` arrays of the start of the elements for each row.
-- `mclind`: Integer array of length `newnz` containing the (contiguous) column indices for the elements in each row.
-- `dmatval`: Double array of length `newnz` containing the (contiguous) element values.
-
-"""
 - `mstart`: Integer array of length `newrow` containing the offsets in the `mclind` and `dmatval` arrays of the start of the elements for each row.
 - `mclind`: Integer array of length `newnz` containing the (contiguous) column indices for the elements in each row.
 - `dmatval`: Double array of length `newnz` containing the (contiguous) element values.
@@ -2105,19 +2039,19 @@ function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Fl
     @checked Lib.XPRSaddrows(prob, nrows, Cint(ncoeffs), _srowtype, _drhs, _drng, Cint.(_mstart), Cint.(_mrwind), _dmatval)
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int64}, _mrwind::Vector{Int64}, _dmatval::Vector{Float64})
-    nrows = length(_drhs)
-    # @assert nrows == length(_drng) # can be a C_NULL
-    @assert nrows == length(_srowtype)
-    @assert nrows == length(_mstart)
-    ncoeffs = length(_mrwind)
-    @assert ncoeffs == length(_dmatval)
-    _mstart .-= 1
-    _mrwind .-= 1
-    @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mrwind, _dmatval)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{Int64}, _mrwind::Vector{Int64}, _dmatval::Vector{Float64})
+#     nrows = length(_drhs)
+#     # @assert nrows == length(_drng) # can be a C_NULL
+#     @assert nrows == length(_srowtype)
+#     @assert nrows == length(_mstart)
+#     ncoeffs = length(_mrwind)
+#     @assert ncoeffs == length(_dmatval)
+#     _mstart .-= 1
+#     _mrwind .-= 1
+#     @checked Lib.XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mrwind, _dmatval)
+# end
+
 """
     int XPRS_CC XPRSdelrows(XPRSprob prob, int nrows, const int mindex[]);
 
@@ -2147,24 +2081,6 @@ Allows columns to be added to the   matrix after passing it to the Optimizer usi
 - `newnz`: Number of new nonzeros in the added columns.
 - `objx`: Double array of length `newcol` containing the objective function coefficients of the new columns.
 - `mstart`: Integer array of length `newcol` containing the offsets in the `mrwind` and `dmatval` arrays of the start of the elements for each column.
-"""
-    int XPRS_CC XPRSaddcols(XPRSprob prob, int newcol, int newnz, const double objx[], const int mstart[], const int mrwind[], const double dmatval[], const double bdl[], const double bdu[]);
-
-Allows columns to be added to the   matrix after passing it to the Optimizer using the input routines.
-
-### Arguments
-
-- `prob`: The current problem.
-- `newcol`: Number of new columns.
-- `newnz`: Number of new nonzeros in the added columns.
-- `objx`: Double array of length `newcol` containing the objective function coefficients of the new columns.
-- `mstart`: Integer array of length `newcol` containing the offsets in the `mrwind` and `dmatval` arrays of the start of the elements for each column.
-- `mrwind`: Integer array of length `newnz` containing the row indices for the elements in each column.
-- `dmatval`: Double array of length `newnz` containing the element values.
-- `bdl`: Double array of length `newcol` containing the lower bounds on the added columns.
-- `bdu`: Double array of length `newcol` containing the upper bounds on the added columns.
-
-"""
 - `mrwind`: Integer array of length `newnz` containing the row indices for the elements in each column.
 - `dmatval`: Double array of length `newnz` containing the element values.
 - `bdl`: Double array of length `newcol` containing the lower bounds on the added columns.
@@ -2182,18 +2098,18 @@ function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{<:
     @checked Lib.XPRSaddcols(prob, ncols, ncoeffs, _dobj, Cint.(_mstart), Cint.(_mrwind), _dmatval, _dbdl, _dbdu)
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{Int64}, _mrwind::Vector{Int64}, _dmatval::Vector{Float64}, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
-    @assert length(_dbdl) == length(_dbdu)
-    fixinfinity!(_dbdl)
-    fixinfinity!(_dbdu)
-    ncols = length(_dbdl)
-    ncoeffs = length(_dmatval)
-    _mstart = _mstart .- 1
-    _mrwind = _mrwind .- 1
-    @checked Lib.XPRSaddcols64(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{Int64}, _mrwind::Vector{Int64}, _dmatval::Vector{Float64}, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
+#     @assert length(_dbdl) == length(_dbdu)
+#     fixinfinity!(_dbdl)
+#     fixinfinity!(_dbdu)
+#     ncols = length(_dbdl)
+#     ncoeffs = length(_dmatval)
+#     _mstart = _mstart .- 1
+#     _mrwind = _mrwind .- 1
+#     @checked Lib.XPRSaddcols64(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
+# end
+
 """
     int XPRS_CC XPRSdelcols(XPRSprob prob, int ncols, const int mindex[]);
 
@@ -2312,20 +2228,6 @@ end
 
 Used to change multiple coefficients in the  matrix. If any coefficient does not already exist, it will be added to the matrix. If many coefficients are being added to a row of the matrix, it may be more efficient to delete the old row of the matrix and add a new one.
 
-"""
-    int XPRS_CC XPRSchgmcoef(XPRSprob prob, int nels, const int mrow[], const int mcol[], const double dval[]);
-
-Used to change multiple coefficients in the  matrix. If any coefficient does not already exist, it will be added to the matrix. If many coefficients are being added to a row of the matrix, it may be more efficient to delete the old row of the matrix and add a new one.
-
-### Arguments
-
-- `prob`: The current problem.
-- `nels`: Number of new coefficients.
-- `mrow`: Integer array of length `nels` containing the row indices of the coefficients to be changed.
-- `mcol`: Integer array of length `nels` containing the column indices of the coefficients to be changed.
-- `dval`: Double array of length `nels` containing the new coefficient values. If an element of `dval` is zero, the coefficient will be deleted.
-
-"""
 ### Arguments
 
 - `prob`: The current problem.
@@ -2339,11 +2241,11 @@ function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{<:Integer}, _mcol:
     @checked Lib.XPRSchgmcoef(prob, ncoeffs, Cint(_mrow .- 1), Cint(_mcol .- 1), _dval)
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{Int64}, _mcol::Vector{Int64}, _dval)
-    @checked Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow, _mcol, _dval)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{Int64}, _mcol::Vector{Int64}, _dval)
+#     @checked Lib.XPRSchgmcoef64(prob, ncoeffs, _mrow, _mcol, _dval)
+# end
+
 """
     int XPRS_CC XPRSchgmqobj(XPRSprob prob, int nels, const int mqcol1[], const int mqcol2[], const double dval[]);
 
@@ -2352,20 +2254,6 @@ Used to change multiple   quadratic coefficients in the   objective function. If
 ### Arguments
 
 - `prob`: The current problem.
-"""
-    int XPRS_CC XPRSchgmqobj(XPRSprob prob, int nels, const int mqcol1[], const int mqcol2[], const double dval[]);
-
-Used to change multiple   quadratic coefficients in the   objective function. If any of the coefficients does not exist already, new coefficients will be added to the objective function.
-
-### Arguments
-
-- `prob`: The current problem.
-- `nels`: The number of coefficients to change.
-- `mqcol1`: Integer array of size `ncol` containing the column index of the first variable in each quadratic term.
-- `mqcol2`: Integer array of size `ncol` containing the column index of the second variable in each quadratic term.
-- `dval`: New values for the coefficients. If an entry in `dval` is `0` , the corresponding entry will be deleted. These are the coefficients of the quadratic Hessian matrix.
-
-"""
 - `nels`: The number of coefficients to change.
 - `mqcol1`: Integer array of size `ncol` containing the column index of the first variable in each quadratic term.
 - `mqcol2`: Integer array of size `ncol` containing the column index of the second variable in each quadratic term.
@@ -2379,14 +2267,14 @@ function chgmqobj(prob::XpressProblem, _mcol1::Vector{<:Integer}, _mcol2::Vector
     @checked Lib.XPRSchgmqobj(prob, Cint(ncols), Cint.(_mcol1 .- 1), Cint.(_mcol2 .- 1), _dval)
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function chgmqobj(prob::XpressProblem, _mcol1::Vector{Int64}, _mcol2::Vector{Int64}, _dval)
-    ncols = length(_mcol1)
-    @assert length(_mcol2) == ncols
-    @assert length(_dval) == ncols
-    @checked Lib.XPRSchgmqobj64(prob, ncols, _mcol1.-1, _mcol2.-1, _dval)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function chgmqobj(prob::XpressProblem, _mcol1::Vector{Int64}, _mcol2::Vector{Int64}, _dval)
+#     ncols = length(_mcol1)
+#     @assert length(_mcol2) == ncols
+#     @assert length(_dval) == ncols
+#     @checked Lib.XPRSchgmqobj64(prob, ncols, _mcol1.-1, _mcol2.-1, _dval)
+# end
+
 """
     int XPRS_CC XPRSchgqobj(XPRSprob prob, int icol, int jcol, double dval);
 
@@ -2549,23 +2437,6 @@ end
 
 Adds  cuts directly to the matrix at the current node. Any cuts added to the matrix at the current node and not deleted at the current node will be automatically added to the  cut pool. The cuts added to the cut pool will be automatically restored at descendant nodes.
 
-"""
-    int XPRS_CC XPRSaddcuts(XPRSprob prob, int ncuts, const int mtype[], const char qrtype[], const double drhs[], const int mstart[], const int mcols[], const double dmatval[]);
-
-Adds  cuts directly to the matrix at the current node. Any cuts added to the matrix at the current node and not deleted at the current node will be automatically added to the  cut pool. The cuts added to the cut pool will be automatically restored at descendant nodes.
-
-### Arguments
-
-- `prob`: The current problem.
-- `ncuts`: Number of cuts to add.
-- `mtype`: Integer array of length `ncuts` containing the user assigned cut types. The cut types can be any integer chosen by the user, and are used to identify the cuts in other cut manager routines using user supplied parameters. The cut type can be interpreted as an integer or a bitmap - see XPRSdelcuts .
-- `qrtype`: Character array of length `ncuts` containing the row types:`L`: indicates a ≤ row;`G`: indicates a ≥ row;`E`: indicates an = row.
-- `drhs`: Double array of length `ncuts` containing the right hand side elements for the cuts.
-- `mstart`: Integer array containing offset into the `mcols` and `dmatval` arrays indicating the start of each cut. This array is of length `ncuts+1` with the last element, `mstart[ncuts]` , being where cut `ncuts+1` would start.
-- `mcols`: Integer array of length `mstart[ncuts]` containing the column indices in the cuts.
-- `dmatval`: Double array of length `mstart[ncuts]` containing the matrix values for the cuts.
-
-"""
 ### Arguments
 
 - `prob`: The current problem.
@@ -2582,11 +2453,11 @@ function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart::Vector
     @checked Lib.XPRSaddcuts(prob, ncuts, mtype, qrtype, drhs, Cint.(mstart), Cint.(mcols), dmatval)
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart::Vector{Int64}, mcols::Vector{Int64}, dmatval)
-    @checked Lib.XPRSaddcuts64(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart::Vector{Int64}, mcols::Vector{Int64}, dmatval)
+#     @checked Lib.XPRSaddcuts64(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
+# end
+
 """
     int XPRS_CC XPRSdelcuts(XPRSprob prob, int ibasis, int itype, int interp, double delta, int num, const XPRScut mcutind[]);
 
@@ -2670,25 +2541,6 @@ end
 
 Returns cuts from the   cut pool. A list of cut pointers in the array  `mindex` must be passed to the routine. The columns and elements of the cut will be returned in the regions pointed to by the  `mcols` and  `dmatval` parameters. The columns and elements will be stored contiguously and the starting point of each cut will be returned in the region pointed to by the  `mstart` parameter.
 
-"""
-    int XPRS_CC XPRSgetcpcuts(XPRSprob prob, const XPRScut mindex[], int ncuts, int size, int mtype[], char qrtype[], int mstart[], int mcols[], double dmatval[], double drhs[]);
-
-Returns cuts from the   cut pool. A list of cut pointers in the array  `mindex` must be passed to the routine. The columns and elements of the cut will be returned in the regions pointed to by the  `mcols` and  `dmatval` parameters. The columns and elements will be stored contiguously and the starting point of each cut will be returned in the region pointed to by the  `mstart` parameter.
-
-### Arguments
-
-- `prob`: The current problem.
-- `mindex`: Array of length `ncuts` containing the pointers to the cuts.
-- `ncuts`: Number of cuts to be returned.
-- `size`: Maximum number of column indices of the cuts to be returned.
-- `mtype`: Integer array of length at least `ncuts` where the cut types will be returned. May be NULL if not required.
-- `qrtype`: Character array of length at least `ncuts` where the sense of the cuts ( `L` , `G` , or `E` ) will be returned. May be NULL if not required.
-- `mstart`: Integer array of length at least `ncuts+1` containing the offsets into the `mcols` and `dmatval` arrays. The last element indicates where cut `ncuts+1` would start. May be NULL if not required.
-- `mcols`: Integer array of length `size` where the column indices of the cuts will be returned. May be NULL if not required.
-- `dmatval`: Double array of length `size` where the matrix values will be returned. May be NULL if not required.
-- `drhs`: Double array of length at least `ncuts` where the right hand side elements for the cuts will be returned. May be NULL if not required.
-
-"""
 ### Arguments
 
 - `prob`: The current problem.
@@ -2707,11 +2559,11 @@ function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, msta
     @checked Lib.XPRSgetcpcuts(prob, mindex, ncuts, size, mtype, qrtype, Cint.(mstart), Cint.(mcols), dmatval, drhs)
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart::Vector{Int64}, mcols::Vector{Int64}, dmatval, drhs)
-    @checked Lib.XPRSgetcpcuts64(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart::Vector{Int64}, mcols::Vector{Int64}, dmatval, drhs)
+#     @checked Lib.XPRSgetcpcuts64(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
+# end
+
 """
     int XPRS_CC XPRSloadcuts(XPRSprob prob, int itype, int interp, int ncuts, const XPRScut mcutind[]);
 
@@ -2735,25 +2587,6 @@ end
 
 Stores cuts into the  cut pool, but does not apply them to the current node. These cuts must be explicitly loaded into the matrix using  XPRSloadcuts or  XPRSsetbranchcuts before they become active.
 
-"""
-    int XPRS_CC XPRSstorecuts(XPRSprob prob, int ncuts, int nodupl, const int mtype[], const char qrtype[], const double drhs[], const int mstart[], XPRScut mindex[], const int mcols[], const double dmatval[]);
-
-Stores cuts into the  cut pool, but does not apply them to the current node. These cuts must be explicitly loaded into the matrix using  XPRSloadcuts or  XPRSsetbranchcuts before they become active.
-
-### Arguments
-
-- `prob`: The current problem.
-- `ncuts`: Number of cuts to add.
-- `nodupl`: `0`: do not exclude duplicates from the cut pool;`1`: duplicates are to be excluded from the cut pool;`2`: duplicates are to be excluded from the cut pool, ignoring cut type.
-- `mtype`: Integer array of length `ncuts` containing the cut types. The cut types can be any integer and are used to identify the cuts.
-- `qrtype`: Character array of length `ncuts` containing the row types:`L`: indicates a ≤ row;`E`: indicates an = row;`G`: indicates a ≥ row.
-- `drhs`: Double array of length `ncuts` containing the right hand side elements for the cuts.
-- `mstart`: Integer array containing offsets into the `mcols` and `dmtval` arrays indicating the start of each cut. This array is of length `ncuts+1` with the last element `mstart[ncuts]` being where cut `ncuts+1` would start.
-- `mindex`: Array of length `ncuts` where the pointers to the cuts will be returned.
-- `mcols`: Integer array of length `mstart[ncuts]` containing the column indices in the cuts.
-- `dmatval`: Double array of length `mstart[ncuts]` containing the matrix values for the cuts.
-
-"""
 ### Arguments
 
 - `prob`: The current problem.
@@ -2772,11 +2605,11 @@ function storecuts(prob::XpressProblem, ncuts, nodupl, mtype::Vector{<:Integer},
     @checked Lib.XPRSstorecuts(prob, ncuts, nodupl, Cint.(mtype), qrtype, drhs, Cint.(mstart), mindex, Cint.(cols), dmatval)
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function storecuts(prob::XpressProblem, ncuts, nodupl, mtype::Vector{Int64}, qrtype, drhs, mstart::Vector{Int64}, mindex, mcols::Vector{Int64}, dmatval)
-    @checked Lib.XPRSstorecuts64(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function storecuts(prob::XpressProblem, ncuts, nodupl, mtype::Vector{Int64}, qrtype, drhs, mstart::Vector{Int64}, mindex, mcols::Vector{Int64}, dmatval)
+#     @checked Lib.XPRSstorecuts64(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
+# end
+
 """
     int XPRS_CC XPRSpresolverow(XPRSprob prob, char qrtype, int nzo, const int mcolso[], const double dvalo[], double drhso, int maxcoeffs, int * nzp, int mcolsp[], double dvalp[], double * drhsp, int * status);
 
@@ -2967,8 +2800,8 @@ Used to obtain the LP solution values following optimization.
 - `prob`: The current problem.
 - `x`: Double array of length COLS where the values of the primal variables will be returned. May be `NULL` if not required.
 - `slack`: Double array of length ROWS where the values of the slack variables will be returned. May be `NULL` if not required.
-- `dual`: Double array of length `ROWS` where the values of the dual variables ( _c\_B^TB^-1_ ) will be returned. May be `NULL` if not required.
-- `dj`: Double array of length `COLS` where the reduced cost for each variable ( _c^T-c\_B^TB^-1A_ ) will be returned. May be `NULL` if not required.
+- `dual`: Double array of length `ROWS` where the values of the dual variables ( `c_B^TB^-1` ) will be returned. May be `NULL` if not required.
+- `dj`: Double array of length `COLS` where the reduced cost for each variable ( `c^T-c_B^TB^-1A` ) will be returned. May be `NULL` if not required.
 
 """
 function getlpsol(prob::XpressProblem, _dx, _dslack, _dual, _dj)
@@ -3021,11 +2854,11 @@ function addsets(prob::XpressProblem, newsets, newnz, qstype, msstart::Vector{<:
     @checked Lib.XPRSaddsets(prob, newsets, newnz, qstype, Cint.(msstart), Cint.(mscols .- 1), dref)
 end
 
-#= Disable 64Bit versions do to reliability issues.
-function addset(prob::XpressProblem, newsets, newnz, qstype, msstart::Vector{Int64}, mscols::Vector{Int64}, dref)
-    @checked Lib.XPRSaddsets64(prob, newsets, newnz, qstype, msstart, mscols, dref)
-end
-=#
+# # Disable 64Bit versions do to reliability issues.
+# function addset(prob::XpressProblem, newsets, newnz, qstype, msstart::Vector{Int64}, mscols::Vector{Int64}, dref)
+#     @checked Lib.XPRSaddsets64(prob, newsets, newnz, qstype, msstart, mscols, dref)
+# end
+
 """
     int XPRS_CC XPRSstrongbranch(XPRSprob prob, const int nbnds, const int mbndind[], const char cbndtype[], const double dbndval[], const int itrlimit, double dsobjval[], int msbstatus[]);
 
@@ -4807,21 +4640,6 @@ end
 Adds a new quadratic matrix into a row defined by triplets.
 
 ### Arguments
-"""
-    int XPRS_CC XPRSaddqmatrix(XPRSprob prob, int irow, int nqtr, const int mqc1[], const int mqc2[], const double dqe[]);
-
-Adds a new quadratic matrix into a row defined by triplets.
-
-### Arguments
-
-- `prob`: The current problem.
-- `irow`: Index of the row where the quadratic matrix is to be added.
-- `nqtr`: Number of triplets used to define the quadratic matrix. This may be less than the number of coefficients in the quadratic matrix, since off diagonals and their transposed pairs are defined by one triplet.
-- `mqc1`: First index in the triplets.
-- `mqc2`: Second index in the triplets.
-- `dqe`: Coefficients in the triplets.
-
-"""
 
 - `prob`: The current problem.
 - `irow`: Index of the row where the quadratic matrix is to be added.
