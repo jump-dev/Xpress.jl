@@ -179,7 +179,15 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     """
     function Optimizer(; kwargs...)
         model = new()
+
         model.params = Dict{Any,Any}()
+        for (name, value) in kwargs
+            if name == :logfile
+                continue
+            end
+            model.params[name] = value
+        end
+
         model.inner = XpressProblem(logfile = get(kwargs, :logfile, nothing))
         model.silent = false
         model.variable_info = CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}()
@@ -188,15 +196,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
         model.callback_variable_primal = Float64[]
         MOI.empty!(model)  # MOI.empty!(model) re-sets the `.inner` field.
-
-        # TODO: use MOI.set MOI.RawParameter instead
-        for (name, value) in kwargs
-            if name == :logfile
-                continue
-            end
-            model.params[name] = value
-            Xpress.setcontrol!(model.inner, Symbol("XPRS_$(name)"), value)
-        end
 
         return model
     end
@@ -254,6 +253,11 @@ function MOI.empty!(model::Optimizer)
     model.lazy_callback = nothing
     model.user_cut_callback = nothing
     model.heuristic_callback = nothing
+
+    # TODO: use MOI.set MOI.RawParameter instead
+    for (name, value) in model.params
+        Xpress.setcontrol!(model.inner, Symbol("XPRS_$(name)"), value)
+    end
     return
 end
 
