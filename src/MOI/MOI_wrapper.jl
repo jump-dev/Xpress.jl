@@ -181,6 +181,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model = new()
 
         model.params = Dict{Any,Any}()
+
         for (name, value) in kwargs
             if name == :logfile
                 continue
@@ -189,7 +190,17 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         end
 
         model.inner = XpressProblem(logfile = get(kwargs, :logfile, nothing))
-        model.silent = false
+
+        # TODO: use MOI.set MOI.RawParameter instead
+        for (name, value) in model.params
+            Xpress.setcontrol!(model.inner, Symbol("XPRS_$(name)"), value)
+        end
+
+        if :OUTPUTLOG ∈ keys(model.params) && model.params[:OUTPUTLOG] == 0
+            model.silent = true
+        else
+            model.silent = false
+        end
         model.variable_info = CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}()
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.quadratic_constraint_info = Dict{Int, ConstraintInfo}()
@@ -228,7 +239,6 @@ function MOI.empty!(model::Optimizer)
     # Xpress.destroyprob(model.inner)
     # We cannot call it twice, finalize is called before atexit
     model.inner = XpressProblem(logfile = model.inner.logfile)
-    Xpress.loadlp(model.inner)
     MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_MPSNAMELENGTH), 64)
     MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_CALLBACKFROMMASTERTHREAD), 1)
     model.name = ""
@@ -237,6 +247,7 @@ function MOI.empty!(model::Optimizer)
     else
         MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), 1)
     end
+    Xpress.loadlp(model.inner)
     model.objective_type = SCALAR_AFFINE
     model.is_feasibility = true
     empty!(model.variable_info)
