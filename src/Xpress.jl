@@ -18,48 +18,6 @@ module Xpress
     import Base.show, Base.copy
 
     # ### exports
-    # export
-
-    # ## xprs_env
-    # free_env,
-
-    # ## xprs_params
-    # getparam, setparam!, setparams!,
-
-    # ## xprs_model
-    # set_sense!, update_model!, reset_model!,
-    # read_model, write_model,
-    # copy,
-
-    # ## xprs_attrs
-    # model_name, model_sense, model_type,
-    # num_vars, num_constrs, num_sos, num_qconstrs,
-    # num_cnzs, num_qnzs, num_qcnzs,
-    # is_qp, is_qcp, is_mip,
-
-    # lowerbounds, upperbounds, objcoeffs, set_objcoeffs!,
-
-    # ## xprs_vars
-    # XPRS_CONTINUOUS, XPRS_BINARY, XPRS_INTEGER,
-    # add_var!, add_vars!, add_cvar!, add_cvars!,
-    # add_bvar!, add_bvars!, add_ivar!, add_ivars!,
-    # del_vars!,
-
-    # ## xprs_constrs
-    # add_constr!, add_constrs!, add_constrs_t!,
-    # add_rangeconstr!, add_rangeconstrs!, add_rangeconstrs_t!,
-    # get_constrmatrix, add_sos!, del_constrs!, chg_coeffs!,
-
-    # ## xprs_quad
-    # add_qpterms!, add_qconstr!,
-
-    # ## higher level
-    # xpress_model,
-
-    # ## xprs_solve
-    # optimize, computeIIS, get_solution,
-    # get_status, OptimInfo, get_optiminfo, get_objval
-
 
     ### include source files
     module Lib
