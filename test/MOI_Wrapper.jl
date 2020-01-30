@@ -81,8 +81,8 @@ SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
 @testset "Linear tests" begin
     @testset "Default Solver"  begin
         MOIT.contlineartest(BRIDGED_OPTIMIZER, MOIT.TestConfig(
-        basis = false, # TODO change to true
-        infeas_certificates=false # TODO remove this
+        basis = true,
+        infeas_certificates = true,
         ), [
             # "linear1",
             # "linear2",
