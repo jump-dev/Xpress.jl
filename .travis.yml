@@ -24,11 +24,11 @@ before_install:
   - eval "$(ssh-agent -s)"
   - chmod 600 xpress_binkey
   - ssh-add xpress_binkey
-  - git clone git@github.com:jd-lara/XPRESSBINFILES.git /Users/travis/XPRESSBINFILES
+  - git clone git@github.com:jd-lara/XPRESSBINFILES.git $HOME/XPRESSBINFILES
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
-    - XPRESSDIR=/Users/travis/XPRESSBINFILES/xpressmp_mac
+    - XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_mac
     - DYLD_LIBRARY_PATH=$XPRESSDIR/lib:$DYLD_LIBRARY_PATH
     fi
   - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
-    - XPRESSDIR=/Users/travis/XPRESSBINFILES/xpressmp_win
+    - XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_win
     fi
