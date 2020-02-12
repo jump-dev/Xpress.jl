@@ -25,6 +25,7 @@ before_install:
   - chmod 600 xpress_binkey
   - ssh-add xpress_binkey
   - ssh-add -l
+  - ssh -T git@github.com
   - git clone -v git@github.com:jd-lara/XPRESSBINFILES.git $HOME/XPRESSBINFILES
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
       export XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_mac;
