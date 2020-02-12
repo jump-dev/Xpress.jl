@@ -24,7 +24,10 @@ before_install:
   - eval "$(ssh-agent -s)"
   - chmod 600 xpress_binkey
   - ssh-add xpress_binkey
-  - ssh-add -l
+  - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
+      ssh-add $ENV:USERPROFILE\.ssh\id_rsa;
+      ssh $ENV:USERNAME@$ENV:COMPUTERNAME;
+    fi;
   - ssh -T git@github.com
   - git clone -v git@github.com:jd-lara/XPRESSBINFILES.git $HOME/XPRESSBINFILES
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
