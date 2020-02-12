@@ -11,7 +11,7 @@ codecov: true
 notifications:
   email: false
 
-matrix:
+jobs:
   allow_failures:
   - julia: nightly
 addons:
