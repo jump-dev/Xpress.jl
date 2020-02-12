@@ -27,8 +27,8 @@ before_install:
   - git clone -v git@github.com:jd-lara/XPRESSBINFILES.git $HOME/XPRESSBINFILES
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
       export XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_mac;
-      export DYLD_LIBRARY_PATH=$XPRESSDIR/lib:$DYLD_LIBRARY_PATH
-    fi
+      export DYLD_LIBRARY_PATH=$XPRESSDIR/lib:$DYLD_LIBRARY_PATH;
+    fi;
   - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
-      XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_win
-    fi
+      XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_win;
+    fi;
