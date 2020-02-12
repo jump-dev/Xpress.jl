@@ -26,9 +26,9 @@ before_install:
   - ssh-add xpress_binkey
   - git clone git@github.com:jd-lara/XPRESSBINFILES.git $HOME/XPRESSBINFILES
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
-    - XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_mac
-    - DYLD_LIBRARY_PATH=$XPRESSDIR/lib:$DYLD_LIBRARY_PATH
+      XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_mac
+      DYLD_LIBRARY_PATH=$XPRESSDIR/lib:$DYLD_LIBRARY_PATH
     fi
   - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
-    - XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_win
+      XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_win
     fi
