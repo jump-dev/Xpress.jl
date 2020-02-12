@@ -28,7 +28,6 @@ before_install:
       ssh-add $ENV:USERPROFILE\.ssh\id_rsa;
       ssh $ENV:USERNAME@$ENV:COMPUTERNAME;
     fi;
-  - ssh -T git@github.com
   - git clone -v git@github.com:jd-lara/XPRESSBINFILES.git $HOME/XPRESSBINFILES
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
       export XPRESSDIR=$HOME/XPRESSBINFILES/xpressmp_mac;
