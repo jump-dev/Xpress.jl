@@ -12,6 +12,8 @@ using Xpress, Test
     @test Xpress.setprobname(xp, "xpress-optimization-problem") == nothing
     @test Xpress.getprobname(xp) == "xpress-optimization-problem"
 
+    @test Xpress.getcontrol(xp, "XPRS_DEFAULTALG") == 1
+
     @test Xpress.getintcontrol(xp, Xpress.Lib.XPRS_DEFAULTALG) == 1
     @test Xpress.getcontrol(xp, Xpress.Lib.XPRS_DEFAULTALG) == 1
 

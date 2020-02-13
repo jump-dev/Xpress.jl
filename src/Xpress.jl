@@ -42,6 +42,12 @@ module Xpress
     # # license checker
     include("license.jl")
 
+    const parameter_name_to_index = Dict{String, Int}(
+        string(name) => getfield(Lib, name)
+        for name in names(Lib; all = true)
+        if startswith(string(name), "XPRS_") && typeof(getfield(Lib, name)) == Int
+    )
+
     function initialize()
         userlic()
         init() # Call XPRSinit for initialization

@@ -74,6 +74,8 @@ addrownames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 
 
 """
     getcontrol(prob::XpressProblem, control::Integer)
+    getcontrol(prob::XpressProblem, control::String)
+    getcontrol(prob::XpressProblem, control::Symbol)
 
 Get parameter of any type
 """
@@ -90,14 +92,17 @@ function getcontrol(prob::XpressProblem, control::Integer)
     end
 end
 getcontrol(prob::XpressProblem, control::Symbol) = getcontrol(prob, getproperty(Lib, control))
+getcontrol(prob::XpressProblem, control::String) = getcontrol(prob, parameter_name_to_index[control])
 
 """
-    setparam!(prob::XpressProblem, control::Symbol, val::Any)
-    setparam!(prob::XpressProblem, control::Integer, val::Any)
+    setcontrol!(prob::XpressProblem, control::Symbol, val::Any)
+    setcontrol!(prob::XpressProblem, control::String, val::Any)
+    setcontrol!(prob::XpressProblem, control::Integer, val::Any)
 
 Set parameter of any type
 """
 setcontrol!(prob::XpressProblem, control::Symbol, val::Any) = setcontrol!(prob, getproperty(Lib, control), val::Any)
+setcontrol!(prob::XpressProblem, control::String, val::Any) = setcontrol!(prob, parameter_name_to_index[control], val::Any)
 setcontrol!(prob::XpressProblem, control::Integer, val::Any) = setcontrol!(prob, Cint(control), val::Any)
 function setcontrol!(prob::XpressProblem, control::Cint, val::Any)
     if convert(Int, control) in XPRS_INT_CONTROLS
