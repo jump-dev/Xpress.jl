@@ -1,3 +1,8 @@
+@static if v"1.2" > VERSION >= v"1.1"
+    # see: https://github.com/JuliaOpt/Xpress.jl/pull/44#issuecomment-585882858
+    error("Versions 1.1.x of julia are not supported. The current verions is $(VERSION)")
+end
+
 import MathOptInterface
 using SparseArrays
 

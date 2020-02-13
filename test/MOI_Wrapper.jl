@@ -106,12 +106,14 @@ SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
         ])
     end
     @testset "No certificate" begin
-        MOIT.linear12test(BRIDGED_OPTIMIZER, MOIT.TestConfig(infeas_certificates=false))
+        MOIT.linear12test(BRIDGED_OPTIMIZER, 
+            MOIT.TestConfig(infeas_certificates=false))
     end
 end
 
 @testset "Quadratic tests" begin
-    MOIT.contquadratictest(BRIDGED_OPTIMIZER, MOIT.TestConfig(atol=1e-3, rtol=1e-3), [
+    MOIT.contquadratictest(BRIDGED_OPTIMIZER,
+        MOIT.TestConfig(atol=1e-3, rtol=1e-3), [
         # "qp1",
         # "qp2",
         # "qp3",
@@ -174,6 +176,7 @@ end
     @testset "orderedindicestest" begin
         MOIT.orderedindicestest(OPTIMIZER)
     end
+
     @testset "copytest" begin
         BRIDGED_OPTIMIZER_2 = MOI.Bridges.full_bridge_optimizer(
                                             Xpress.Optimizer(), Float64)
