@@ -4649,9 +4649,8 @@ Adds a new quadratic matrix into a row defined by triplets.
 - `dqe`: Coefficients in the triplets.
 
 """
-function addqmatrix(prob::XpressProblem, mqc1, mqc2, dqew)
-    irow = Xpress.n_constraints(prob)
-    @checked Lib.XPRSaddqmatrix(prob, irow - 1, length(mqc1), mqc1 .- 1, mqc2 .- 1, dqew)
+function addqmatrix(prob::XpressProblem, irow, mqc1, mqc2, dqew)
+    @checked Lib.XPRSaddqmatrix(prob, irow - 1, length(mqc1), Cint.(mqc1 .- 1), Cint.(mqc2 .- 1), dqew)
 end
 
 # # Disable 64Bit versions do to reliability issues.

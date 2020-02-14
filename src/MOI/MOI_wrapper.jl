@@ -450,19 +450,29 @@ function _indices_and_coefficients(
         I[i] = _info(model, term.variable_index_1).column
         J[i] = _info(model, term.variable_index_2).column
         V[i] =  term.coefficient
-        # CPLEX returns a list of terms. MOI requires 0.5 x' Q x. So, to get
-        # from
-        #   CPLEX -> MOI => multiply diagonals by 2.0
-        #   MOI -> CPLEX => multiply diagonals by 0.5
-        # Example: 2x^2 + x*y + y^2
+
+        # MOI    represents objective as 0.5 x' Q x
+        # Example: obj = 2x^2 + x*y + y^2
+        #              = 2x^2 + (1/2)*x*y + (1/2)*y*x + y^2
         #   |x y| * |a b| * |x| = |ax+by bx+cy| * |x| = 0.5ax^2 + bxy + 0.5cy^2
         #           |b c|   |y|                   |y|
-        #   CPLEX needs: (I, J, V) = ([0, 0, 1], [0, 1, 1], [2, 1, 1])
-        #   MOI needs:
-        #     [SQT(4.0, x, x), SQT(1.0, x, y), SQT(2.0, y, y)]
-        if I[i] == J[i]
-            V[i] *= 0.5 # TODO: does Xpress need the multiply diagonals by 2.0 / multiply by 0.5?
-        end
+        #   Hence:
+        #          0.5*Q = |  2    1/2 |  => Q = | 4  1 |
+        #                  | 1/2    1  |         | 1  2 |
+        #   Only one triangle (upper and lower are equal) is saved in MOI
+        #   Hence:
+        #          ScalarQuadraticTerm.([4.0, 1.0, 2.0], [x, x, y], [x, y, y])
+        # Xpress ALSO represents objective as 0.5 x' Q x
+        #   Again, only one triangle is added.
+        #   In other words,
+        #      Xpress uses the SAME convention as MOI for OBJECTIVE
+        #      Hence, no modifications are needed for OBJECTIVE.
+        #   However,
+        #     For onstraints, Xpress does NOT have the 0.5 factor in front of the Q matrix
+        #     Hence,
+        #     Only for constraints, MOI -> Xpress => divide all by 2
+        #     Only for constraints, Xpress -> MOI => multiply all by 2
+
     end
     for (i, term) in enumerate(f.affine_terms)
         indices[i] = _info(model, term.variable_index).column
@@ -723,6 +733,7 @@ end
 function MOI.set(
     model::Optimizer, ::MOI.ObjectiveFunction{F}, f::F
 ) where {F <: MOI.ScalarQuadraticFunction{Float64}}
+    # setting linear part also clears the existing quadratic terms
     MOI.set(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(), MOI.ScalarAffineFunction(f.affine_terms, f.constant))
     affine_indices, affine_coefficients, I, J, V = _indices_and_coefficients(
         model, f
@@ -731,11 +742,11 @@ function MOI.set(
     for (i, c) in zip(affine_indices, affine_coefficients)
         obj[i] = c
     end
-    for i = 1:length(I)
-        if I[i] == J[i]
-            V[i] *= 2 # TODO: Is is required?
-        end
-    end
+    # for i = 1:length(I)
+    #     if I[i] == J[i]
+    #         V[i] *= 2 # TODO: Is is required?
+    #     end
+    # end
     Xpress.chgmqobj(model.inner, I, J, V)
     model.objective_type = SCALAR_QUADRATIC
     return
@@ -1707,7 +1718,8 @@ function MOI.add_constraint(
     Xpress.addrows(
         model.inner, [sense], [rhs], C_NULL, [1], indices, coefficients
     )
-    Xpress.addqmatrix(model.inner, I, J, V)
+    V .*= 0.5 # only for constraints
+    Xpress.addqmatrix(model.inner, Xpress.n_constraints(model.inner), I, J, V)
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] = ConstraintInfo(length(model.affine_constraint_info) + 1, s)
     model.quadratic_constraint_info[model.last_constraint_index] = ConstraintInfo(length(model.quadratic_constraint_info) + 1, s)
@@ -1727,8 +1739,7 @@ function MOI.delete(
     c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
 ) where {S}
     info = _info(model, c)
-    error("Not implemented yet.")
-    CPLEX.c_api_delqconstrs(model.inner, Cint(info.row - 1), Cint(info.row - 1))
+    Xpress.delrows(model.inner, [info.row])
     for (key, info_2) in model.quadratic_constraint_info
         if info_2.row > info.row
             info_2.row -= 1
@@ -1763,7 +1774,7 @@ function MOI.get(
         push!(
             quadratic_terms,
             MOI.ScalarQuadraticTerm(
-                i == j ? coef * 2 : coef, # TODO: check if this is required
+                2*coef, # only for constraints
                 model.variable_info[CleverDicts.LinearIndex(i)].index,
                 model.variable_info[CleverDicts.LinearIndex(j)].index
             )
