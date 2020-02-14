@@ -12,6 +12,7 @@ const BRIDGED_OPTIMIZER = MOI.Bridges.full_bridge_optimizer(
     Xpress.Optimizer(), Float64)
 
 const CONFIG = MOIT.TestConfig()
+const CONFIG_LOW_TOL = MOIT.TestConfig(atol = 1e-3, rtol = 1e-3)
 
 @testset "SolverName" begin
     @test MOI.get(OPTIMIZER, MOI.SolverName()) == "Xpress"
@@ -54,8 +55,8 @@ end
         # "solve_duplicate_terms_vector_affine",
         # "solve_integer_edge_cases",
         # "solve_objbound_edge_cases",
-        "solve_qcp_edge_cases", # TODO: fix errors (?). This might be tested below.
-        "solve_qp_edge_cases", # TODO: fix errors (?). This might be tested below.
+        "solve_qcp_edge_cases", # fails due to tolerance
+        "solve_qp_edge_cases", # fails due to tolerance
         # "solve_result_index",
         # "solve_single_variable_dual_max",
         # "solve_single_variable_dual_min",
@@ -73,6 +74,8 @@ end
         # "variablenames",
        ],
     )
+    MOIT.solve_qcp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
+    MOIT.solve_qp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
     MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
 
@@ -120,10 +123,10 @@ end
         # "qcp1",
         # "qcp2",
         # "qcp3",
-        "qcp4",   # TODO: Xpress throws an error
-        "qcp5",   # TODO: Xpress throws an error
-        "socp1",  # TODO: Does Xpress support socp1
-        "ncqcp",  # TODO: Does Xpress support ncqcp
+        # "qcp4",
+        # "qcp5",
+        "socp1",  # TODO: Xpress SHOULD support socp1
+        "ncqcp",  # Xpress does NOT support ncqcp
     ])
 end
 
