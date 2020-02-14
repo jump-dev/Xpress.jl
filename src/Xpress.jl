@@ -54,7 +54,7 @@ module Xpress
         atexit(free) # Call free when process terminates
     end
 
-    include("MOI/MOI_Wrapper.jl")
+    include("MOI/MOI_wrapper.jl")
 
     function __init__()
         Xpress.initialize()
