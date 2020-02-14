@@ -1,5 +1,19 @@
 # Xpress.jl
 
+| **Build Status** | **Social** |
+|:----------------:|:----------:|
+| [![Build Status][build-img]][build-url] [![Codecov branch][codecov-img]][codecov-url] | [![Gitter][gitter-img]][gitter-url] [<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Discourse_logo.png/799px-Discourse_logo.png" width="64">][discourse-url] |
+
+
+[build-img]: https://travis-ci.org/JuliaOpt/Xpress.jl.svg?branch=master
+[build-url]: https://travis-ci.org/JuliaOpt/Xpress.jl
+[codecov-img]: http://codecov.io/github/JuliaOpt/Xpress.jl/coverage.svg?branch=master
+[codecov-url]: http://codecov.io/github/JuliaOpt/Xpress.jl?branch=master
+
+[gitter-url]: https://gitter.im/JuliaOpt/JuMP-dev?utm_source=share-link&utm_medium=link&utm_campaign=share-link
+[gitter-img]: https://badges.gitter.im/JuliaOpt/JuMP-dev.svg
+[discourse-url]: https://discourse.julialang.org/c/domain/opt
+
 
 The Xpress Optimizer is a commercial optimization solver for a variety of mathematical programming problems, including linear programming (LP), quadratic programming (QP), quadratically constrained programming (QCP), mixed integer linear programming (MILP), mixed-integer quadratic programming (MIQP), and mixed-integer quadratically constrained programming (MIQCP).
 
@@ -32,13 +46,13 @@ You should use the xpress version matching to your julia installation and vice-v
 
 ## Use Other Packages
 
-We highly recommend that you use the *Xpress.jl* package with higher level packages such as [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl) or [MathProgBase.jl](https://github.com/JuliaOpt/MathProgBase.jl). 
+We highly recommend that you use the *Xpress.jl* package with higher level packages such as [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl) or [MathOptInterface.jl](https://github.com/JuliaOpt/MathOptInterface.jl). 
 
 This can be done using the ``Xpress.Optimizer`` object. Here is how to create a *JuMP* model that uses Xpress as the solver. Parameters are passed as keyword arguments:
 ```julia
 using JuMP, Xpress
 
-m = Model(with_optimizer(Xpress.Optimizer, DEFAULTALG=2, PRESOLVE=0))
+m = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0))
 ```
 For other parameters use Xpress Optimizer manual.
 
@@ -46,9 +60,9 @@ For other parameters use Xpress Optimizer manual.
 
 This package provides both APIs at different levels for constructing models and solving optimization problems just like *Gurobi.jl*, you can use the tests and examples in this package and *Gurobi.jl*'s [README.md](https://github.com/JuliaOpt/Gurobi.jl) basic for reference.
 
-## TODO:
+## Julia version warning
 
-* Create wrapper for: Callbacks.
+The Julia versions 1.1.x do not work properly with MOI dues to Julia bugs. Hence, these versions are not supported.
 
 ## Reference:
-[FICO optimizer manual](http://www.fico.com/en/node/8140?file=5097)
+[FICO optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML)
