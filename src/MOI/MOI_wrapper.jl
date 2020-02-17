@@ -618,16 +618,9 @@ function MOI.set(
 )
     info = _info(model, v)
     info.name = name
-    if isascii(name) && length(name) > 0
-        # TODO not do this always
-        # duplicate names are not accepted by Xpress
-        # we should store name separately
-        try
-            Xpress.addnames(model.inner, 2, info.column, [name])
-        catch
-            @warn getlasterror(model.inner)
-        end
-    end
+    # Note: don't set the string names in the Xpress C API because it complains
+    # on duplicate variables.
+    # That is, don't call `Xpress.addnames`.
     model.name_to_variable = nothing
     return
 end
@@ -1598,16 +1591,9 @@ function MOI.set(
 )
     info = _info(model, c)
     info.name = name
-    if isascii(name) && length(name) > 0
-        # TODO not do this always
-        # duplicate names are not accepted by Xpress
-        # we should store name separately
-        try
-            Xpress.addnames(model.inner, 1, info.row, [name])
-        catch
-            @warn getlasterror(model.inner)
-        end
-    end
+    # Note: don't set the string names in the Xpress C API because it complains
+    # on duplicate contraints.
+    # That is, don't call `Xpress.addnames`.
     model.name_to_constraint_index = nothing
     return
 end
@@ -2157,13 +2143,7 @@ function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
         return MOI.FEASIBLE_POINT
     end
     if term_stat == MOI.DUAL_INFEASIBLE
-        @warn "certificates not available"
-        # try
-        #     # TODO: improve this check.
-        #     get_unbounded_ray(model.inner)
-        #     return MOI.INFEASIBILITY_CERTIFICATE
-        # catch
-        # end
+        # TODO: infeasibility certificates
     end
     return MOI.NO_SOLUTION
 end
@@ -2180,9 +2160,7 @@ function MOI.get(model::Optimizer, attr::MOI.DualStatus)
         return MOI.FEASIBLE_POINT
     end
     if term_stat == MOI.INFEASIBLE
-        @warn "certificates not available"
-        # @assert MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
-        # return MOI.INFEASIBILITY_CERTIFICATE
+        # TODO: infeasibility certificates
     end
     return MOI.NO_SOLUTION
 end
