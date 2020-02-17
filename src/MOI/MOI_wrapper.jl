@@ -58,7 +58,7 @@ mutable struct VariableInfo
     type::VariableType
     start::Union{Float64, Nothing}
     name::String
-    # Storage for constraint names associated with variables because CPLEX can
+    # Storage for constraint names associated with variables because Xpress can
     # only store names for variables and proper constraints. We can perform an
     # optimization and only store three strings for the constraint names
     # because, at most, there can be three SingleVariable constraints, e.g.,
@@ -336,10 +336,9 @@ function MOI.supports_constraint(
     return true
 end
 
-# TODO
 # We choose _not_ to support ScalarAffineFunction-in-Interval and
-# ScalarQuadraticFunction-in-Interval for now
-# needs to use range constraints
+# ScalarQuadraticFunction-in-Interval due to the need for range constraints
+# and the added complexity.
 
 function MOI.supports_constraint(
     ::Optimizer, ::Type{MOI.ScalarAffineFunction{Float64}}, ::Type{F}
@@ -354,7 +353,6 @@ function MOI.supports_constraint(
 ) where {F <: Union{
     MOI.LessThan{Float64}, MOI.GreaterThan{Float64}
 }}
-    # TODO: Add MOI.EqualTo{Float64} in the future
     # Note: Xpress does not support quadratic equality constraints.
     return true
 end
@@ -521,26 +519,28 @@ function MOI.add_variable(model::Optimizer)
     info = _info(model, index)
     info.index = index
     info.column = length(model.variable_info)
-    Xpress.addcols(model.inner,
-                    [0.0],#_dobj::Vector{Float64},
-                    Int[],#_mstart::Vector{Int},
-                    Int[],#_mrwind::Vector{Int},
-                    Float64[],#_dmatval::Vector{Float64},
-                    [-Inf],#_dbdl::Vector{Float64},
-                    [Inf],#_dbdu::Vector{Float64}
-                    )
+    Xpress.addcols(
+        model.inner,
+        [0.0],#_dobj::Vector{Float64},
+        Int[],#_mstart::Vector{Int},
+        Int[],#_mrwind::Vector{Int},
+        Float64[],#_dmatval::Vector{Float64},
+        [-Inf],#_dbdl::Vector{Float64},
+        [Inf],#_dbdu::Vector{Float64}
+    )
     return index
 end
 
 function MOI.add_variables(model::Optimizer, N::Int)
-    Xpress.addcols(model.inner,
-                    zeros(N),# _dobj::Vector{Float64},
-                    Int[],# _mstart::Vector{Int},
-                    Int[],# _mrwind::Vector{Int},
-                    Float64[],# _dmatval::Vector{Float64},
-                    fill(-Inf, N),# _dbdl::Vector{Float64},
-                    fill(Inf, N),# _dbdu::Vector{Float64}
-                    )
+    Xpress.addcols(
+        model.inner,
+        zeros(N),# _dobj::Vector{Float64},
+        Int[],# _mstart::Vector{Int},
+        Int[],# _mrwind::Vector{Int},
+        Float64[],# _dmatval::Vector{Float64},
+        fill(-Inf, N),# _dbdl::Vector{Float64},
+        fill(Inf, N),# _dbdu::Vector{Float64}
+    )
     indices = Vector{MOI.VariableIndex}(undef, N)
     num_variables = length(model.variable_info)
     for i in 1:N
@@ -632,7 +632,10 @@ end
 function _zero_objective(model::Optimizer)
     num_vars = length(model.variable_info)
     obj = zeros(Float64, num_vars)
-    Xpress.delq!(model.inner) # TODO - only delete when needed
+    if model.objective_type == SCALAR_QUADRATIC
+        # We need to zero out the existing quadratic objective.
+        Xpress.delq!(model.inner)
+    end
     Xpress.chgobj(model.inner, collect(1:num_vars), obj)
     Xpress.chgobj(model.inner, [0], [0.0])
     return
@@ -696,7 +699,7 @@ function MOI.set(
         Xpress.delq!(model.inner)
     end
     num_vars = length(model.variable_info)
-    # we do all terms because we wnat to gurantee that the oold terms
+    # We zero all terms because we want to gurantee that the old terms
     # are removed
     obj = zeros(Float64, num_vars)
     for term in f.terms
@@ -727,7 +730,11 @@ function MOI.set(
     model::Optimizer, ::MOI.ObjectiveFunction{F}, f::F
 ) where {F <: MOI.ScalarQuadraticFunction{Float64}}
     # setting linear part also clears the existing quadratic terms
-    MOI.set(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(), MOI.ScalarAffineFunction(f.affine_terms, f.constant))
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        MOI.ScalarAffineFunction(f.affine_terms, f.constant)
+    )
     affine_indices, affine_coefficients, I, J, V = _indices_and_coefficients(
         model, f
     )
@@ -735,11 +742,6 @@ function MOI.set(
     for (i, c) in zip(affine_indices, affine_coefficients)
         obj[i] = c
     end
-    # for i = 1:length(I)
-    #     if I[i] == J[i]
-    #         V[i] *= 2 # TODO: Is is required?
-    #     end
-    # end
     Xpress.chgmqobj(model.inner, I, J, V)
     model.objective_type = SCALAR_QUADRATIC
     return
@@ -777,7 +779,7 @@ function MOI.get(
         push!(
             q_terms,
             MOI.ScalarQuadraticTerm(
-                coeff, # TODO: Why does this not require a `* 2` or a `/ 2`
+                coeff,
                 model.variable_info[CleverDicts.LinearIndex(i)].index,
                 model.variable_info[CleverDicts.LinearIndex(j)].index
             )
@@ -1445,7 +1447,7 @@ function MOI.add_constraint(
         [1],#_mstart,
         (indices),#_mclind,
         coefficients,#_dmatval
-        )
+    )
     return MOI.ConstraintIndex{typeof(f), typeof(s)}(model.last_constraint_index)
 end
 
@@ -1760,7 +1762,7 @@ function MOI.get(
         push!(
             quadratic_terms,
             MOI.ScalarQuadraticTerm(
-                2*coef, # only for constraints
+                2 * coef, # only for constraints
                 model.variable_info[CleverDicts.LinearIndex(i)].index,
                 model.variable_info[CleverDicts.LinearIndex(j)].index
             )
