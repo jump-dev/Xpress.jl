@@ -217,22 +217,34 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     end
 end
 
-
-function CachedSolution(model::Optimizer)
+function reset_cached_solution(model::Optimizer)
     num_variables = length(model.variable_info)
     num_affine = length(model.affine_constraint_info)
     num_quad = length(model.quadratic_constraint_info)
-    return CachedSolution(
-        fill(NaN, num_variables),
-        fill(NaN, num_variables),
-        fill(NaN, num_affine),
-        fill(NaN, num_affine),
-        fill(NaN, num_quad),
-        fill(NaN, num_quad),
-        false,
-        false,
-        NaN
-    )
+    if model.cached_solution === nothing
+        model.cached_solution = CachedSolution(
+            fill(NaN, num_variables),
+            fill(NaN, num_variables),
+            fill(NaN, num_affine),
+            fill(NaN, num_affine),
+            fill(NaN, num_quad),
+            fill(NaN, num_quad),
+            false,
+            false,
+            NaN
+        )
+    else
+        resize!(model.cached_solution.variable_primal, num_variables)
+        resize!(model.cached_solution.variable_dual, num_variables)
+        resize!(model.cached_solution.linear_primal, num_affine)
+        resize!(model.cached_solution.linear_dual, num_affine)
+        resize!(model.cached_solution.quadratic_primal, num_quad)
+        resize!(model.cached_solution.quadratic_dual, num_quad)
+        model.cached_solution.has_primal_certificate = false
+        model.cached_solution.has_dual_certificate = false
+        model.cached_solution.solve_time = NaN
+    end
+    return model.cached_solution
 end
 
 Base.show(io::IO, model::Optimizer) = show(io, model.inner)
@@ -1978,13 +1990,9 @@ function MOI.optimize!(model::Optimizer)
     #     model.has_generic_callback = false
     # end
 
-    # TODO improve caching
-    # cache once and only reallocate with we have additions
-    # maybe also additions
-    model.cached_solution = nothing
-    model.cached_solution = CachedSolution(model)
-    # TODO allow soling relaxed version
+    reset_cached_solution(model)
 
+    # TODO allow soling relaxed version
     # TODO deal with algorithm flags
     start_time = time()
     if Xpress.is_mixedinteger(model.inner)
