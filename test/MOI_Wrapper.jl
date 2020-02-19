@@ -8,8 +8,13 @@ const MOIU = MOI.Utilities
 
 const OPTIMIZER = Xpress.Optimizer()
 const OPTIMIZER_2 = Xpress.Optimizer()
+# Xpress can only obtain primal arrays without presolve
+# Check more on https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSgetprimalray.html
+const CERTIFICATE_OPTIMIZER = Xpress.Optimizer(PRESOLVE = 0)
 const BRIDGED_OPTIMIZER = MOI.Bridges.full_bridge_optimizer(
     Xpress.Optimizer(), Float64)
+const BRIDGED_CERTIFICATE_OPTIMIZER =
+    MOI.Bridges.full_bridge_optimizer(CERTIFICATE_OPTIMIZER, Float64)
 
 const CONFIG = MOIT.TestConfig()
 const CONFIG_LOW_TOL = MOIT.TestConfig(atol = 1e-3, rtol = 1e-3)
@@ -85,7 +90,6 @@ SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
     @testset "Default Solver"  begin
         MOIT.contlineartest(BRIDGED_OPTIMIZER, MOIT.TestConfig(
         basis = false, # TODO change to true
-        infeas_certificates=false # TODO remove this
         ), [
             # "linear1",
             # "linear2",
@@ -94,9 +98,8 @@ SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
             # "linear5",
             # "linear6",
             # "linear7",
-            # "linear8a",
-            # "linear8b",
-            # "linear8c",
+            # These tests require extra parameters to be set.
+            "linear8a", "linear8b", "linear8c",
             # "linear9",
             # "linear10",
             # "linear10b",
@@ -108,8 +111,13 @@ SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
             # "partial_start",
         ])
     end
+    @testset "Certificates" begin
+        MOIT.linear8atest(BRIDGED_CERTIFICATE_OPTIMIZER, MOIT.TestConfig())
+        MOIT.linear8btest(BRIDGED_CERTIFICATE_OPTIMIZER, MOIT.TestConfig())
+        MOIT.linear8ctest(BRIDGED_CERTIFICATE_OPTIMIZER, MOIT.TestConfig())
+    end
     @testset "No certificate" begin
-        MOIT.linear12test(BRIDGED_OPTIMIZER, 
+        MOIT.linear12test(BRIDGED_CERTIFICATE_OPTIMIZER, 
             MOIT.TestConfig(infeas_certificates=false))
     end
 end
