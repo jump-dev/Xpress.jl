@@ -1,4 +1,6 @@
-using Xpress, MathOptInterface, Test
+using Xpress
+using MathOptInterface
+using Test
 
 const MOI = MathOptInterface
 const MOIT = MathOptInterface.Test
@@ -28,55 +30,17 @@ end
 end
 
 @testset "Unit Tests Constraints" begin
-    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG, delete = false) # TODO: remove `delete = false`
+    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG)
 end
 
 @testset "Unit Tests" begin
-    MOIT.unittest(BRIDGED_OPTIMIZER, CONFIG, #= excludes =# [
-        # "add_variable",
-        # "add_variables",
-        # "delete_nonnegative_variables",
-        "delete_soc_variables", # TODO: fix errors
-        # "delete_variable",
-        # "delete_variables",
-        # "feasibility_sense",
-        # "get_objective_function",
-        # "getconstraint",
-        # "getvariable",
-        # "max_sense",
-        # "min_sense",
-        # "number_threads",
-        # "raw_status_string",
-        # "silent",
-        # "solve_affine_deletion_edge_cases",
-        # "solve_affine_equalto",
-        # "solve_affine_greaterthan",
-        # "solve_affine_interval",
-        # "solve_affine_lessthan",
-        # "solve_blank_obj",
-        # "solve_constant_obj",
-        # "solve_duplicate_terms_obj",
-        # "solve_duplicate_terms_scalar_affine",
-        # "solve_duplicate_terms_vector_affine",
-        # "solve_integer_edge_cases",
-        # "solve_objbound_edge_cases",
-        "solve_qcp_edge_cases", # fails due to tolerance
-        "solve_qp_edge_cases", # fails due to tolerance
-        # "solve_result_index",
-        # "solve_single_variable_dual_max",
-        # "solve_single_variable_dual_min",
-        # "solve_singlevariable_obj",
-        # "solve_time",
-        # "solve_unbounded_model",
-        # "solve_with_lowerbound",
-        # "solve_with_upperbound",
-        # "solve_zero_one_with_bounds_1",
-        # "solve_zero_one_with_bounds_2",
-        # "solve_zero_one_with_bounds_3",
-        # "solver_name",
-        # "time_limit_sec",
-        # "update_dimension_nonnegative_variables",
-        # "variablenames",
+    MOIT.unittest(BRIDGED_OPTIMIZER, CONFIG, #= excludes =# String[
+        # TODO: fix errors
+        "delete_soc_variables",
+
+        # These tests fail due to tolerance issues; tested below.
+        "solve_qcp_edge_cases",
+        "solve_qp_edge_cases",
        ],
     )
     MOIT.solve_qcp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
@@ -152,10 +116,6 @@ end
 
 @testset "Integer Linear tests" begin
     MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG, #= excludes =# [
-        #"knapsack",
-        #"int1",
-        #"int2",
-        #"int3",
         "indicator1",
         "indicator2",
         "indicator3",
@@ -190,7 +150,8 @@ end
 
     @testset "copytest" begin
         BRIDGED_OPTIMIZER_2 = MOI.Bridges.full_bridge_optimizer(
-                                            Xpress.Optimizer(), Float64)
-        MOIT.copytest(BRIDGED_OPTIMIZER, BRIDGED_OPTIMIZER_2 )
+            Xpress.Optimizer(), Float64
+        )
+        MOIT.copytest(BRIDGED_OPTIMIZER, BRIDGED_OPTIMIZER_2)
     end
 end
