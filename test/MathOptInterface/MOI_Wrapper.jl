@@ -50,7 +50,7 @@ end
     MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
 
-SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
+NO_BASIS_CONFIG = MOIT.TestConfig(basis = false)
 
 @testset "Linear tests" begin
     MOIT.contlineartest(
@@ -66,9 +66,9 @@ SIMPLE_CONFIG = MOIT.TestConfig(basis = false, infeas_certificates=false)
             "linear12",
         ]
     )
-    MOIT.linear8atest(BRIDGED_CERTIFICATE_OPTIMIZER, MOIT.TestConfig(infeas_certificates = true))
-    MOIT.linear8btest(BRIDGED_CERTIFICATE_OPTIMIZER, MOIT.TestConfig(infeas_certificates = true))
-    MOIT.linear8ctest(BRIDGED_CERTIFICATE_OPTIMIZER, MOIT.TestConfig(infeas_certificates = true))
+    MOIT.linear8atest(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
+    MOIT.linear8btest(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
+    MOIT.linear8ctest(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
 
     MOIT.linear12test(
         BRIDGED_OPTIMIZER, MOIT.TestConfig(infeas_certificates = false)
@@ -90,7 +90,12 @@ end
 
 @testset "Conic tests" begin
     # TODO enable certificates
-    MOIT.lintest(BRIDGED_OPTIMIZER, SIMPLE_CONFIG)
+    MOIT.lintest(BRIDGED_OPTIMIZER, CONFIG, [
+        # These tests require extra parameters to be set.
+        "lin3", "lin4"
+    ])
+    MOIT.lin3test(BRIDGED_CERTIFICATE_OPTIMIZER, NO_BASIS_CONFIG)
+    MOIT.lin4test(BRIDGED_CERTIFICATE_OPTIMIZER, NO_BASIS_CONFIG)
     # MOIT.soctest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3), ["soc3"])
     # MOIT.soc3test(
     #     OPTIMIZER,
