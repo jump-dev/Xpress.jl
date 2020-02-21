@@ -2362,7 +2362,7 @@ Used to change semi-continuous or semi-integer lower bounds, or upper limits on 
 function chgglblimit(prob::XpressProblem, _mindex::Vector{<:Integer}, _dlimit::Vector{Float64})
     ncols = length(_mindex)
     _mindex = _mindex .- 1
-    @checked Lib.XPRSchgglblimit(prob, Cint.(_mindex), _dlimit)
+    @checked Lib.XPRSchgglblimit(prob, ncols, Cint.(_mindex), _dlimit)
 end
 
 """

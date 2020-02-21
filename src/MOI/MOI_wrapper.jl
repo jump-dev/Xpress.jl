@@ -72,6 +72,7 @@ mutable struct VariableInfo
     num_soc_constraints::Int
     previous_lower_bound::Float64
     previous_upper_bound::Float64
+    semi_lower_bound::Float64
     function VariableInfo(index::MOI.VariableIndex, column::Int)
         return new(
             index,
@@ -84,7 +85,8 @@ mutable struct VariableInfo
             "",
             "",
             NaN,
-            0
+            0,
+            NaN
         )
     end
 end
@@ -331,8 +333,8 @@ function MOI.supports_constraint(
     MOI.Interval{Float64},
     MOI.ZeroOne,
     MOI.Integer,
-    # MOI.Semicontinuous{Float64}, # TODO
-    # MOI.Semiinteger{Float64}, # TODO
+    MOI.Semicontinuous{Float64}, 
+    MOI.Semiinteger{Float64}, 
 }}
     return true
 end
@@ -1098,6 +1100,12 @@ function _set_variable_lower_bound(model, info, value)
     # end
 end
 
+function _set_variable_semi_lower_bound(model, info, value)
+    info.semi_lower_bound = value
+    _set_variable_lower_bound(model, info, 0.0)
+    Xpress.chgglblimit(model.inner, [info.column], Float64[value])
+end
+
 """
     _get_variable_lower_bound(model, info)
 
@@ -1115,6 +1123,13 @@ function _get_variable_lower_bound(model, info)
     end
     lb = Xpress.getlb(model.inner, info.column, info.column)[]
     return lb == -Xpress.Lib.XPRS_MINUSINFINITY ? -Inf : lb
+end
+
+function _get_variable_semi_lower_bound(model, info)
+    if !isnan(info.semi_lower_bound)
+        return info.semi_lower_bound
+    end
+    return NaN
 end
 
 function _set_variable_upper_bound(model, info, value)
@@ -1300,7 +1315,9 @@ function MOI.add_constraint(
     _throw_if_existing_lower(info.bound, info.type, typeof(s), f.variable)
     _throw_if_existing_upper(info.bound, info.type, typeof(s), f.variable)
     Xpress.chgcoltype(model.inner, [info.column], Cchar['S'])
-    _set_variable_lower_bound(model, info, s.lower)
+    _set_variable_lower_bound(model, info, 0.0)
+    Xpress.chgglblimit(model.inner, [info.column], Float64[s.lower])
+    info.semi_lower_bound = s.lower
     _set_variable_upper_bound(model, info, s.upper)
     info.type = SEMICONTINUOUS
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.Semicontinuous{Float64}}(f.variable.value)
@@ -1315,6 +1332,7 @@ function MOI.delete(
     Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
     _set_variable_lower_bound(model, info, -Inf)
     _set_variable_upper_bound(model, info, Inf)
+    info.semi_lower_bound = NaN
     info.type = CONTINUOUS
     info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
@@ -1328,7 +1346,7 @@ function MOI.get(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    lower = _get_variable_lower_bound(model, info)
+    lower = _get_variable_semi_lower_bound(model, info)
     upper = _get_variable_upper_bound(model, info)
     return MOI.Semicontinuous(lower, upper)
 end
@@ -1339,8 +1357,10 @@ function MOI.add_constraint(
     info = _info(model, f.variable)
     _throw_if_existing_lower(info.bound, info.type, typeof(s), f.variable)
     _throw_if_existing_upper(info.bound, info.type, typeof(s), f.variable)
-    Xpress.chgcoltype(model.inner, [info.column], Cchar['P'])
-    _set_variable_lower_bound(model, info, s.lower)
+    Xpress.chgcoltype(model.inner, [info.column], Cchar['R'])
+    _set_variable_lower_bound(model, info, 0.0)
+    info.semi_lower_bound = s.lower
+    Xpress.chgglblimit(model.inner, [info.column], Float64[s.lower])
     _set_variable_upper_bound(model, info, s.upper)
     info.type = SEMIINTEGER
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.Semiinteger{Float64}}(f.variable.value)
@@ -1355,6 +1375,7 @@ function MOI.delete(
     Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
     _set_variable_lower_bound(model, info, -Inf)
     _set_variable_upper_bound(model, info, Inf)
+    info.semi_lower_bound = NaN
     info.type = CONTINUOUS
     info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
@@ -1368,7 +1389,7 @@ function MOI.get(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    lower = _get_variable_lower_bound(model, info)
+    lower = _get_variable_semi_lower_bound(model, info)
     upper = _get_variable_upper_bound(model, info)
     return MOI.Semiinteger(lower, upper)
 end
