@@ -2035,26 +2035,18 @@ function MOI.optimize!(model::Optimizer)
         deleteat!(model.cached_solution.linear_dual, row + 1)
     end
 
-    # status = MOI.get(model, MOI.PrimalStatus())
-    # if status == MOI.FEASIBLE_POINT
-    #     CPLEX.c_api_getx(model.inner, model.cached_solution.variable_primal)
-    #     CPLEX.c_api_getax(model.inner, model.cached_solution.linear_primal)
-    #     # CPLEX.c_api_getxqxax(model.inner, model.cached_solution.quadratic_primal)
-    # elseif status == MOI.INFEASIBILITY_CERTIFICATE
-    #     # TODO
-    #     @warn "certificates not supported"
-    #     # model.cached_solution.variable_primal = get_unbounded_ray(model.inner)
-    #     # model.cached_solution.has_primal_certificate = true
-    # end
-    # status = MOI.get(model, MOI.DualStatus())
-    # if status == MOI.FEASIBLE_POINT
-    #     CPLEX.c_api_getdj(model.inner, model.cached_solution.variable_dual)
-    #     CPLEX.c_api_getpi(model.inner, model.cached_solution.linear_dual)
-    # elseif status == MOI.INFEASIBILITY_CERTIFICATE
-    #     @warn "certificates not supported"
-    #     # model.cached_solution.linear_dual = get_infeasibility_ray(model.inner)
-    #     # model.cached_solution.has_dual_certificate = true
-    # end
+    status = MOI.get(model, MOI.PrimalStatus())
+    if status == MOI.INFEASIBILITY_CERTIFICATE
+        has_Ray = Int64[0]
+        Xpress.getprimalray(model.inner, model.cached_solution.variable_primal , has_Ray)
+        model.cached_solution.has_primal_certificate = _has_primal_ray(model)
+    end
+    status = MOI.get(model, MOI.DualStatus())
+    if status == MOI.INFEASIBILITY_CERTIFICATE
+        has_Ray = Int64[0]
+        Xpress.getdualray(model.inner, model.cached_solution.linear_dual , has_Ray)
+        model.cached_solution.has_dual_certificate = _has_dual_ray(model)
+    end
     return
 end
 
@@ -2143,6 +2135,18 @@ function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
     return MOI.OTHER_ERROR
 end
 
+function _has_dual_ray(model::Optimizer)
+    has_Ray = Int64[0]
+    Xpress.getdualray(model.inner, C_NULL , has_Ray)
+    return has_Ray[1] != 0
+end
+
+function _has_primal_ray(model::Optimizer)
+    has_Ray = Int64[0]
+    Xpress.getprimalray(model.inner, C_NULL , has_Ray)
+    return has_Ray[1] != 0
+end
+
 function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
     _throw_if_optimize_in_progress(model, attr)
     if attr.N != 1
@@ -2151,9 +2155,12 @@ function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
     term_stat = MOI.get(model, MOI.TerminationStatus())
     if term_stat == MOI.OPTIMAL
         return MOI.FEASIBLE_POINT
-    end
-    if term_stat == MOI.DUAL_INFEASIBLE
-        # TODO: infeasibility certificates
+    elseif term_stat == MOI.LOCALLY_INFEASIBLE
+        return MOI.INFEASIBLE_POINT
+    elseif term_stat == MOI.DUAL_INFEASIBLE
+        if _has_primal_ray(model)
+            return MOI.INFEASIBILITY_CERTIFICATE
+        end
     end
     return MOI.NO_SOLUTION
 end
@@ -2168,9 +2175,10 @@ function MOI.get(model::Optimizer, attr::MOI.DualStatus)
     term_stat = MOI.get(model, MOI.TerminationStatus())
     if term_stat == MOI.OPTIMAL
         return MOI.FEASIBLE_POINT
-    end
-    if term_stat == MOI.INFEASIBLE
-        # TODO: infeasibility certificates
+    elseif term_stat == MOI.INFEASIBLE
+        if _has_dual_ray(model)
+            return MOI.INFEASIBILITY_CERTIFICATE
+        end
     end
     return MOI.NO_SOLUTION
 end
