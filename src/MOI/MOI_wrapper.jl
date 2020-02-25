@@ -216,6 +216,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.params = Dict{Any,Any}()
 
         for (name, value) in kwargs
+            name = MOI.RawParameter(string(name))
             model.params[name] = value
         end
 
@@ -270,13 +271,13 @@ function MOI.empty!(model::Optimizer)
     # >    Xpress.destroyprob(model.inner)
     # We cannot call it twice, and finalize is called before atexit
     model.inner = XpressProblem(logfile = model.inner.logfile)
-    MOI.set(model, MOI.RawParameter(XPRS_ATTRIBUTES["MPSNAMELENGTH"]), 64)
-    MOI.set(model, MOI.RawParameter(XPRS_ATTRIBUTES["CALLBACKFROMMASTERTHREAD"]), 1)
+    MOI.set(model, MOI.RawParameter("MPSNAMELENGTH"), 64)
+    MOI.set(model, MOI.RawParameter("CALLBACKFROMMASTERTHREAD"), 1)
     model.name = ""
     if model.silent
-        MOI.set(model, MOI.RawParameter(XPRS_ATTRIBUTES["OUTPUTLOG"]), 0)
+        MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 0)
     else
-        MOI.set(model, MOI.RawParameter(XPRS_ATTRIBUTES["OUTPUTLOG"]), 1)
+        MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 1)
     end
     Xpress.loadlp(model.inner)
     model.objective_type = SCALAR_AFFINE
@@ -415,7 +416,7 @@ function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
         Xpress.setlogfile(model.inner, value)
         model.inner.logfile = value
     else
-        Xpress.setcontrol!(model.inner, param.name, value)
+        Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
     end
     return
 end
@@ -424,17 +425,17 @@ function MOI.get(model::Optimizer, param::MOI.RawParameter)
     if param == MOI.RawParameter("logfile")
         return model.inner.logfile
     else
-        return Xpress.getcontrol(model.inner, param.name)
+        return Xpress.getcontrol(model.inner, XPRS_ATTRIBUTES[param.name])
     end
 end
 
 function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Real)
-    MOI.set(model, MOI.RawParameter(XPRS_ATTRIBUTES["MAXTIME"]), limit)
+    MOI.set(model, MOI.RawParameter("MAXTIME"), limit)
     return
 end
 
 function MOI.get(model::Optimizer, ::MOI.TimeLimitSec)
-    return MOI.get(model, MOI.RawParameter(XPRS_ATTRIBUTES["MAXTIME"]))
+    return MOI.get(model, MOI.RawParameter("MAXTIME"))
 end
 
 MOI.Utilities.supports_default_copy_to(::Optimizer, ::Bool) = true
@@ -2501,16 +2502,16 @@ function MOI.set(model::Optimizer, ::MOI.Silent, flag::Bool)
     if Sys.iswindows()
         @warn "Silent has no effect on windows. See https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html"
     end
-    MOI.set(model, MOI.RawParameter(XPRS_ATTRIBUTES["OUTPUTLOG"]), flag ? 0 : 1)
+    MOI.set(model, MOI.RawParameter("OUTPUTLOG"), flag ? 0 : 1)
     return
 end
 
 function MOI.get(model::Optimizer, ::MOI.NumberOfThreads)
-    return Int(MOI.get(model, MOI.RawParameter(XPRS_ATTRIBUTES["THREADS"])))
+    return Int(MOI.get(model, MOI.RawParameter("THREADS")))
 end
 
 function MOI.set(model::Optimizer, ::MOI.NumberOfThreads, x::Int)
-    return MOI.set(model, MOI.RawParameter(XPRS_ATTRIBUTES["THREADS"]), x)
+    return MOI.set(model, MOI.RawParameter("THREADS"), x)
 end
 
 function MOI.get(model::Optimizer, ::MOI.Name)
