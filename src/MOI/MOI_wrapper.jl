@@ -1100,6 +1100,17 @@ function _set_variable_lower_bound(model, info, value)
     # end
 end
 
+"""
+    _set_variable_semi_lower_bound(model, info, value)
+
+This function set the semi lower bound of a semi-continuous or semi-integer variable.
+The lower bound of the variable will still be zero, it only changes the lower bound
+of the continuous or the integer part of the variable.
+
+We need this function because Xpress has differents functions to change semi-continuous 
+or semi-integer lower bound and to change the lower bound.
+"""
+
 function _set_variable_semi_lower_bound(model, info, value)
     info.semi_lower_bound = value
     _set_variable_lower_bound(model, info, 0.0)
@@ -1126,10 +1137,7 @@ function _get_variable_lower_bound(model, info)
 end
 
 function _get_variable_semi_lower_bound(model, info)
-    if !isnan(info.semi_lower_bound)
-        return info.semi_lower_bound
-    end
-    return NaN
+    return info.semi_lower_bound
 end
 
 function _set_variable_upper_bound(model, info, value)
@@ -1315,9 +1323,7 @@ function MOI.add_constraint(
     _throw_if_existing_lower(info.bound, info.type, typeof(s), f.variable)
     _throw_if_existing_upper(info.bound, info.type, typeof(s), f.variable)
     Xpress.chgcoltype(model.inner, [info.column], Cchar['S'])
-    _set_variable_lower_bound(model, info, 0.0)
-    Xpress.chgglblimit(model.inner, [info.column], Float64[s.lower])
-    info.semi_lower_bound = s.lower
+    _set_variable_semi_lower_bound(model, info, s.lower)
     _set_variable_upper_bound(model, info, s.upper)
     info.type = SEMICONTINUOUS
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.Semicontinuous{Float64}}(f.variable.value)
@@ -1358,9 +1364,7 @@ function MOI.add_constraint(
     _throw_if_existing_lower(info.bound, info.type, typeof(s), f.variable)
     _throw_if_existing_upper(info.bound, info.type, typeof(s), f.variable)
     Xpress.chgcoltype(model.inner, [info.column], Cchar['R'])
-    _set_variable_lower_bound(model, info, 0.0)
-    info.semi_lower_bound = s.lower
-    Xpress.chgglblimit(model.inner, [info.column], Float64[s.lower])
+    _set_variable_semi_lower_bound(model, info, s.lower)
     _set_variable_upper_bound(model, info, s.upper)
     info.type = SEMIINTEGER
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.Semiinteger{Float64}}(f.variable.value)

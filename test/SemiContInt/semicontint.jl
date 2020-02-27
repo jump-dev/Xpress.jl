@@ -119,8 +119,6 @@ function semiconttest(model::MOI.ModelLike, config::MOIT.TestConfig{T}) where T
 
     MOI.set(model, MOI.ConstraintSet(), vc2, MOI.EqualTo(T(3)))
 
-    MOI.write_to_file(model.model, "antes3.lp")
-
     if config.solve
         MOI.optimize!(model)
 
