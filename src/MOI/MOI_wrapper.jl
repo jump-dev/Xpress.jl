@@ -86,6 +86,8 @@ mutable struct VariableInfo
             "",
             NaN,
             0,
+            NaN,
+            NaN,
             NaN
         )
     end
