@@ -11,6 +11,8 @@ const MOIU = MOI.Utilities
 const OPTIMIZER = Xpress.Optimizer()
 const OPTIMIZER_2 = Xpress.Optimizer()
 
+include("../SemiContInt/semicontint.jl")
+
 # Xpress can only obtain primal arrays without presolve. Check more on
 # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSgetprimalray.html
 
@@ -112,6 +114,11 @@ end
         "indicator3",
         "indicator4",
     ])
+end
+
+@testset "SemiContInt" begin
+    semiconttest(BRIDGED_OPTIMIZER, CONFIG)
+    semiinttest(BRIDGED_OPTIMIZER, CONFIG)
 end
 
 @testset "ModelLike tests" begin
