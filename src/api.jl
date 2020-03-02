@@ -906,7 +906,11 @@ Specifies that a set of rows in the matrix will be treated as indicator constrai
 - `comps`: Integer array of length `nrows` with the complement flags:`0`: not an indicator constraint (in this case the corresponding entry in the `inds` array is ignored);`1`: for indicator constraints with condition " `bin = 1` ";`-1`: for indicator constraints with condition " `bin = 0` ";
 
 """
-function setindicators(prob::XpressProblem, nrows, _mrows, _inds, _comps)
+function setindicators(prob::XpressProblem, _mrows, _inds, _comps)
+    _mrows .-= 1
+    _inds .-= 1
+    nrows = length(_mrows)
+    @assert nrows == length(_inds)
     @checked Lib.XPRSsetindicators(prob, nrows, _mrows, _inds, _comps)
 end
 
@@ -924,8 +928,19 @@ Returns the indicator constraint condition (indicator variable and complement fl
 - `last`: Last row in the range (inclusive).
 
 """
-function getindicators(prob::XpressProblem, _inds, _comps, first::Integer, last::Integer)
+function getindicators(prob::XpressProblem, _inds, _comps, first::Integer=1, last::Integer=0)
+    n_elems = last - first + 1
+    if n_elems <= 0
+        n_elems = n_constraints(prob)
+        first = 0
+        last = n_elems - 1
+    else
+        first = first - 1
+        last = last - 1
+    end
+    @assert n_elems == length(_inds) == length(_comps)
     @checked Lib.XPRSgetindicators(prob, _inds, _comps, first, last)
+    _inds .+= 1
 end
 
 """
@@ -1543,23 +1558,6 @@ Returns the   nonzeros in the constraint matrix for the rows in a given range.
 
 """
 function getrows(prob::XpressProblem, _mstart::Vector{<:Integer}, _mrwind::Vector{<:Integer}, _dmatval::Vector{Float64}, maxcoeffs::Integer, first::Integer, last::Integer)
-"""
-    int XPRS_CC XPRSgetrows(XPRSprob prob, int mstart[], int mclind[], double dmatval[], int size, int *nels, int first, int last);
-
-Returns the   nonzeros in the constraint matrix for the rows in a given range.
-
-### Arguments
-
-- `prob`: The current problem.
-- `mstart`: Integer array which will be filled with the indices indicating the starting offsets in the `mrwind` and `dmatval` arrays for each requested row. It must be of length at least `last-first+2` . Row `i` starts at position `mstart[i]` in the `mrwind` and `dmatval` arrays, and has `mstart[i+1]-mstart[i]` elements in it. May be `NULL` if not required.
-- `mrwind`: Integer arrays of length `size` which will be filled with the column indices of the nonzero elements for each row. May be `NULL` if not required.
-- `dmatval`: Double array of length `size` which will be filled with the nonzero element values. May be `NULL` if not required.
-- `size`: Maximum number of elements to be retrieved.
-- `nels`: Pointer to the integer where the number of nonzero elements in the `mrwind` and `dmatval` arrays will be returned. If the number of nonzero elements is greater that `size` , then only `size` elements will be returned. If `nels` is smaller that `size` , then only `nels` will be returned.
-- `first`: First row in the range.
-- `last`: Last row in the range.
-
-"""
     @assert length(_mstart) >= last-first+2
     @assert length(_mrwind) == maxcoeffs
     @assert length(_dmatval) == maxcoeffs
