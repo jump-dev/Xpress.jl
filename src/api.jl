@@ -1440,6 +1440,20 @@ function getrhs(prob::XpressProblem, first::Integer=1, last::Integer=0)
     @checked Lib.XPRSgetrhs(prob, _drhs, first, last)
     return _drhs
 end
+function getrhs!(prob::XpressProblem, _drhs::Vector{Float64}, first::Integer=1, last::Integer=0)
+    n_elems = last - first + 1
+    if n_elems <= 0
+        n_elems = n_constraints(prob)
+        first = 0
+        last = n_elems - 1
+    else
+        first = first - 1
+        last = last - 1
+    end
+    @assert length(_drhs) == n_elems
+    @checked Lib.XPRSgetrhs(prob, _drhs, first, last)
+    return nothing
+end
 
 """
     int XPRS_CC XPRSgetrhsrange(XPRSprob prob, double range[], int first, int last);
@@ -4582,13 +4596,12 @@ Returns the nonzeros in a quadratic constraint coefficients matrix as triplets (
 
 """
 function getqrowqmatrixtriplets(prob::XpressProblem, irow)
-    _, qcrows = getqrows(prob)
     nqelem = Ref{Cint}()
-    @checked Lib.XPRSgetqrowqmatrixtriplets(prob, qcrows[irow], nqelem, C_NULL, C_NULL, C_NULL)
+    @checked Lib.XPRSgetqrowqmatrixtriplets(prob, irow-1, nqelem, C_NULL, C_NULL, C_NULL)
     mqcol1 = Array{Cint}(undef,  nqelem[])
     mqcol2 = Array{Cint}(undef,  nqelem[])
     dqe = Array{Float64}(undef,  nqelem[])
-    @checked Lib.XPRSgetqrowqmatrixtriplets(prob, qcrows[irow], nqelem, mqcol1, mqcol2, dqe)
+    @checked Lib.XPRSgetqrowqmatrixtriplets(prob, irow-1, nqelem, mqcol1, mqcol2, dqe)
     mqcol1 .+= 1
     mqcol2 .+= 1
     return mqcol1, mqcol2, dqe
