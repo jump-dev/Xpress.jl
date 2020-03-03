@@ -88,11 +88,11 @@ function getcontrol(prob::XpressProblem, control::Integer)
     elseif convert(Int, control) in XPRS_STR_CONTROLS
         return getstrcontrol(prob, control)
     else
-        error("Unrecognized parameter number: $(control).")
+        error("Unrecognized control parameter: $(control).")
     end
 end
-getcontrol(prob::XpressProblem, control::Symbol) = getcontrol(prob, getproperty(Lib, control))
-getcontrol(prob::XpressProblem, control::String) = getcontrol(prob, parameter_name_to_index[control])
+getcontrol(prob::XpressProblem, control::Symbol) = getcontrol(prob, getproperty(Lib, Symbol("XPRS_$(String(control))")))
+getcontrol(prob::XpressProblem, control::String) = getcontrol(prob, XPRS_ATTRIBUTES[control])
 
 """
     setcontrol!(prob::XpressProblem, control::Symbol, val::Any)
@@ -101,10 +101,11 @@ getcontrol(prob::XpressProblem, control::String) = getcontrol(prob, parameter_na
 
 Set parameter of any type
 """
-setcontrol!(prob::XpressProblem, control::Symbol, val::Any) = setcontrol!(prob, getproperty(Lib, control), val::Any)
-setcontrol!(prob::XpressProblem, control::String, val::Any) = setcontrol!(prob, parameter_name_to_index[control], val::Any)
-setcontrol!(prob::XpressProblem, control::Integer, val::Any) = setcontrol!(prob, Cint(control), val::Any)
-function setcontrol!(prob::XpressProblem, control::Cint, val::Any)
+setcontrol!(prob::XpressProblem, control::Symbol, val::Any) = setcontrol!(prob, getproperty(Lib, Symbol("XPRS_$(String(control))")), val::Any)
+setcontrol!(prob::XpressProblem, control::String, val::Any) = setcontrol!(prob, XPRS_ATTRIBUTES[control], val)
+setcontrol!(prob::XpressProblem, control::Integer, val::Any) = setcontrol!(prob, Cint(control), val)
+function setcontrol!(prob::XpressProblem, control::Cint, val)
+    # TODO: dispatch on Val(control) instead?
     if convert(Int, control) in XPRS_INT_CONTROLS
         if isinteger(val)
             setintcontrol(prob, control, convert(Int, val))
@@ -116,7 +117,7 @@ function setcontrol!(prob::XpressProblem, control::Cint, val::Any)
     elseif convert(Int, control) in XPRS_STR_CONTROLS
         setstrcontrol(prob, control, val)
     else
-        error("Unrecognized parameter number: $(control).")
+        error("Unrecognized control parameter: $(control).")
     end
 end
 

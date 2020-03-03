@@ -38,7 +38,7 @@ Here is the procedure to setup this package:
 
 2. Install this package using `Pkg.add("Xpress")`.
 
-3. Make sure the XPRESSDIR environmental variable is set to the path of the Xpress directory. This is part of a standard installation. The Xpress library will be searched for in XPRESSDIR/lib on unix platforms and XPRESSDIR/bin on Windows. 
+3. Make sure the XPRESSDIR environmental variable is set to the path of the Xpress directory. This is part of a standard installation. The Xpress library will be searched for in XPRESSDIR/lib on unix platforms and XPRESSDIR/bin on Windows.
 
 4. Now, you can start using it.
 
@@ -46,15 +46,41 @@ You should use the xpress version matching to your julia installation and vice-v
 
 ## Use Other Packages
 
-We highly recommend that you use the *Xpress.jl* package with higher level packages such as [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl) or [MathOptInterface.jl](https://github.com/JuliaOpt/MathOptInterface.jl). 
+We highly recommend that you use the *Xpress.jl* package with higher level packages such as [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl) or [MathOptInterface.jl](https://github.com/JuliaOpt/MathOptInterface.jl).
 
 This can be done using the ``Xpress.Optimizer`` object. Here is how to create a *JuMP* model that uses Xpress as the solver. Parameters are passed as keyword arguments:
 ```julia
 using JuMP, Xpress
 
-m = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0))
+m = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
 ```
-For other parameters use Xpress Optimizer manual.
+For other parameters use [Xpress Optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/) or type `julia -e "using Xpress; println(keys(Xpress.XPRS_ATTRIBUTES))"`.
+
+If logfile is set to `""`, output is printed to the console. If logfile is set to a filepath, output is printed to the file.
+By default, logfile is set to a temporary file. If you've already created an instance of an `Optimizer`, you can use `MOI.RawParameter` to get and set the location of the current logfile.
+
+```julia
+julia> OPTIMIZER = Xpress.Optimizer()
+Xpress Problem:
+    type   : LP
+    sense  : minimize
+    number of variables                    = 0
+    number of linear constraints           = 0
+    number of quadratic constraints        = 0
+    number of sos constraints              = 0
+    number of non-zero coeffs              = 0
+    number of non-zero qp objective terms  = 0
+    number of non-zero qp constraint terms = 0
+    number of integer entities             = 0
+
+julia> MOI.get(OPTIMIZER, MOI.RawParameter("logfile"))
+"/var/folders/wk/lcf0vgd90bx0vq1873tn04knk_djr3/T/jl_Vkjkd8"
+
+julia> MOI.set(OPTIMIZER, MOI.RawParameter("logfile"), "output.log")
+
+julia> MOI.get(OPTIMIZER, MOI.RawParameter("logfile"))
+"output.log"
+```
 
 ## API Overview
 
@@ -65,4 +91,5 @@ This package provides both APIs at different levels for constructing models and 
 The Julia versions 1.1.x do not work properly with MOI dues to Julia bugs. Hence, these versions are not supported.
 
 ## Reference:
+
 [FICO optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML)

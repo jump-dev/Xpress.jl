@@ -216,24 +216,16 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.params = Dict{Any,Any}()
 
         for (name, value) in kwargs
-            if name == :logfile
-                continue
-            end
+            name = MOI.RawParameter(string(name))
             model.params[name] = value
         end
 
-        model.inner = XpressProblem(logfile = get(kwargs, :logfile, nothing))
+        model.inner = XpressProblem()
 
-        # TODO: use MOI.set MOI.RawParameter instead
         for (name, value) in model.params
-            Xpress.setcontrol!(model.inner, Symbol("XPRS_$(name)"), value)
+            MOI.set(model, name, value)
         end
 
-        if :OUTPUTLOG ∈ keys(model.params) && model.params[:OUTPUTLOG] == 0
-            model.silent = true
-        else
-            model.silent = false
-        end
         model.variable_info = CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}()
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
@@ -274,17 +266,18 @@ Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 function MOI.empty!(model::Optimizer)
     # Is there a better way to do this?
     # When MOI.empty! is called, we need to clear the memory associated with the XpressProblem
-    # This is also a destructor callback in the XpressProblem constructor
-    # Xpress.destroyprob(model.inner)
-    # We cannot call it twice, finalize is called before atexit
+    # We do this by creating a new XpressProblem.
+    # This is because we use a destructor callback in the XpressProblem constructor
+    # >    Xpress.destroyprob(model.inner)
+    # We cannot call it twice, and finalize is called before atexit
     model.inner = XpressProblem(logfile = model.inner.logfile)
-    MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_MPSNAMELENGTH), 64)
-    MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_CALLBACKFROMMASTERTHREAD), 1)
+    MOI.set(model, MOI.RawParameter("MPSNAMELENGTH"), 64)
+    MOI.set(model, MOI.RawParameter("CALLBACKFROMMASTERTHREAD"), 1)
     model.name = ""
     if model.silent
-        MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), 0)
+        MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 0)
     else
-        MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), 1)
+        MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 1)
     end
     Xpress.loadlp(model.inner)
     model.objective_type = SCALAR_AFFINE
@@ -302,10 +295,8 @@ function MOI.empty!(model::Optimizer)
     model.lazy_callback = nothing
     model.user_cut_callback = nothing
     model.heuristic_callback = nothing
-
-    # TODO: use MOI.set MOI.RawParameter instead
     for (name, value) in model.params
-        Xpress.setcontrol!(model.inner, Symbol("XPRS_$(name)"), value)
+        MOI.set(model, name, value)
     end
     return
 end
@@ -417,21 +408,34 @@ MOI.supports(::Optimizer, ::MOI.ObjectiveSense) = true
 MOI.supports(::Optimizer, ::MOI.RawParameter) = true
 
 function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
-    Xpress.setcontrol!(model.inner, param.name, value)
+    # Always store value in params dictionary when setting
+    # This is because when calling `empty!` we create a new XpressProblem and
+    # and want to set all the raw parameters and attributes again.
+    model.params[param] = value
+    if param == MOI.RawParameter("logfile")
+        Xpress.setlogfile(model.inner, value)
+        model.inner.logfile = value
+    else
+        Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
+    end
     return
 end
 
 function MOI.get(model::Optimizer, param::MOI.RawParameter)
-    return Xpress.getcontrol(model.inner, param.name)
+    if param == MOI.RawParameter("logfile")
+        return model.inner.logfile
+    else
+        return Xpress.getcontrol(model.inner, XPRS_ATTRIBUTES[param.name])
+    end
 end
 
 function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Real)
-    MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_MAXTIME), limit)
+    MOI.set(model, MOI.RawParameter("MAXTIME"), limit)
     return
 end
 
 function MOI.get(model::Optimizer, ::MOI.TimeLimitSec)
-    return MOI.get(model, MOI.RawParameter(Xpress.Lib.XPRS_MAXTIME))
+    return MOI.get(model, MOI.RawParameter("MAXTIME"))
 end
 
 MOI.Utilities.supports_default_copy_to(::Optimizer, ::Bool) = true
@@ -710,6 +714,7 @@ end
 function MOI.set(
     model::Optimizer, ::MOI.ObjectiveSense, sense::MOI.OptimizationSense
 )
+    # TODO: should this propagate across a `MOI.empty!(optimizer)` call
     if sense == MOI.MIN_SENSE
         Xpress.chgobjsense(model.inner, :Min)
         model.is_feasibility = false
@@ -1174,7 +1179,7 @@ This function set the semi lower bound of a semi-continuous or semi-integer vari
 The lower bound of the variable will still be zero, it only changes the lower bound
 of the continuous or the integer part of the variable.
 
-We need this function because Xpress has differents functions to change semi-continuous 
+We need this function because Xpress has differents functions to change semi-continuous
 or semi-integer lower bound and to change the lower bound.
 """
 
@@ -2497,16 +2502,16 @@ function MOI.set(model::Optimizer, ::MOI.Silent, flag::Bool)
     if Sys.iswindows()
         @warn "Silent has no effect on windows. See https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html"
     end
-    MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_OUTPUTLOG), flag ? 0 : 1)
+    MOI.set(model, MOI.RawParameter("OUTPUTLOG"), flag ? 0 : 1)
     return
 end
 
 function MOI.get(model::Optimizer, ::MOI.NumberOfThreads)
-    return Int(MOI.get(model, MOI.RawParameter(Xpress.Lib.XPRS_THREADS)))
+    return Int(MOI.get(model, MOI.RawParameter("THREADS")))
 end
 
 function MOI.set(model::Optimizer, ::MOI.NumberOfThreads, x::Int)
-    return MOI.set(model, MOI.RawParameter(Xpress.Lib.XPRS_THREADS), x)
+    return MOI.set(model, MOI.RawParameter("THREADS"), x)
 end
 
 function MOI.get(model::Optimizer, ::MOI.Name)
