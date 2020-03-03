@@ -25,6 +25,11 @@ const BRIDGED_CERTIFICATE_OPTIMIZER =
 const CONFIG = MOIT.TestConfig()
 const CONFIG_LOW_TOL = MOIT.TestConfig(atol = 1e-3, rtol = 1e-3)
 
+@testset "MOI interface" begin
+    optimizer = Xpress.Optimizer(logfile = "output.log")
+    @test MOI.get(optimizer, MOI.RawParameter("logfile")) == "output.log"
+end
+
 @testset "SolverName" begin
     @test MOI.get(OPTIMIZER, MOI.SolverName()) == "Xpress"
 end
