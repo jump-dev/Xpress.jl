@@ -1866,11 +1866,13 @@ function MOI.add_constraint(
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, is, INDICATOR)
     indices, coefficients = _indices_and_coefficients_indicator(model, f)
+    cte = MOI.constant(f)[2]
+    # a^T x + b <= c ===> a^T <= c - b
     sense, rhs = _sense_and_rhs(is.set)
     Xpress.addrows(
         model.inner,
         [sense],#_srowtype,
-        [rhs],#_drhs,
+        [rhs-cte],#_drhs,
         C_NULL,#_drng,
         [1],#_mstart,
         (indices),#_mclind,
@@ -1893,7 +1895,8 @@ function MOI.get(
         push!(terms, MOI.VectorAffineTerm(2, term))
     end
 
-    row = _info(model, c).row
+    info = _info(model, c)
+    row = info.row
 
     comps = Array{Cint}(undef, 1)
     inds = Array{Cint}(undef, 1)
@@ -1905,7 +1908,9 @@ function MOI.get(
                 )
             )
         )
-    return MOI.VectorAffineFunction(terms, [0.0,0.0])
+    rhs = Xpress.getrhs(model.inner, row, row)[1]
+    val = - rhs + MOI.constant(info.set.set)
+    return MOI.VectorAffineFunction(terms, [0.0,val])
 end
 
 ###
