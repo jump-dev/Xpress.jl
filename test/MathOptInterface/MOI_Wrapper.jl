@@ -111,12 +111,7 @@ end
 end
 
 @testset "Integer Linear tests" begin
-    MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG, #= excludes =# [
-        "indicator1",
-        "indicator2",
-        "indicator3",
-        "indicator4",
-    ])
+    MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG, ["indicator4"])
 end
 
 @testset "SemiContInt" begin
