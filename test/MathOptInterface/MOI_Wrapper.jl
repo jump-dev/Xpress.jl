@@ -40,6 +40,7 @@ end
 @testset "Unit Tests" begin
     MOIT.unittest(BRIDGED_OPTIMIZER, CONFIG, #= excludes =# String[
         # TODO: fix errors
+        # does not work with caching optimizer
         "delete_soc_variables",
 
         # These tests fail due to tolerance issues; tested below.
@@ -49,6 +50,7 @@ end
     )
     MOIT.solve_qcp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
     MOIT.solve_qp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
+    # MOIT.delete_soc_variables(OPTIMIZER, CONFIG_LOW_TOL)
     MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
 
@@ -83,7 +85,7 @@ end
         MOIT.TestConfig(atol = 1e-3, rtol = 1e-3),
         [
             # TODO: Xpress SHOULD support socp1
-            "socp1",
+            #"socp1",
             # Xpress does NOT support ncqcp.
             "ncqcp",
         ]
@@ -98,13 +100,14 @@ end
     ])
     MOIT.lin3test(BRIDGED_CERTIFICATE_OPTIMIZER, NO_BASIS_CONFIG)
     MOIT.lin4test(BRIDGED_CERTIFICATE_OPTIMIZER, NO_BASIS_CONFIG)
-    # MOIT.soctest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3), ["soc3"])
-    # MOIT.soc3test(
-    #     OPTIMIZER,
-    #     MOIT.TestConfig(duals = false, infeas_certificates = false, atol = 1e-3)
-    # )
-    # MOIT.rsoctest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
-    # MOIT.geomeantest(OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
+    MOIT.soctest(BRIDGED_OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3), ["soc3"])
+    MOIT.soc3test(
+        BRIDGED_OPTIMIZER,
+        MOIT.TestConfig(duals = false, infeas_certificates = false, atol = 1e-3)
+    )
+    MOIT.rsoctest(BRIDGED_OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3), ["rotatedsoc3"])
+    MOIT.rotatedsoc3test(BRIDGED_OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-2))
+    MOIT.geomeantest(BRIDGED_OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
 end
 
 @testset "Integer Linear tests" begin
