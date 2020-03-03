@@ -13,7 +13,7 @@ const OPTIMIZER_2 = Xpress.Optimizer()
 
 include("../SemiContInt/semicontint.jl")
 
-# Xpress can only obtain primal arrays without presolve. Check more on
+# Xpress can only obtain primal and dual rays without presolve. Check more on
 # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSgetprimalray.html
 
 const CERTIFICATE_OPTIMIZER = Xpress.Optimizer(PRESOLVE = 0)
@@ -64,7 +64,7 @@ NO_BASIS_CONFIG = MOIT.TestConfig(basis = false)
             basis = false,
             infeas_certificates = false
         ), [
-            # These tests require extra parameters to be set.
+            # These tests require extra parameters to obtain certificates.
             "linear8a", "linear8b", "linear8c",
             # TODO: This requires an infeasiblity certificate for a variable bound.
             "linear12",
@@ -84,8 +84,6 @@ end
         BRIDGED_OPTIMIZER,
         MOIT.TestConfig(atol = 1e-3, rtol = 1e-3),
         [
-            # TODO: Xpress SHOULD support socp1
-            #"socp1",
             # Xpress does NOT support ncqcp.
             "ncqcp",
         ]
@@ -93,9 +91,8 @@ end
 end
 
 @testset "Conic tests" begin
-    # TODO enable certificates
     MOIT.lintest(BRIDGED_OPTIMIZER, CONFIG, [
-        # These tests require extra parameters to be set.
+        # These tests require extra parameters to obtain certificates.
         "lin3", "lin4"
     ])
     MOIT.lin3test(BRIDGED_CERTIFICATE_OPTIMIZER, NO_BASIS_CONFIG)
@@ -111,7 +108,7 @@ end
 end
 
 @testset "Integer Linear tests" begin
-    MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG, ["indicator4"])
+    MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG)
 end
 
 @testset "SemiContInt" begin
