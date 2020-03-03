@@ -1492,8 +1492,14 @@ end
 
 function _info(
     model::Optimizer,
-    key::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, <:SCALAR_SETS}
-)
+    key::MOI.ConstraintIndex{F, S}
+) where {S, F<:Union{
+    MOI.ScalarAffineFunction{Float64},
+    MOI.ScalarQuadraticFunction{Float64},
+    MOI.VectorAffineFunction{Float64},
+    MOI.VectorOfVariables,
+    }
+}
     if haskey(model.affine_constraint_info, key.value)
         return model.affine_constraint_info[key.value]
     end
@@ -1502,8 +1508,14 @@ end
 
 function MOI.is_valid(
     model::Optimizer,
-    c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}
-) where {S}
+    c::MOI.ConstraintIndex{F, S}
+) where {S, F<:Union{
+    MOI.ScalarAffineFunction{Float64},
+    MOI.ScalarQuadraticFunction{Float64},
+    MOI.VectorAffineFunction{Float64},
+    MOI.VectorOfVariables,
+    }
+}
     info = get(model.affine_constraint_info, c.value, nothing)
     if info === nothing
         return false
@@ -1514,7 +1526,7 @@ end
 
 function MOI.add_constraint(
     model::Optimizer, f::MOI.ScalarAffineFunction{Float64},
-    s::Union{MOI.GreaterThan{Float64}, MOI.LessThan{Float64}, MOI.EqualTo{Float64}}
+    s::SIMPLE_SCALAR_SETS
 )
     if !iszero(f.constant)
         throw(MOI.ScalarFunctionConstantNotZero{Float64, typeof(f), typeof(s)}(f.constant))
@@ -1538,7 +1550,7 @@ end
 
 function MOI.add_constraints(
     model::Optimizer, f::Vector{MOI.ScalarAffineFunction{Float64}},
-    s::Vector{<:Union{MOI.GreaterThan{Float64}, MOI.LessThan{Float64}, MOI.EqualTo{Float64}}}
+    s::Vector{<:SIMPLE_SCALAR_SETS}
 )
     if length(f) != length(s)
         error("Number of functions does not equal number of sets.")
@@ -1592,7 +1604,8 @@ function MOI.delete(
     c::MOI.ConstraintIndex{T, <:Any}
 ) where {T<:Union{
     MOI.VectorAffineFunction{Float64},
-    MOI.ScalarAffineFunction{Float64}
+    MOI.ScalarAffineFunction{Float64},
+    MOI.ScalarQuadraticFunction{Float64},
 }}
     row = _info(model, c).row
     Xpress.delrows(model.inner, [row])
@@ -1609,8 +1622,11 @@ end
 function MOI.get(
     model::Optimizer,
     ::MOI.ConstraintSet,
-    c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}
-) where {S}
+    c::MOI.ConstraintIndex{F, S}
+) where {S,F<:Union{
+    MOI.ScalarAffineFunction{Float64},
+    MOI.ScalarQuadraticFunction{Float64},
+}}
     rhs = Vector{Cdouble}(undef, 1)
     row = _info(model, c).row
     Xpress.getrhs!(model.inner, rhs, row, row)
@@ -1677,7 +1693,9 @@ function MOI.get(
     c::MOI.ConstraintIndex{T, <:Any}
 ) where {T<:Union{
     MOI.VectorAffineFunction{Float64},
-    MOI.ScalarAffineFunction{Float64}
+    MOI.ScalarAffineFunction{Float64},
+    MOI.ScalarQuadraticFunction{Float64},
+    MOI.VectorOfVariables
 }}
     return _info(model, c).name
 end
@@ -1688,7 +1706,9 @@ function MOI.set(
     name::String
 ) where {T<:Union{
     MOI.VectorAffineFunction{Float64},
-    MOI.ScalarAffineFunction{Float64}
+    MOI.ScalarAffineFunction{Float64},
+    MOI.ScalarQuadraticFunction{Float64},
+    MOI.VectorOfVariables
 }}
     info = _info(model, c)
     info.name = name
@@ -1821,28 +1841,6 @@ function MOI.get(
     return _info(model, c).set
 end
 
-function MOI.is_valid(
-    model::Optimizer,
-    c::MOI.ConstraintIndex{MOI.VectorAffineFunction{Float64}, S}
-) where {S <: INDICATOR_SETS}
-    info = get(model.affine_constraint_info, c.value, nothing)
-    if info === nothing
-        return false
-    else
-        return typeof(info.set) == S
-    end
-end
-
-function _info(
-    model::Optimizer,
-    key::MOI.ConstraintIndex{MOI.VectorAffineFunction{Float64}, <:INDICATOR_SETS}
-)
-    if haskey(model.affine_constraint_info, key.value)
-        return model.affine_constraint_info[key.value]
-    end
-    throw(MOI.InvalidIndex(key))
-end
-
 function _indicator_variable(f::MOI.VectorAffineFunction)
     value = 0
     changes = 0
@@ -1914,16 +1912,6 @@ end
 ### ScalarQuadraticFunction-in-SCALAR_SET
 ###
 
-function _info(
-    model::Optimizer,
-    c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
-) where {S}
-    if haskey(model.affine_constraint_info, c.value)
-        return model.affine_constraint_info[c.value]
-    end
-    throw(MOI.InvalidIndex(c))
-end
-
 function MOI.add_constraint(
     model::Optimizer,
     f::MOI.ScalarQuadraticFunction{Float64}, s::SCALAR_SETS
@@ -1942,39 +1930,6 @@ function MOI.add_constraint(
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, QUADRATIC)
     return MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, typeof(s)}(model.last_constraint_index)
-end
-
-function MOI.is_valid(
-    model::Optimizer,
-    c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
-) where {S}
-    info = get(model.affine_constraint_info, c.value, nothing)
-    return info !== nothing && typeof(info.set) == S
-end
-
-function MOI.delete(
-    model::Optimizer,
-    c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
-) where {S}
-    info = _info(model, c)
-    Xpress.delrows(model.inner, [info.row])
-    for (key, info_2) in model.affine_constraint_info
-        if info_2.row > info.row
-            info_2.row -= 1
-        end
-    end
-    delete!(model.affine_constraint_info, c.value)
-    model.name_to_constraint_index = nothing
-    return
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::MOI.ConstraintSet,
-    c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
-) where {S}
-    rhs = Xpress.getrhs(model.inner, _info(model, c).row, _info(model, c).row)[1]
-    return S(rhs)
 end
 
 function MOI.get(
@@ -2001,25 +1956,6 @@ function MOI.get(
     return MOI.ScalarQuadraticFunction(affine_terms, quadratic_terms, 0.0)
 end
 
-function MOI.get(
-    model::Optimizer,
-    ::MOI.ConstraintName,
-    c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}
-) where {S}
-    return _info(model, c).name
-end
-
-function MOI.set(
-    model::Optimizer, ::MOI.ConstraintName,
-    c::MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S},
-    name::String
-) where {S}
-    info = _info(model, c)
-    info.name = name
-    model.name_to_constraint_index = nothing
-    return
-end
-
 ###
 ### VectorOfVariables-in-SOS{I|II}
 ###
@@ -2042,7 +1978,7 @@ _sos_type(::MOI.SOS2) = convert(Cchar, '2')
 function MOI.is_valid(
     model::Optimizer,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
-) where {S}
+) where {S<:SOS}
     info = get(model.sos_constraint_info, c.value, nothing)
     if info === nothing || typeof(info.set) != S
         return false
@@ -2086,26 +2022,6 @@ function MOI.delete(
         end
     end
     delete!(model.sos_constraint_info, c.value)
-    model.name_to_constraint_index = nothing
-    return
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::MOI.ConstraintName,
-    c::MOI.ConstraintIndex{MOI.VectorOfVariables, <:Any}
-)
-    return _info(model, c).name
-end
-
-function MOI.set(
-    model::Optimizer,
-    ::MOI.ConstraintName,
-    c::MOI.ConstraintIndex{MOI.VectorOfVariables, <:Any},
-    name::String
-)
-    info = _info(model, c)
-    info.name = name
     model.name_to_constraint_index = nothing
     return
 end
@@ -2657,38 +2573,17 @@ end
 
 function MOI.get(
     model::Optimizer,
-    ::MOI.ListOfConstraintIndices{MOI.ScalarAffineFunction{Float64}, S}
-) where {S <: SCALAR_SETS}
-    indices = MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}[]
+    ::MOI.ListOfConstraintIndices{F, S}
+) where {S, F<:Union{
+    MOI.ScalarAffineFunction{Float64},
+    MOI.VectorAffineFunction{Float64},
+    MOI.ScalarQuadraticFunction{Float64},
+    MOI.VectorOfVariables
+}}
+    indices = MOI.ConstraintIndex{F, S}[]
     for (key, info) in model.affine_constraint_info
         if typeof(info.set) == S
-            push!(indices, MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}(key))
-        end
-    end
-    return sort!(indices, by = x -> x.value)
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::MOI.ListOfConstraintIndices{MOI.VectorAffineFunction{Float64}, S}
-) where {S <: INDICATOR_SETS}
-    indices = MOI.ConstraintIndex{MOI.VectorAffineFunction{Float64}, S}[]
-    for (key, info) in model.affine_constraint_info
-        if typeof(info.set) == S
-            push!(indices, MOI.ConstraintIndex{MOI.VectorAffineFunction{Float64}, S}(key))
-        end
-    end
-    return sort!(indices, by = x -> x.value)
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::MOI.ListOfConstraintIndices{MOI.ScalarQuadraticFunction{Float64}, S}
-) where {S <: SCALAR_SETS}
-    indices = MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}[]
-    for (key, info) in model.affine_constraint_info
-        if typeof(info.set) == S
-            push!(indices, MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64}, S}(key))
+            push!(indices, MOI.ConstraintIndex{F, S}(key))
         end
     end
     return sort!(indices, by = x -> x.value)
@@ -2703,19 +2598,6 @@ function MOI.get(
             push!(indices, MOI.ConstraintIndex{MOI.VectorOfVariables, S}(key))
         end
     end
-    return sort!(indices, by = x -> x.value)
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::MOI.ListOfConstraintIndices{MOI.VectorOfVariables, S}
-) where S <: Union{MOI.SecondOrderCone, MOI.RotatedSecondOrderCone}
-
-    indices = MOI.ConstraintIndex{MOI.VectorOfVariables, S}[
-        MOI.ConstraintIndex{MOI.VectorOfVariables, S}(key)
-        for (key, info) in model.affine_constraint_info
-            if typeof(info.set) == S
-    ]
     return sort!(indices, by = x -> x.value)
 end
 
@@ -2980,17 +2862,6 @@ end
 ### VectorOfVariables-in-SecondOrderCone
 ###
 
-
-function _info(
-    model::Optimizer,
-    c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
-) where S <: Union{MOI.SecondOrderCone, MOI.RotatedSecondOrderCone}
-    if haskey(model.affine_constraint_info, c.value)
-        return model.affine_constraint_info[c.value]
-    end
-    throw(MOI.InvalidIndex(c))
-end
-
 function MOI.add_constrained_variables(
     model::Optimizer, s::S
 ) where S <: Union{MOI.SecondOrderCone, MOI.RotatedSecondOrderCone}
@@ -3062,7 +2933,6 @@ function MOI.add_constraint(
     return MOI.ConstraintIndex{MOI.VectorOfVariables, MOI.SecondOrderCone}(model.last_constraint_index)
 end
 
-
 function MOI.add_constraint(
     model::Optimizer, f::MOI.VectorOfVariables, s::MOI.RotatedSecondOrderCone
 )
@@ -3129,14 +2999,6 @@ function MOI.add_constraint(
         v.in_soc = true
     end
     return MOI.ConstraintIndex{MOI.VectorOfVariables, MOI.RotatedSecondOrderCone}(model.last_constraint_index)
-end
-
-function MOI.is_valid(
-    model::Optimizer,
-    c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
-) where S <: Union{MOI.SecondOrderCone, MOI.RotatedSecondOrderCone}
-    info = get(model.affine_constraint_info, c.value, nothing)
-    return info !== nothing && typeof(info.set) == S
 end
 
 function MOI.delete(
@@ -3288,40 +3150,6 @@ function MOI.get(
     f = MOI.get(model, MOI.ConstraintFunction(), c)
     return MOI.get(model, MOI.VariablePrimal(), f.variables)
 end
-
-#=
-# already defined in SOS
-function MOI.get(
-    model::Optimizer,
-    ::MOI.ConstraintName,
-    c::MOI.ConstraintIndex{MOI.VectorOfVariables, S}
-) where S <: Union{MOI.SecondOrderCone, MOI.RotatedSecondOrderCone}
-    return _info(model, c).name
-end
-
-function MOI.set(
-    model::Optimizer, ::MOI.ConstraintName,
-    c::MOI.ConstraintIndex{MOI.VectorOfVariables, MOI.SecondOrderCone},
-    name::String
-)
-    info = _info(model, c)
-    if !isempty(info.name) && model.name_to_constraint_index !== nothing
-        delete!(model.name_to_constraint_index, info.name)
-    end
-    info.name = name
-    if model.name_to_constraint_index === nothing || isempty(name)
-        return
-    end
-    if haskey(model.name_to_constraint_index, name)
-        model.name_to_constraint_index = nothing
-    else
-        model.name_to_constraint_index[c] = name
-    end
-    return
-end
-
-
-=#
 
 ###
 ### IIS
