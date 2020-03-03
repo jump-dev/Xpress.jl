@@ -42,10 +42,10 @@ module Xpress
     # # license checker
     include("license.jl")
 
-    const parameter_name_to_index = Dict{String, Int}(
-        string(name) => getfield(Lib, name)
-        for name in names(Lib; all = true)
-        if startswith(string(name), "XPRS_") && typeof(getfield(Lib, name)) == Int
+    const XPRS_ATTRIBUTES = Dict{String, Any}(
+        replace(string(name), "XPRS_"=>"") => getfield(Lib, name)
+            for name in names(Lib; all = true)
+            if startswith(string(name), "XPRS_") && all(isuppercase(c) || isdigit(c) for c in string(name) if c != '_')
     )
 
     function initialize()
