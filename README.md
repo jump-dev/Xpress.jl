@@ -56,25 +56,16 @@ m = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log")
 ```
 For other parameters use [Xpress Optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/) or type `julia -e "using Xpress; println(keys(Xpress.XPRS_ATTRIBUTES))"`.
 
-If logfile is set to `""`, output is printed to the console. If logfile is set to a filepath, output is printed to the file.
-By default, logfile is set to a temporary file. If you've already created an instance of an `Optimizer`, you can use `MOI.RawParameter` to get and set the location of the current logfile.
+If logfile is set to `""`, log file is disabled and output is printed to the console ([there is no console output on windows](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html)). If logfile is set to a filepath, output is printed to the file. 
+By default, logfile is set to `""` (console). If you've already created an instance of an `Optimizer`, you can use `MOI.RawParameter` to get and set the location of the current logfile.
 
 ```julia
-julia> OPTIMIZER = Xpress.Optimizer()
-Xpress Problem:
-    type   : LP
-    sense  : minimize
-    number of variables                    = 0
-    number of linear constraints           = 0
-    number of quadratic constraints        = 0
-    number of sos constraints              = 0
-    number of non-zero coeffs              = 0
-    number of non-zero qp objective terms  = 0
-    number of non-zero qp constraint terms = 0
-    number of integer entities             = 0
+julia> using Xpress, MathOptInterface; const MOI = MathOptInterface;
+
+julia> OPTIMIZER = Xpress.Optimizer();
 
 julia> MOI.get(OPTIMIZER, MOI.RawParameter("logfile"))
-"/var/folders/wk/lcf0vgd90bx0vq1873tn04knk_djr3/T/jl_Vkjkd8"
+""
 
 julia> MOI.set(OPTIMIZER, MOI.RawParameter("logfile"), "output.log")
 
@@ -84,7 +75,7 @@ julia> MOI.get(OPTIMIZER, MOI.RawParameter("logfile"))
 
 ## API Overview
 
-This package provides both APIs at different levels for constructing models and solving optimization problems just like *Gurobi.jl*, you can use the tests and examples in this package and *Gurobi.jl*'s [README.md](https://github.com/JuliaOpt/Gurobi.jl) basic for reference.
+This package provides both a thin wrapper for Xpress' C interface and wrapper for [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl) and [MathOptInterface.jl](https://github.com/JuliaOpt/MathOptInterface.jl).
 
 ## Julia version warning
 
