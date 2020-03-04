@@ -180,7 +180,7 @@ This directs all Optimizer output to a  log file.
 - `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which all logging output should be written. If set to `NULL` , redirection of the output will stop and all screen output will be turned back on (except for DLL users where screen output is always turned off).
 
 """
-function setlogfile(prob::XpressProblem, logname::String)
+function setlogfile(prob::XpressProblem, logname::Union{String, Ptr{Nothing}})
     @checked Lib.XPRSsetlogfile(prob, logname)
 end
 

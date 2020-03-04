@@ -26,6 +26,8 @@ const CONFIG = MOIT.TestConfig()
 const CONFIG_LOW_TOL = MOIT.TestConfig(atol = 1e-3, rtol = 1e-3)
 
 @testset "MOI interface" begin
+    optimizer = Xpress.Optimizer()
+    @test MOI.get(optimizer, MOI.RawParameter("logfile")) == ""
     optimizer = Xpress.Optimizer(logfile = "output.log")
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == "output.log"
 end

@@ -413,7 +413,12 @@ function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
     # and want to set all the raw parameters and attributes again.
     model.params[param] = value
     if param == MOI.RawParameter("logfile")
-        Xpress.setlogfile(model.inner, value)
+        if value == ""
+            # disable log file
+            Xpress.setlogfile(model.inner, C_NULL)
+        else
+            Xpress.setlogfile(model.inner, value)
+        end
         model.inner.logfile = value
     else
         Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
