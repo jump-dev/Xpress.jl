@@ -54,6 +54,9 @@ using JuMP, Xpress
 
 m = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
 ```
+
+For linux and OSX users, in order to initialize an optimizer without console printing run `Xpress.Optimizer(OUTPUTLOG = 0)`. Setting `OUTPUTLOG` to zero will also disable printing to the log file in all systems.
+
 For other parameters use [Xpress Optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/) or type `julia -e "using Xpress; println(keys(Xpress.XPRS_ATTRIBUTES))"`.
 
 If logfile is set to `""`, log file is disabled and output is printed to the console ([there is no console output on windows](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html)). If logfile is set to a filepath, output is printed to the file. 

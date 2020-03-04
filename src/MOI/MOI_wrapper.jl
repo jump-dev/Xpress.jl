@@ -152,9 +152,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # The model name. TODO: pass through to .inner.
     name::String
 
-    # A flag to keep track of MOI.Silent, which over-rides the OutputFlag
+    # A flag to keep track of MOI.Silent, which over-rides the OUTPUTLOG
     # parameter.
-    # Windows is alway silent, callback or external file must be used
+    # Windows is always silent, callback or external file must be used
     silent::Bool
 
     # An enum to remember what objective is currently stored in the model.
@@ -214,6 +214,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model = new()
 
         model.params = Dict{Any,Any}()
+        model.silent = false
 
         for (name, value) in kwargs
             name = MOI.RawParameter(string(name))
@@ -420,6 +421,13 @@ function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
             Xpress.setlogfile(model.inner, value)
         end
         model.inner.logfile = value
+    elseif param == MOI.RawParameter("OUTPUTLOG")
+        if value == 0
+            model.silent = true
+        else
+            model.silent = false
+        end
+        Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
     else
         Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
     end

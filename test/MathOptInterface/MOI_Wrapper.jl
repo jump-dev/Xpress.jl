@@ -8,27 +8,27 @@ const MOIT = MathOptInterface.Test
 const MOIT = MOI.Test
 const MOIU = MOI.Utilities
 
-const OPTIMIZER = Xpress.Optimizer()
-const OPTIMIZER_2 = Xpress.Optimizer()
+const OPTIMIZER = Xpress.Optimizer(OUTPUTLOG = 0)
+const OPTIMIZER_2 = Xpress.Optimizer(OUTPUTLOG = 0)
 
 include("../SemiContInt/semicontint.jl")
 
 # Xpress can only obtain primal and dual rays without presolve. Check more on
 # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSgetprimalray.html
 
-const CERTIFICATE_OPTIMIZER = Xpress.Optimizer(PRESOLVE = 0)
 const BRIDGED_OPTIMIZER = MOI.Bridges.full_bridge_optimizer(
-    Xpress.Optimizer(), Float64)
+    OPTIMIZER, Float64)
 const BRIDGED_CERTIFICATE_OPTIMIZER =
-    MOI.Bridges.full_bridge_optimizer(CERTIFICATE_OPTIMIZER, Float64)
+    MOI.Bridges.full_bridge_optimizer(
+        Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0), Float64)
 
 const CONFIG = MOIT.TestConfig()
 const CONFIG_LOW_TOL = MOIT.TestConfig(atol = 1e-3, rtol = 1e-3)
 
 @testset "MOI interface" begin
-    optimizer = Xpress.Optimizer()
+    optimizer = Xpress.Optimizer(OUTPUTLOG = 0)
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == ""
-    optimizer = Xpress.Optimizer(logfile = "output.log")
+    optimizer = Xpress.Optimizer(OUTPUTLOG = 0, logfile = "output.log")
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == "output.log"
 end
 
@@ -150,7 +150,7 @@ end
 
     @testset "copytest" begin
         BRIDGED_OPTIMIZER_2 = MOI.Bridges.full_bridge_optimizer(
-            Xpress.Optimizer(), Float64
+            OPTIMIZER_2, Float64
         )
         MOIT.copytest(BRIDGED_OPTIMIZER, BRIDGED_OPTIMIZER_2)
     end
