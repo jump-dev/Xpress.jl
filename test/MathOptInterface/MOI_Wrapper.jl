@@ -26,9 +26,9 @@ const CONFIG = MOIT.TestConfig()
 const CONFIG_LOW_TOL = MOIT.TestConfig(atol = 1e-3, rtol = 1e-3)
 
 @testset "MOI interface" begin
-    optimizer = Xpress.Optimizer()
+    optimizer = Xpress.Optimizer(OUTPUTLOG = 0)
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == ""
-    optimizer = Xpress.Optimizer(logfile = "output.log")
+    optimizer = Xpress.Optimizer(OUTPUTLOG = 0, logfile = "output.log")
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == "output.log"
 end
 
@@ -150,7 +150,7 @@ end
 
     @testset "copytest" begin
         BRIDGED_OPTIMIZER_2 = MOI.Bridges.full_bridge_optimizer(
-            Xpress.Optimizer(), Float64
+            OPTIMIZER_2, Float64
         )
         MOIT.copytest(BRIDGED_OPTIMIZER, BRIDGED_OPTIMIZER_2)
     end
