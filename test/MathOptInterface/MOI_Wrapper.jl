@@ -61,14 +61,11 @@ end
     MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
 
-NO_BASIS_CONFIG = MOIT.TestConfig(basis = false)
-
 @testset "Linear tests" begin
     MOIT.contlineartest(
         BRIDGED_OPTIMIZER,
         MOIT.TestConfig(
-            # TODO: support basis attributes.
-            basis = false,
+            basis = true,
             infeas_certificates = false
         ), [
             # These tests require extra parameters to obtain certificates.
@@ -102,8 +99,8 @@ end
         # These tests require extra parameters to obtain certificates.
         "lin3", "lin4"
     ])
-    MOIT.lin3test(BRIDGED_CERTIFICATE_OPTIMIZER, NO_BASIS_CONFIG)
-    MOIT.lin4test(BRIDGED_CERTIFICATE_OPTIMIZER, NO_BASIS_CONFIG)
+    MOIT.lin3test(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
+    MOIT.lin4test(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
     MOIT.soctest(BRIDGED_OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3), ["soc3"])
     MOIT.soc3test(
         BRIDGED_OPTIMIZER,
