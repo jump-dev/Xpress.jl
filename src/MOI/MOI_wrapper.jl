@@ -150,6 +150,16 @@ mutable struct BasisStatus
     var_status::Vector{Cint}
 end
 
+mutable struct IISData
+    stat::Int
+    rownumber::Int # number of rows participating in the IIS
+    colnumber::Int # number of columns participating in the IIS
+    miisrow::Vector{Cint} # index of the rows that participate
+    miiscol::Vector{Cint} # index of the columns that participate
+    constrainttype::Vector{UInt8} # sense of the rows that participate
+    colbndtype::Vector{UInt8} # sense of the column bounds that participate
+end
+
 mutable struct Optimizer <: MOI.AbstractOptimizer
     # The low-level Xpress model.
     inner::XpressProblem
@@ -200,7 +210,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # elements of the solution.
     cached_solution::Union{Nothing, CachedSolution}
     basis_status::Union{Nothing,BasisStatus}
-    conflict #::Union{Nothing, ConflictRefinerData}
+    conflict::Union{Nothing, IISData}
 
     # Callback fields.
     callback_variable_primal::Vector{Float64}
@@ -238,8 +248,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
         model.callback_variable_primal = Float64[]
         model.basis_status = nothing
+        model.conflict = nothing
         MOI.empty!(model)  # MOI.empty!(model) re-sets the `.inner` field.
-
         return model
     end
 end
@@ -303,6 +313,7 @@ function MOI.empty!(model::Optimizer)
     model.lazy_callback = nothing
     model.user_cut_callback = nothing
     model.heuristic_callback = nothing
+    model.basis_status = nothing
     for (name, value) in model.params
         MOI.set(model, name, value)
     end
@@ -325,6 +336,8 @@ function MOI.is_empty(model::Optimizer)
     model.lazy_callback !== nothing && return false
     model.user_cut_callback !== nothing && return false
     model.heuristic_callback !== nothing && return false
+    model.basis_status !== nothing && return false
+    m.conflict !== nothing && return false
     return true
 end
 
@@ -3206,7 +3219,40 @@ end
 ### IIS
 ###
 
-#=
+function getfirstiis(model::Optimizer)
+    issmode = Vector{Cint}(undef, 1)
+    status_code = Vector{Cint}(undef, 1)
+    iisfirst(model.inner, issmode, status_code)
+
+    if status_code == 1
+        # The problem is actually feasible.
+        return IISData(status_code, 0, 0, Vector{Cint}(undef, 0), Vector{Cint}(undef, 0), Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
+    elseif status_code == 2
+        # There was a problem in the computation; this should never happen, as
+        # in this case the function should return a nonzero code.
+        throw(XpressError(model))
+    end
+    
+    # XPRESS' API works in two steps: first, retrieve the sizes of the arrays to
+    # retrieve; then, the user is expected to allocate the needed memory,
+    # before asking XPRESS to fill it.
+
+    num = Vector{Cint}(undef, 1)
+    rownumber = Vector{Cint}(undef, 1)
+    colnumber = Vector{Cint}(undef, 1)
+    getiisdata(model.inner, num, rownumber, colnumber, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
+
+    nrows = rownumber[1]
+    ncols = colnumber[1]
+    miisrow = Vector{Cint}(undef, nrows)
+    miiscol = Vector{Cint}(undef, ncols)
+    constrainttype = Vector{UInt8}(undef, nrows)
+    colbndtype = Vector{UInt8}(undef, ncols)
+    getiisdata(model.inner, num, rownumber, colnumber, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
+
+    return IISData(status_code, nrows, ncols, miisrow, miiscol, constrainttype, colbndtype)
+
+end
 
 """
     compute_conflict(model::Optimizer)
@@ -3214,41 +3260,17 @@ end
 Compute a minimal subset of the constraints and variables that keep the model
 infeasible.
 
-See also `CPLEX.ConflictStatus` and `CPLEX.ConstraintConflictStatus`.
-
-Note that if `model` is modified after a call to `compute_conflict`, the
-conflict is not purged, and any calls to the above attributes will return
-values for the original conflict without a warning.
 """
-function compute_conflict(model::Optimizer)
-    # In case there is no conflict, c_api_getconflict throws an error, while the
-    # conflict data structure can handle more gracefully this case (via a status
-    # check).
 
-    # TODO: decide what to do about the POSSIBLE statuses for the constraints
-    # (CPX_CONFLICT_POSSIBLE_MEMBER, CPX_CONFLICT_POSSIBLE_UB,
-    # CPX_CONFLICT_POSSIBLE_LB).
-    try
-        model.conflict = c_api_getconflict(model.inner)
-    catch exc
-        if isa(exc, CplexError) && exc.code == CPXERR_NO_CONFLICT
-            model.conflict = ConflictRefinerData(
-                CPX_STAT_CONFLICT_FEASIBLE, 0, Cint[], Cint[], 0, Cint[], Cint[]
-            )
-        else
-            rethrow(exc)
-        end
-    end
+function compute_conflict(model::Optimizer)
+    model.conflict = getfirstiis(model.inner)
     return
 end
 
 function _ensure_conflict_computed(model::Optimizer)
     if model.conflict === nothing
-        error(
-            "Cannot access conflict status. Call " *
-            "`CPLEX.compute_conflict(model)` first. In case the model is " *
-            "modified, the computed conflict will not be purged."
-        )
+        error("Cannot access conflict status. Call `Xpress.compute_conflict(model)` first. " *
+              "In case the model is modified, the computed conflict will not be purged.")
     end
 end
 
@@ -3268,26 +3290,10 @@ MOI.is_set_by_optimize(::ConflictStatus) = true
 function MOI.get(model::Optimizer, ::ConflictStatus)
     if model.conflict === nothing
         return MOI.OPTIMIZE_NOT_CALLED
-    elseif model.conflict.stat == CPX_STAT_CONFLICT_MINIMAL
+    elseif model.conflict.stat == 0
         return MOI.OPTIMAL
-    elseif model.conflict.stat == CPX_STAT_CONFLICT_FEASIBLE
+    elseif model.conflict.stat == 1
         return MOI.INFEASIBLE
-    elseif model.conflict.stat == CPX_STAT_CONFLICT_ABORT_CONTRADICTION
-        return MOI.OTHER_LIMIT
-    elseif model.conflict.stat == CPX_STAT_CONFLICT_ABORT_DETTIME_LIM
-        return MOI.TIME_LIMIT
-    elseif model.conflict.stat == CPX_STAT_CONFLICT_ABORT_IT_LIM
-        return MOI.ITERATION_LIMIT
-    elseif model.conflict.stat == CPX_STAT_CONFLICT_ABORT_MEM_LIM
-        return MOI.MEMORY_LIMIT
-    elseif model.conflict.stat == CPX_STAT_CONFLICT_ABORT_NODE_LIM
-        return MOI.NODE_LIMIT
-    elseif model.conflict.stat == CPX_STAT_CONFLICT_ABORT_OBJ_LIM
-        return MOI.OBJECTIVE_LIMIT
-    elseif model.conflict.stat == CPX_STAT_CONFLICT_ABORT_TIME_LIM
-        return MOI.TIME_LIMIT
-    elseif model.conflict.stat == CPX_STAT_CONFLICT_ABORT_USER
-        return MOI.OTHER_LIMIT
     else
         return MOI.OTHER_LIMIT
     end
@@ -3303,10 +3309,17 @@ end
 A Boolean constraint attribute indicating whether the constraint participates
 in the last computed conflict.
 """
+
 struct ConstraintConflictStatus <: MOI.AbstractConstraintAttribute end
 
 MOI.is_set_by_optimize(::ConstraintConflictStatus) = true
 
+function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
+    _ensure_conflict_computed(model)
+    return (model[index] - 1) in model.conflict.miisrow
+end
+
+#=
 function _get_conflict_status(
     model::Optimizer,
     index::MOI.ConstraintIndex{MOI.SingleVariable, <:Any}
