@@ -1989,6 +1989,26 @@ function getbasis(prob::XpressProblem, _mrowstatus, _mcolstatus)
 end
 
 """
+    int XPRS_CC XPRSgetbasisval(XPRSprob prob, int row, int column, int *rstatus, int *cstatus);
+
+Returns the current basis status for a specific column or row.
+
+### Arguments
+
+
+- `prob`: The current problem.
+- `row`: Row index to get the row basis status for.
+- `column`: Column index to get the column basis status for.
+- `rstatus`: Integer pointer where the value of the row basis status will be returned. May be NULL if not required.
+- `cstatus`: Integer pointer where the value of the column basis status will be returned. May be NULL if not required.
+
+"""
+
+function getbasisval(prob::XpressProblem, row, column, _mrowstatus, _mcolstatus)
+    @checked Lib.XPRSgetbasisval(prob, Cint(row-1), Cint(column-1), _mrowstatus, _mcolstatus)
+end
+
+"""
     int XPRS_CC XPRSloadbasis(XPRSprob prob, const int rstatus[], const int cstatus[]);
 
 Loads a  basis from the user's areas.

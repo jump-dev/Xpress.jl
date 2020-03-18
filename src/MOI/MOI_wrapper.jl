@@ -145,6 +145,11 @@ mutable struct CachedSolution
     solve_time::Float64
 end
 
+mutable struct BasisStatus
+    con_status::Vector{Cint}
+    var_status::Vector{Cint}
+end
+
 mutable struct Optimizer <: MOI.AbstractOptimizer
     # The low-level Xpress model.
     inner::XpressProblem
@@ -194,6 +199,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # TODO: add functionality to the lower-level API to support querying single
     # elements of the solution.
     cached_solution::Union{Nothing, CachedSolution}
+    basis_status::Union{Nothing,BasisStatus}
     conflict #::Union{Nothing, ConflictRefinerData}
 
     # Callback fields.
@@ -231,6 +237,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
         model.callback_variable_primal = Float64[]
+        model.basis_status = nothing
         MOI.empty!(model)  # MOI.empty!(model) re-sets the `.inner` field.
 
         return model
@@ -2125,7 +2132,7 @@ function MOI.optimize!(model::Optimizer)
     #     MOI.set(model, CallbackFunction(), default_moi_callback(model))
     #     model.has_generic_callback = false
     # end
-
+    model.basis_status = nothing
     reset_cached_solution(model)
     # TODO allow soling relaxed version
     # TODO deal with algorithm flags
@@ -2828,19 +2835,38 @@ function MOI.set(
     return
 end
 
-#=
+function _generate_basis_status(model::Optimizer)
+    nvars = length(model.variable_info)
+    nrows = length(model.affine_constraint_info)
+    cstatus = Vector{Cint}(undef, nrows)
+    vstatus = Vector{Cint}(undef, nvars)
+    getbasis(model.inner, cstatus, vstatus)
+    basis_status = BasisStatus(cstatus, vstatus)
+    model.basis_status = basis_status
+    return
+end 
+
 
 function MOI.get(
     model::Optimizer, ::MOI.ConstraintBasisStatus,
     c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}
 ) where {S <: SCALAR_SETS}
     row = _info(model, c).row
-    # TODO
-    cbasis = 0 # get_intattrelement(model.inner, "CBasis", row)
-    if cbasis == 0
+    basis_status = model.basis_status
+    if basis_status == nothing
+        _generate_basis_status(model::Optimizer)
+        basis_status = model.basis_status
+    end
+    cstatus = basis_status.con_status
+    cbasis = cstatus[row]
+    if cbasis == 1
         return MOI.BASIC
-    elseif cbasis == -1
+    elseif cbasis == 0
         return MOI.NONBASIC
+    elseif cbasis == 2
+        return MOI.NONBASIC
+    elseif cbasis == 3
+        return MOI.SUPER_BASIC
     else
         error("CBasis value of $(cbasis) isn't defined.")
     end
@@ -2851,11 +2877,16 @@ function MOI.get(
     c::MOI.ConstraintIndex{MOI.SingleVariable, S}
 ) where {S <: SCALAR_SETS}
     column = _info(model, c).column
-    _update_if_necessary(model)
-    vbasis = get_intattrelement(model.inner, "VBasis", column)
-    if vbasis == 0
+    basis_status = model.basis_status
+    if basis_status == nothing
+        _generate_basis_status(model::Optimizer)
+        basis_status = model.basis_status
+    end
+    vstatus = basis_status.var_status
+    vbasis = vstatus[column]
+    if vbasis == 1
         return MOI.BASIC
-    elseif vbasis == -1
+    elseif vbasis == 0
         if S <: MOI.LessThan
             return MOI.BASIC
         elseif !(S <: MOI.Interval)
@@ -2863,8 +2894,7 @@ function MOI.get(
         else
             return MOI.NONBASIC_AT_LOWER
         end
-    elseif vbasis == -2
-        MOI.NONBASIC_AT_UPPER
+    elseif vbasis == 2
         if S <: MOI.GreaterThan
             return MOI.BASIC
         elseif !(S <: MOI.Interval)
@@ -2872,14 +2902,12 @@ function MOI.get(
         else
             return MOI.NONBASIC_AT_UPPER
         end
-    elseif vbasis == -3
+    elseif vbasis == 3
         return MOI.SUPER_BASIC
     else
         error("VBasis value of $(vbasis) isn't defined.")
     end
 end
-
-=#
 
 ###
 ### VectorOfVariables-in-SecondOrderCone
