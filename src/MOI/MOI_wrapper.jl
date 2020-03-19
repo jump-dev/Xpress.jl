@@ -151,7 +151,7 @@ mutable struct BasisStatus
 end
 
 mutable struct IISData
-    stat::Int
+    stat::Cint
     rownumber::Int # number of rows participating in the IIS
     colnumber::Int # number of columns participating in the IIS
     miisrow::Vector{Cint} # index of the rows that participate
@@ -337,7 +337,7 @@ function MOI.is_empty(model::Optimizer)
     model.user_cut_callback !== nothing && return false
     model.heuristic_callback !== nothing && return false
     model.basis_status !== nothing && return false
-    m.conflict !== nothing && return false
+    model.conflict !== nothing && return false
     return true
 end
 
@@ -3220,7 +3220,7 @@ end
 ###
 
 function getfirstiis(model::Optimizer)
-    issmode = Vector{Cint}(undef, 1)
+    issmode = Cint(1)
     status_code = Vector{Cint}(undef, 1)
     iisfirst(model.inner, issmode, status_code)
 
@@ -3237,7 +3237,7 @@ function getfirstiis(model::Optimizer)
     # retrieve; then, the user is expected to allocate the needed memory,
     # before asking XPRESS to fill it.
 
-    num = Vector{Cint}(undef, 1)
+    num = Cint(1)
     rownumber = Vector{Cint}(undef, 1)
     colnumber = Vector{Cint}(undef, 1)
     getiisdata(model.inner, num, rownumber, colnumber, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
@@ -3263,7 +3263,7 @@ infeasible.
 """
 
 function compute_conflict(model::Optimizer)
-    model.conflict = getfirstiis(model.inner)
+    model.conflict = getfirstiis(model)
     return
 end
 
@@ -3316,73 +3316,12 @@ MOI.is_set_by_optimize(::ConstraintConflictStatus) = true
 
 function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
     _ensure_conflict_computed(model)
-    return (model[index] - 1) in model.conflict.miisrow
+    return (_info(model, index).row - 1) in model.conflict.miisrow
 end
 
-#=
-function _get_conflict_status(
-    model::Optimizer,
-    index::MOI.ConstraintIndex{MOI.SingleVariable, <:Any}
-)
+function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
     _ensure_conflict_computed(model)
-    column = _info(model, index).column
-    for (col, stat) in zip(model.conflict.colind, model.conflict.colstat)
-        if column - 1 == col
-            return stat
-        end
-    end
-    return nothing
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::ConstraintConflictStatus,
-    index::MOI.ConstraintIndex{MOI.SingleVariable, <:MOI.LessThan}
-)
-    status = _get_conflict_status(model, index)
-    if status === nothing
-        return false
-    end
-    return status == CPLEX.CPX_CONFLICT_MEMBER ||
-        status == CPLEX.CPX_CONFLICT_UB
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::ConstraintConflictStatus,
-    index::MOI.ConstraintIndex{MOI.SingleVariable, <:MOI.GreaterThan})
-    status = _get_conflict_status(model, index)
-    if status === nothing
-        return false
-    end
-    return status == CPLEX.CPX_CONFLICT_MEMBER ||
-        status == CPLEX.CPX_CONFLICT_LB
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::ConstraintConflictStatus,
-    index::MOI.ConstraintIndex{MOI.SingleVariable, <:Union{MOI.EqualTo, MOI.Interval}}
-)
-    status = _get_conflict_status(model, index)
-    if status === nothing
-        return false
-    end
-    return status == CPLEX.CPX_CONFLICT_MEMBER ||
-        status == CPLEX.CPX_CONFLICT_LB ||
-        status == CPLEX.CPX_CONFLICT_UB
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::ConstraintConflictStatus,
-    index::MOI.ConstraintIndex{
-        <:MOI.ScalarAffineFunction,
-        <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}
-    }
-)
-    _ensure_conflict_computed(model)
-    return (_info(model, index).row - 1) in model.conflict.rowind
+    return (_info(model, index).row - 1) in model.conflict.miiscol
 end
 
 function MOI.supports(
@@ -3404,8 +3343,10 @@ function MOI.supports(
     return true
 end
 
+#=
 include("MOI_callbacks.jl")
 =#
+
 function extension(str::String)
     try
         match(r"\.[A-Za-z0-9]+$", str).match
