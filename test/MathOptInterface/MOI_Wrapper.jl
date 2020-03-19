@@ -155,10 +155,10 @@ end
 
 @testset "IIS tests" begin
     @testset "Variable bounds (ScalarAffine)" begin
-        model = Xpress.Optimizer()
+        model = Xpress.Optimizer(DEFAULTALG = 3, PRESOLVE = 0)
         x = MOI.add_variable(model)
-        c1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(2.0))
-        c2 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.LessThan(1.0))
+        c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(2.0))
+        c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(1.0))
 
         # Getting the results before the conflict refiner has been called must return an error.
         @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
