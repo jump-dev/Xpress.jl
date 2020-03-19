@@ -3220,17 +3220,17 @@ end
 ###
 
 function getfirstiis(model::Optimizer)
-    issmode = Cint(1)
+    iismode = Cint(1)
     status_code = Vector{Cint}(undef, 1)
-    iisfirst(model.inner, issmode, status_code)
+    Xpress.iisfirst(model.inner, iismode, status_code)
 
-    if status_code == 1
+    if status_code[1] == 1
         # The problem is actually feasible.
-        return IISData(status_code, 0, 0, Vector{Cint}(undef, 0), Vector{Cint}(undef, 0), Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
-    elseif status_code == 2
+        return IISData(status_code[1], 0, 0, Vector{Cint}(undef, 0), Vector{Cint}(undef, 0), Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
+    elseif status_code[1] == 2
         # There was a problem in the computation; this should never happen, as
         # in this case the function should return a nonzero code.
-        throw(XpressError(model))
+        error("There was a problem in the computation")
     end
     
     # XPRESS' API works in two steps: first, retrieve the sizes of the arrays to
@@ -3240,7 +3240,7 @@ function getfirstiis(model::Optimizer)
     num = Cint(1)
     rownumber = Vector{Cint}(undef, 1)
     colnumber = Vector{Cint}(undef, 1)
-    getiisdata(model.inner, num, rownumber, colnumber, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
+    Xpress.getiisdata(model.inner, num, rownumber, colnumber, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
 
     nrows = rownumber[1]
     ncols = colnumber[1]
@@ -3248,9 +3248,9 @@ function getfirstiis(model::Optimizer)
     miiscol = Vector{Cint}(undef, ncols)
     constrainttype = Vector{UInt8}(undef, nrows)
     colbndtype = Vector{UInt8}(undef, ncols)
-    getiisdata(model.inner, num, rownumber, colnumber, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
+    Xpress.getiisdata(model.inner, num, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL)
 
-    return IISData(status_code, nrows, ncols, miisrow, miiscol, constrainttype, colbndtype)
+    return IISData(status_code[1], nrows, ncols, miisrow, miiscol, constrainttype, colbndtype)
 
 end
 
@@ -3321,7 +3321,7 @@ end
 
 function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
     _ensure_conflict_computed(model)
-    return (_info(model, index).row - 1) in model.conflict.miiscol
+    return (_info(model, index).column - 1) in model.conflict.miiscol
 end
 
 function MOI.supports(
