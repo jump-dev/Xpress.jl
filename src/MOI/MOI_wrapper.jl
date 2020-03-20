@@ -3246,8 +3246,6 @@ function getinfeasbounds(model::Optimizer)
     return ncols, miiscol
 end
 
-
-
 function getfirstiis(model::Optimizer)
     iismode = Cint(1)
     status_code = Array{Cint}(undef, 1)
