@@ -152,6 +152,7 @@ end
 
 mutable struct IISData
     stat::Cint
+    is_standard_iis::Bool
     rownumber::Int # number of rows participating in the IIS
     colnumber::Int # number of columns participating in the IIS
     miisrow::Vector{Cint} # index of the rows that participate
@@ -3219,18 +3220,45 @@ end
 ### IIS
 ###
 
+function getinfeasbounds(model::Optimizer)
+    nvars = length(model.variable_info)
+    lbs = getlb(model.inner, 1, nvars)
+    ubs = getub(model.inner, 1, nvars)
+    check_bounds = lbs .<= ubs
+    if sum(check_bounds) == nvars
+        error("There was an error in computation")
+    end
+    @warn "Xpress can't find IIS with invalid bounds, the constraints that keep the model infeasible can't be found, only the infeasible bounds will be available"
+    col = 1
+    ncols = 0
+    infeas_cols = []
+    for check_col in check_bounds
+        if !check_col
+            push!(infeas_cols, col)
+            ncols += 1
+        end
+        col += 1
+    end
+    miiscol = Vector{Cint}(undef, ncols)
+    for col = 1:ncols
+        miiscol[col] = infeas_cols[col]
+    end
+    return ncols, miiscol
+end
+
+
+
 function getfirstiis(model::Optimizer)
     iismode = Cint(1)
-    status_code = Vector{Cint}(undef, 1)
-    Xpress.iisfirst(model.inner, iismode, status_code)
+    status_code = Array{Cint}(undef, 1)
+    Lib.XPRSiisfirst(model.inner, iismode, status_code)
 
     if status_code[1] == 1
         # The problem is actually feasible.
-        return IISData(status_code[1], 0, 0, Vector{Cint}(undef, 0), Vector{Cint}(undef, 0), Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
+        return IISData(status_code[1], true, 0, 0, Vector{Cint}(undef, 0), Vector{Cint}(undef, 0), Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
     elseif status_code[1] == 2
-        # There was a problem in the computation; this should never happen, as
-        # in this case the function should return a nonzero code.
-        error("There was a problem in the computation")
+        ncols, miiscol = getinfeasbounds(model)
+        return IISData(status_code[1], false, 0, ncols, Vector{Cint}(undef, 0), miiscol, Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
     end
     
     # XPRESS' API works in two steps: first, retrieve the sizes of the arrays to
@@ -3250,7 +3278,7 @@ function getfirstiis(model::Optimizer)
     colbndtype = Vector{UInt8}(undef, ncols)
     Xpress.getiisdata(model.inner, num, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL)
 
-    return IISData(status_code[1], nrows, ncols, miisrow, miiscol, constrainttype, colbndtype)
+    return IISData(status_code[1], true, nrows, ncols, miisrow, miiscol, constrainttype, colbndtype)
 
 end
 
@@ -3290,7 +3318,7 @@ MOI.is_set_by_optimize(::ConflictStatus) = true
 function MOI.get(model::Optimizer, ::ConflictStatus)
     if model.conflict === nothing
         return MOI.OPTIMIZE_NOT_CALLED
-    elseif model.conflict.stat == 0
+    elseif model.conflict.stat == 0 || !model.conflict.is_standard_iis 
         return MOI.OPTIMAL
     elseif model.conflict.stat == 1
         return MOI.INFEASIBLE
@@ -3321,7 +3349,7 @@ end
 
 function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
     _ensure_conflict_computed(model)
-    return (_info(model, index).column - 1) in model.conflict.miiscol
+    return (_info(model, index).column) in model.conflict.miiscol
 end
 
 function MOI.supports(
