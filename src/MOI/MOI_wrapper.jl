@@ -173,6 +173,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # Windows is always silent, callback or external file must be used
     silent::Bool
 
+    # turn off warning by the MOI interface implementation [advanced usage]
+    moi_warnings::Bool
+
     # An enum to remember what objective is currently stored in the model.
     objective_type::ObjectiveType
 
@@ -232,6 +235,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
         model.params = Dict{Any,Any}()
         model.silent = false
+        model.moi_warnings = true
 
         for (name, value) in kwargs
             name = MOI.RawParameter(string(name))
@@ -442,6 +446,8 @@ function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
             Xpress.setlogfile(model.inner, value)
         end
         model.inner.logfile = value
+    elseif param == MOI.RawParameter("MOIWarnings")
+            model.moi_warnings = value
     elseif param == MOI.RawParameter("OUTPUTLOG")
         if value == 0
             model.silent = true
@@ -2533,7 +2539,7 @@ end
 function MOI.set(model::Optimizer, ::MOI.Silent, flag::Bool)
     model.silent = flag
     # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html
-    if Sys.iswindows()
+    if Sys.iswindows() && model.moi_warnings
         @warn "Silent has no effect on windows. See https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html"
     end
     MOI.set(model, MOI.RawParameter("OUTPUTLOG"), flag ? 0 : 1)
@@ -3228,7 +3234,9 @@ function getinfeasbounds(model::Optimizer)
     if sum(check_bounds) == nvars
         error("There was an error in computation")
     end
-    @warn "Xpress can't find IIS with invalid bounds, the constraints that keep the model infeasible can't be found, only the infeasible bounds will be available"
+    if model.moi_warnings
+        @warn "Xpress can't find IIS with invalid bounds, the constraints that keep the model infeasible can't be found, only the infeasible bounds will be available"
+    end
     col = 1
     ncols = 0
     infeas_cols = []

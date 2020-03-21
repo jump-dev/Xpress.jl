@@ -154,21 +154,24 @@ end
 end
 
 @testset "IIS tests" begin
-    @testset "Variable bounds (ScalarAffine)" begin
-        model = Xpress.Optimizer(DEFAULTALG = 3, PRESOLVE = 0)
-        x = MOI.add_variable(model)
-        c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(2.0))
-        c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(1.0))
+    for warning in [true, false]
+        @testset "Variable bounds" begin
+            model = Xpress.Optimizer(DEFAULTALG = 3, PRESOLVE = 0)
+            MOI.set(model, MOI.RawParameter("MOIWarnings"), warning)
+            x = MOI.add_variable(model)
+            c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(2.0))
+            c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(1.0))
 
-        # Getting the results before the conflict refiner has been called must return an error.
-        @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
-        @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
+            # Getting the results before the conflict refiner has been called must return an error.
+            @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
+            @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
 
-        # Once it's called, no problem.
-        Xpress.compute_conflict(model)
-        @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
-        @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
-        @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == true
+            # Once it's called, no problem.
+            Xpress.compute_conflict(model)
+            @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
+            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
+            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == true
+        end
     end
 
     @testset "Two conflicting constraints (GreaterThan, LessThan)" begin
