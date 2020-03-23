@@ -152,3 +152,119 @@ end
         MOIT.copytest(BRIDGED_OPTIMIZER, BRIDGED_OPTIMIZER_2)
     end
 end
+
+@testset "IIS tests" begin
+    for warning in [true, false]
+        @testset "Variable bounds" begin
+            model = Xpress.Optimizer(DEFAULTALG = 3, PRESOLVE = 0)
+            MOI.set(model, MOI.RawParameter("MOIWarnings"), warning)
+            x = MOI.add_variable(model)
+            c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(2.0))
+            c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(1.0))
+
+            # Getting the results before the conflict refiner has been called must return an error.
+            @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
+            @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
+
+            # Once it's called, no problem.
+            Xpress.compute_conflict(model)
+            @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
+            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
+            @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == true
+        end
+    end
+
+    @testset "Two conflicting constraints (GreaterThan, LessThan)" begin
+        model = Xpress.Optimizer()
+        x = MOI.add_variable(model)
+        y = MOI.add_variable(model)
+        b1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(0.0))
+        b2 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [y]), 0.0), MOI.GreaterThan(0.0))
+        cf1 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]), 0.0)
+        c1 = MOI.add_constraint(model, cf1, MOI.LessThan(-1.0))
+        cf2 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, -1.0], [x, y]), 0.0)
+        c2 = MOI.add_constraint(model, cf2, MOI.GreaterThan(1.0))
+
+        # Getting the results before the conflict refiner has been called must return an error.
+        @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
+        @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
+
+        # Once it's called, no problem.
+        # Two possible IISes: b1, b2, c1 OR b2, c1, c2
+        Xpress.compute_conflict(model)
+        @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), b1) in [true, false]
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), b2) == true
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) in [true, false]
+    end
+
+    @testset "Two conflicting constraints (EqualTo)" begin
+        model = Xpress.Optimizer()
+        x = MOI.add_variable(model)
+        y = MOI.add_variable(model)
+        b1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(0.0))
+        b2 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [y]), 0.0), MOI.GreaterThan(0.0))
+        cf1 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]), 0.0)
+        c1 = MOI.add_constraint(model, cf1, MOI.EqualTo(-1.0))
+        cf2 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, -1.0], [x, y]), 0.0)
+        c2 = MOI.add_constraint(model, cf2, MOI.GreaterThan(1.0))
+
+        # Getting the results before the conflict refiner has been called must return an error.
+        @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
+        @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
+
+        # Once it's called, no problem.
+        # Two possible IISes: b1, b2, c1 OR b2, c1, c2
+        Xpress.compute_conflict(model)
+        @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), b1) in [true, false]
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), b2) == true
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) in [true, false]
+    end
+
+    @testset "Variables outside conflict" begin
+        model = Xpress.Optimizer()
+        x = MOI.add_variable(model)
+        y = MOI.add_variable(model)
+        z = MOI.add_variable(model)
+        b1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(0.0))
+        b2 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [y]), 0.0), MOI.GreaterThan(0.0))
+        b3 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [z]), 0.0), MOI.GreaterThan(0.0))
+        cf1 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]), 0.0)
+        c1 = MOI.add_constraint(model, cf1, MOI.LessThan(-1.0))
+        cf2 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, -1.0, 1.0], [x, y, z]), 0.0)
+        c2 = MOI.add_constraint(model, cf2, MOI.GreaterThan(1.0))
+
+        # Getting the results before the conflict refiner has been called must return an error.
+        @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
+        @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
+
+        # Once it's called, no problem.
+        Xpress.compute_conflict(model)
+        @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMAL
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), b1) == true
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), b2) == true
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), b3) == false
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == true
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == false
+    end
+
+    @testset "No conflict" begin
+        model = Xpress.Optimizer()
+        x = MOI.add_variable(model)
+        c1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(1.0))
+        c2 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.LessThan(2.0))
+
+        # Getting the results before the conflict refiner has been called must return an error.
+        @test MOI.get(model, Xpress.ConflictStatus()) == MOI.OPTIMIZE_NOT_CALLED
+        @test_throws ErrorException MOI.get(model, Xpress.ConstraintConflictStatus(), c1)
+
+        # Once it's called, no problem.
+        Xpress.compute_conflict(model)
+        @test MOI.get(model, Xpress.ConflictStatus()) == MOI.INFEASIBLE
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == false
+        @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == false
+    end
+end
