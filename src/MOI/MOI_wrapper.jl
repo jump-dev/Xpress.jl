@@ -2133,25 +2133,19 @@ end
 ###
 
 function check_moi_callback_validity(model::Optimizer)
-    # TODO
-    # has_moi_callback =
-    #     model.lazy_callback !== nothing ||
-    #     model.user_cut_callback !== nothing ||
-    #     model.heuristic_callback !== nothing
-    # if has_moi_callback && model.has_generic_callback
-    #     error("Cannot use Gurobi.CallbackFunction as well as MOI.AbstractCallbackFunction")
-    # end
-    # return has_moi_callback
-    return false
+    has_moi_callback =
+        model.lazy_callback !== nothing ||
+        model.user_cut_callback !== nothing ||
+        model.heuristic_callback !== nothing
+    return has_moi_callback
 end
 
 function MOI.optimize!(model::Optimizer)
-    # TODO callbacks
     # Initialize callbacks if necessary.
-    # if check_moi_callback_validity(model)
-    #     MOI.set(model, CallbackFunction(), default_moi_callback(model))
-    #     model.has_generic_callback = false
-    # end
+    if check_moi_callback_validity(model)
+        MOI.set(model, CallbackFunction(), default_moi_callback(model))
+        model.has_generic_callback = false
+    end
     model.basis_status = nothing
     reset_cached_solution(model)
     # TODO allow soling relaxed version
@@ -3377,9 +3371,7 @@ function MOI.supports(
     return true
 end
 
-#=
 include("MOI_callbacks.jl")
-=#
 
 function extension(str::String)
     try
