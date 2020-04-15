@@ -30,11 +30,14 @@ function callback_simple_model()
 end
 
 function callback_knapsack_model()
-    model = Xpress.Optimizer()
-    MOI.set(model, MOI.Silent(), true)
+    model = Xpress.Optimizer(
+        PRESOLVE = 0,
+        CUTSTRATEGY = 0,
+        HEURSTRATEGY = 0,
+        USERSOLHEURISTIC = 0,
+        SYMMETRY = 0,
+        )
     MOI.set(model, MOI.NumberOfThreads(), 1)
-    MOI.set(model, MOI.RawParameter("PRESOLVE"), 0)
-    MOI.set(model, MOI.RawParameter("HEURFREQ"), -1)
 
     N = 30
     x = MOI.add_variables(model, N)
@@ -225,7 +228,7 @@ end
 @testset "HeuristicCallback" begin
     @testset "HeuristicSolution" begin
         model, x, item_weights = callback_knapsack_model()
-        callback_called = false
+        global callback_called = false
         MOI.set(model, MOI.HeuristicCallback(), cb_data -> begin
             x_vals = MOI.get.(model, MOI.CallbackVariablePrimal(cb_data), x)
             @test MOI.supports(model, MOI.HeuristicSolution(cb_data))
@@ -233,15 +236,14 @@ end
                 model,
                 MOI.HeuristicSolution(cb_data),
                 x,
-                floor.(x_vals)
+                [1.0, 1.0, -0.0, 1.0, -0.0, 1.0, 1.0, -0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -0.0, 1.0, -0.0, -0.0, 1.0, 1.0]
             ) == MOI.HEURISTIC_SOLUTION_UNKNOWN
-            callback_called = true
+            global callback_called = true
         end)
         @test MOI.supports(model, MOI.HeuristicCallback())
         MOI.optimize!(model)
         @test callback_called
     end
-end
     #=
     @testset "LazyConstraint" begin
         model, x, item_weights = callback_knapsack_model()
@@ -282,8 +284,9 @@ end
             ),
             MOI.optimize!(model)
         )
-    end
-end =#
+    end=#
+end
+
 #=
 @testset "CPLEX.CallbackFunction" begin
     @testset "OptimizeInProgress" begin

@@ -212,6 +212,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # TODO: add functionality to the lower-level API to support querying single
     # elements of the solution.
+    callback_cached_solution::Union{Nothing, CachedSolution}
     cached_solution::Union{Nothing, CachedSolution}
     basis_status::Union{Nothing,BasisStatus}
     conflict::Union{Nothing, IISData}
@@ -284,6 +285,32 @@ function reset_cached_solution(model::Optimizer)
     return model.cached_solution
 end
 
+function reset_callback_cached_solution(model::Optimizer)
+    num_variables = length(model.variable_info)
+    num_affine = length(model.affine_constraint_info)
+    if model.callback_cached_solution === nothing
+        model.callback_cached_solution = CachedSolution(
+            fill(NaN, num_variables),
+            fill(NaN, num_variables),
+            fill(NaN, num_affine),
+            fill(NaN, num_affine),
+            false,
+            false,
+            NaN
+        )
+    else
+        resize!(model.callback_cached_solution.variable_primal, num_variables)
+        resize!(model.callback_cached_solution.variable_dual, num_variables)
+        resize!(model.callback_cached_solution.linear_primal, num_affine)
+        resize!(model.callback_cached_solution.linear_dual, num_affine)
+        model.callback_cached_solution.has_primal_certificate = false
+        model.callback_cached_solution.has_dual_certificate = false
+        model.callback_cached_solution.solve_time = NaN
+    end
+    return model.callback_cached_solution
+end
+
+
 Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 
 function MOI.empty!(model::Optimizer)
@@ -312,6 +339,7 @@ function MOI.empty!(model::Optimizer)
     model.name_to_constraint_index = nothing
     empty!(model.callback_variable_primal)
     model.cached_solution = nothing
+    model.callback_cached_solution = nothing
     model.conflict = nothing
     model.callback_state = CB_NONE
     model.has_generic_callback = false

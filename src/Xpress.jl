@@ -39,6 +39,8 @@ module Xpress
 
     include("api.jl")
 
+    include("xprs_callbacks.jl")
+
     # # license checker
     include("license.jl")
 

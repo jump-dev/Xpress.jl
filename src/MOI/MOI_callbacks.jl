@@ -6,41 +6,33 @@ Set a generic Xpress callback function.
 
 struct CallbackFunction <: MOI.AbstractCallback end
 
-mutable struct CallbackData
-    model_root::XpressProblem # should not use operations here
-    data::Any # data for user
-    model::XpressProblem # local model # ptr_model::Ptr{Nothing}
-end
-
-function setcboptnode_wrapper(ptr_model::Ptr{Nothing}, my_object::Ptr{Nothing})
-    usrdata = unsafe_pointer_to_objref(my_object)
-    callback, model, data = usrdata[1],usrdata[2],usrdata[3]
-    callback(CallbackData(model, data, XpressProblem(ptr_model)))
-    return convert(Cint,0)
-end
-
-set_callback_optnode!(model::XpressProblem, callback::Function) = set_callback_optnode!(model, callback, nothing)
-
-function set_callback_optnode!(model::XpressProblem, callback::Function, data::Any)
-    xprscallback = @cfunction(setcboptnode_wrapper, Cint, (Ptr{Nothing}, Ptr{Nothing}))
-    usrdata = [callback, model, data]
-    addcboptnode(model, xprscallback, usrdata,0)
-    # we need to keep a reference to the callback function
-    # so that it isn't garbage collected
-    push!(model.callback,usrdata)
-    return nothing
-end
-
 function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
     model.has_generic_callback = true
     # Starting with this callback to test
-    set_callback_optnode!(model.inner, f)
+    set_callback_optnode!(model.inner, (cb_data) -> begin
+        model.callback_state = CB_GENERIC
+        f(cb_data)
+        model.callback_state = CB_NONE
+    end)
     return
 end
 MOI.supports(::Optimizer, ::CallbackFunction) = true
 
+function get_cb_solution(model::Optimizer)
+    reset_callback_cached_solution(model)
+    Xpress.Lib.XPRSgetlpsol(model.inner,
+            model.callback_cached_solution.variable_primal,
+            model.callback_cached_solution.linear_primal,
+            model.callback_cached_solution.linear_dual,
+            model.callback_cached_solution.variable_dual)
+    model.callback_variable_primal = model.callback_cached_solution.variable_primal
+    return
+end
+
+# TODO: Add User Cut and Lazy Callbacks 
+#=
 function default_moi_callback(model::Optimizer)
-    return (cb_data) -> begin
+    return (cb_data, cb_where) -> begin
         if model.lazy_callback !== nothing
             model.callback_state = CB_LAZY
             model.lazy_callback(cb_data)
@@ -55,6 +47,25 @@ function default_moi_callback(model::Optimizer)
         end
     end
     model.callback_state = CB_NONE
+end
+=#
+
+function default_moi_callback(model::Optimizer)
+    return (cb_data) -> begin
+        get_cb_solution(model)
+        if model.heuristic_callback !== nothing
+            model.callback_state = CB_HEURISTIC
+            model.heuristic_callback(cb_data)
+        end
+    end
+end
+
+function MOI.get(
+    model::Optimizer,
+    ::MOI.CallbackVariablePrimal{CallbackData},
+    x::MOI.VariableIndex
+)
+    return model.callback_variable_primal[_info(model, x).column]
 end
 
 # ==============================================================================
@@ -73,21 +84,21 @@ function MOI.submit(
     variables::Vector{MOI.VariableIndex},
     values::MOI.Vector{Float64}
 )
-    #if model.callback_state == CB_LAZY
-    #    throw(MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), cb))
-    #elseif model.callback_state == CB_USER_CUT
-    #    throw(MOI.InvalidCallbackUsage(MOI.UserCutCallback(), cb))
-    #end
+    if model.callback_state == CB_LAZY
+        throw(MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), cb))
+    elseif model.callback_state == CB_USER_CUT
+        throw(MOI.InvalidCallbackUsage(MOI.UserCutCallback(), cb))
+    end
     ilength = length(variables)
-    mipsolval = fill(NaN, ilength)
-    mipsolcol = fill(NaN, ilength)
+    mipsolval = fill(NaN,ilength)
+    mipsolcol = Array{Cint}(undef,ilength) 
     count = 1
     for (var, value) in zip(variables, values)
-        mipsolcol[count] = _info(model, var).column
+        mipsolcol[count] = convert(Cint,_info(model, var).column - 1)
         mipsolval[count] = value
         count += 1
     end
-    if ilength == MOI.get(model, MOI.get(model, MOI.NumberOfVariables()))
+    if ilength == MOI.get(model, MOI.NumberOfVariables())
         mipsolcol = C_NULL
     end
     addmipsol(model.inner, ilength, mipsolval, mipsolcol, C_NULL)
