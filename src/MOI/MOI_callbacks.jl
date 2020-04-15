@@ -29,30 +29,18 @@ function get_cb_solution(model::Optimizer)
     return
 end
 
-# TODO: Add User Cut and Lazy Callbacks 
-#=
+# ==============================================================================
+#    MOI callbacks
+# ==============================================================================
+
+# TODO: Add Lazy Callbacks 
 function default_moi_callback(model::Optimizer)
-    return (cb_data, cb_where) -> begin
-        if model.lazy_callback !== nothing
-            model.callback_state = CB_LAZY
-            model.lazy_callback(cb_data)
-        end
+    return (cb_data) -> begin
+        get_cb_solution(model)
         if model.user_cut_callback !== nothing
             model.callback_state = CB_USER_CUT
             model.user_cut_callback(cb_data)
         end
-        if model.heuristic_callback !== nothing
-            model.callback_state = CB_HEURISTIC
-            model.heuristic_callback(cb_data)
-        end
-    end
-    model.callback_state = CB_NONE
-end
-=#
-
-function default_moi_callback(model::Optimizer)
-    return (cb_data) -> begin
-        get_cb_solution(model)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             model.heuristic_callback(cb_data)
@@ -67,6 +55,39 @@ function MOI.get(
 )
     return model.callback_variable_primal[_info(model, x).column]
 end
+
+# ==============================================================================
+#    MOI.UserCutCallback
+# ==============================================================================
+
+function MOI.set(model::Optimizer, ::MOI.UserCutCallback, cb::Function)
+    model.user_cut_callback = cb
+    return
+end
+MOI.supports(::Optimizer, ::MOI.UserCutCallback) = true
+
+function MOI.submit(
+    model::Optimizer,
+    cb::MOI.UserCut{CallbackData},
+    f::MOI.ScalarAffineFunction{Float64},
+    s::Union{MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.EqualTo{Float64}}
+)
+    if model.callback_state == CB_LAZY
+        throw(MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), cb))
+    elseif model.callback_state == CB_HEURISTIC
+        throw(MOI.InvalidCallbackUsage(MOI.HeuristicCallback(), cb))
+    elseif !iszero(f.constant)
+        throw(MOI.ScalarFunctionConstantNotZero{Float64, typeof(f), typeof(s)}(f.constant))
+    end
+    indices, coefficients = _indices_and_coefficients(model, f)
+    sense, rhs = _sense_and_rhs(s)
+    mtype = Int32[1]
+    nrows = length(model.affine_constraint_info)
+    mstart = Int32[nrows-2,nrows-1]
+    addcuts(model.inner, Cint(1), mtype, Cchar[Char(sense)], Float64[rhs], mstart, Cint.(indices), coefficients)
+    return
+end
+MOI.supports(::Optimizer, ::MOI.UserCut{CallbackData}) = true
 
 # ==============================================================================
 #    MOI.HeuristicCallback

@@ -32,10 +32,9 @@ end
 function callback_knapsack_model()
     model = Xpress.Optimizer(
         PRESOLVE = 0,
-        CUTSTRATEGY = 0,
+        CUTSTRATEGY = 1,
         HEURSTRATEGY = 0,
-        USERSOLHEURISTIC = 0,
-        SYMMETRY = 0,
+        SYMMETRY = 0
         )
     MOI.set(model, MOI.NumberOfThreads(), 1)
 
@@ -154,11 +153,12 @@ end
         )
     end
 end
+=#
 
 @testset "UserCutCallback" begin
     @testset "UserCut" begin
         model, x, item_weights = callback_knapsack_model()
-        user_cut_submitted = false
+        global user_cut_submitted = false
         MOI.set(model, MOI.UserCutCallback(), cb_data -> begin
             terms = MOI.ScalarAffineTerm{Float64}[]
             accumulated = 0.0
@@ -176,13 +176,14 @@ end
                     MOI.ScalarAffineFunction{Float64}(terms, 0.0),
                     MOI.LessThan{Float64}(length(terms) - 1)
                 )
-                user_cut_submitted = true
+                global user_cut_submitted = true
             end
         end)
         @test MOI.supports(model, MOI.UserCutCallback())
         MOI.optimize!(model)
         @test user_cut_submitted
     end
+    #=
     @testset "LazyConstraint" begin
         model, x, item_weights = callback_knapsack_model()
         cb = nothing
@@ -202,7 +203,7 @@ end
             ),
             MOI.optimize!(model)
         )
-    end
+    end=#
     @testset "HeuristicSolution" begin
         model, x, item_weights = callback_knapsack_model()
         cb = nothing
@@ -224,7 +225,7 @@ end
         )
     end
 end
-=#
+
 @testset "HeuristicCallback" begin
     @testset "HeuristicSolution" begin
         model, x, item_weights = callback_knapsack_model()
@@ -264,7 +265,7 @@ end
             ),
             MOI.optimize!(model)
         )
-    end
+    end=#
     @testset "UserCut" begin
         model, x, item_weights = callback_knapsack_model()
         cb = nothing
@@ -284,7 +285,7 @@ end
             ),
             MOI.optimize!(model)
         )
-    end=#
+    end
 end
 
 #=
