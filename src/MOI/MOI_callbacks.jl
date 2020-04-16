@@ -36,6 +36,9 @@ end
 # TODO: Add Lazy Callbacks 
 function default_moi_callback(model::Optimizer)
     return (cb_data) -> begin
+        if Xpress.getintattrib(model.inner,Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 2
+            return 
+        end
         get_cb_solution(model)
         if model.user_cut_callback !== nothing
             model.callback_state = CB_USER_CUT
