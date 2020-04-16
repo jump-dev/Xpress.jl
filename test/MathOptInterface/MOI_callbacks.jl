@@ -32,7 +32,7 @@ end
 function callback_knapsack_model()
     model = Xpress.Optimizer(
         PRESOLVE = 0,
-        CUTSTRATEGY = 1,
+        CUTSTRATEGY = 0,
         HEURSTRATEGY = 0,
         SYMMETRY = 0
         )
