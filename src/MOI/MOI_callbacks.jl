@@ -81,10 +81,21 @@ function MOI.submit(
     end
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
-    mtype = Int32[1]
-    nrows = length(model.affine_constraint_info)
-    mstart = Int32[nrows-2,nrows-1]
-    addcuts(model.inner, Cint(1), mtype, Cchar[Char(sense)], Float64[rhs], mstart, Cint.(indices), coefficients)
+
+    mtype = Int32[1] # Cut type
+    nrows = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_ROWS)
+    mstart = Int32[0,1]
+    mindex  = Array{Xpress.Lib.XPRScut}(undef,1)
+    ncuts = Cint(1)
+    nodupl = Cint(2) # Duplicates are excluded from the cut pool, ignoring cut type
+    sensetype = Cchar[Char(sense)]
+    drhs = Float64[rhs]
+    indices .-= 1
+    mcols = Int32.(indices)
+    interp = Cint(-1) # Load all cuts
+
+    storecuts(model.inner, ncuts, nodupl, mtype, sensetype, drhs, mstart, mindex, mcols, coefficients)
+    loadcuts(model.inner, mtype[1], interp, ncuts, mindex)
     return
 end
 MOI.supports(::Optimizer, ::MOI.UserCut{CallbackData}) = true
