@@ -126,13 +126,15 @@ function MOI.submit(
     end
     ilength = length(variables)
     mipsolval = fill(NaN,ilength)
-    mipsolcol = Array{Cint}(undef,ilength) 
+    mipsolcol = fill(NaN,ilength)
     count = 1
     for (var, value) in zip(variables, values)
         mipsolcol[count] = convert(Cint,_info(model, var).column - 1)
         mipsolval[count] = value
         count += 1
     end
+    mipsolcol = Cint.(mipsolcol)
+    mipsolval = Cfloat.(mipsolval)
     if ilength == MOI.get(model, MOI.NumberOfVariables())
         mipsolcol = C_NULL
     end

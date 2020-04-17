@@ -237,7 +237,7 @@ end
                 model,
                 MOI.HeuristicSolution(cb_data),
                 x,
-                [1.0, 1.0, -0.0, 1.0, -0.0, 1.0, 1.0, -0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -0.0, 1.0, -0.0, -0.0, 1.0, 1.0]
+                floor.(x_vals)
             ) == MOI.HEURISTIC_SOLUTION_UNKNOWN
             global callback_called = true
         end)
