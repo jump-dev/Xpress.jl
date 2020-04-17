@@ -86,7 +86,6 @@ function MOI.submit(
     sense, rhs = _sense_and_rhs(s)
 
     mtype = Int32[1] # Cut type
-    nrows = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_ROWS)
     mstart = Int32[0,1]
     mindex  = Array{Xpress.Lib.XPRScut}(undef,1)
     ncuts = Cint(1)
