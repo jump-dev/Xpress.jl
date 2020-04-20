@@ -29,6 +29,18 @@ function get_cb_solution(model::Optimizer)
     return
 end
 
+function applycuts(model::Optimizer)
+    itype = Cint(1)
+    interp = Cint(-1) # Get all cuts
+    delta = Xpress.Lib.XPRS_MINUSINFINITY
+    ncuts = Array{Cint}(undef,1)
+    size = length(model.cb_cut_data.cutptrs)
+    mcutptr = Array{Xpress.Lib.XPRScut}(undef,size)
+    dviol = Array{Cfloat}(undef,size)
+    getcpcutlist(model.inner, itype, interp, delta, ncuts, size, mcutptr, dviol)
+    loadcuts(model.inner, itype, interp, ncuts[1], mcutptr)
+end
+
 # ==============================================================================
 #    MOI callbacks
 # ==============================================================================
@@ -40,13 +52,23 @@ function default_moi_callback(model::Optimizer)
             return 
         end
         get_cb_solution(model)
-        if model.user_cut_callback !== nothing
-            model.callback_state = CB_USER_CUT
-            model.user_cut_callback(cb_data)
-        end
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             model.heuristic_callback(cb_data)
+        end
+        if model.user_cut_callback !== nothing
+            model.callback_state = CB_USER_CUT
+            model.user_cut_callback(cb_data)
+            if !model.cb_cut_data.submitted && length(model.cb_cut_data.cutptrs) > 0
+                applycuts(model)
+            end
+        end
+        if model.lazy_callback !== nothing
+            model.callback_state = CB_LAZY
+            model.lazy_callback(cb_data)
+            if !model.cb_cut_data.submitted && length(model.cb_cut_data.cutptrs) > 0
+                applycuts(model)
+            end
         end
     end
 end
@@ -60,24 +82,33 @@ function MOI.get(
 end
 
 # ==============================================================================
-#    MOI.UserCutCallback
+#    MOI.UserCutCallback  & MOI.LazyConstraint 
 # ==============================================================================
 
 function MOI.set(model::Optimizer, ::MOI.UserCutCallback, cb::Function)
     model.user_cut_callback = cb
     return
 end
+
+function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, cb::Function)
+    model.lazy_callback = cb
+    return
+end
+
 MOI.supports(::Optimizer, ::MOI.UserCutCallback) = true
+MOI.supports(::Optimizer, ::MOI.UserCut{CallbackData}) = true
+
+MOI.supports(::Optimizer, ::MOI.LazyConstraintCallback) = true
+MOI.supports(::Optimizer, ::MOI.LazyConstraint{CallbackData}) = true
 
 function MOI.submit(
     model::Optimizer,
-    cb::MOI.UserCut{CallbackData},
+    cb::Union{MOI.UserCut{CallbackData},MOI.LazyConstraint{CallbackData}},
     f::MOI.ScalarAffineFunction{Float64},
     s::Union{MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.EqualTo{Float64}}
 )
-    if model.callback_state == CB_LAZY
-        throw(MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), cb))
-    elseif model.callback_state == CB_HEURISTIC
+    model.cb_cut_data.submitted = true
+    if model.callback_state == CB_HEURISTIC
         throw(MOI.InvalidCallbackUsage(MOI.HeuristicCallback(), cb))
     elseif !iszero(f.constant)
         throw(MOI.ScalarFunctionConstantNotZero{Float64, typeof(f), typeof(s)}(f.constant))
@@ -98,9 +129,9 @@ function MOI.submit(
 
     storecuts(model.inner, ncuts, nodupl, mtype, sensetype, drhs, mstart, mindex, mcols, coefficients)
     loadcuts(model.inner, mtype[1], interp, ncuts, mindex)
+    push!(model.cb_cut_data.cutptrs, mindex[1])
     return
 end
-MOI.supports(::Optimizer, ::MOI.UserCut{CallbackData}) = true
 
 # ==============================================================================
 #    MOI.HeuristicCallback

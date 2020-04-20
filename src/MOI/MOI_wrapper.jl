@@ -145,6 +145,11 @@ mutable struct CachedSolution
     solve_time::Float64
 end
 
+mutable struct CallbackCutData
+    submitted::Bool
+    cutptrs::Vector{Xpress.Lib.XPRScut}
+end
+
 mutable struct BasisStatus
     con_status::Vector{Cint}
     var_status::Vector{Cint}
@@ -213,6 +218,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # TODO: add functionality to the lower-level API to support querying single
     # elements of the solution.
     callback_cached_solution::Union{Nothing, CachedSolution}
+    cb_cut_data::CallbackCutData
     cached_solution::Union{Nothing, CachedSolution}
     basis_status::Union{Nothing,BasisStatus}
     conflict::Union{Nothing, IISData}
@@ -249,12 +255,11 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
             MOI.set(model, name, value)
         end
 
+        model.cb_cut_data = CallbackCutData(false, Array{Xpress.Lib.XPRScut}(undef,0))
         model.variable_info = CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}()
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
         model.callback_variable_primal = Float64[]
-        model.basis_status = nothing
-        model.conflict = nothing
         MOI.empty!(model)  # MOI.empty!(model) re-sets the `.inner` field.
         return model
     end
