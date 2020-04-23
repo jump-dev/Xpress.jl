@@ -23,10 +23,10 @@ end
 
 export CallbackData
 
-function setcboptnode_wrapper(ptr_model::Ptr{Cvoid}, my_object::Ptr{Cvoid}, feas::Ptr{Cint})
+function setcboptnode_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoid}, feas::Ptr{Cint})
     usrdata = unsafe_pointer_to_objref(my_object)
     (callback, model, data) = usrdata
-    callback(CallbackData(model, data, XpressProblem()))
+    callback(CallbackData(model, data, XpressProblem(ptr_model)))
     nothing
 end
 
@@ -42,10 +42,10 @@ function set_callback_optnode!(model::XpressProblem, callback::Function, data::A
     nothing
 end
 
-function setcbpreintsol_wrapper(ptr_model::Ptr{Cvoid}, my_object::Ptr{Cvoid}, soltype::Ptr{Cint}, ifreject::Ptr{Cint}, cutoff::Ptr{Cdouble})
+function setcbpreintsol_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoid}, soltype::Ptr{Cint}, ifreject::Ptr{Cint}, cutoff::Ptr{Cdouble})
     usrdata = unsafe_pointer_to_objref(my_object)
     (callback, model, data) = usrdata
-    callback(CallbackData(model, data, XpressProblem()))
+    callback(CallbackData(model, data, XpressProblem(ptr_model)))
     nothing
 end
 
