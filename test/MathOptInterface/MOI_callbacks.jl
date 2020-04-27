@@ -63,9 +63,9 @@ end
 @testset "LazyConstraintCallback" begin
     @testset "LazyConstraint" begin
         model, x, y = callback_simple_model()
-        lazy_called = false
+        global lazy_called = false
         MOI.set(model, MOI.LazyConstraintCallback(), cb_data -> begin
-            lazy_called = true
+            global lazy_called = true
             x_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), x)
             y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
             @test MOI.supports(model, MOI.LazyConstraint(cb_data))
@@ -134,8 +134,8 @@ end
             ),
             MOI.optimize!(model)
         )
-    end
-    @testset "HeuristicSolution" begin
+    end=#
+  #=  @testset "HeuristicSolution" begin
         model, x, y = callback_simple_model()
         cb = nothing
         MOI.set(model, MOI.LazyConstraintCallback(), cb_data -> begin
@@ -154,7 +154,7 @@ end
             ),
             MOI.optimize!(model)
         )
-    end=#
+  # end =#
 end
 
 @testset "UserCutCallback" begin
