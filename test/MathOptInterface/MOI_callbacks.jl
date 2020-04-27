@@ -37,6 +37,7 @@ function callback_knapsack_model()
         HEURSTRATEGY = 0,
         SYMMETRY = 0
     )
+    MOI.set(model, MOI.NumberOfThreads(), 2)
 
     N = 30
     x = MOI.add_variables(model, N)
