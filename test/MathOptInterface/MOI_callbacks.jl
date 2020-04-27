@@ -16,7 +16,6 @@ function callback_simple_model()
         HEURSTRATEGY = 0,
         SYMMETRY = 0
     )
-    MOI.set(model, MOI.NumberOfThreads(), 1)
 
     MOI.Utilities.loadfromstring!(model, """
         variables: x, y
@@ -38,7 +37,6 @@ function callback_knapsack_model()
         HEURSTRATEGY = 0,
         SYMMETRY = 0
     )
-    MOI.set(model, MOI.NumberOfThreads(), 1)
 
     N = 30
     x = MOI.add_variables(model, N)
@@ -154,7 +152,7 @@ end
             ),
             MOI.optimize!(model)
         )
-  # end =#
+   end =#
 end
 
 @testset "UserCutCallback" begin

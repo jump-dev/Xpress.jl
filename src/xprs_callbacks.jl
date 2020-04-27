@@ -26,7 +26,11 @@ export CallbackData
 function setcboptnode_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoid}, feas::Ptr{Cint})
     usrdata = unsafe_pointer_to_objref(my_object)
     (callback, model, data) = usrdata
-    callback(CallbackData(model, data, XpressProblem(ptr_model;finalize_env = false)))
+    model_inner = XpressProblem(ptr_model;finalize_env = false)
+    if Xpress.getintattrib(model_inner,Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
+        return convert(Cint,0)
+    end
+    callback(CallbackData(model, data, model_inner))
     return convert(Cint,0)
 end
 

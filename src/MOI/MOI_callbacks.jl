@@ -18,9 +18,9 @@ function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
 end
 MOI.supports(::Optimizer, ::CallbackFunction) = true
 
-function get_cb_solution(model::Optimizer)
+function get_cb_solution(model::Optimizer, model_inner::XpressProblem)
     reset_callback_cached_solution(model)
-    Xpress.Lib.XPRSgetlpsol(model.inner,
+    Xpress.Lib.XPRSgetlpsol(model_inner,
             model.callback_cached_solution.variable_primal,
             model.callback_cached_solution.linear_primal,
             model.callback_cached_solution.linear_dual,
@@ -48,10 +48,7 @@ end
 # TODO: Add Lazy Callbacks 
 function default_moi_callback(model::Optimizer)
     return (cb_data) -> begin
-        if Xpress.getintattrib(model.inner,Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 2
-            return 
-        end
-        get_cb_solution(model)
+        get_cb_solution(model, cb_data.model)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             model.heuristic_callback(cb_data)
@@ -107,6 +104,7 @@ function MOI.submit(
     f::MOI.ScalarAffineFunction{Float64},
     s::Union{MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.EqualTo{Float64}}
 )
+    model_cb = cb.callback_data.model
     model.cb_cut_data.submitted = true
     if model.callback_state == CB_HEURISTIC
         throw(MOI.InvalidCallbackUsage(MOI.HeuristicCallback(), cb))
@@ -127,8 +125,8 @@ function MOI.submit(
     mcols = Int32.(indices)
     interp = Cint(-1) # Load all cuts
 
-    storecuts(model.inner, ncuts, nodupl, mtype, sensetype, drhs, mstart, mindex, mcols, coefficients)
-    loadcuts(model.inner, mtype[1], interp, ncuts, mindex)
+    storecuts(model_cb, ncuts, nodupl, mtype, sensetype, drhs, mstart, mindex, mcols, coefficients)
+    loadcuts(model_cb, mtype[1], interp, ncuts, mindex)
     push!(model.cb_cut_data.cutptrs, mindex[1])
     return
 end
@@ -149,6 +147,7 @@ function MOI.submit(
     variables::Vector{MOI.VariableIndex},
     values::MOI.Vector{Float64}
 )
+    model_cb = cb.callback_data.model
     if model.callback_state == CB_LAZY
         throw(MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), cb))
     elseif model.callback_state == CB_USER_CUT
@@ -168,7 +167,7 @@ function MOI.submit(
     if ilength == MOI.get(model, MOI.NumberOfVariables())
         mipsolcol = C_NULL
     end
-    addmipsol(model.inner, ilength, mipsolval, mipsolcol, C_NULL)
+    addmipsol(model_cb, ilength, mipsolval, mipsolcol, C_NULL)
     return MOI.HEURISTIC_SOLUTION_UNKNOWN
 end
 MOI.supports(::Optimizer, ::MOI.HeuristicSolution{CallbackData}) = true
