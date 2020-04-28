@@ -57,14 +57,14 @@ function default_moi_callback(model::Optimizer)
             model.callback_state = CB_USER_CUT
             model.user_cut_callback(cb_data)
             if !model.cb_cut_data.submitted && length(model.cb_cut_data.cutptrs) > 0
-                applycuts(model)
+                applycuts(cb_data.model)
             end
         end
         if model.lazy_callback !== nothing
             model.callback_state = CB_LAZY
             model.lazy_callback(cb_data)
             if !model.cb_cut_data.submitted && length(model.cb_cut_data.cutptrs) > 0
-                applycuts(model)
+                applycuts(cb_data.model)
             end
         end
     end
