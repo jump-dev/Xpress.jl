@@ -329,6 +329,9 @@ function MOI.empty!(model::Optimizer)
     MOI.set(model, MOI.RawParameter("MPSNAMELENGTH"), 64)
     MOI.set(model, MOI.RawParameter("CALLBACKFROMMASTERTHREAD"), 1)
     model.name = ""
+    if Sys.iswindows()
+        setoutputcb!(model.inner)
+    end
     if model.silent
         MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 0)
     else
@@ -2565,10 +2568,6 @@ end
 
 function MOI.set(model::Optimizer, ::MOI.Silent, flag::Bool)
     model.silent = flag
-    # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html
-    if Sys.iswindows() && model.moi_warnings
-        @warn "Silent has no effect on windows. See https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html"
-    end
     MOI.set(model, MOI.RawParameter("OUTPUTLOG"), flag ? 0 : 1)
     return
 end

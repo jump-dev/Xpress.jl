@@ -64,3 +64,32 @@ function set_callback_preintsol!(model::XpressProblem, callback::Function, data:
     push!(model.callback,usrdata)
     return nothing
 end
+
+function addcboutput2screen_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoid}, msg::Ptr{Cchar}, len::Cint, msgtype::Cint)
+    
+    if msgtype == 4
+        #= Error =#
+        return convert(Cint,0)
+    elseif msgtype == 3
+        #= Warning =#
+        return convert(Cint,0)
+    elseif msgtype == 2
+        #= Not used =#
+        return convert(Cint,0)
+    elseif msgtype == 1
+         #= Information =#
+         msg_str = unsafe_string(msg)
+         println(msg_str)
+         return convert(Cint,0)
+    else
+        #= Exiting - buffers need flushing  =#
+        flush(stdout)
+        return convert(Cint,0)
+    end
+end
+
+function setoutputcb!(model::XpressProblem)
+    xprsmsgcallback = @cfunction(addcboutput2screen_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint))
+    addcbmessage(model,xprsmsgcallback,C_NULL,0)
+    return nothing
+end
