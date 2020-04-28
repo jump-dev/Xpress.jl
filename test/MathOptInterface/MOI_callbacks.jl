@@ -14,7 +14,8 @@ function callback_simple_model()
         PRESOLVE = 0,
         CUTSTRATEGY = 0,
         HEURSTRATEGY = 0,
-        SYMMETRY = 0
+        SYMMETRY = 0,
+        OUTPUTLOG = 0
     )
 
     MOI.Utilities.loadfromstring!(model, """
@@ -35,7 +36,8 @@ function callback_knapsack_model()
         PRESOLVE = 0,
         CUTSTRATEGY = 0,
         HEURSTRATEGY = 0,
-        SYMMETRY = 0
+        SYMMETRY = 0,
+        OUTPUTLOG = 0
     )
     MOI.set(model, MOI.NumberOfThreads(), 2)
 

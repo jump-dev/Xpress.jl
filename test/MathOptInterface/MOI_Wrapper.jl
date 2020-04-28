@@ -156,7 +156,7 @@ end
 @testset "IIS tests" begin
     for warning in [true, false]
         @testset "Variable bounds" begin
-            model = Xpress.Optimizer(DEFAULTALG = 3, PRESOLVE = 0)
+            model = Xpress.Optimizer(OUTPUTLOG = 0, DEFAULTALG = 3, PRESOLVE = 0)
             MOI.set(model, MOI.RawParameter("MOIWarnings"), warning)
             x = MOI.add_variable(model)
             c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(2.0))
@@ -175,7 +175,7 @@ end
     end
 
     @testset "Two conflicting constraints (GreaterThan, LessThan)" begin
-        model = Xpress.Optimizer()
+        model = Xpress.Optimizer(OUTPUTLOG = 0)
         x = MOI.add_variable(model)
         y = MOI.add_variable(model)
         b1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(0.0))
@@ -200,7 +200,7 @@ end
     end
 
     @testset "Two conflicting constraints (EqualTo)" begin
-        model = Xpress.Optimizer()
+        model = Xpress.Optimizer(OUTPUTLOG = 0)
         x = MOI.add_variable(model)
         y = MOI.add_variable(model)
         b1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(0.0))
@@ -225,7 +225,7 @@ end
     end
 
     @testset "Variables outside conflict" begin
-        model = Xpress.Optimizer()
+        model = Xpress.Optimizer(OUTPUTLOG = 0)
         x = MOI.add_variable(model)
         y = MOI.add_variable(model)
         z = MOI.add_variable(model)
@@ -252,7 +252,7 @@ end
     end
 
     @testset "No conflict" begin
-        model = Xpress.Optimizer()
+        model = Xpress.Optimizer(OUTPUTLOG = 0)
         x = MOI.add_variable(model)
         c1 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.GreaterThan(1.0))
         c2 = MOI.add_constraint(model, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0), MOI.LessThan(2.0))
