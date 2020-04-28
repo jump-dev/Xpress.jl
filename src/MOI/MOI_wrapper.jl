@@ -329,7 +329,7 @@ function MOI.empty!(model::Optimizer)
     MOI.set(model, MOI.RawParameter("MPSNAMELENGTH"), 64)
     MOI.set(model, MOI.RawParameter("CALLBACKFROMMASTERTHREAD"), 1)
     model.name = ""
-    if Sys.iswindows()
+    if Sys.iswindows() && model.inner.logfile == ""
         setoutputcb!(model.inner)
     end
     if model.silent
