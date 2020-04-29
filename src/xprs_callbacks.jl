@@ -6,12 +6,20 @@ function XPRSaddcbpreintsol_object(prob, f_preintsol, p, priority)
     ccall((:XPRSaddcbpreintsol, Xpress.libxprs), Cint, (Xpress.Lib.XPRSprob, Ptr{Cvoid}, Any, Cint), prob, f_preintsol, p, priority)
 end
 
+function XPRSaddcbmessage_object(prob, f_message, p, priority)
+    ccall((:XPRSaddcbmessage, Xpress.libxprs), Cint, (Xpress.Lib.XPRSprob, Ptr{Cvoid}, Any, Cint), prob, f_message, p, priority)
+end
+
 function addcboptnode_object(prob::XpressProblem, f_optnode, p, priority)
     XPRSaddcboptnode_object(prob, f_optnode, p, priority)
 end
 
 function addcbpreintsol_object(prob::XpressProblem, f_preintsol, p, priority)
     XPRSaddcbpreintsol_object(prob, f_preintsol, p, priority)
+end
+
+function addcbmessage_object(prob::XpressProblem, f_message, p, priority)
+    XPRSaddcbmessage_object(prob, f_message, p, priority)
 end
 
 
@@ -67,11 +75,16 @@ end
 
 function addcboutput2screen_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoid}, msg::Ptr{Cchar}, len::Cint, msgtype::Cint)
     
+    usrdata = unsafe_pointer_to_objref(my_object)
+    (show_warning) = usrdata
+
     if msgtype == 4
         #= Error =#
         return convert(Cint,0)
-    elseif msgtype == 3
+    elseif msgtype == 3 && show_warning
         #= Warning =#
+        msg_str = unsafe_string(msg)
+        println(msg_str)
         return convert(Cint,0)
     elseif msgtype == 2
         #= Not used =#
@@ -88,8 +101,9 @@ function addcboutput2screen_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoi
     end
 end
 
-function setoutputcb!(model::XpressProblem)
+function setoutputcb!(model::XpressProblem, show_warning::Bool)
     xprsmsgcallback = @cfunction(addcboutput2screen_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint))
-    addcbmessage(model,xprsmsgcallback,C_NULL,0)
-    return nothing
+    usrdata = (show_warning)
+    addcbmessage_object(model,xprsmsgcallback,usrdata,0)
+    return xprsmsgcallback
 end

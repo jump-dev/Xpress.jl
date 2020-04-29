@@ -175,8 +175,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # A flag to keep track of MOI.Silent, which over-rides the OUTPUTLOG
     # parameter.
-    # Windows is always silent, callback or external file must be used
     silent::Bool
+    # option to show warnings in Windows
+    show_warning::Bool
 
     # turn off warning by the MOI interface implementation [advanced usage]
     moi_warnings::Bool
@@ -230,6 +231,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     lazy_callback::Union{Nothing, Function}
     user_cut_callback::Union{Nothing, Function}
     heuristic_callback::Union{Nothing, Function}
+    message_callback::Union{Nothing,Ptr{Nothing}}
 
     params::Dict{Any, Any}
     """
@@ -242,6 +244,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
         model.params = Dict{Any,Any}()
         model.silent = false
+        model.show_warning = true
         model.moi_warnings = true
 
         for (name, value) in kwargs
@@ -329,13 +332,20 @@ function MOI.empty!(model::Optimizer)
     MOI.set(model, MOI.RawParameter("MPSNAMELENGTH"), 64)
     MOI.set(model, MOI.RawParameter("CALLBACKFROMMASTERTHREAD"), 1)
     model.name = ""
-    if Sys.iswindows() && model.inner.logfile == ""
-        setoutputcb!(model.inner)
-    end
     if model.silent
         MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 0)
     else
         MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 1)
+    end
+    if Sys.iswindows() && model.inner.logfile == "" && !model.silent
+        model.message_callback = setoutputcb!(model.inner, model.show_warning)
+    else
+        model.message_callback = nothing
+    end
+    if model.show_warning
+        MOI.set(model, MOI.RawParameter("XPRESS_WARNING"), 1)
+    else
+        MOI.set(model, MOI.RawParameter("XPRESS_WARNING"), 0)
     end
     Xpress.loadlp(model.inner)
     model.objective_type = SCALAR_AFFINE
@@ -482,6 +492,18 @@ function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
             Xpress.setlogfile(model.inner, value)
         end
         model.inner.logfile = value
+    elseif param == MOI.RawParameter("XPRESS_WARNING")
+        if Sys.iswindows() && model.inner.logfile == "" && !model.silent
+            removecbmessage(model.inner,model.message_callback,C_NULL)
+        end
+        if value == 0
+            model.show_warning = false
+        else
+            model.show_warning = true
+        end
+        if Sys.iswindows() && model.inner.logfile == "" && !model.silent
+            model.message_callback = setoutputcb!(model.inner, model.show_warning)
+        end
     elseif param == MOI.RawParameter("MOIWarnings")
             model.moi_warnings = value
     elseif param == MOI.RawParameter("OUTPUTLOG")
@@ -500,6 +522,8 @@ end
 function MOI.get(model::Optimizer, param::MOI.RawParameter)
     if param == MOI.RawParameter("logfile")
         return model.inner.logfile
+    elseif param == MOI.RawParameter("XPRESS_WARNING")
+        return model.show_warning
     else
         return Xpress.getcontrol(model.inner, XPRS_ATTRIBUTES[param.name])
     end
