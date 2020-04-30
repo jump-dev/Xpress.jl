@@ -2,7 +2,7 @@ using Test
 using Xpress
 
 @testset "$(folder)" for folder in [
-    "MathOptInterface",
+    "MathOptInterface", "xprs_callbacks"
 ]
     @testset "$(file)" for file in readdir(folder)
         include(joinpath(folder, file))
