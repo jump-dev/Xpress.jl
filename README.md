@@ -5,10 +5,10 @@
 | [![Build Status][build-img]][build-url] [![Codecov branch][codecov-img]][codecov-url] | [![Gitter][gitter-img]][gitter-url] [<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Discourse_logo.png/799px-Discourse_logo.png" width="64">][discourse-url] |
 
 
-[build-img]: https://travis-ci.org/JuliaOpt/Xpress.jl.svg?branch=master
-[build-url]: https://travis-ci.org/JuliaOpt/Xpress.jl
-[codecov-img]: http://codecov.io/github/JuliaOpt/Xpress.jl/coverage.svg?branch=master
-[codecov-url]: http://codecov.io/github/JuliaOpt/Xpress.jl?branch=master
+[build-img]: https://travis-ci.org/jump-dev/Xpress.jl.svg?branch=master
+[build-url]: https://travis-ci.org/jump-dev/Xpress.jl
+[codecov-img]: http://codecov.io/github/jump-dev/Xpress.jl/coverage.svg?branch=master
+[codecov-url]: http://codecov.io/github/jump-dev/Xpress.jl?branch=master
 
 [gitter-url]: https://gitter.im/JuliaOpt/JuMP-dev?utm_source=share-link&utm_medium=link&utm_campaign=share-link
 [gitter-img]: https://badges.gitter.im/JuliaOpt/JuMP-dev.svg
@@ -46,7 +46,7 @@ You should use the xpress version matching to your julia installation and vice-v
 
 ## Use Other Packages
 
-We highly recommend that you use the *Xpress.jl* package with higher level packages such as [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl) or [MathOptInterface.jl](https://github.com/JuliaOpt/MathOptInterface.jl).
+We highly recommend that you use the *Xpress.jl* package with higher level packages such as [JuMP.jl](https://github.com/jump-dev/JuMP.jl) or [MathOptInterface.jl](https://github.com/jump-dev/MathOptInterface.jl).
 
 This can be done using the ``Xpress.Optimizer`` object. Here is how to create a *JuMP* model that uses Xpress as the solver. Parameters are passed as keyword arguments:
 ```julia
@@ -78,7 +78,7 @@ julia> MOI.get(OPTIMIZER, MOI.RawParameter("logfile"))
 
 ## API Overview
 
-This package provides both a thin wrapper for Xpress' C interface and wrapper for [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl) and [MathOptInterface.jl](https://github.com/JuliaOpt/MathOptInterface.jl).
+This package provides both a thin wrapper for Xpress' C interface and wrapper for [JuMP.jl](https://github.com/jump-dev/JuMP.jl) and [MathOptInterface.jl](https://github.com/jump-dev/MathOptInterface.jl).
 
 ## Julia version warning
 
