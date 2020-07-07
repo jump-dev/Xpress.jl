@@ -9,7 +9,7 @@ makedocs(
 )
 
 deploydocs(
-    repo   = "github.com/JuliaOpt/Xpress.jl.git",
+    repo   = "github.com/jump-dev/Xpress.jl.git",
     target = "build",
     osname = "linux",
     julia  = "0.6",

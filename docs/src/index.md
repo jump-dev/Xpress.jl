@@ -1,3 +1,3 @@
 # Xpress
 
-[Xpress.jl](https://github.com/JuliaOpt/Xpress.jl) Julia API for the FICO Xpress solver.
+[Xpress.jl](https://github.com/jump-dev/Xpress.jl) Julia API for the FICO Xpress solver.
