@@ -306,6 +306,7 @@ function MOI.empty!(model::Optimizer)
     model.objective_type = SCALAR_AFFINE
     model.is_feasibility = true
     empty!(model.variable_info)
+    model.last_constraint_index = 0
     empty!(model.affine_constraint_info)
     empty!(model.sos_constraint_info)
     model.name_to_variable = nothing
@@ -2178,8 +2179,11 @@ function MOI.optimize!(model::Optimizer)
             model.cached_solution.linear_dual,
             model.cached_solution.variable_dual)
     end
+    # If the problem hits a limit it might be left in a presolved state
+    # this is needed to go back to post solve state.
+    Xpress.postsolve(model.inner)
+    # correct constraint primal solution
     rhs = Xpress.getrhs(model.inner)
-
     model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
 
     status = MOI.get(model, MOI.PrimalStatus())
