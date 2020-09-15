@@ -2154,8 +2154,8 @@ function MOI.optimize!(model::Optimizer)
     # end
     model.basis_status = nothing
     reset_cached_solution(model)
-    # TODO allow soling relaxed version
-    # TODO deal with algorithm flags
+    # TODO: allow solving relaxed version
+    # TODO: deal with algorithm flags
     start_time = time()
     if Xpress.is_mixedinteger(model.inner)
         Xpress.mipoptimize(model.inner)
@@ -2165,22 +2165,28 @@ function MOI.optimize!(model::Optimizer)
     model.cached_solution.solve_time = time() - start_time
 
     if Xpress.is_mixedinteger(model.inner)
-        #Xpress.getmipsol
-        Xpress.Lib.XPRSgetmipsol(model.inner,
+        Xpress.Lib.XPRSgetmipsol(
+            model.inner,
             model.cached_solution.variable_primal,
-            model.cached_solution.linear_primal) # TODO
-            fill!(model.cached_solution.linear_dual, NaN)
-            fill!(model.cached_solution.variable_dual, NaN)
+            model.cached_solution.linear_primal,
+        )
+        fill!(model.cached_solution.linear_dual, NaN)
+        fill!(model.cached_solution.variable_dual, NaN)
     else
-        Xpress.Lib.XPRSgetlpsol(model.inner,
+        Xpress.Lib.XPRSgetlpsol(
+            model.inner,
             model.cached_solution.variable_primal,
-            model.cached_solution.linear_primal, # TODO
+            model.cached_solution.linear_primal,
             model.cached_solution.linear_dual,
-            model.cached_solution.variable_dual)
+            model.cached_solution.variable_dual,
+        )
     end
+    # TODO(odow): get an Xpress license to test issue https://github.com/jump-dev/Xpress.jl/issues/91 properly.
     rhs = Xpress.getrhs(model.inner)
-
-    model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
+    for i = 1:min(length(rhs), length(model.cached_solution.linear_primal))
+        x = model.cached_solution.linear_primal[i]
+        model.cached_solution.linear_primal[i] = rhs[i] - x
+    end
 
     status = MOI.get(model, MOI.PrimalStatus())
     if status == MOI.INFEASIBILITY_CERTIFICATE
@@ -2864,7 +2870,7 @@ function _generate_basis_status(model::Optimizer)
     basis_status = BasisStatus(cstatus, vstatus)
     model.basis_status = basis_status
     return
-end 
+end
 
 
 function MOI.get(
@@ -3266,7 +3272,7 @@ function getfirstiis(model::Optimizer)
         ncols, miiscol = getinfeasbounds(model)
         return IISData(status_code[1], false, 0, ncols, Vector{Cint}(undef, 0), miiscol, Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
     end
-    
+
     # XPRESS' API works in two steps: first, retrieve the sizes of the arrays to
     # retrieve; then, the user is expected to allocate the needed memory,
     # before asking XPRESS to fill it.
@@ -3324,7 +3330,7 @@ MOI.is_set_by_optimize(::ConflictStatus) = true
 function MOI.get(model::Optimizer, ::ConflictStatus)
     if model.conflict === nothing
         return MOI.OPTIMIZE_NOT_CALLED
-    elseif model.conflict.stat == 0 || !model.conflict.is_standard_iis 
+    elseif model.conflict.stat == 0 || !model.conflict.is_standard_iis
         return MOI.OPTIMAL
     elseif model.conflict.stat == 1
         return MOI.INFEASIBLE
