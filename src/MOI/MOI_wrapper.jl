@@ -2479,7 +2479,7 @@ end
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveBound)
     _throw_if_optimize_in_progress(model, attr)
     if Xpress.is_mixedinteger(model.inner)
-        return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_MIPBESTOBJVAL)
+        return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_BESTBOUND)
     else
         return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_LPOBJVAL)
     end
@@ -2864,7 +2864,7 @@ function _generate_basis_status(model::Optimizer)
     basis_status = BasisStatus(cstatus, vstatus)
     model.basis_status = basis_status
     return
-end 
+end
 
 
 function MOI.get(
@@ -3266,7 +3266,7 @@ function getfirstiis(model::Optimizer)
         ncols, miiscol = getinfeasbounds(model)
         return IISData(status_code[1], false, 0, ncols, Vector{Cint}(undef, 0), miiscol, Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
     end
-    
+
     # XPRESS' API works in two steps: first, retrieve the sizes of the arrays to
     # retrieve; then, the user is expected to allocate the needed memory,
     # before asking XPRESS to fill it.
@@ -3324,7 +3324,7 @@ MOI.is_set_by_optimize(::ConflictStatus) = true
 function MOI.get(model::Optimizer, ::ConflictStatus)
     if model.conflict === nothing
         return MOI.OPTIMIZE_NOT_CALLED
-    elseif model.conflict.stat == 0 || !model.conflict.is_standard_iis 
+    elseif model.conflict.stat == 0 || !model.conflict.is_standard_iis
         return MOI.OPTIMAL
     elseif model.conflict.stat == 1
         return MOI.INFEASIBLE
