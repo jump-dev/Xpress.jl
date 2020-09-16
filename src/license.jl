@@ -25,12 +25,14 @@ function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
 
     # default env (not metioned in manual)
     if haskey(ENV, "XPAUTH_PATH")
-        push!(candidates, joinpath(ENV["XPAUTH_PATH"], XPAUTH))
+        xpauth_path = replace(ENV["XPAUTH_PATH"], "\"" => "")
+        push!(candidates, joinpath(xpauth_path, XPAUTH))
     end
 
     # default lib dir
     if haskey(ENV, "XPRESSDIR")
-        push!(candidates, joinpath(ENV["XPRESSDIR"], "bin", XPAUTH))
+        xpressdir = replace(ENV["XPRESSDIR"], "\"" => "")
+        push!(candidates, joinpath(xpressdir, "bin", XPAUTH))
     end
 
     # user´s lib dir
