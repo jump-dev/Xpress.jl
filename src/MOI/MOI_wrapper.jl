@@ -2495,7 +2495,7 @@ end
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveBound)
     _throw_if_optimize_in_progress(model, attr)
     if Xpress.is_mixedinteger(model.inner)
-        return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_MIPBESTOBJVAL)
+        return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_BESTBOUND)
     else
         return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_LPOBJVAL)
     end
