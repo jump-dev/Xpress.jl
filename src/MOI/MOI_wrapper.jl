@@ -470,7 +470,7 @@ function MOI.get(model::Optimizer, param::MOI.RawParameter)
 end
 
 function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Real)
-    MOI.set(model, MOI.RawParameter("MAXTIME"), Int(floor(limit)))
+    MOI.set(model, MOI.RawParameter("MAXTIME"), floor(Int, limit))
     return
 end
 
