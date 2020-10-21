@@ -30,6 +30,8 @@ const CONFIG_LOW_TOL = MOIT.TestConfig(atol = 1e-3, rtol = 1e-3)
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == ""
     optimizer = Xpress.Optimizer(OUTPUTLOG = 0, logfile = "output.log")
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == "output.log"
+    @test MOI.set(optimizer, MOI.TimeLimitSec(),100) === nothing
+    @test MOI.set(optimizer, MOI.TimeLimitSec(),3600.0) === nothing
 end
 
 @testset "SolverName" begin

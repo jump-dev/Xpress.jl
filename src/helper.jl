@@ -63,7 +63,7 @@ mutable struct XpressProblem <: CWrapper
         if logfile != ""
             setlogfile(p, logfile)
         end
-        finalize(() -> destroyprob(p))
+        finalizer(destroyprob, p)
         return p
     end
 end
@@ -377,16 +377,17 @@ XPRS_INT_CONTROLS = [
 
 # TODO list attributes by type
 
-
-n_variables(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_COLS)
-n_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ROWS)
-n_special_ordered_sets(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_SETS)
-n_quadratic_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_QCONSTRAINTS)
+# originals are more important to be used everywhere, presolved are actually
+# secondary
+n_variables(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALCOLS)
+n_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALROWS)
+n_special_ordered_sets(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALSETS)
+n_quadratic_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALQCONSTRAINTS)
 n_non_zero_elements(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ELEMS)
-n_quadratic_elements(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_QELEMS)
-n_quadratic_row_coefficients(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_QCELEMS)
-n_entities(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_MIPENTS)
-n_setmembers(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_SETMEMBERS)
+n_quadratic_elements(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALQELEMS)
+n_quadratic_row_coefficients(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALQCELEMS)
+n_entities(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALMIPENTS)
+n_setmembers(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALSETMEMBERS)
 
 n_original_variables(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALCOLS)
 n_original_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALROWS)

@@ -306,6 +306,7 @@ function MOI.empty!(model::Optimizer)
     model.objective_type = SCALAR_AFFINE
     model.is_feasibility = true
     empty!(model.variable_info)
+    model.last_constraint_index = 0
     empty!(model.affine_constraint_info)
     empty!(model.sos_constraint_info)
     model.name_to_variable = nothing
@@ -470,12 +471,14 @@ function MOI.get(model::Optimizer, param::MOI.RawParameter)
 end
 
 function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Real)
-    MOI.set(model, MOI.RawParameter("MAXTIME"), limit)
+    # positive values would mean that its stops after `limit` seconds
+    # iff there is already a MIP solution available.
+    MOI.set(model, MOI.RawParameter("MAXTIME"), -floor(Int32, limit))
     return
 end
 
 function MOI.get(model::Optimizer, ::MOI.TimeLimitSec)
-    return MOI.get(model, MOI.RawParameter("MAXTIME"))
+    return -MOI.get(model, MOI.RawParameter("MAXTIME"))
 end
 
 MOI.Utilities.supports_default_copy_to(::Optimizer, ::Bool) = true
@@ -2154,8 +2157,12 @@ function MOI.optimize!(model::Optimizer)
     # end
     model.basis_status = nothing
     reset_cached_solution(model)
-    # TODO: allow solving relaxed version
-    # TODO: deal with algorithm flags
+
+    # cache rhs: must be done befoe hand becaus it cant be
+    # properly queried if the problem ends up in a presolve state
+    rhs = Xpress.getrhs(model.inner)
+    # TODO allow solving relaxed version
+    # TODO deal with algorithm flags
     start_time = time()
     if Xpress.is_mixedinteger(model.inner)
         Xpress.mipoptimize(model.inner)
@@ -2181,12 +2188,21 @@ function MOI.optimize!(model::Optimizer)
             model.cached_solution.variable_dual,
         )
     end
-    # TODO(odow): get an Xpress license to test issue https://github.com/jump-dev/Xpress.jl/issues/91 properly.
-    rhs = Xpress.getrhs(model.inner)
-    for i = 1:min(length(rhs), length(model.cached_solution.linear_primal))
-        x = model.cached_solution.linear_primal[i]
-        model.cached_solution.linear_primal[i] = rhs[i] - x
-    end
+    # If the problem hits a limit it might be left in a presolved state
+    # this is needed to go back to post solve state.
+    # @show state = getintattrib(model.inner, Lib.XPRS_PRESOLVESTATE)
+    # Bit Meaning
+    # 0 Problem has been loaded.
+    # 1 Problem has been LP presolved.
+    # 2 Problem has been MIP presolved.
+    # 7 Solution in memory is valid.
+    # @show str = bitstring(Int32(state))
+    # @show is_loaded = str[end] == '1'
+    # @show is_lppres = str[end-1] == '1'
+    # @show is_mippre = str[end-2] == '1'
+    # @show is_solava = str[end-7] == '1'
+    # Xpress.postsolve(model.inner) - post solve fails is problem is post solved
+    model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
 
     status = MOI.get(model, MOI.PrimalStatus())
     if status == MOI.INFEASIBILITY_CERTIFICATE
@@ -2228,69 +2244,113 @@ function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
         return MOI.OPTIMIZE_NOT_CALLED
     end
     stop = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_STOPSTATUS)
-    if stop == Xpress.Lib.XPRS_STOP_NONE
-        if Xpress.is_mixedinteger(model.inner)
-            stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_MIPSTATUS)
-            if stat == Xpress.Lib.XPRS_MIP_NOT_LOADED
-                return MOI.OPTIMIZE_NOT_CALLED
-            elseif stat == Xpress.Lib.XPRS_MIP_LP_NOT_OPTIMAL
-                return MOI.OTHER_ERROR
-            elseif stat == Xpress.Lib.XPRS_MIP_LP_OPTIMAL
-                return MOI.OTHER_ERROR
-            elseif stat == Xpress.Lib.XPRS_MIP_NO_SOL_FOUND
-                return MOI.OTHER_ERROR
-            elseif stat == Xpress.Lib.XPRS_MIP_SOLUTION
-                return MOI.LOCALLY_SOLVED
-            elseif stat == Xpress.Lib.XPRS_MIP_INFEAS
-                return MOI.INFEASIBLE
-            elseif stat == Xpress.Lib.XPRS_MIP_OPTIMAL
-                return MOI.OPTIMAL
+    if stop != Xpress.Lib.XPRS_STOP_NONE
+        if stop == Xpress.Lib.XPRS_STOP_TIMELIMIT
+            return MOI.TIME_LIMIT
+        elseif stop == Xpress.Lib.XPRS_STOP_CTRLC
+            return MOI.INTERRUPTED
+        elseif stop == Xpress.Lib.XPRS_STOP_NODELIMIT
+            return MOI.NODE_LIMIT
+        elseif stop == Xpress.Lib.XPRS_STOP_ITERLIMIT
+            return MOI.MOI.ITERATION_LIMIT
+        elseif stop == Xpress.Lib.XPRS_STOP_MIPGAP
+            stat = Xpress.Lib.XPRS_MIP_NOT_LOADED
+            if Xpress.is_mixedinteger(model.inner)
+                stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_MIPSTATUS)
+                if stat == Xpress.Lib.XPRS_MIP_OPTIMAL
+                    return MOI.OPTIMAL
+                else
+                    return MOI.OTHER_ERROR
+                end
             else
-                @assert stat == Xpress.Lib.XPRS_MIP_UNBOUNDED
-                # From Xpress documentation:
-                # Global search incomplete - the initial continuous relaxation
-                # was found to be unbounded. A solution may have been found.
-                return MOI.INFEASIBLE_OR_UNBOUNDED
+                return MOI.OTHER_ERROR
             end
+        elseif stop == Xpress.Lib.XPRS_STOP_SOLLIMIT
+            return MOI.SOLUTION_LIMIT
         else
-            stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_LPSTATUS)
-            if stat == Xpress.Lib.XPRS_LP_UNSTARTED
-                return MOI.OPTIMIZE_NOT_CALLED
-            elseif stat == Xpress.Lib.XPRS_LP_OPTIMAL
-                return MOI.OPTIMAL
-            elseif stat == Xpress.Lib.XPRS_LP_INFEAS
-                return MOI.INFEASIBLE
-            elseif stat == Xpress.Lib.XPRS_LP_CUTOFF
-                return MOI.OTHER_LIMIT
-            elseif stat == Xpress.Lib.XPRS_LP_UNFINISHED
-                return MOI.OTHER_ERROR
-            elseif stat == Xpress.Lib.XPRS_LP_UNBOUNDED
-                return MOI.DUAL_INFEASIBLE
-            elseif stat == Xpress.Lib.XPRS_LP_CUTOFF_IN_DUAL
-                return MOI.OTHER_LIMIT
-            elseif stat == Xpress.Lib.XPRS_LP_UNSOLVED
-                return MOI.NUMERICAL_ERROR
-            else
-                @assert stat == Xpress.Lib.XPRS_LP_NONCONVEX
-                return MOI.INVALID_OPTION
-            end
+            @assert stop == Xpress.Lib.XPRS_STOP_USER
+            return MOI.INTERRUPTED
         end
-    elseif stop == Xpress.Lib.XPRS_STOP_TIMELIMIT
-        return MOI.TIME_LIMIT
-    elseif stop == Xpress.Lib.XPRS_STOP_CTRLC
-        return MOI.INTERRUPTED
-    elseif stop == Xpress.Lib.XPRS_STOP_NODELIMIT
-        return MOI.NODE_LIMIT
-    elseif stop == Xpress.Lib.XPRS_STOP_ITERLIMIT
-        return MOI.MOI.ITERATION_LIMIT
-    elseif stop == Xpress.Lib.XPRS_STOP_MIPGAP
-        return MOI.OPTIMAL
-    elseif stop == Xpress.Lib.XPRS_STOP_SOLLIMIT
-        return MOI.SOLUTION_LIMIT
+        #=
+        XPRS_STOP_NONE no interruption - the solve completed normally
+        XPRS_STOP_TIMELIMIT time limit hit
+        XPRS_STOP_CTRLC control C hit
+        XPRS_STOP_NODELIMIT node limit hit
+        XPRS_STOP_ITERLIMIT iteration limit hit
+        XPRS_STOP_MIPGAP MIP gap is sufficiently small
+        XPRS_STOP_SOLLIMIT solution limit hit
+        XPRS_STOP_USER user interrupt
+        =#
+    end # else:
+    if Xpress.is_mixedinteger(model.inner)
+        stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_MIPSTATUS)
+        if stat == Xpress.Lib.XPRS_MIP_NOT_LOADED
+            return MOI.OPTIMIZE_NOT_CALLED
+        elseif stat == Xpress.Lib.XPRS_MIP_LP_NOT_OPTIMAL # is a STOP
+            return MOI.OTHER_ERROR
+        elseif stat == Xpress.Lib.XPRS_MIP_LP_OPTIMAL # is a STOP
+            return MOI.OTHER_ERROR
+        elseif stat == Xpress.Lib.XPRS_MIP_NO_SOL_FOUND # is a STOP
+            return MOI.OTHER_ERROR
+        elseif stat == Xpress.Lib.XPRS_MIP_SOLUTION # is a STOP
+            return MOI.LOCALLY_SOLVED
+        elseif stat == Xpress.Lib.XPRS_MIP_INFEAS
+            return MOI.INFEASIBLE
+        elseif stat == Xpress.Lib.XPRS_MIP_OPTIMAL
+            return MOI.OPTIMAL
+        else
+            @assert stat == Xpress.Lib.XPRS_MIP_UNBOUNDED
+            return MOI.INFEASIBLE_OR_UNBOUNDED #? DUAL_INFEASIBLE?
+        end
+        #=
+        0 Problem has not been loaded (XPRS_MIP_NOT_LOADED).
+        1 Global search incomplete - the initial continuous relaxation has not been solved and
+            no integer solution has been found (XPRS_MIP_LP_NOT_OPTIMAL).
+        2 Global search incomplete - the initial continuous relaxation has been solved and no
+            integer solution has been found (XPRS_MIP_LP_OPTIMAL).
+        3 Global search incomplete - no integer solution found (XPRS_MIP_NO_SOL_FOUND).
+        4 Global search incomplete - an integer solution has been found
+            (XPRS_MIP_SOLUTION).
+        5 Global search complete - no integer solution found (XPRS_MIP_INFEAS).
+        6 Global search complete - integer solution found (XPRS_MIP_OPTIMAL).
+        7 Global search incomplete - the initial continuous relaxation was found to be
+            unbounded. A solution may have been found (XPRS_MIP_UNBOUNDED).
+        =#
     else
-        @assert stop == Xpress.Lib.XPRS_STOP_USER
-        return MOI.INTERRUPTED
+        stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_LPSTATUS)
+        if stat == Xpress.Lib.XPRS_LP_UNSTARTED
+            return MOI.OPTIMIZE_NOT_CALLED
+        elseif stat == Xpress.Lib.XPRS_LP_OPTIMAL
+            return MOI.OPTIMAL
+        elseif stat == Xpress.Lib.XPRS_LP_INFEAS
+            return MOI.INFEASIBLE
+        elseif stat == Xpress.Lib.XPRS_LP_CUTOFF
+            return MOI.OTHER_LIMIT
+        elseif stat == Xpress.Lib.XPRS_LP_UNFINISHED # is a STOP
+            return MOI.OTHER_ERROR
+        elseif stat == Xpress.Lib.XPRS_LP_UNBOUNDED
+            return MOI.DUAL_INFEASIBLE
+        elseif stat == Xpress.Lib.XPRS_LP_CUTOFF_IN_DUAL
+            return MOI.OTHER_LIMIT
+        elseif stat == Xpress.Lib.XPRS_LP_UNSOLVED
+            return MOI.NUMERICAL_ERROR
+        else
+            @assert stat == Xpress.Lib.XPRS_LP_NONCONVEX
+            return MOI.INVALID_OPTION
+        end
+        #=
+        0 Unstarted (XPRS_LP_UNSTARTED).
+        1 Optimal (XPRS_LP_OPTIMAL).
+        2 Infeasible (XPRS_LP_INFEAS).
+        3 Objective worse than cutoff (XPRS_LP_CUTOFF).
+        4 Unfinished (XPRS_LP_UNFINISHED).
+        5 Unbounded (XPRS_LP_UNBOUNDED).
+        6 Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL).
+        7 Problem could not be solved due to numerical issues. (XPRS_LP_UNSOLVED).
+        8 Problem contains quadratic data, which is not convex (XPRS_LP_NONCONVEX)
+        =#
     end
+    return MOI.OTHER_ERROR
 end
 
 function _has_dual_ray(model::Optimizer)
@@ -2318,6 +2378,25 @@ function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
     elseif term_stat == MOI.DUAL_INFEASIBLE
         if _has_primal_ray(model)
             return MOI.INFEASIBILITY_CERTIFICATE
+        end
+    elseif Xpress.is_mixedinteger(model.inner)
+        stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_MIPSTATUS)
+        if stat == Xpress.Lib.XPRS_MIP_NOT_LOADED
+            return MOI.NO_SOLUTION
+        elseif stat == Xpress.Lib.XPRS_MIP_LP_NOT_OPTIMAL # - is a STOP
+            return MOI.NO_SOLUTION
+        elseif stat == Xpress.Lib.XPRS_MIP_LP_OPTIMAL # - is a STOP
+            return MOI.INFEASIBLE_POINT
+        elseif stat == Xpress.Lib.XPRS_MIP_NO_SOL_FOUND # - is a STOP
+            return MOI.NO_SOLUTION
+        elseif stat == Xpress.Lib.XPRS_MIP_SOLUTION # - is a STOP
+            return MOI.FEASIBLE_POINT
+        elseif stat == Xpress.Lib.XPRS_MIP_INFEAS
+            return MOI.INFEASIBLE_POINT
+        elseif stat == Xpress.Lib.XPRS_MIP_OPTIMAL
+            return MOI.FEASIBLE_POINT
+        elseif stat == Xpress.Lib.XPRS_MIP_UNBOUNDED
+            return MOI.NO_SOLUTION #? DUAL_INFEASIBLE?
         end
     end
     if Xpress.is_mixedinteger(model.inner)
