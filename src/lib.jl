@@ -79,7 +79,7 @@ function XPRSsetintcontrol(prob, _index, _ivalue)
 end
 
 function XPRSsetintcontrol64(prob, _index, _ivalue)
-    ccall((:XPRSsetintcontrol64, libxprs), Cint, (XPRSprob, Cint, Clong), prob, _index, _ivalue)
+    ccall((:XPRSsetintcontrol64, libxprs), Cint, (XPRSprob, Cint, Cint), prob, _index, _ivalue)
 end
 
 function XPRSsetdblcontrol(prob, _index, _dvalue)
@@ -111,7 +111,7 @@ function XPRSgetintcontrol(prob, _index, _ivalue)
 end
 
 function XPRSgetintcontrol64(prob, _index, _ivalue)
-    ccall((:XPRSgetintcontrol64, libxprs), Cint, (XPRSprob, Cint, Ptr{Clong}), prob, _index, _ivalue)
+    ccall((:XPRSgetintcontrol64, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}), prob, _index, _ivalue)
 end
 
 function XPRSgetdblcontrol(prob, _index, _dvalue)
@@ -131,7 +131,7 @@ function XPRSgetintattrib(prob, _index, _ivalue)
 end
 
 function XPRSgetintattrib64(prob, _index, _ivalue)
-    ccall((:XPRSgetintattrib64, libxprs), Cint, (XPRSprob, Cint, Ptr{Clong}), prob, _index, _ivalue)
+    ccall((:XPRSgetintattrib64, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}), prob, _index, _ivalue)
 end
 
 function XPRSgetstrattrib(prob, _index, _cvalue)
@@ -152,6 +152,14 @@ end
 
 function XPRSsetdefaults(prob)
     ccall((:XPRSsetdefaults, libxprs), Cint, (XPRSprob,), prob)
+end
+
+function XPRSdelpwlcons(prob, npwls, _mindex)
+    ccall((:XPRSdelpwlcons, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}), prob, npwls, _mindex)
+end
+
+function XPRSdelgencons(prob, ngencons, _mindex)
+    ccall((:XPRSdelgencons, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}), prob, ngencons, _mindex)
 end
 
 function XPRSgetcontrolinfo(prob, sCaName, iHeaderId, iTypeinfo)
@@ -175,7 +183,7 @@ function XPRSloadlp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, 
 end
 
 function XPRSloadlp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
-    ccall((:XPRSloadlp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
+    ccall((:XPRSloadlp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
 end
 
 function XPRSloadqp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
@@ -183,7 +191,7 @@ function XPRSloadqp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, 
 end
 
 function XPRSloadqp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
-    ccall((:XPRSloadqp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
+    ccall((:XPRSloadqp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
 end
 
 function XPRSloadqglobal(prob, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
@@ -191,11 +199,11 @@ function XPRSloadqglobal(prob, probname, ncols, nrows, qsenx, rhsx, range, objx,
 end
 
 function XPRSloadqglobal64(prob, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
-    ccall((:XPRSloadqglobal64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint, Ptr{UInt8}, Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
+    ccall((:XPRSloadqglobal64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint, Ptr{UInt8}, Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
 end
 
-function XPRSfixglobals(prob, ifround)
-    ccall((:XPRSfixglobals, libxprs), Cint, (XPRSprob, Cint), prob, ifround)
+function XPRSfixglobals(prob, options)
+    ccall((:XPRSfixglobals, libxprs), Cint, (XPRSprob, Cint), prob, options)
 end
 
 function XPRSloadmodelcuts(prob, nmodcuts, _mrows)
@@ -227,7 +235,7 @@ function XPRSloadglobal(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _dran
 end
 
 function XPRSloadglobal64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
-    ccall((:XPRSloadglobal64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Cint, Ptr{UInt8}, Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}), prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
+    ccall((:XPRSloadglobal64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Cint, Ptr{UInt8}, Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
 end
 
 function XPRSaddnames(prob, _itype, _sname, first, last)
@@ -264,6 +272,38 @@ end
 
 function XPRSdumpcontrols(prob)
     ccall((:XPRSdumpcontrols, libxprs), Cint, (XPRSprob,), prob)
+end
+
+function XPRSaddpwlcons(prob, npwls, npoints, cols, resultant, start, xval, yval)
+    ccall((:XPRSaddpwlcons, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}), prob, npwls, npoints, cols, resultant, start, xval, yval)
+end
+
+function XPRSaddpwlcons64(prob, npwls, npoints, cols, resultant, start, xval, yval)
+    ccall((:XPRSaddpwlcons64, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}), prob, npwls, npoints, cols, resultant, start, xval, yval)
+end
+
+function XPRSgetpwlcons(prob, col, resultant, start, xval, yval, size, npoints, first, last)
+    ccall((:XPRSgetpwlcons, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Cint, Cint), prob, col, resultant, start, xval, yval, size, npoints, first, last)
+end
+
+function XPRSgetpwlcons64(prob, col, resultant, start, xval, yval, size, npoints, first, last)
+    ccall((:XPRSgetpwlcons64, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Cint, Cint), prob, col, resultant, start, xval, yval, size, npoints, first, last)
+end
+
+function XPRSaddgencons(prob, ngencons, ncols, nvals, type, resultant, colstart, col, valstart, val)
+    ccall((:XPRSaddgencons, libxprs), Cint, (XPRSprob, Cint, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, ngencons, ncols, nvals, type, resultant, colstart, col, valstart, val)
+end
+
+function XPRSaddgencons64(prob, ngencons, ncols, nvals, type, resultant, colstart, col, valstart, val)
+    ccall((:XPRSaddgencons64, libxprs), Cint, (XPRSprob, Cint, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, ngencons, ncols, nvals, type, resultant, colstart, col, valstart, val)
+end
+
+function XPRSgetgencons(prob, type, resultant, colstart, col, colsize, ncols, valstart, val, valsize, nvals, first, last)
+    ccall((:XPRSgetgencons, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Cint, Cint), prob, type, resultant, colstart, col, colsize, ncols, valstart, val, valsize, nvals, first, last)
+end
+
+function XPRSgetgencons64(prob, type, resultant, colstart, col, colsize, ncols, valstart, val, valsize, nvals, first, last)
+    ccall((:XPRSgetgencons64, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Cint, Cint), prob, type, resultant, colstart, col, colsize, ncols, valstart, val, valsize, nvals, first, last)
 end
 
 function XPRSminim(prob, _sflags)
@@ -415,7 +455,7 @@ function XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first
 end
 
 function XPRSgetcols64(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
-    ccall((:XPRSgetcols64, libxprs), Cint, (XPRSprob, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}, Clong, Ptr{Clong}, Cint, Cint), prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
+    ccall((:XPRSgetcols64, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Cint, Cint), prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
 function XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
@@ -423,7 +463,7 @@ function XPRSgetrows(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first
 end
 
 function XPRSgetrows64(prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
-    ccall((:XPRSgetrows64, libxprs), Cint, (XPRSprob, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}, Clong, Ptr{Clong}, Cint, Cint), prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
+    ccall((:XPRSgetrows64, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Cint, Cint), prob, _mstart, _mclind, _dmatval, maxcoeffs, ncoeffs, first, last)
 end
 
 function XPRSgetcoef(prob, _irow, _icol, _dval)
@@ -435,7 +475,7 @@ function XPRSgetmqobj(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, firs
 end
 
 function XPRSgetmqobj64(prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
-    ccall((:XPRSgetmqobj64, libxprs), Cint, (XPRSprob, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}, Clong, Ptr{Clong}, Cint, Cint), prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
+    ccall((:XPRSgetmqobj64, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Cint, Cint), prob, _mstart, _mclind, _dobjval, maxcoeffs, ncoeffs, first, last)
 end
 
 function XPRScrossoverlpsol(prob, status)
@@ -507,7 +547,7 @@ function XPRSgetglobal(prob, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _m
 end
 
 function XPRSgetglobal64(prob, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
-    ccall((:XPRSgetglobal64, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}), prob, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
+    ccall((:XPRSgetglobal64, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
 end
 
 function XPRSwriteprob(prob, _sfilename, _sflags)
@@ -551,7 +591,7 @@ function XPRSaddrows(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mc
 end
 
 function XPRSaddrows64(prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
-    ccall((:XPRSaddrows64, libxprs), Cint, (XPRSprob, Cint, Clong, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}), prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
+    ccall((:XPRSaddrows64, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, nrows, ncoeffs, _srowtype, _drhs, _drng, _mstart, _mclind, _dmatval)
 end
 
 function XPRSdelrows(prob, nrows, _mindex)
@@ -563,7 +603,7 @@ function XPRSaddcols(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _d
 end
 
 function XPRSaddcols64(prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
-    ccall((:XPRSaddcols64, libxprs), Cint, (XPRSprob, Cint, Clong, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
+    ccall((:XPRSaddcols64, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, ncols, ncoeffs, _dobj, _mstart, _mrwind, _dmatval, _dbdl, _dbdu)
 end
 
 function XPRSdelcols(prob, ncols, _mindex)
@@ -595,7 +635,7 @@ function XPRSchgmcoef(prob, ncoeffs, _mrow, _mcol, _dval)
 end
 
 function XPRSchgmcoef64(prob, ncoeffs, _mrow, _mcol, _dval)
-    ccall((:XPRSchgmcoef64, libxprs), Cint, (XPRSprob, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, ncoeffs, _mrow, _mcol, _dval)
+    ccall((:XPRSchgmcoef64, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, ncoeffs, _mrow, _mcol, _dval)
 end
 
 function XPRSchgmqobj(prob, ncols, _mcol1, _mcol2, _dval)
@@ -603,7 +643,7 @@ function XPRSchgmqobj(prob, ncols, _mcol1, _mcol2, _dval)
 end
 
 function XPRSchgmqobj64(prob, ncols, _mcol1, _mcol2, _dval)
-    ccall((:XPRSchgmqobj64, libxprs), Cint, (XPRSprob, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, ncols, _mcol1, _mcol2, _dval)
+    ccall((:XPRSchgmqobj64, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, ncols, _mcol1, _mcol2, _dval)
 end
 
 function XPRSchgqobj(prob, _icol, _jcol, _dval)
@@ -651,7 +691,7 @@ function XPRSaddcuts(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
 end
 
 function XPRSaddcuts64(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
-    ccall((:XPRSaddcuts64, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}), prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
+    ccall((:XPRSaddcuts64, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval)
 end
 
 function XPRSdelcuts(prob, ibasis, itype, interp, delta, ncuts, mcutind)
@@ -675,7 +715,7 @@ function XPRSgetcpcuts(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, 
 end
 
 function XPRSgetcpcuts64(prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
-    ccall((:XPRSgetcpcuts64, libxprs), Cint, (XPRSprob, Ptr{XPRScut}, Cint, Clong, Ptr{Cint}, Ptr{UInt8}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}), prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
+    ccall((:XPRSgetcpcuts64, libxprs), Cint, (XPRSprob, Ptr{XPRScut}, Cint, Cint, Ptr{Cint}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}), prob, mindex, ncuts, size, mtype, qrtype, mstart, mcols, dmatval, drhs)
 end
 
 function XPRSloadcuts(prob, itype, interp, ncuts, mcutind)
@@ -687,7 +727,7 @@ function XPRSstorecuts(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex,
 end
 
 function XPRSstorecuts64(prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
-    ccall((:XPRSstorecuts64, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cint}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Clong}, Ptr{XPRScut}, Ptr{Cint}, Ptr{Cdouble}), prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
+    ccall((:XPRSstorecuts64, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cint}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cint}, Ptr{XPRScut}, Ptr{Cint}, Ptr{Cdouble}), prob, ncuts, nodupl, mtype, qrtype, drhs, mstart, mindex, mcols, dmatval)
 end
 
 function XPRSpresolverow(prob, qrtype, nzo, mcolso, dvalo, drhso, maxcoeffs, nzp, mcolsp, dvalp, drhsp, status)
@@ -755,7 +795,7 @@ function XPRSaddsets(prob, newsets, newnz, qstype, msstart, mscols, dref)
 end
 
 function XPRSaddsets64(prob, newsets, newnz, qstype, msstart, mscols, dref)
-    ccall((:XPRSaddsets64, libxprs), Cint, (XPRSprob, Cint, Clong, Ptr{UInt8}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}), prob, newsets, newnz, qstype, msstart, mscols, dref)
+    ccall((:XPRSaddsets64, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, newsets, newnz, qstype, msstart, mscols, dref)
 end
 
 function XPRSstrongbranch(prob, nbnds, _mindex, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
@@ -1531,7 +1571,7 @@ function XPRSaddqmatrix(prob, irow, nqtr, mqc1, mqc2, dqew)
 end
 
 function XPRSaddqmatrix64(prob, irow, nqtr, mqc1, mqc2, dqew)
-    ccall((:XPRSaddqmatrix64, libxprs), Cint, (XPRSprob, Cint, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, irow, nqtr, mqc1, mqc2, dqew)
+    ccall((:XPRSaddqmatrix64, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, irow, nqtr, mqc1, mqc2, dqew)
 end
 
 function XPRSdelqmatrix(prob, irow)
@@ -1543,7 +1583,7 @@ function XPRSloadqcqp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange
 end
 
 function XPRSloadqcqp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
-    ccall((:XPRSloadqcqp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
+    ccall((:XPRSloadqcqp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
 end
 
 function XPRSloadqcqpglobal(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
@@ -1551,7 +1591,7 @@ function XPRSloadqcqpglobal(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _
 end
 
 function XPRSloadqcqpglobal64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
-    ccall((:XPRSloadqcqpglobal64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint, Ptr{UInt8}, Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}), prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
+    ccall((:XPRSloadqcqpglobal64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint, Ptr{UInt8}, Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
 end
 
 function XPRS_mse_create(mse)
