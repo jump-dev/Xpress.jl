@@ -471,9 +471,9 @@ function MOI.get(model::Optimizer, param::MOI.RawParameter)
 end
 
 function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Real)
-    # positive values would mean that its stops after `value` seconds
+    # positive values would mean that its stops after `limit` seconds
     # iff there is already a MIP solution available.
-    MOI.set(model, MOI.RawParameter("MAXTIME"), -limit)
+    MOI.set(model, MOI.RawParameter("MAXTIME"), -floor(Int32, limit))
     return
 end
 
