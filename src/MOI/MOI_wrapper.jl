@@ -478,7 +478,7 @@ function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Real)
 end
 
 function MOI.get(model::Optimizer, ::MOI.TimeLimitSec)
-    return MOI.get(model, MOI.RawParameter("MAXTIME"))
+    return -MOI.get(model, MOI.RawParameter("MAXTIME"))
 end
 
 MOI.Utilities.supports_default_copy_to(::Optimizer, ::Bool) = true
