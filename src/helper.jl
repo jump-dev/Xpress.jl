@@ -63,7 +63,7 @@ mutable struct XpressProblem <: CWrapper
         if logfile != ""
             setlogfile(p, logfile)
         end
-        finalize(() -> destroyprob(p))
+        finalizer(destroyprob, p)
         return p
     end
 end
