@@ -51,7 +51,12 @@ module Xpress
     function initialize()
         userlic()
         init() # Call XPRSinit for initialization
-        atexit(free) # Call free when process terminates
+        # free is not strictly necessary since destroyprob is called
+        # inthe finalizer.
+        # the user can call free if needed.
+        # leaving it uncommented results in many print errors becaus
+        # it is called prior to finalizers.
+        # atexit(free) # Call free when process terminates
     end
 
     include("MOI/MOI_wrapper.jl")
