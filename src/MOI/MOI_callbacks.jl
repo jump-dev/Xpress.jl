@@ -45,7 +45,6 @@ end
 #    MOI callbacks
 # ==============================================================================
 
-# TODO: Add Lazy Callbacks 
 function default_moi_callback(model::Optimizer)
     return (cb_data) -> begin
         get_cb_solution(model, cb_data.model)

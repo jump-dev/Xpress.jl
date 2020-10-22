@@ -29,11 +29,21 @@ mutable struct CallbackData
     model::XpressProblem # local model # ptr_model::Ptr{Nothing}
 end
 
-export CallbackData
+mutable struct _CallbackUserData
+    callback::Function
+    model::XpressProblem
+    data::Any
+end
+Base.cconvert(::Type{Ptr{Cvoid}}, x::_CallbackUserData) = x
+function Base.unsafe_convert(::Type{Ptr{Cvoid}}, x::_CallbackUserData)
+    return pointer_from_objref(x)::Ptr{Cvoid}
+end
+
+export CallbackData, _CallbackUserData
 
 function setcboptnode_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoid}, feas::Ptr{Cint})
-    usrdata = unsafe_pointer_to_objref(my_object)
-    (callback, model, data) = usrdata
+    usrdata = unsafe_pointer_to_objref(my_object)::_CallbackUserData
+    callback, model, data = usrdata.callback, usrdata.model, usrdata.data
     model_inner = XpressProblem(ptr_model;finalize_env = false)
     if Xpress.getintattrib(model_inner,Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
         return convert(Cint,0)
@@ -46,8 +56,8 @@ set_callback_optnode!(model::XpressProblem, callback::Function) = set_callback_o
 
 function set_callback_optnode!(model::XpressProblem, callback::Function, data::Any)
     xprscallback = @cfunction(setcboptnode_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}))
-    usrdata = (callback, model, data)
-    addcboptnode_object(model, xprscallback, usrdata,0)
+    usrdata = _CallbackUserData(callback, model, data)
+    addcboptnode_object(model, xprscallback, usrdata, 0)
     # we need to keep a reference to the callback function
     # so that it isn't garbage collected
     push!(model.callback,usrdata)
@@ -55,9 +65,10 @@ function set_callback_optnode!(model::XpressProblem, callback::Function, data::A
 end
 
 function setcbpreintsol_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoid}, soltype::Ptr{Cint}, ifreject::Ptr{Cint}, cutoff::Ptr{Cdouble})
-    usrdata = unsafe_pointer_to_objref(my_object)
-    (callback, model, data) = usrdata
-    callback(CallbackData(model, data, XpressProblem(ptr_model;finalize_env = false)))
+    usrdata = unsafe_pointer_to_objref(my_object)::_CallbackUserData
+    callback, model, data = usrdata.callback, usrdata.model, usrdata.data
+    model_inner = XpressProblem(ptr_model;finalize_env = false)
+    callback(CallbackData(model, data, model_inner))
     return convert(Cint,0)
 end
 
@@ -65,7 +76,7 @@ set_callback_preintsol!(model::XpressProblem, callback::Function) = set_callback
 
 function set_callback_preintsol!(model::XpressProblem, callback::Function, data::Any)
     xprscallback = @cfunction(setcbpreintsol_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}))
-    usrdata = (callback, model, data)
+    usrdata = _CallbackUserData(callback, model, data)
     addcbpreintsol_object(model, xprscallback, usrdata,0)
     # we need to keep a reference to the callback function
     # so that it isn't garbage collected

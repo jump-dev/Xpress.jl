@@ -115,26 +115,6 @@ end
             )
         end)
         MOI.optimize!(model)
-    end
-    @testset "UserCut" begin
-        model, x, y = callback_simple_model()
-        cb = nothing
-        MOI.set(model, MOI.LazyConstraintCallback(), cb_data -> begin
-            cb = cb_data
-            MOI.submit(
-                model,
-                MOI.UserCut(cb_data),
-                MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(1.0, x)], 0.0),
-                MOI.LessThan(2.0)
-            )
-        end)
-        @test_throws(
-            MOI.InvalidCallbackUsage(
-                MOI.LazyConstraintCallback(),
-                MOI.UserCut(cb)
-            ),
-            MOI.optimize!(model)
-        )
     end=#
   #=  @testset "HeuristicSolution" begin
         model, x, y = callback_simple_model()
@@ -186,28 +166,7 @@ end
         MOI.optimize!(model)
         @test user_cut_submitted
     end
-    #=
-    @testset "LazyConstraint" begin
-        model, x, item_weights = callback_knapsack_model()
-        cb = nothing
-        MOI.set(model, MOI.UserCutCallback(), cb_data -> begin
-            cb = cb_data
-            MOI.submit(
-                model,
-                MOI.LazyConstraint(cb_data),
-                MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
-                MOI.LessThan(5.0)
-            )
-        end)
-        @test_throws(
-            MOI.InvalidCallbackUsage(
-                MOI.UserCutCallback(),
-                MOI.LazyConstraint(cb)
-            ),
-            MOI.optimize!(model)
-        )
-    end
-    @testset "HeuristicSolution" begin
+    #=@testset "HeuristicSolution" begin
         model, x, item_weights = callback_knapsack_model()
         cb = nothing
         MOI.set(model, MOI.UserCutCallback(), cb_data -> begin

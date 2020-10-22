@@ -1,15 +1,13 @@
 name = "Xpress"
 uuid = "9e70acf3-d6c9-5be6-b5bd-4e2c73e3e054"
+authors = ["Joaquim Dias Garcia <joaquim@psr-inc.com>, Dheepak Krishnamurthy <me@kdheepak.com>, Jose Daniel Lara <jdlara@berkeley.edu>"]
 url = "https://github.com/JuliaOpt/Xpress.jl"
-authors = [
-    "Joaquim Dias Garcia <joaquim@psr-inc.com>, Dheepak Krishnamurthy <me@kdheepak.com>, Jose Daniel Lara <jdlara@berkeley.edu>"]
 version = "0.11.0"
 
 [deps]
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [compat]
@@ -18,6 +16,7 @@ julia = "1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [targets]
-test = ["Test"]
+test = ["Test", "Random"]

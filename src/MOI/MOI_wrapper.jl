@@ -2203,6 +2203,9 @@ end
 function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
     if check_moi_callback_validity(model)
+        if Xpress.getcontrol(model.inner,Xpress.Lib.XPRS_PRESOLVE) != 0
+            @warn "Callbacks in XPRESS don't work correctly with PRESOLVE"
+        end
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
         model.has_generic_callback = false
     end
