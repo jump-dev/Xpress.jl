@@ -48,7 +48,7 @@ abstract type Xpress.CWrapper
 """
 abstract type CWrapper end
 
-Base.unsafe_convert(T::Type{Ptr{Nothing}}, t::CWrapper) = (t.ptr == C_NULL) ? throw(XpressError(255, "Received null pointer in CWrapper. Something must be wrong.")) : t.ptr
+Base.unsafe_convert(::Type{Ptr{Cvoid}}, t::CWrapper) = (t.ptr == C_NULL) ? throw(XpressError(255, "Received null pointer in CWrapper. Something must be wrong.")) : t.ptr
 
 mutable struct XpressProblem <: CWrapper
     ptr::Lib.XPRSprob
@@ -59,7 +59,8 @@ mutable struct XpressProblem <: CWrapper
     function XpressProblem(ptr::Lib.XPRSprob; finalize_env::Bool = true, logfile = "")
         model = new(ptr, Any[], finalize_env, 0.0, logfile)
         if finalize_env
-            finalize(() -> destroyprob(model))
+            # finalize(() -> destroyprob(model))
+            finalizer(destroyprob, model)
         end
         return model
     end
@@ -69,11 +70,10 @@ function XpressProblem(; logfile = "")
     ref = Ref{Lib.XPRSprob}()
     createprob(ref)
     @assert ref[] != C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
-    p = XpressProblem(ref[],logfile = logfile)
+    p = XpressProblem(ref[], logfile = logfile)
     if logfile != ""
         setlogfile(p, logfile)
     end
-    finalize(() -> destroyprob(p))
     return p
 end
 

@@ -53,7 +53,7 @@ module Xpress
     function initialize()
         userlic()
         init() # Call XPRSinit for initialization
-        atexit(free) # Call free when process terminates
+        # atexit(free) # Call free when process terminates
     end
 
     include("MOI/MOI_wrapper.jl")
