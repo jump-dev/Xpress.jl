@@ -56,8 +56,8 @@ end
 
 function addcboutput2screen_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoid}, msg::Ptr{Cchar}, len::Cint, msgtype::Cint)
     
-    usrdata = unsafe_pointer_to_objref(my_object)
-    (show_warning) = usrdata
+    usrdata = unsafe_pointer_to_objref(my_object)::_CallbackUserData
+    show_warning = usrdata.data::Bool
 
     if msgtype == 4
         #= Error =#
@@ -84,7 +84,7 @@ end
 
 function setoutputcb!(model::XpressProblem, show_warning::Bool)
     xprsmsgcallback = @cfunction(addcboutput2screen_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint))
-    usrdata = (show_warning)
+    usrdata = _CallbackUserData(()->true, model, show_warning)
     Lib.XPRSaddcbmessage(model.ptr, xprsmsgcallback, usrdata, 0)
     return xprsmsgcallback
 end
