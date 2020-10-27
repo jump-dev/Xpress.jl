@@ -2634,7 +2634,7 @@ Stores cuts into the  cut pool, but does not apply them to the current node. The
 
 """
 function storecuts(prob::XpressProblem, ncuts, nodupl, mtype::Vector{<:Integer}, qrtype, drhs::Vector{Float64}, mstart::Vector{<:Integer}, mindex, mcols::Vector{<:Integer}, dmatval)
-    @checked Lib.XPRSstorecuts(prob, ncuts, nodupl, Cint.(mtype), qrtype, drhs, Cint.(mstart), mindex, Cint.(cols), dmatval)
+    @checked Lib.XPRSstorecuts(prob, ncuts, nodupl, Cint.(mtype), qrtype, drhs, Cint.(mstart), mindex, Cint.(mcols), dmatval)
 end
 
 # # Disable 64Bit versions do to reliability issues.

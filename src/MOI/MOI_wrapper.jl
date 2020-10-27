@@ -145,6 +145,11 @@ mutable struct CachedSolution
     solve_time::Float64
 end
 
+mutable struct CallbackCutData
+    submitted::Bool
+    cutptrs::Vector{Xpress.Lib.XPRScut}
+end
+
 mutable struct BasisStatus
     con_status::Vector{Cint}
     var_status::Vector{Cint}
@@ -170,8 +175,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # A flag to keep track of MOI.Silent, which over-rides the OUTPUTLOG
     # parameter.
-    # Windows is always silent, callback or external file must be used
     silent::Bool
+    # option to show warnings in Windows
+    show_warning::Bool
 
     # turn off warning by the MOI interface implementation [advanced usage]
     moi_warnings::Bool
@@ -212,17 +218,22 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # TODO: add functionality to the lower-level API to support querying single
     # elements of the solution.
+    
     cached_solution::Union{Nothing, CachedSolution}
     basis_status::Union{Nothing,BasisStatus}
     conflict::Union{Nothing, IISData}
-
+    
     # Callback fields.
+    callback_cached_solution::Union{Nothing, CachedSolution}
+    cb_cut_data::CallbackCutData
+    cb_exception::Union{Nothing, Exception}
     callback_variable_primal::Vector{Float64}
     has_generic_callback::Bool
     callback_state::CallbackState
     lazy_callback::Union{Nothing, Function}
     user_cut_callback::Union{Nothing, Function}
     heuristic_callback::Union{Nothing, Function}
+    message_callback::Union{Nothing, Ptr{Nothing}}
 
     params::Dict{Any, Any}
     """
@@ -235,6 +246,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
         model.params = Dict{Any,Any}()
         model.silent = false
+        model.show_warning = true
         model.moi_warnings = true
 
         for (name, value) in kwargs
@@ -248,12 +260,12 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
             MOI.set(model, name, value)
         end
 
+        model.cb_exception = nothing
+        model.cb_cut_data = CallbackCutData(false, Array{Xpress.Lib.XPRScut}(undef,0))
         model.variable_info = CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}()
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
         model.callback_variable_primal = Float64[]
-        model.basis_status = nothing
-        model.conflict = nothing
         MOI.empty!(model)  # MOI.empty!(model) re-sets the `.inner` field.
         return model
     end
@@ -284,6 +296,32 @@ function reset_cached_solution(model::Optimizer)
     return model.cached_solution
 end
 
+function reset_callback_cached_solution(model::Optimizer)
+    num_variables = length(model.variable_info)
+    num_affine = length(model.affine_constraint_info)
+    if model.callback_cached_solution === nothing
+        model.callback_cached_solution = CachedSolution(
+            fill(NaN, num_variables),
+            fill(NaN, num_variables),
+            fill(NaN, num_affine),
+            fill(NaN, num_affine),
+            false,
+            false,
+            NaN
+        )
+    else
+        resize!(model.callback_cached_solution.variable_primal, num_variables)
+        resize!(model.callback_cached_solution.variable_dual, num_variables)
+        resize!(model.callback_cached_solution.linear_primal, num_affine)
+        resize!(model.callback_cached_solution.linear_dual, num_affine)
+        model.callback_cached_solution.has_primal_certificate = false
+        model.callback_cached_solution.has_dual_certificate = false
+        model.callback_cached_solution.solve_time = NaN
+    end
+    return model.callback_cached_solution
+end
+
+
 Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 
 function MOI.empty!(model::Optimizer)
@@ -302,6 +340,16 @@ function MOI.empty!(model::Optimizer)
     else
         MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 1)
     end
+    if Sys.iswindows() && model.inner.logfile == "" && !model.silent
+        model.message_callback = setoutputcb!(model.inner, model.show_warning)
+    else
+        model.message_callback = nothing
+    end
+    if model.show_warning
+        MOI.set(model, MOI.RawParameter("XPRESS_WARNING"), 1)
+    else
+        MOI.set(model, MOI.RawParameter("XPRESS_WARNING"), 0)
+    end
     Xpress.loadlp(model.inner)
     model.objective_type = SCALAR_AFFINE
     model.is_feasibility = true
@@ -313,6 +361,9 @@ function MOI.empty!(model::Optimizer)
     model.name_to_constraint_index = nothing
     empty!(model.callback_variable_primal)
     model.cached_solution = nothing
+
+    model.cb_exception = nothing
+    model.callback_cached_solution = nothing
     model.conflict = nothing
     model.callback_state = CB_NONE
     model.has_generic_callback = false
@@ -335,8 +386,9 @@ function MOI.is_empty(model::Optimizer)
     length(model.sos_constraint_info) != 0 && return false
     model.name_to_variable !== nothing && return false
     model.name_to_constraint_index !== nothing && return false
-    length(model.callback_variable_primal) != 0 && return false
     model.cached_solution !== nothing && return false
+    length(model.callback_variable_primal) != 0 && return false
+    model.cb_exception !== nothing && return false
     model.callback_state != CB_NONE && return false
     model.has_generic_callback && return false
     model.lazy_callback !== nothing && return false
@@ -447,6 +499,18 @@ function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
             Xpress.setlogfile(model.inner, value)
         end
         model.inner.logfile = value
+    elseif param == MOI.RawParameter("XPRESS_WARNING")
+        if Sys.iswindows() && model.inner.logfile == "" && !model.silent
+            removecbmessage(model.inner,model.message_callback,C_NULL)
+        end
+        if value == 0
+            model.show_warning = false
+        else
+            model.show_warning = true
+        end
+        if Sys.iswindows() && model.inner.logfile == "" && !model.silent
+            model.message_callback = setoutputcb!(model.inner, model.show_warning)
+        end
     elseif param == MOI.RawParameter("MOIWarnings")
             model.moi_warnings = value
     elseif param == MOI.RawParameter("OUTPUTLOG")
@@ -465,6 +529,8 @@ end
 function MOI.get(model::Optimizer, param::MOI.RawParameter)
     if param == MOI.RawParameter("logfile")
         return model.inner.logfile
+    elseif param == MOI.RawParameter("XPRESS_WARNING")
+        return model.show_warning
     else
         return Xpress.getcontrol(model.inner, XPRS_ATTRIBUTES[param.name])
     end
@@ -2136,28 +2202,42 @@ end
 ###
 
 function check_moi_callback_validity(model::Optimizer)
-    # TODO
-    # has_moi_callback =
-    #     model.lazy_callback !== nothing ||
-    #     model.user_cut_callback !== nothing ||
-    #     model.heuristic_callback !== nothing
-    # if has_moi_callback && model.has_generic_callback
-    #     error("Cannot use Gurobi.CallbackFunction as well as MOI.AbstractCallbackFunction")
-    # end
-    # return has_moi_callback
-    return false
+    has_moi_callback =
+        model.lazy_callback !== nothing ||
+        model.user_cut_callback !== nothing ||
+        model.heuristic_callback !== nothing
+    if has_moi_callback && model.has_generic_callback
+        error(
+            "Cannot use Gurobi.CallbackFunction as well as " *
+            "MOI.AbstractCallbackFunction"
+        )
+    end
+    return has_moi_callback
+end
+
+function pre_solve_reset(model::Optimizer)
+    model.basis_status = nothing
+    model.cb_exception = nothing
+    reset_cached_solution(model)
+    return
+end
+function check_cb_exception(model::Optimizer)
+    if model.cb_exception !== nothing
+        throw(model.cb_exception)
+    end
+    return
 end
 
 function MOI.optimize!(model::Optimizer)
-    # TODO callbacks
     # Initialize callbacks if necessary.
-    # if check_moi_callback_validity(model)
-    #     MOI.set(model, CallbackFunction(), default_moi_callback(model))
-    #     model.has_generic_callback = false
-    # end
-    model.basis_status = nothing
-    reset_cached_solution(model)
-
+    if check_moi_callback_validity(model)
+        if model.moi_warnings && Xpress.getcontrol(model.inner,Xpress.Lib.XPRS_PRESOLVE) != 0
+            @warn "Callbacks in XPRESS might not work correctly with PRESOLVE != 0"
+        end
+        MOI.set(model, CallbackFunction(), default_moi_callback(model))
+        model.has_generic_callback = false # becaus it is set as tru in the above
+    end
+    pre_solve_reset(model)
     # cache rhs: must be done befoe hand becaus it cant be
     # properly queried if the problem ends up in a presolve state
     rhs = Xpress.getrhs(model.inner)
@@ -2170,6 +2250,7 @@ function MOI.optimize!(model::Optimizer)
         Xpress.lpoptimize(model.inner)
     end
     model.cached_solution.solve_time = time() - start_time
+    check_cb_exception(model)
 
     if Xpress.is_mixedinteger(model.inner)
         Xpress.Lib.XPRSgetmipsol(
@@ -2633,10 +2714,6 @@ end
 
 function MOI.set(model::Optimizer, ::MOI.Silent, flag::Bool)
     model.silent = flag
-    # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html
-    if Sys.iswindows() && model.moi_warnings
-        @warn "Silent has no effect on windows. See https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html"
-    end
     MOI.set(model, MOI.RawParameter("OUTPUTLOG"), flag ? 0 : 1)
     return
 end
@@ -3472,9 +3549,7 @@ function MOI.supports(
     return true
 end
 
-#=
 include("MOI_callbacks.jl")
-=#
 
 function extension(str::String)
     try

@@ -48,24 +48,32 @@ abstract type Xpress.CWrapper
 """
 abstract type CWrapper end
 
-Base.unsafe_convert(T::Type{Ptr{Nothing}}, t::CWrapper) = (t.ptr == C_NULL) ? throw(XpressError(255, "Received null pointer in CWrapper. Something must be wrong.")) : t.ptr
+Base.unsafe_convert(::Type{Ptr{Cvoid}}, t::CWrapper) = (t.ptr == C_NULL) ? throw(XpressError(255, "Received null pointer in CWrapper. Something must be wrong.")) : t.ptr
 
 mutable struct XpressProblem <: CWrapper
     ptr::Lib.XPRSprob
     callback::Vector{Any}
+    finalize_env::Bool
     time::Float64
     logfile::String
-    function XpressProblem(; logfile = "")
-        ref = Ref{Lib.XPRSprob}()
-        createprob(ref)
-        @assert ref[] != C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
-        p = new(ref[], Any[], 0.0, logfile)
-        if logfile != ""
-            setlogfile(p, logfile)
+    function XpressProblem(ptr::Lib.XPRSprob; finalize_env::Bool = true, logfile = "")
+        model = new(ptr, Any[], finalize_env, 0.0, logfile)
+        if finalize_env
+            finalizer(destroyprob, model)
         end
-        finalizer(destroyprob, p)
-        return p
+        return model
     end
+end
+
+function XpressProblem(; logfile = "")
+    ref = Ref{Lib.XPRSprob}()
+    createprob(ref)
+    @assert ref[] != C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
+    p = XpressProblem(ref[], logfile = logfile)
+    if logfile != ""
+        setlogfile(p, logfile)
+    end
+    return p
 end
 
 addcolnames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 2)
