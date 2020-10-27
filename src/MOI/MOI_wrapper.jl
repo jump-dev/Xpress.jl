@@ -302,7 +302,9 @@ function MOI.empty!(model::Optimizer)
     else
         MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 1)
     end
+    Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES["OUTPUTLOG"], 0)
     Xpress.loadlp(model.inner)
+    Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES["OUTPUTLOG"], MOI.get(model, MOI.RawParameter("OUTPUTLOG")))
     model.objective_type = SCALAR_AFFINE
     model.is_feasibility = true
     empty!(model.variable_info)
