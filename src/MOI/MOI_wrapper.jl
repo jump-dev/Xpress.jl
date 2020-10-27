@@ -218,20 +218,22 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # TODO: add functionality to the lower-level API to support querying single
     # elements of the solution.
-    callback_cached_solution::Union{Nothing, CachedSolution}
-    cb_cut_data::CallbackCutData
+    
     cached_solution::Union{Nothing, CachedSolution}
     basis_status::Union{Nothing,BasisStatus}
     conflict::Union{Nothing, IISData}
-
+    
     # Callback fields.
+    callback_cached_solution::Union{Nothing, CachedSolution}
+    cb_cut_data::CallbackCutData
+    cb_exception::Union{Nothing, Exception}
     callback_variable_primal::Vector{Float64}
     has_generic_callback::Bool
     callback_state::CallbackState
     lazy_callback::Union{Nothing, Function}
     user_cut_callback::Union{Nothing, Function}
     heuristic_callback::Union{Nothing, Function}
-    message_callback::Union{Nothing,Ptr{Nothing}}
+    message_callback::Union{Nothing, Ptr{Nothing}}
 
     params::Dict{Any, Any}
     """
@@ -258,6 +260,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
             MOI.set(model, name, value)
         end
 
+        model.cb_exception = nothing
         model.cb_cut_data = CallbackCutData(false, Array{Xpress.Lib.XPRScut}(undef,0))
         model.variable_info = CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}()
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
@@ -357,6 +360,8 @@ function MOI.empty!(model::Optimizer)
     model.name_to_constraint_index = nothing
     empty!(model.callback_variable_primal)
     model.cached_solution = nothing
+
+    model.cb_exception = nothing
     model.callback_cached_solution = nothing
     model.conflict = nothing
     model.callback_state = CB_NONE
@@ -380,8 +385,9 @@ function MOI.is_empty(model::Optimizer)
     length(model.sos_constraint_info) != 0 && return false
     model.name_to_variable !== nothing && return false
     model.name_to_constraint_index !== nothing && return false
-    length(model.callback_variable_primal) != 0 && return false
     model.cached_solution !== nothing && return false
+    length(model.callback_variable_primal) != 0 && return false
+    model.cb_exception !== nothing && return false
     model.callback_state != CB_NONE && return false
     model.has_generic_callback && return false
     model.lazy_callback !== nothing && return false
@@ -2197,21 +2203,39 @@ function check_moi_callback_validity(model::Optimizer)
         model.lazy_callback !== nothing ||
         model.user_cut_callback !== nothing ||
         model.heuristic_callback !== nothing
+    if has_moi_callback && model.has_generic_callback
+        error(
+            "Cannot use Gurobi.CallbackFunction as well as " *
+            "MOI.AbstractCallbackFunction"
+        )
+    end
     return has_moi_callback
+end
+
+function pre_solve_reset(model::Optimizer)
+    model.basis_status = nothing
+    model.cb_exception = nothing
+    reset_cached_solution(model)
+    return
+end
+function check_cb_exception(model::Optimizer)
+    if model.cb_exception !== nothing
+        throw(model.cb_exception)
+    end
+    return
 end
 
 function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
     if check_moi_callback_validity(model)
         if Xpress.getcontrol(model.inner,Xpress.Lib.XPRS_PRESOLVE) != 0
-            @warn "Callbacks in XPRESS don't work correctly with PRESOLVE"
+            @warn "Callbacks in XPRESS might not work correctly with PRESOLVE != 0"
         end
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
-        model.has_generic_callback = false
+        model.has_generic_callback = false # becaus it is set as tru in the above
     end
-    model.basis_status = nothing
-    reset_cached_solution(model)
-    # TODO allow soling relaxed version
+    pre_solve_reset(model)
+    # TODO allow solving relaxed version
     # TODO deal with algorithm flags
     start_time = time()
     if Xpress.is_mixedinteger(model.inner)
@@ -2220,6 +2244,7 @@ function MOI.optimize!(model::Optimizer)
         Xpress.lpoptimize(model.inner)
     end
     model.cached_solution.solve_time = time() - start_time
+    check_cb_exception(model)
 
     if Xpress.is_mixedinteger(model.inner)
         #Xpress.getmipsol

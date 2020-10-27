@@ -1,27 +1,3 @@
-function XPRSaddcboptnode_object(prob, f_optnode, p, priority)
-    ccall((:XPRSaddcboptnode, Xpress.libxprs), Cint, (Xpress.Lib.XPRSprob, Ptr{Cvoid}, Any, Cint), prob, f_optnode, p, priority)
-end
-
-function XPRSaddcbpreintsol_object(prob, f_preintsol, p, priority)
-    ccall((:XPRSaddcbpreintsol, Xpress.libxprs), Cint, (Xpress.Lib.XPRSprob, Ptr{Cvoid}, Any, Cint), prob, f_preintsol, p, priority)
-end
-
-function XPRSaddcbmessage_object(prob, f_message, p, priority)
-    ccall((:XPRSaddcbmessage, Xpress.libxprs), Cint, (Xpress.Lib.XPRSprob, Ptr{Cvoid}, Any, Cint), prob, f_message, p, priority)
-end
-
-function addcboptnode_object(prob::XpressProblem, f_optnode, p, priority)
-    XPRSaddcboptnode_object(prob, f_optnode, p, priority)
-end
-
-function addcbpreintsol_object(prob::XpressProblem, f_preintsol, p, priority)
-    XPRSaddcbpreintsol_object(prob, f_preintsol, p, priority)
-end
-
-function addcbmessage_object(prob::XpressProblem, f_message, p, priority)
-    XPRSaddcbmessage_object(prob, f_message, p, priority)
-end
-
 
 mutable struct CallbackData
     model_root::XpressProblem # should not use operations here
@@ -29,6 +5,7 @@ mutable struct CallbackData
     model::XpressProblem # local model # ptr_model::Ptr{Nothing}
 end
 
+# must be mutable
 mutable struct _CallbackUserData
     callback::Function
     model::XpressProblem
@@ -39,25 +16,20 @@ function Base.unsafe_convert(::Type{Ptr{Cvoid}}, x::_CallbackUserData)
     return pointer_from_objref(x)::Ptr{Cvoid}
 end
 
-export CallbackData, _CallbackUserData
+export CallbackData
 
 function setcboptnode_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoid}, feas::Ptr{Cint})
     usrdata = unsafe_pointer_to_objref(my_object)::_CallbackUserData
     callback, model, data = usrdata.callback, usrdata.model, usrdata.data
     model_inner = XpressProblem(ptr_model;finalize_env = false)
-    if Xpress.getintattrib(model_inner,Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
-        return convert(Cint,0)
-    end
     callback(CallbackData(model, data, model_inner))
-    return convert(Cint,0)
+    return zero(Cint)
 end
 
-set_callback_optnode!(model::XpressProblem, callback::Function) = set_callback_optnode!(model, callback, nothing)
-
-function set_callback_optnode!(model::XpressProblem, callback::Function, data::Any)
+function set_callback_optnode!(model::XpressProblem, callback::Function, data::Any = nothing)
     xprscallback = @cfunction(setcboptnode_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}))
     usrdata = _CallbackUserData(callback, model, data)
-    addcboptnode_object(model, xprscallback, usrdata, 0)
+    Lib.XPRSaddcboptnode(model.ptr, xprscallback, usrdata, 0)
     # we need to keep a reference to the callback function
     # so that it isn't garbage collected
     push!(model.callback,usrdata)
@@ -67,20 +39,18 @@ end
 function setcbpreintsol_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoid}, soltype::Ptr{Cint}, ifreject::Ptr{Cint}, cutoff::Ptr{Cdouble})
     usrdata = unsafe_pointer_to_objref(my_object)::_CallbackUserData
     callback, model, data = usrdata.callback, usrdata.model, usrdata.data
-    model_inner = XpressProblem(ptr_model;finalize_env = false)
+    model_inner = XpressProblem(ptr_model; finalize_env = false)
     callback(CallbackData(model, data, model_inner))
-    return convert(Cint,0)
+    return zero(Cint)
 end
 
-set_callback_preintsol!(model::XpressProblem, callback::Function) = set_callback_preintsol!(model, callback, nothing)
-
-function set_callback_preintsol!(model::XpressProblem, callback::Function, data::Any)
+function set_callback_preintsol!(model::XpressProblem, callback::Function, data::Any = nothing)
     xprscallback = @cfunction(setcbpreintsol_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}))
     usrdata = _CallbackUserData(callback, model, data)
-    addcbpreintsol_object(model, xprscallback, usrdata,0)
+    Lib.XPRSaddcbpreintsol(model.ptr, xprscallback, usrdata,0)
     # we need to keep a reference to the callback function
     # so that it isn't garbage collected
-    push!(model.callback,usrdata)
+    push!(model.callback, usrdata)
     return nothing
 end
 
@@ -91,30 +61,30 @@ function addcboutput2screen_wrapper(ptr_model::Lib.XPRSprob, my_object::Ptr{Cvoi
 
     if msgtype == 4
         #= Error =#
-        return convert(Cint,0)
+        return zero(Cint)
     elseif msgtype == 3 && show_warning
         #= Warning =#
         msg_str = unsafe_string(msg)
         println(msg_str)
-        return convert(Cint,0)
+        return zero(Cint)
     elseif msgtype == 2
         #= Not used =#
-        return convert(Cint,0)
+        return zero(Cint)
     elseif msgtype == 1
          #= Information =#
          msg_str = unsafe_string(msg)
          println(msg_str)
-         return convert(Cint,0)
+         return zero(Cint)
     else
         #= Exiting - buffers need flushing  =#
         flush(stdout)
-        return convert(Cint,0)
+        return zero(Cint)
     end
 end
 
 function setoutputcb!(model::XpressProblem, show_warning::Bool)
     xprsmsgcallback = @cfunction(addcboutput2screen_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint))
     usrdata = (show_warning)
-    addcbmessage_object(model,xprsmsgcallback,usrdata,0)
+    Lib.XPRSaddcbmessage(model.ptr, xprsmsgcallback, usrdata, 0)
     return xprsmsgcallback
 end

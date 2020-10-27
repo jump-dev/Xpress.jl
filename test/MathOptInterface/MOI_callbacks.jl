@@ -94,10 +94,9 @@ end
         @test MOI.supports(model, MOI.LazyConstraintCallback())
         MOI.optimize!(model)
         @test lazy_called
-        #@test MOI.get(model, MOI.VariablePrimal(), x) == 1
+        @test MOI.get(model, MOI.VariablePrimal(), x) == 1
         @test MOI.get(model, MOI.VariablePrimal(), y) == 2
     end
-    #=
     @testset "OptimizeInProgress" begin
         model, x, y = callback_simple_model()
         MOI.set(model, MOI.LazyConstraintCallback(), cb_data -> begin
@@ -115,8 +114,9 @@ end
             )
         end)
         MOI.optimize!(model)
-    end=#
-  #=  @testset "HeuristicSolution" begin
+    end
+
+    @testset "HeuristicSolution" begin
         model, x, y = callback_simple_model()
         cb = nothing
         MOI.set(model, MOI.LazyConstraintCallback(), cb_data -> begin
@@ -135,7 +135,7 @@ end
             ),
             MOI.optimize!(model)
         )
-   end =#
+   end
 end
 
 @testset "UserCutCallback" begin
@@ -166,7 +166,7 @@ end
         MOI.optimize!(model)
         @test user_cut_submitted
     end
-    #=@testset "HeuristicSolution" begin
+    @testset "HeuristicSolution" begin
         model, x, item_weights = callback_knapsack_model()
         cb = nothing
         MOI.set(model, MOI.UserCutCallback(), cb_data -> begin
@@ -185,7 +185,7 @@ end
             ),
             MOI.optimize!(model)
         )
-    end=#
+    end
 end
 
 @testset "HeuristicCallback" begin
@@ -207,7 +207,6 @@ end
         MOI.optimize!(model)
         @test callback_called
     end
-    #=
     @testset "LazyConstraint" begin
         model, x, item_weights = callback_knapsack_model()
         cb = nothing
@@ -227,8 +226,7 @@ end
             ),
             MOI.optimize!(model)
         )
-    end=#
-    #=
+    end
     @testset "UserCut" begin
         model, x, item_weights = callback_knapsack_model()
         cb = nothing
@@ -248,14 +246,13 @@ end
             ),
             MOI.optimize!(model)
         )
-    end=#
+    end
 end
 
-#=
-@testset "CPLEX.CallbackFunction" begin
+@testset "Xpress.CallbackFunction" begin
     @testset "OptimizeInProgress" begin
         model, x, y = callback_simple_model()
-        MOI.set(model, CPLEX.CallbackFunction(), (cb_data, cb_where) -> begin
+        MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
             @test_throws(
                 MOI.OptimizeInProgress(MOI.VariablePrimal()),
                 MOI.get(model, MOI.VariablePrimal(), x)
@@ -269,18 +266,16 @@ end
                 MOI.get(model, MOI.ObjectiveBound())
             )
         end)
-        @test MOI.supports(model, CPLEX.CallbackFunction())
+        @test MOI.supports(model, Xpress.CallbackFunction())
         MOI.optimize!(model)
     end
     @testset "LazyConstraint" begin
         model, x, y = callback_simple_model()
         cb_calls = Int32[]
-        function callback_function(cb_data::CPLEX.CallbackContext, cb_where)
-            push!(cb_calls, cb_where)
-            if cb_where != CPLEX.CPX_CALLBACKCONTEXT_CANDIDATE
-                return
-            end
-            CPLEX.callbackgetcandidatepoint(model, cb_data, cb_where)
+        global generic_lazy_called = false
+        function callback_function(cb_data)
+            push!(cb_calls, 1)
+            Xpress.get_cb_solution(model, cb_data.model)
             x_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), x)
             y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
             if y_val - x_val > 1 + 1e-6
@@ -301,7 +296,7 @@ end
                 )
             end
         end
-        MOI.set(model, CPLEX.CallbackFunction(), callback_function)
+        MOI.set(model, Xpress.CallbackFunction(), callback_function)
         MOI.optimize!(model)
         @test MOI.get(model, MOI.VariablePrimal(), x) == 1
         @test MOI.get(model, MOI.VariablePrimal(), y) == 2
@@ -311,12 +306,12 @@ end
         model, x, item_weights = callback_knapsack_model()
         user_cut_submitted = false
         cb_calls = Int32[]
-        MOI.set(model, CPLEX.CallbackFunction(), (cb_data, cb_where) -> begin
-            push!(cb_calls, cb_where)
-            if cb_where != CPLEX.CPX_CALLBACKCONTEXT_RELAXATION
+        MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
+            push!(cb_calls)
+            if Xpress.getintattrib(cb_data.model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
                 return
             end
-            CPLEX.callbackgetrelaxationpoint(model, cb_data, cb_where)
+            Xpress.get_cb_solution(model, cb_data.model)
             terms = MOI.ScalarAffineTerm{Float64}[]
             accumulated = 0.0
             for (i, xi) in enumerate(x)
@@ -334,6 +329,7 @@ end
                 )
                 user_cut_submitted = true
             end
+            return
         end)
         MOI.optimize!(model)
         @test user_cut_submitted
@@ -342,12 +338,11 @@ end
         model, x, item_weights = callback_knapsack_model()
         callback_called = false
         cb_calls = Int32[]
-        MOI.set(model, CPLEX.CallbackFunction(), (cb_data, cb_where) -> begin
-            push!(cb_calls, cb_where)
-            if cb_where != CPLEX.CPX_CALLBACKCONTEXT_RELAXATION
+        MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
+            if Xpress.getintattrib(cb_data.model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
                 return
             end
-            CPLEX.callbackgetrelaxationpoint(model, cb_data, cb_where)
+            Xpress.get_cb_solution(model, cb_data.model)
             x_vals = MOI.get.(model, MOI.CallbackVariablePrimal(cb_data), x)
             @test MOI.submit(
                 model,
@@ -356,9 +351,9 @@ end
                 floor.(x_vals)
             ) == MOI.HEURISTIC_SOLUTION_UNKNOWN
             callback_called = true
+            return
         end)
         MOI.optimize!(model)
         @test callback_called
     end
 end
-=#

@@ -59,7 +59,6 @@ mutable struct XpressProblem <: CWrapper
     function XpressProblem(ptr::Lib.XPRSprob; finalize_env::Bool = true, logfile = "")
         model = new(ptr, Any[], finalize_env, 0.0, logfile)
         if finalize_env
-            # finalize(() -> destroyprob(model))
             finalizer(destroyprob, model)
         end
         return model

@@ -26,39 +26,31 @@ function callback_simple_model()
     return model, x, y
 end
 
-model,x,y = callback_simple_model()
-
-show(model)
+model, x, y = callback_simple_model()
 
 data = Matrix(1.0I, 3, 3)
 
-function foo(data::Xpress.CallbackData)
+function foo(cb::Xpress.CallbackData)
 
-    @show data.data[1] = 98
+    cb.data[1] = 98
 
-    @show data.model_root.ptr
-    @show data.model.ptr
-    
-    @show cols = Xpress.getintattrib(data.model,Xpress.Lib.XPRS_COLS)
-    @show rows = Xpress.getintattrib(data.model,Xpress.Lib.XPRS_ROWS)
-    @show Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_BESTBOUND)
+    cols = Xpress.getintattrib(cb.model,Xpress.Lib.XPRS_COLS)
+    rows = Xpress.getintattrib(cb.model,Xpress.Lib.XPRS_ROWS)
+    Xpress.getdblattrib(cb.model, Xpress.Lib.XPRS_BESTBOUND)
 
     ans_variable_primal = Vector{Float64}(undef,Int(cols))
     ans_linear_primal = Vector{Float64}(undef,Int(cols))
 
-    Xpress.Lib.XPRSgetlpsol(data.model,
-    ans_variable_primal,
-    ans_linear_primal,
-    C_NULL, C_NULL)
+    Xpress.Lib.XPRSgetlpsol(cb.model,
+        ans_variable_primal,
+        ans_linear_primal,
+        C_NULL, C_NULL)
 
-    @show maximum(ans_variable_primal)
-    @show minimum(ans_variable_primal)
-
-    nothing
+    return
 end
 
 Xpress.set_callback_preintsol!(model.inner, foo, data)
 
+@test data[1] == 1
 MOI.optimize!(model)
-
-@show data
+@test data[1] == 98
