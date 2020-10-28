@@ -38,7 +38,7 @@ function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
 
     for i in candidates
         if isfile(i)
-            if verbose
+            if verbose && !haskey(ENV, "XPRESS_JL_NO_INFO")
                 @info("Xpress: Found license file $i")
             end
             return i
@@ -80,7 +80,7 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
     # check LIC TYPE
     if ierr == 16
         # DEVELOPER
-        if verbose
+        if verbose && !haskey(ENV, "XPRESS_JL_NO_INFO")
             @info("Xpress: Development license detected.")
         end
     elseif ierr != 0
@@ -89,7 +89,7 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
         error(getlicerrmsg())
     else
         # USER
-        if verbose
+        if verbose && !haskey(ENV, "XPRESS_JL_NO_INFO")
             @info("Xpress: User license detected.")
             @info(  unsafe_string(pointer(slicmsg))  )
         end
