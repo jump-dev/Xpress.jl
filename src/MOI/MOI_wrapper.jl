@@ -334,6 +334,10 @@ function MOI.empty!(model::Optimizer)
     model.inner = XpressProblem(logfile = model.inner.logfile)
     MOI.set(model, MOI.RawParameter("MPSNAMELENGTH"), 64)
     MOI.set(model, MOI.RawParameter("CALLBACKFROMMASTERTHREAD"), 1)
+
+    MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 0)
+    Xpress.loadlp(model.inner)
+
     model.name = ""
     if model.silent
         MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 0)
@@ -350,7 +354,7 @@ function MOI.empty!(model::Optimizer)
     else
         MOI.set(model, MOI.RawParameter("XPRESS_WARNING"), 0)
     end
-    Xpress.loadlp(model.inner)
+
     model.objective_type = SCALAR_AFFINE
     model.is_feasibility = true
     empty!(model.variable_info)
