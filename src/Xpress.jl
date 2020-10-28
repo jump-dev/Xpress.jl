@@ -57,7 +57,7 @@ module Xpress
     include("MOI/MOI_wrapper.jl")
 
     function __init__()
-        if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT")
+        if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT") && get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") != "true"
             Xpress.initialize()
         end
     end

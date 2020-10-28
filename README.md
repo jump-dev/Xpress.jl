@@ -109,6 +109,13 @@ julia> MOI.get(OPTIMIZER, MOI.RawParameter("logfile"))
 "output.log"
 ```
 
+## Callbacks
+
+Solver specific and solver independent callbacks are working in
+[MathOptInterface](https://github.com/jump-dev/MathOptInterface.jl) and,
+consequently, in [JuMP](https://github.com/jump-dev/JuMP.jl). However, the
+current implementation should be considered experimental.
+
 ## Environement variables
 
  - `XPRESS_JL_SKIP_LIB_CHECK` - Used to skip build lib check as previsouly described.
