@@ -4,9 +4,7 @@ os:
 #- windows
 julia:
 - 1.0
-- 1.2
-- 1.3
-- nightly
+- 1
 codecov: true
 notifications:
   email: false
