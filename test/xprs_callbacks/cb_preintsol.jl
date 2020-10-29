@@ -49,8 +49,11 @@ function foo(cb::Xpress.CallbackData)
     return
 end
 
-Xpress.set_callback_preintsol!(model.inner, foo, data)
+func_ptr, data_ptr = Xpress.set_callback_preintsol!(model.inner, foo, data)
 
 @test data[1] == 1
 MOI.optimize!(model)
 @test data[1] == 98
+
+@test typeof(data_ptr) <: Any
+@test typeof(func_ptr) <: Ptr{Cvoid}

@@ -52,12 +52,9 @@ Base.unsafe_convert(::Type{Ptr{Cvoid}}, t::CWrapper) = (t.ptr == C_NULL) ? throw
 
 mutable struct XpressProblem <: CWrapper
     ptr::Lib.XPRSprob
-    callback::Vector{Any}
-    finalize_env::Bool
-    time::Float64
     logfile::String
     function XpressProblem(ptr::Lib.XPRSprob; finalize_env::Bool = true, logfile = "")
-        model = new(ptr, Any[], finalize_env, 0.0, logfile)
+        model = new(ptr, logfile)
         if finalize_env
             finalizer(destroyprob, model)
         end
@@ -423,7 +420,7 @@ Return `true` if there are integer entities in the XpressProblem
 is_mixedinteger(prob::XpressProblem) = (n_entities(prob) + n_special_ordered_sets(prob)) > 0
 
 """
-    is_qp(prob::XpressProblem)
+    is_quadratic_objective(prob::XpressProblem)
 Return `true` if there are quadratic terms in the objective in the XpressProblem
 """
 is_quadratic_objective(prob::XpressProblem) = n_quadratic_elements(prob) > 0

@@ -6,12 +6,23 @@ Set a generic Xpress callback function.
 
 struct CallbackFunction <: MOI.AbstractCallback end
 
+function MOI.set(model::Optimizer, ::CallbackFunction, ::Nothing)
+    if model.callback_data !== nothing
+        removecboptnode(model.inner, C_NULL, C_NULL)
+        model.callback_data = nothing
+    end
+    model.has_generic_callback = false
+    return
+end
+
 function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
-    # TODO control callback existence
-    # use removecboptnode(model.inne, C_NULL, C_NULL) to rm all
+    if model.callback_data !== nothing
+        Xpress.removecboptnode(model.inner, C_NULL, C_NULL)
+        model.callback_data = nothing
+    end
     model.has_generic_callback = true
     # Starting with this callback to test
-    set_callback_optnode!(model.inner, (cb_data) -> begin
+    model.callback_data = set_callback_optnode!(model.inner, (cb_data) -> begin
         model.callback_state = CB_GENERIC
         f(cb_data)
         model.callback_state = CB_NONE
@@ -27,7 +38,6 @@ function get_cb_solution(model::Optimizer, model_inner::XpressProblem)
             model.callback_cached_solution.linear_primal,
             model.callback_cached_solution.linear_dual,
             model.callback_cached_solution.variable_dual)
-    model.callback_variable_primal = model.callback_cached_solution.variable_primal
     return
 end
 
@@ -98,7 +108,7 @@ function MOI.get(
     ::MOI.CallbackVariablePrimal{CallbackData},
     x::MOI.VariableIndex
 )
-    return model.callback_variable_primal[_info(model, x).column]
+    return model.callback_cached_solution.variable_primal[_info(model, x).column]
 end
 
 # ==============================================================================
