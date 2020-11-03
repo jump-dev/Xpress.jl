@@ -173,8 +173,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # The model name.
     name::String
 
-    # A flag to keep track of MOI.Silent, which over-rides the OUTPUTLOG
-    # parameter.
+    # A flag to keep track of MOI.Silent, should always be the same as OUTPUTLOG
+    # used to cache value between `empty` calls.
     log_level::Int32
     # option to show warnings in Windows
     show_warning::Bool
@@ -250,7 +250,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model = new()
 
         model.params = Dict{Any,Any}()
-        model.log_level = 0
+
         model.show_warning = true
         model.moi_warnings = true
 
@@ -265,6 +265,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         end
 
         model.inner = XpressProblem()
+
+        # get default log level
+        model.log_level = MOI.get(model, MOI.RawParameter("OUTPUTLOG"))
 
         for (name, value) in model.params
             MOI.set(model, name, value)
@@ -2735,7 +2738,7 @@ function MOI.get(model::Optimizer, attr::MOI.ResultCount)
 end
 
 function MOI.get(model::Optimizer, ::MOI.Silent)
-    return model.log_level == 0
+    return MOI.get(model, MOI.RawParameter("OUTPUTLOG")) == 0
 end
 
 function MOI.set(model::Optimizer, ::MOI.Silent, flag::Bool)
