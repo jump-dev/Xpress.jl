@@ -12,7 +12,7 @@ module Xpress
     elseif !haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
         error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
     else
-        const dlpath = ""
+        const xpressdlpath = ""
     end
 
     ### imports
