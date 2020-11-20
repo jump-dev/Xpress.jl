@@ -45,7 +45,7 @@ module Xpress
     )
 
     function initialize()
-        lib = Libdl.dlopen(libxprs)
+        Libdl.dlopen(libxprs)
         userlic()
         init() # Call XPRSinit for initialization
         # free is not strictly necessary since destroyprob is called
