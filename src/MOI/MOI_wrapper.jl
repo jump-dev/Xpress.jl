@@ -268,8 +268,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
 
-        model.name = ""
-
         MOI.empty!(model)  # inner is initialized here
 
         return model
@@ -299,6 +297,7 @@ function MOI.empty!(model::Optimizer)
     # re-enable logging
     log_level != 0 && MOI.set(model, MOI.RawParameter("OUTPUTLOG"), log_level)
 
+    model.name = ""
     model.objective_type = SCALAR_AFFINE
     model.is_feasibility = true
     empty!(model.variable_info)
