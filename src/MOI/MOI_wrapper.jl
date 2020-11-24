@@ -173,8 +173,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # The model name.
     name::String
 
-    # A flag to keep track of MOI.Silent, should always be the same as OUTPUTLOG
-    # used to cache value between `empty` calls.
+    # A flag to keep track of MOI.Silent, which over-rides the OUTPUTLOG
+    # parameter.
     log_level::Int32
     # option to show warnings in Windows
     show_warning::Bool
@@ -250,7 +250,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model = new()
 
         model.params = Dict{Any,Any}()
-
+        model.log_level = 1 # is xpress default
         model.show_warning = true
         model.moi_warnings = true
 
@@ -264,19 +264,14 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
             model.params[name] = value
         end
 
-        model.inner = XpressProblem()
-
-        # get default log level
-        model.log_level = MOI.get(model, MOI.RawParameter("OUTPUTLOG"))
-
-        for (name, value) in model.params
-            MOI.set(model, name, value)
-        end
-
         model.variable_info = CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}()
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
-        MOI.empty!(model)  # MOI.empty!(model) re-sets the `.inner` field.
+
+        model.name = ""
+
+        MOI.empty!(model)  # inner is initialized here
+
         return model
     end
 end
@@ -284,24 +279,22 @@ end
 Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 
 function MOI.empty!(model::Optimizer)
-    # Is there a better way to do this?
-    # When MOI.empty! is called, we need to clear the memory associated with the XpressProblem
-    # We do this by creating a new XpressProblem.
-    # This is because we use a destructor callback in the XpressProblem constructor
-    # >    Xpress.destroyprob(model.inner)
-    # We cannot call it twice, and finalize is called before atexit
-    model.inner = XpressProblem(logfile = model.inner.logfile)
+
+    model.inner = XpressProblem()
+
+    for (name, value) in model.params
+        MOI.set(model, name, value)
+    end
+
     MOI.set(model, MOI.RawParameter("MPSNAMELENGTH"), 64)
     MOI.set(model, MOI.RawParameter("CALLBACKFROMMASTERTHREAD"), 1)
 
     MOI.set(model, MOI.RawParameter("XPRESS_WARNING_WINDOWS"), model.show_warning)
 
-    model.name = ""
-
     # disable log caching previous state
     log_level = model.log_level
     log_level != 0 && MOI.set(model, MOI.RawParameter("OUTPUTLOG"), 0)
-    # silently load a empty model
+    # silently load a empty model - to avoid useless printing
     Xpress.loadlp(model.inner)
     # re-enable logging
     log_level != 0 && MOI.set(model, MOI.RawParameter("OUTPUTLOG"), log_level)
@@ -2738,7 +2731,7 @@ function MOI.get(model::Optimizer, attr::MOI.ResultCount)
 end
 
 function MOI.get(model::Optimizer, ::MOI.Silent)
-    return MOI.get(model, MOI.RawParameter("OUTPUTLOG")) == 0
+    return model.log_level == 0
 end
 
 function MOI.set(model::Optimizer, ::MOI.Silent, flag::Bool)
