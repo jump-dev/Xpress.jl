@@ -12,7 +12,7 @@ function write_depsfile(path)
         path = replace(path, "\\" => "\\\\")
     end
     print(f,"""
-    const dlpath = \"$(path)\"
+    const xpressdlpath = \"$(path)\"
     """)
     close(f)
 end
@@ -50,4 +50,3 @@ elseif !found
     Note that Xpress must be obtained separately from fico.com.
     """)
 end
-
