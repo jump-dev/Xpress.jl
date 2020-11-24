@@ -3,17 +3,19 @@ __precompile__()
 module Xpress
 
     using Libdl
-    const libxprs = string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext)
 
     # Load in `deps.jl`, complaining if it does not exist
     const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
+
     if isfile(depsjl_path)
         include(depsjl_path)
     elseif !haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
         error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
     else
-        const dlpath = ""
+        const xpressdlpath = ""
     end
+
+    const libxprs = joinpath(xpressdlpath, string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext))
 
     ### imports
 
@@ -43,7 +45,7 @@ module Xpress
     )
 
     function initialize()
-        Libdl.dlopen(joinpath(dlpath, libxprs))
+        Libdl.dlopen(libxprs)
         userlic()
         init() # Call XPRSinit for initialization
         # free is not strictly necessary since destroyprob is called
