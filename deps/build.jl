@@ -10,6 +10,7 @@ end
 function my_download(url::AbstractString, filename::AbstractString)
     if Sys.iswindows() && VERSION < v"1.1"
         # from https://github.com/JuliaLang/julia/blob/788b2c77c10c2160f4794a4d4b6b81a95a90940c/base/download.jl#L26
+        # otherwise files are not properly downloaded - check sizes
         curl_exe = joinpath(get(ENV, "SYSTEMROOT", "C:\\Windows"), "System32\\curl.exe")
         process = run(`$curl_exe -s -S -g -L -f -o $filename $url`)#, wait=false)
         return filename
@@ -73,12 +74,6 @@ function ci_installation()
     for (url, file) in files
         local_filename = joinpath(@__DIR__, file)
         my_download(url, local_filename)
-    end
-    @show paths = readdir(@__DIR__)
-    for p in paths
-        if isfile(p)
-            @show p, filesize(p)
-        end
     end
     path = joinpath(@__DIR__, files[1][2])
     d = Libdl.dlopen_e(path)
