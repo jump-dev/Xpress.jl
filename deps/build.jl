@@ -62,6 +62,12 @@ function ci_installation()
         local_filename = joinpath(@__DIR__, file)
         download(url, local_filename)
     end
+    @show paths = readdir(@__DIR__)
+    for p in paths
+        if isfile(p)
+            @show p, filesize(p)
+        end
+    end
     path = joinpath(@__DIR__, files[1][2])
     d = Libdl.dlopen_e(path)
     if d != C_NULL
