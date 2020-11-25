@@ -6,6 +6,18 @@ if isfile(depsfile)
     rm(depsfile)
 end
 
+
+function my_download(url::AbstractString, filename::AbstractString)
+    if Sys.iswindows() && VERSION < v"1.1"
+        # from https://github.com/JuliaLang/julia/blob/788b2c77c10c2160f4794a4d4b6b81a95a90940c/base/download.jl#L26
+        curl_exe = joinpath(get(ENV, "SYSTEMROOT", "C:\\Windows"), "System32\\curl.exe")
+        process = run(`$curl_exe -s -S -g -L -f -o $filename $url`)#, wait=false)
+        return filename
+    else
+        return download(url, filename)
+    end
+end
+
 function write_depsfile(path)
     f = open(depsfile,"w")
     if Sys.iswindows()
@@ -60,7 +72,7 @@ function ci_installation()
     end
     for (url, file) in files
         local_filename = joinpath(@__DIR__, file)
-        download(url, local_filename)
+        my_download(url, local_filename)
     end
     @show paths = readdir(@__DIR__)
     for p in paths
