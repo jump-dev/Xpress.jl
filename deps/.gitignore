@@ -1,2 +1,4 @@
 /deps.jl
 *.log
+*.xpr
+*.dll
