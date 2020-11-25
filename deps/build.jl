@@ -71,7 +71,7 @@ function ci_installation()
     path = joinpath(@__DIR__, files[1][2])
     d = Libdl.dlopen_e(path)
     if d != C_NULL
-        write_depsfile(path)
+        write_depsfile(@__DIR__)
     else
         error("Could not open xprs.dll")
     end
