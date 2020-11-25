@@ -3,7 +3,7 @@ uuid = "9e70acf3-d6c9-5be6-b5bd-4e2c73e3e054"
 url = "https://github.com/jump-dev/Xpress.jl"
 authors = [
     "Joaquim Dias Garcia <joaquim@psr-inc.com>, Dheepak Krishnamurthy <me@kdheepak.com>, Jose Daniel Lara <jdlara@berkeley.edu>"]
-version = "0.12.1"
+version = "0.12.2"
 
 [deps]
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
