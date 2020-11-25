@@ -5,8 +5,8 @@
 | [![Build Status][build-img]][build-url] [![Codecov branch][codecov-img]][codecov-url] | [![Gitter][gitter-img]][gitter-url] [<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Discourse_logo.png/799px-Discourse_logo.png" width="64">][discourse-url] |
 
 
-[build-img]: https://travis-ci.org/jump-dev/Xpress.jl.svg?branch=master
-[build-url]: https://travis-ci.org/jump-dev/Xpress.jl
+[build-img]: https://github.com/jump-dev/Xpress.jl/workflows/CI/badge.svg?branch=master
+[build-url]: https://github.com/jump-dev/Xpress.jl/actions?query=workflow%3ACI
 [codecov-img]: http://codecov.io/github/jump-dev/Xpress.jl/coverage.svg?branch=master
 [codecov-url]: http://codecov.io/github/jump-dev/Xpress.jl?branch=master
 
