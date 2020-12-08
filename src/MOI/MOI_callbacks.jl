@@ -103,6 +103,15 @@ function default_moi_callback(model::Optimizer)
     return
 end
 
+function MOI.get(::Optimizer, attr::MOI.CallbackNodeStatus{CallbackData})
+    if Xpress.getintattrib(attr.callback_data.model,Xpress.Lib.XPRS_MIPINFEAS) == 0
+        return MOI.CALLBACK_NODE_STATUS_INTEGER
+    elseif Xpress.getintattrib(attr.callback_data.model,Xpress.Lib.XPRS_MIPINFEAS) > 0
+        return MOI.CALLBACK_NODE_STATUS_FRACTIONAL
+    end
+    return MOI.CALLBACK_NODE_STATUS_UNKNOWN
+end
+
 function MOI.get(
     model::Optimizer,
     ::MOI.CallbackVariablePrimal{CallbackData},
