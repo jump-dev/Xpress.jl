@@ -369,3 +369,15 @@ end
         @test callback_called
     end
 end
+
+@testset "Xpress.CallbackFunction.CallbackNodeStatus" begin
+    model, x, item_weights = callback_knapsack_model()
+    global unknown_reached = false
+    MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
+        if MOI.get(model, MOI.CallbackNodeStatus(cb_data)) == MOI.CALLBACK_NODE_STATUS_UNKNOWN
+            global unknown_reached = true
+        end
+    end)
+    MOI.optimize!(model)
+    @test unknown_reached
+end
