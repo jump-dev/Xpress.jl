@@ -55,6 +55,16 @@ end
         # These tests fail due to tolerance issues; tested below.
         "solve_qcp_edge_cases",
         "solve_qp_edge_cases",
+            
+        # Issue #105: Farkas dual for variable bound not implemented.
+        "solve_farkas_equalto_upper",
+        "solve_farkas_equalto_lower",
+        "solve_farkas_lessthan",
+        "solve_farkas_greaterthan",
+        "solve_farkas_interval_upper",
+        "solve_farkas_interval_lower",
+        "solve_farkas_variable_lessthan",
+        "solve_farkas_variable_lessthan_max",
        ],
     )
     MOIT.solve_qcp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
