@@ -105,9 +105,10 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.CallbackNodeStatus{CallbackData})
     if check_moi_callback_validity(model)
-        if Xpress.getintattrib(attr.callback_data.model,Xpress.Lib.XPRS_MIPINFEAS) == 0
+        mip_infeas = Xpress.getintattrib(attr.callback_data.model, Xpress.Lib.XPRS_MIPINFEAS)
+        if mip_infeas == 0
             return MOI.CALLBACK_NODE_STATUS_INTEGER
-        elseif Xpress.getintattrib(attr.callback_data.model,Xpress.Lib.XPRS_MIPINFEAS) > 0
+        elseif mip_infeas > 0
             return MOI.CALLBACK_NODE_STATUS_FRACTIONAL
         end
     end
