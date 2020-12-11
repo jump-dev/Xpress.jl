@@ -56,7 +56,7 @@ end
         "solve_qcp_edge_cases",
         "solve_qp_edge_cases",
             
-        # Issue #105: Farkas dual for variable bound not implemented.
+        # These tests require extra parameters to obtain certificates.
         "solve_farkas_equalto_upper",
         "solve_farkas_equalto_lower",
         "solve_farkas_lessthan",
@@ -67,6 +67,14 @@ end
         "solve_farkas_variable_lessthan_max",
        ],
     )
+    MOIT.solve_farkas_equalto_upper(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
+    MOIT.solve_farkas_equalto_lower(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
+    MOIT.solve_farkas_lessthan(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
+    MOIT.solve_farkas_greaterthan(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
+    MOIT.solve_farkas_interval_upper(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
+    MOIT.solve_farkas_interval_lower(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
+    MOIT.solve_farkas_variable_lessthan(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
+    MOIT.solve_farkas_variable_lessthan_max(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
     MOIT.solve_qcp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
     MOIT.solve_qp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
     # MOIT.delete_soc_variables(OPTIMIZER, CONFIG_LOW_TOL)
@@ -81,18 +89,13 @@ end
             infeas_certificates = false
         ), [
             # These tests require extra parameters to obtain certificates.
-            "linear8a", "linear8b", "linear8c",
-            # TODO: This requires an infeasiblity certificate for a variable bound.
-            "linear12",
+            "linear8a", "linear8b", "linear8c","linear12",
         ]
     )
     MOIT.linear8atest(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
     MOIT.linear8btest(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
     MOIT.linear8ctest(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
-
-    MOIT.linear12test(
-        BRIDGED_OPTIMIZER, MOIT.TestConfig(infeas_certificates = false)
-    )
+    MOIT.linear12test(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
 end
 
 @testset "Quadratic tests" begin
@@ -279,4 +282,176 @@ end
         @test MOI.get(model, Xpress.ConstraintConflictStatus(), c1) == false
         @test MOI.get(model, Xpress.ConstraintConflictStatus(), c2) == false
     end
+end
+
+@testset "test_farkas_dual_min" begin
+    model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
+    x = MOI.add_variables(model, 2)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.SingleVariable}(),
+        MOI.SingleVariable(x[1]),
+    )
+    clb = MOI.add_constraint.(
+        model, MOI.SingleVariable.(x), MOI.GreaterThan(0.0)
+    )
+    c = MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0, 1.0], x), 0.0),
+        MOI.LessThan(-1.0),
+    )
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
+    @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
+    clb_dual = MOI.get.(model, MOI.ConstraintDual(), clb)
+    c_dual = MOI.get(model, MOI.ConstraintDual(), c)
+    @test clb_dual[1] > 1e-6
+    @test clb_dual[2] > 1e-6
+    @test c_dual[1] < -1e-6
+    @test clb_dual[1] ≈ -2 * c_dual atol = 1e-6
+    @test clb_dual[2] ≈ -c_dual atol = 1e-6
+end
+
+@testset "test_farkas_dual_min_interval" begin
+    model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
+    x = MOI.add_variables(model, 2)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.SingleVariable}(),
+        MOI.SingleVariable(x[1]),
+    )
+    clb = MOI.add_constraint.(
+        model, MOI.SingleVariable.(x), MOI.Interval(0.0, 10.0)
+    )
+    c = MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0, 1.0], x), 0.0),
+        MOI.LessThan(-1.0),
+    )
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
+    @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
+    clb_dual = MOI.get.(model, MOI.ConstraintDual(), clb)
+    c_dual = MOI.get(model, MOI.ConstraintDual(), c)
+    @test clb_dual[1] > 1e-6
+    @test clb_dual[2] > 1e-6
+    @test c_dual[1] < -1e-6
+    @test clb_dual[1] ≈ -2 * c_dual atol = 1e-6
+    @test clb_dual[2] ≈ -c_dual atol = 1e-6
+end
+
+@testset "test_farkas_dual_min_equalto" begin
+    model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
+    x = MOI.add_variables(model, 2)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.SingleVariable}(),
+        MOI.SingleVariable(x[1]),
+    )
+    clb = MOI.add_constraint.(model, MOI.SingleVariable.(x), MOI.EqualTo(0.0))
+    c = MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0, 1.0], x), 0.0),
+        MOI.LessThan(-1.0),
+    )
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
+    @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
+    clb_dual = MOI.get.(model, MOI.ConstraintDual(), clb)
+    c_dual = MOI.get(model, MOI.ConstraintDual(), c)
+    @test clb_dual[1] > 1e-6
+    @test clb_dual[2] > 1e-6
+    @test c_dual[1] < -1e-6
+    @test clb_dual[1] ≈ -2 * c_dual atol = 1e-6
+    @test clb_dual[2] ≈ -c_dual atol = 1e-6
+end
+
+@testset "test_farkas_dual_min_ii" begin
+    model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
+    x = MOI.add_variables(model, 2)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(-1.0, x[1])], 0.0),
+    )
+    clb = MOI.add_constraint.(
+        model, MOI.SingleVariable.(x), MOI.LessThan(0.0)
+    )
+    c = MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([-2.0, -1.0], x), 0.0),
+        MOI.LessThan(-1.0),
+    )
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
+    @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
+    clb_dual = MOI.get.(model, MOI.ConstraintDual(), clb)
+    c_dual = MOI.get(model, MOI.ConstraintDual(), c)
+    @test clb_dual[1] < -1e-6
+    @test clb_dual[2] < -1e-6
+    @test c_dual[1] < -1e-6
+    @test clb_dual[1] ≈ 2 * c_dual atol = 1e-6
+    @test clb_dual[2] ≈ c_dual atol = 1e-6
+end
+
+@testset "test_farkas_dual_max" begin
+    model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
+    x = MOI.add_variables(model, 2)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.SingleVariable}(),
+        MOI.SingleVariable(x[1]),
+    )
+    clb = MOI.add_constraint.(
+        model, MOI.SingleVariable.(x), MOI.GreaterThan(0.0)
+    )
+    c = MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0, 1.0], x), 0.0),
+        MOI.LessThan(-1.0),
+    )
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
+    @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
+    clb_dual = MOI.get.(model, MOI.ConstraintDual(), clb)
+    c_dual = MOI.get(model, MOI.ConstraintDual(), c)
+    @test clb_dual[1] > 1e-6
+    @test clb_dual[2] > 1e-6
+    @test c_dual[1] < -1e-6
+    @test clb_dual[1] ≈ -2 * c_dual atol = 1e-6
+    @test clb_dual[2] ≈ -c_dual atol = 1e-6
+end
+
+@testset "test_farkas_dual_max_ii" begin
+    model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
+    x = MOI.add_variables(model, 2)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(-1.0, x[1])], 0.0),
+    )
+    clb = MOI.add_constraint.(
+        model, MOI.SingleVariable.(x), MOI.LessThan(0.0)
+    )
+    c = MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([-2.0, -1.0], x), 0.0),
+        MOI.LessThan(-1.0),
+    )
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
+    @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
+    clb_dual = MOI.get.(model, MOI.ConstraintDual(), clb)
+    c_dual = MOI.get(model, MOI.ConstraintDual(), c)
+    @test clb_dual[1] < -1e-6
+    @test clb_dual[2] < -1e-6
+    @test c_dual[1] < -1e-6
+    @test clb_dual[1] ≈ 2 * c_dual atol = 1e-6
+    @test clb_dual[2] ≈ c_dual atol = 1e-6
 end

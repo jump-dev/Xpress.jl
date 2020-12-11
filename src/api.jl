@@ -1546,7 +1546,7 @@ Returns the nonzeros in the constraint  matrix for the  columns in a given range
 
 """
 function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
-    @checked Lib.XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, Cint(first), Cint(last))
+    @checked Lib.XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, Cint(first-1), Cint(last-1))
 end
 
 # # Disable 64Bit versions do to reliability issues.
