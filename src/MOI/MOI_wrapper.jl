@@ -2582,12 +2582,14 @@ and it applies to the lower bound if ā > 0.
 function _farkas_variable_dual(model::Optimizer, col::Int64)
     nvars = length(model.variable_info)
     nrows = length(model.affine_constraint_info)
-    mstart = Array{Cint}(undef,2)
-    mrwind = Array{Cint}(undef,nrows)
-    dmatval = Array{Float64}(undef,nrows)
     ncoeffs = Array{Cint}(undef,1)
+    getcols(model.inner, C_NULL, C_NULL, C_NULL, nrows, ncoeffs, col, col)
+    ncoeffs_ = ncoeffs[1]
+    mstart = Array{Cint}(undef,2)
+    mrwind = Array{Cint}(undef,ncoeffs_)
+    dmatval = Array{Float64}(undef,ncoeffs_)
     getcols(model.inner, mstart, mrwind, dmatval, nrows, ncoeffs, col, col)
-    return dmatval' * model.cached_solution.linear_dual
+    return sum(v * model.cached_solution.linear_dual[i + 1] for (i, v) in zip(mrwind, dmatval))
 end
 
 function MOI.get(
