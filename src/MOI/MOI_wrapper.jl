@@ -2567,6 +2567,31 @@ function _dual_multiplier(model::Optimizer)
     return MOI.get(model, MOI.ObjectiveSense()) == MOI.MIN_SENSE ? 1.0 : -1.0
 end
 
+"""
+    _farkas_variable_dual(model::Optimizer, col::Cint)
+
+Return a Farkas dual associated with the variable bounds of `col`.
+
+Compute the Farkas dual as:
+
+    ā * x = λ' * A * x <= λ' * b = -β + sum(āᵢ * Uᵢ | āᵢ < 0) + sum(āᵢ * Lᵢ | āᵢ > 0)
+
+The Farkas dual of the variable is ā, and it applies to the upper bound if ā < 0,
+and it applies to the lower bound if ā > 0.
+"""
+function _farkas_variable_dual(model::Optimizer, col::Int64)
+    nvars = length(model.variable_info)
+    nrows = length(model.affine_constraint_info)
+    ncoeffs = Array{Cint}(undef,1)
+    getcols(model.inner, C_NULL, C_NULL, C_NULL, nrows, ncoeffs, col, col)
+    ncoeffs_ = ncoeffs[1]
+    mstart = Array{Cint}(undef,2)
+    mrwind = Array{Cint}(undef,ncoeffs_)
+    dmatval = Array{Float64}(undef,ncoeffs_)
+    getcols(model.inner, mstart, mrwind, dmatval, nrows, ncoeffs, col, col)
+    return sum(v * model.cached_solution.linear_dual[i + 1] for (i, v) in zip(mrwind, dmatval))
+end
+
 function MOI.get(
     model::Optimizer, attr::MOI.ConstraintDual,
     c::MOI.ConstraintIndex{MOI.SingleVariable, MOI.LessThan{Float64}}
@@ -2574,6 +2599,10 @@ function MOI.get(
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
     column = _info(model, c).column
+    if model.cached_solution.has_dual_certificate
+        dual = -_farkas_variable_dual(model, column)
+        return min(dual, 0.0)
+    end
     reduced_cost = model.cached_solution.variable_dual[column]
     sense = MOI.get(model, MOI.ObjectiveSense())
     # The following is a heuristic for determining whether the reduced cost
@@ -2601,6 +2630,10 @@ function MOI.get(
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
     column = _info(model, c).column
+    if model.cached_solution.has_dual_certificate
+        dual = -_farkas_variable_dual(model, column)
+        return max(dual,0.0)
+    end
     reduced_cost = model.cached_solution.variable_dual[column]
     sense = MOI.get(model, MOI.ObjectiveSense())
     # The following is a heuristic for determining whether the reduced cost
@@ -2628,6 +2661,9 @@ function MOI.get(
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
     column = _info(model, c).column
+    if model.cached_solution.has_dual_certificate
+        return -_farkas_variable_dual(model, column)
+    end
     reduced_cost = model.cached_solution.variable_dual[column]
     return _dual_multiplier(model) * reduced_cost
 end
@@ -2639,6 +2675,9 @@ function MOI.get(
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
     column = _info(model, c).column
+    if model.cached_solution.has_dual_certificate
+        return -_farkas_variable_dual(model, column)
+    end
     reduced_cost = model.cached_solution.variable_dual[column]
     return _dual_multiplier(model) * reduced_cost
 end
@@ -2650,6 +2689,9 @@ function MOI.get(
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
     row = _info(model, c).row
+    if model.cached_solution.has_dual_certificate
+        return model.cached_solution.linear_dual[row]
+    end
     return _dual_multiplier(model) * model.cached_solution.linear_dual[row]
 end
 
