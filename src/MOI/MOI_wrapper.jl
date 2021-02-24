@@ -1239,6 +1239,11 @@ function MOI.delete(
     end
     info.lessthan_name = ""
     model.name_to_constraint_index = nothing
+    if info.type == BINARY
+        info.previous_lower_bound = _get_variable_lower_bound(model, info)
+        info.previous_upper_bound = _get_variable_upper_bound(model, info)
+        Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
+    end
     return
 end
 
@@ -1342,6 +1347,11 @@ function MOI.delete(
     end
     info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
+    if info.type == BINARY
+        info.previous_lower_bound = _get_variable_lower_bound(model, info)
+        info.previous_upper_bound = _get_variable_upper_bound(model, info)
+        Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
+    end
     return
 end
 
@@ -1356,6 +1366,11 @@ function MOI.delete(
     info.bound = NONE
     info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
+    if info.type == BINARY
+        info.previous_lower_bound = _get_variable_lower_bound(model, info)
+        info.previous_upper_bound = _get_variable_upper_bound(model, info)
+        Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
+    end
     return
 end
 
@@ -1370,6 +1385,11 @@ function MOI.delete(
     info.bound = NONE
     info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
+    if info.type == BINARY
+        info.previous_lower_bound = _get_variable_lower_bound(model, info)
+        info.previous_upper_bound = _get_variable_upper_bound(model, info)
+        Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
+    end
     return
 end
 
@@ -1421,12 +1441,31 @@ function MOI.set(
     MOI.throw_if_not_valid(model, c)
     lower, upper = _bounds(s)
     info = _info(model, c)
+    if info.type == BINARY
+        if lower !== nothing
+            if lower > 1
+                error("The problem is infeasible")
+            end
+        end
+        if upper !== nothing
+            if upper < 0
+                error("The problem is infeasible")
+            end
+        end
+        if lower !== nothing && upper !== nothing
+            if (lower > 0 && upper < 1)
+                error("The problem is infeasible")
+            end
+        end
+    end
     if lower !== nothing
         _set_variable_lower_bound(model, info, lower)
     end
     if upper !== nothing
         _set_variable_upper_bound(model, info, upper)
     end
+    info.previous_lower_bound = _get_variable_lower_bound(model, info)
+    info.previous_upper_bound = _get_variable_upper_bound(model, info)
     return
 end
 
