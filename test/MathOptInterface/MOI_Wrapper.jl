@@ -55,6 +55,7 @@ end
         # These tests fail due to tolerance issues; tested below.
         "solve_qcp_edge_cases",
         "solve_qp_edge_cases",
+        "solve_qp_zero_offdiag",
             
         # These tests require extra parameters to obtain certificates.
         "solve_farkas_equalto_upper",
@@ -77,6 +78,7 @@ end
     MOIT.solve_farkas_variable_lessthan_max(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
     MOIT.solve_qcp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
     MOIT.solve_qp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
+    MOIT.solve_qp_zero_offdiag(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
     # MOIT.delete_soc_variables(OPTIMIZER, CONFIG_LOW_TOL)
     MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
