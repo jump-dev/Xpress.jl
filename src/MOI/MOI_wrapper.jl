@@ -1150,6 +1150,24 @@ function MOI.add_constraint(
     model::Optimizer, f::MOI.SingleVariable, s::S
 ) where {S <: SCALAR_SETS}
     info = _info(model, f.variable)
+    if info.type == BINARY
+        lower, upper = _bounds(s)
+        if lower !== nothing
+            if lower > 1
+                error("The problem is infeasible")
+            end
+        end
+        if upper !== nothing
+            if upper < 0
+                error("The problem is infeasible")
+            end
+        end
+        if lower !== nothing && upper !== nothing
+            if (lower > 0 && upper < 1)
+                error("The problem is infeasible")
+            end
+        end
+    end
     if S <: MOI.LessThan{Float64}
         _throw_if_existing_upper(info.bound, info.type, S, f.variable)
         info.bound = info.bound == GREATER_THAN ? LESS_AND_GREATER_THAN : LESS_THAN
@@ -1441,23 +1459,6 @@ function MOI.set(
     MOI.throw_if_not_valid(model, c)
     lower, upper = _bounds(s)
     info = _info(model, c)
-    if info.type == BINARY
-        if lower !== nothing
-            if lower > 1
-                error("The problem is infeasible")
-            end
-        end
-        if upper !== nothing
-            if upper < 0
-                error("The problem is infeasible")
-            end
-        end
-        if lower !== nothing && upper !== nothing
-            if (lower > 0 && upper < 1)
-                error("The problem is infeasible")
-            end
-        end
-    end
     if lower !== nothing
         _set_variable_lower_bound(model, info, lower)
     end
@@ -1475,6 +1476,24 @@ function MOI.add_constraint(
     info = _info(model, f.variable)
     info.previous_lower_bound = _get_variable_lower_bound(model, info)
     info.previous_upper_bound = _get_variable_upper_bound(model, info)
+    lower, upper = info.previous_lower_bound, info.previous_upper_bound
+    if info.type == CONTINUOUS
+        if lower !== nothing
+            if lower > 1
+                error("The problem is infeasible")
+            end
+        end
+        if upper !== nothing
+            if upper < 0
+                error("The problem is infeasible")
+            end
+        end
+        if lower !== nothing && upper !== nothing
+            if (lower > 0 && upper < 1)
+                error("The problem is infeasible")
+            end
+        end
+    end
     Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
     info.type = BINARY
     return MOI.ConstraintIndex{MOI.SingleVariable, MOI.ZeroOne}(f.variable.value)

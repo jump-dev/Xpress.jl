@@ -560,3 +560,32 @@ end
         rtol
     @test MOI.get(model, MOI.ObjectiveBound()) >= 19.4 - atol
 end
+
+@testset "Binary Variables Infeasibility" begin
+    atol = rtol = 1e-6
+    model = Xpress.Optimizer(OUTPUTLOG = 0)
+    v = MOI.add_variable(model)
+
+    infeas_err = ErrorException("The problem is infeasible")
+    vc1 = MOI.add_constraint(model, MOI.SingleVariable(v), MOI.ZeroOne())
+    @test_throws infeas_err vc2 = MOI.add_constraint(
+        model,
+        MOI.SingleVariable(v),
+        MOI.GreaterThan(2.0),
+    )
+    @test_throws infeas_err vc3 = MOI.add_constraint(
+        model,
+        MOI.SingleVariable(v),
+        MOI.LessThan(-1.0),
+        )
+    @test_throws infeas_err vc4 = MOI.add_constraint(
+        model,
+        MOI.SingleVariable(v),
+        MOI.Interval(-1.0,-0.5),
+    )
+    @test_throws infeas_err vc5 = MOI.add_constraint(
+        model,
+        MOI.SingleVariable(v),
+        MOI.EqualTo(2.0),
+    )
+end
