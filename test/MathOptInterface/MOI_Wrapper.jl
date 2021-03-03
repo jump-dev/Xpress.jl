@@ -11,8 +11,6 @@ const MOIU = MOI.Utilities
 const OPTIMIZER = Xpress.Optimizer(OUTPUTLOG = 0)
 const OPTIMIZER_2 = Xpress.Optimizer(OUTPUTLOG = 0)
 
-include("../SemiContInt/semicontint.jl")
-
 # Xpress can only obtain primal and dual rays without presolve. Check more on
 # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSgetprimalray.html
 
@@ -130,11 +128,6 @@ end
 
 @testset "Integer Linear tests" begin
     MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG)
-end
-
-@testset "SemiContInt" begin
-    semiconttest(BRIDGED_OPTIMIZER, CONFIG)
-    semiinttest(BRIDGED_OPTIMIZER, CONFIG)
 end
 
 @testset "ModelLike tests" begin
