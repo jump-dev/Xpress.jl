@@ -11,8 +11,6 @@ const MOIU = MOI.Utilities
 const OPTIMIZER = Xpress.Optimizer(OUTPUTLOG = 0)
 const OPTIMIZER_2 = Xpress.Optimizer(OUTPUTLOG = 0)
 
-include("../SemiContInt/semicontint.jl")
-
 # Xpress can only obtain primal and dual rays without presolve. Check more on
 # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSgetprimalray.html
 
@@ -55,6 +53,7 @@ end
         # These tests fail due to tolerance issues; tested below.
         "solve_qcp_edge_cases",
         "solve_qp_edge_cases",
+        "solve_qp_zero_offdiag",
             
         # These tests require extra parameters to obtain certificates.
         "solve_farkas_equalto_upper",
@@ -77,6 +76,7 @@ end
     MOIT.solve_farkas_variable_lessthan_max(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
     MOIT.solve_qcp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
     MOIT.solve_qp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
+    MOIT.solve_qp_zero_offdiag(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
     # MOIT.delete_soc_variables(OPTIMIZER, CONFIG_LOW_TOL)
     MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
 end
@@ -128,11 +128,6 @@ end
 
 @testset "Integer Linear tests" begin
     MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG)
-end
-
-@testset "SemiContInt" begin
-    semiconttest(BRIDGED_OPTIMIZER, CONFIG)
-    semiinttest(BRIDGED_OPTIMIZER, CONFIG)
 end
 
 @testset "ModelLike tests" begin
@@ -454,4 +449,136 @@ end
     @test c_dual[1] < -1e-6
     @test clb_dual[1] ≈ 2 * c_dual atol = 1e-6
     @test clb_dual[2] ≈ c_dual atol = 1e-6
+end
+
+@testset "Delete equality constraint in binary variable" begin
+    atol = rtol = 1e-6
+    model = Xpress.Optimizer(OUTPUTLOG = 0)
+    # an example on mixed integer programming
+    #
+    #   maximize 1.1x + 2 y + 5 z
+    #
+    #   s.t.  x + y + z <= 10
+    #         x + 2 y + z <= 15
+    #
+    #         x is continuous: 0 <= x <= 5
+    #         y is integer: 0 <= y <= 10
+    #         z is binary
+    v = MOI.add_variables(model, 3)
+
+    cf = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 1.0, 1.0], v), 0.0)
+    c = MOI.add_constraint(model, cf, MOI.LessThan(10.0))
+    cf2 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 2.0, 1.0], v), 0.0)
+    c2 = MOI.add_constraint(model, cf2, MOI.LessThan(15.0))
+
+    vc1 = MOI.add_constraint(
+        model,
+        MOI.SingleVariable(v[1]),
+        MOI.Interval(0.0, 5.0),
+    )
+    vc2 = MOI.add_constraint(
+        model,
+        MOI.SingleVariable(v[2]),
+        MOI.Interval(0.0, 10.0),
+    )
+    vc3 = MOI.add_constraint(model, MOI.SingleVariable(v[2]), MOI.Integer())
+    vc4 = MOI.add_constraint(model, MOI.SingleVariable(v[3]), MOI.ZeroOne())
+
+    objf =
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.1, 2.0, 5.0], v), 0.0)
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        objf,
+    )
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+
+    MOI.optimize!(model)
+
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.OPTIMAL
+    @test MOI.get(model, MOI.ResultCount()) >= 1
+    @test MOI.get(model, MOI.PrimalStatus()) in
+            [MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT]
+    @test MOI.get(model, MOI.ObjectiveValue()) ≈ 19.4 atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.VariablePrimal(), v) ≈ [4, 5, 1] atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.ConstraintPrimal(), c) ≈ 10 atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.ConstraintPrimal(), c2) ≈ 15 atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.ObjectiveBound()) >= 19.4 - atol
+
+    z_value = MOI.get(model, MOI.VariablePrimal(), v)[3]
+    
+    # Relax binary bounds of z variable
+    MOI.delete(model, vc4)
+
+    # Fix z to its optimal value
+    vc5 = MOI.add_constraint(model, MOI.SingleVariable(v[3]), MOI.EqualTo(z_value))
+
+    MOI.optimize!(model)
+
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.OPTIMAL
+    @test MOI.get(model, MOI.ResultCount()) >= 1
+    @test MOI.get(model, MOI.PrimalStatus()) in
+            [MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT]
+    @test MOI.get(model, MOI.ObjectiveValue()) ≈ 19.4 atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.VariablePrimal(), v) ≈ [4, 5, 1] atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.ConstraintPrimal(), c) ≈ 10 atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.ConstraintPrimal(), c2) ≈ 15 atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.ObjectiveBound()) >= 19.4 - atol
+
+    # Add back binary bounds to z
+    vc4 = MOI.add_constraint(model, MOI.SingleVariable(v[3]), MOI.ZeroOne())
+
+    # Remove equality constraint
+    MOI.delete(model, vc5)
+
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.OPTIMAL
+    @test MOI.get(model, MOI.ResultCount()) >= 1
+    @test MOI.get(model, MOI.PrimalStatus()) in
+            [MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT]
+    @test MOI.get(model, MOI.ObjectiveValue()) ≈ 19.4 atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.VariablePrimal(), v) ≈ [4, 5, 1] atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.ConstraintPrimal(), c) ≈ 10 atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.ConstraintPrimal(), c2) ≈ 15 atol = atol rtol =
+        rtol
+    @test MOI.get(model, MOI.ObjectiveBound()) >= 19.4 - atol
+end
+
+@testset "Binary Variables Infeasibility" begin
+    atol = rtol = 1e-6
+    model = Xpress.Optimizer(OUTPUTLOG = 0)
+    v = MOI.add_variable(model)
+
+    infeas_err = ErrorException("The problem is infeasible")
+    vc1 = MOI.add_constraint(model, MOI.SingleVariable(v), MOI.ZeroOne())
+    @test_throws infeas_err vc2 = MOI.add_constraint(
+        model,
+        MOI.SingleVariable(v),
+        MOI.GreaterThan(2.0),
+    )
+    @test_throws infeas_err vc3 = MOI.add_constraint(
+        model,
+        MOI.SingleVariable(v),
+        MOI.LessThan(-1.0),
+        )
+    @test_throws infeas_err vc4 = MOI.add_constraint(
+        model,
+        MOI.SingleVariable(v),
+        MOI.Interval(-1.0,-0.5),
+    )
+    @test_throws infeas_err vc5 = MOI.add_constraint(
+        model,
+        MOI.SingleVariable(v),
+        MOI.EqualTo(2.0),
+    )
 end
