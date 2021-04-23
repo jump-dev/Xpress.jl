@@ -3581,15 +3581,7 @@ function getfirstiis(model::Optimizer)
 
 end
 
-"""
-    compute_conflict(model::Optimizer)
-
-Compute a minimal subset of the constraints and variables that keep the model
-infeasible.
-
-"""
-
-function compute_conflict(model::Optimizer)
+function MOI.compute_conflict!(model::Optimizer)
     model.conflict = getfirstiis(model)
     return
 end
@@ -3601,22 +3593,9 @@ function _ensure_conflict_computed(model::Optimizer)
     end
 end
 
-"""
-    ConflictStatus()
-
-Return an `MOI.TerminationStatusCode` indicating the status of the last
-computed conflict. If a minimal conflict is found, it will return
-`MOI.OPTIMAL`. If the problem is feasible, it will return `MOI.INFEASIBLE`. If
-`compute_conflict` has not been called yet, it will return
-`MOI.OPTIMIZE_NOT_CALLED`.
-"""
-struct ConflictStatus <: MOI.AbstractModelAttribute  end
-
-MOI.is_set_by_optimize(::ConflictStatus) = true
-
-function MOI.get(model::Optimizer, ::ConflictStatus)
+function MOI.get(model::Optimizer, ::MOI.ConflictStatus)
     if model.conflict === nothing
-        return MOI.OPTIMIZE_NOT_CALLED
+        return MOI.COMPUTE_CONFLICT_NOT_CALLED
     elseif model.conflict.stat == 0 || !model.conflict.is_standard_iis
         return MOI.OPTIMAL
     elseif model.conflict.stat == 1
@@ -3626,34 +3605,23 @@ function MOI.get(model::Optimizer, ::ConflictStatus)
     end
 end
 
-function MOI.supports(::Optimizer, ::ConflictStatus)
+function MOI.supports(::Optimizer, ::MOI.ConflictStatus)
     return true
 end
 
-"""
-    ConstraintConflictStatus()
-
-A Boolean constraint attribute indicating whether the constraint participates
-in the last computed conflict.
-"""
-
-struct ConstraintConflictStatus <: MOI.AbstractConstraintAttribute end
-
-MOI.is_set_by_optimize(::ConstraintConflictStatus) = true
-
-function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
+function MOI.get(model::Optimizer, ::MOI.ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
     _ensure_conflict_computed(model)
     return (_info(model, index).row - 1) in model.conflict.miisrow
 end
 
-function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
+function MOI.get(model::Optimizer, ::MOI.ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
     _ensure_conflict_computed(model)
     return (_info(model, index).column) in model.conflict.miiscol
 end
 
 function MOI.supports(
     ::Optimizer,
-    ::ConstraintConflictStatus,
+    ::MOI.ConstraintConflictStatus,
     ::Type{MOI.ConstraintIndex{<:MOI.SingleVariable, <:SCALAR_SETS}}
 )
     return true
@@ -3661,7 +3629,7 @@ end
 
 function MOI.supports(
     ::Optimizer,
-    ::ConstraintConflictStatus,
+    ::MOI.ConstraintConflictStatus,
     ::Type{MOI.ConstraintIndex{
         <:MOI.ScalarAffineFunction,
         <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}
