@@ -2787,7 +2787,9 @@ Returns the error message corresponding to the last error encountered by a libra
 
 """
 function getlasterror(prob::XpressProblem)
-    @invoke Lib.XPRSgetlasterror(prob, _)::String
+    out = Cstring(pointer(Array{Cchar}(undef, 512)))
+    s = Lib.XPRSgetlasterror(prob, out)
+    s == 0 ? unsafe_string(out) : "Unable to get last error"
 end
 
 """

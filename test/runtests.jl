@@ -16,4 +16,5 @@ end
     @test Xpress.getcontrol(prob, "HEURTHREADS") == 0
     @test Xpress.getcontrol(prob, :HEURTHREADS) == 0
 
+    @test_throws Xpress.XpressError Xpress.copyprob(prob, prob)
 end
