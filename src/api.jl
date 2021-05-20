@@ -163,10 +163,12 @@ Retrieves an error message describing the last licensing error, if any occurred.
 """
 function getlicerrmsg(; len = 1024)
     msg = Cstring(pointer(Array{Cchar}(undef, len*8)))
-    Lib.XPRSgetlicerrmsg(msg, len)
-    # TODO - @ checked version does not work
-    # Lib.XPRSgetlicerrmsg(msg, len)
-    return unsafe_string(msg)
+    buffer = Array{Cchar}(undef, len*8)
+    buffer_p = pointer(buffer)
+    GC.@preserve buffer begin
+        Lib.XPRSgetlicerrmsg(msg, len)
+        return unsafe_string(msg)
+    end
 end
 
 """
@@ -2787,10 +2789,14 @@ Returns the error message corresponding to the last error encountered by a libra
 
 """
 function getlasterror(prob::XpressProblem)
-    out = Cstring(pointer(Array{Cchar}(undef, 512)))
-    s = Lib.XPRSgetlasterror(prob, out)
-    s == 0 ? unsafe_string(out) : "Unable to get last error"
-end
+    @invoke Lib.XPRSgetlasterror(prob, _)::String
+    buffer = Array{Cchar}(undef, 512)
+    buffer_p = pointer(buffer)
+    GC.@preserve buffer begin
+        s = Lib.XPRSgetlasterror(prob, buffer_p)
+        return s == 0 ? unsafe_string(buffer_p) : "Unable to get last error"
+    end
+ end
 
 """
     int XPRS_CC XPRSbasiscondition(XPRSprob prob, double *condnum, double *scondnum);
