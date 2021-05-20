@@ -162,7 +162,6 @@ Retrieves an error message describing the last licensing error, if any occurred.
 
 """
 function getlicerrmsg(; len = 1024)
-    msg = Cstring(pointer(Array{Cchar}(undef, len*8)))
     buffer = Array{Cchar}(undef, len*8)
     buffer_p = pointer(buffer)
     GC.@preserve buffer begin

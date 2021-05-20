@@ -19,13 +19,15 @@ function invoke(f::Function, pos::Int, ::Type{Int}, args...)
 end
 
 function invoke(f::Function, pos::Int, ::Type{String}, args...)
-    out = Cstring(pointer(Array{Cchar}(undef, 1024)))
-
-    args = collect(Any, args)
-    insert!(args, pos-1, out)
-
-    r = f(args...)
-    r != 0 ? throw(XpressError(r, "Unable to invoke $f")) : unsafe_string(out)
+    buffer = Array{Cchar}(undef, 1024)
+    buffer_p = pointer(buffer)
+    GC.@preserve buffer begin
+        out = Cstring(buffer_p)
+        args = collect(Any, args)
+        insert!(args, pos-1, out)
+        r = f(args...)
+        r != 0 ? throw(XpressError(r, "Unable to invoke $f")) : unsafe_string(out)
+    end
 end
 
 """
