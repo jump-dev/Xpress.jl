@@ -63,7 +63,7 @@ mutable struct XpressProblem <: CWrapper
 end
 
 function get_xpress_error_message(prob::XpressProblem)
-    e = lstrip(Xpress.getlasterror(prob), ['?'])
+    lstrip(Xpress.getlasterror(prob), ['?'])
 end
 
 function XpressProblem(; logfile = "")

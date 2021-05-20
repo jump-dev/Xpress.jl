@@ -91,7 +91,7 @@ macro invoke(expr)
 end
 
 function get_xpress_error_message(xprs_ptr)
-    e = "(Unable to extract error message for $(typeof(xprs_ptr)).)"
+    "(Unable to extract error message for $(typeof(xprs_ptr)).)"
 end
 
 """
