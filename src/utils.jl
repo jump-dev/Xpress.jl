@@ -26,7 +26,7 @@ function invoke(f::Function, pos::Int, ::Type{String}, args...)
         args = collect(Any, args)
         insert!(args, pos-1, out)
         r = f(args...)
-        r != 0 ? throw(XpressError(r, "Unable to invoke $f")) : unsafe_string(out)
+        return r != 0 ? throw(XpressError(r, "Unable to invoke $f")) : unsafe_string(out)
     end
 end
 
