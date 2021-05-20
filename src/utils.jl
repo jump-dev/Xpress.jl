@@ -92,6 +92,36 @@ function get_xpress_error_message(xprs_ptr)
     e = "(Unable to extract error message for $(typeof(xprs_ptr)).)"
 end
 
+"""
+    @checked f(prob)
+
+Lets you invoke a lower level `Lib` function and check that Xpress does not error.
+Use this macro to minimize repetition and increase readability.
+
+The first argument must be a object that can be cast into an Xpress pointer, e.g. `Ptr{XpressProblem}`.
+This is passed to `get_xpress_error_message(xprs_ptr)` to get the error message.
+
+Examples:
+
+    @checked Lib.XPRSsetprobname(prob, name)
+
+As an example of what @checked expands to:
+
+```
+julia> @macroexpand @checked Lib.XPRSsetprobname(prob, name)
+quote
+    r = Lib.XPRSsetprobname(prob, name)
+    if r != 0
+        xprs_ptr = prob
+        e = get_xpress_error_message(xprs_ptr)
+        throw(XpressError(r, "Unable to call `Xpress.setprobname`:\n\n\$(e).\n"))
+    else
+        nothing
+    end
+end
+```
+
+"""
 macro checked(expr)
     @assert expr.head == :call "Can only use @checked on function calls"
     @assert ( expr.args[1].head == :(.) ) && ( expr.args[1].args[1] == :Lib) "Can only use @checked on Lib.\$function"
