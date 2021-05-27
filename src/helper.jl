@@ -62,6 +62,10 @@ mutable struct XpressProblem <: CWrapper
     end
 end
 
+function get_xpress_error_message(prob::XpressProblem)
+    lstrip(Xpress.getlasterror(prob), ['?'])
+end
+
 function XpressProblem(; logfile = "")
     ref = Ref{Lib.XPRSprob}()
     createprob(ref)

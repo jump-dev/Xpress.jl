@@ -74,8 +74,11 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
     lic = liccheck(lic)
 
     # Send GIVEN LIC to XPRESS lib
-    slicmsg = Cstring(pointer(Array{Cchar}(undef, 1024*8)))
-    ierr = license(lic, slicmsg)
+    buffer = Array{Cchar}(undef, 1024*8)
+    buffer_p = pointer(buffer)
+    ierr = GC.@preserve buffer begin
+        license(lic, Cstring(buffer_p))
+    end
 
     # check LIC TYPE
     if ierr == 16

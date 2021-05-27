@@ -73,7 +73,7 @@ Initializes the Optimizer library. This must be called before any other library 
 
 """
 function init()
-    @checked Lib.XPRSinit(C_NULL)
+    Lib.XPRSinit(C_NULL)
 end
 
 """
@@ -83,7 +83,7 @@ Frees any allocated  memory and closes all open files.
 
 """
 function free()
-    @checked Lib.XPRSfree()
+    Lib.XPRSfree()
 end
 
 """
@@ -125,7 +125,7 @@ You can use this function to disable some of the checking and validation of func
 
 """
 function setcheckedmode(checked_mode)
-    @checked Lib.XPRSsetcheckedmode(checked_mode)
+    Lib.XPRSsetcheckedmode(checked_mode)
 end
 
 """
@@ -135,7 +135,7 @@ You can use this function to interrogate whether checking and validation of all 
 
 """
 function getcheckedmode(r_checked_mode)
-    @checked Lib.XPRSgetcheckedmode(r_checked_mode)
+    Lib.XPRSgetcheckedmode(r_checked_mode)
 end
 
 function license(lic, path)
@@ -143,11 +143,11 @@ function license(lic, path)
 end
 
 function beginlicensing(r_dontAlreadyHaveLicense)
-    @checked Lib.XPRSbeginlicensing(r_dontAlreadyHaveLicense)
+    Lib.XPRSbeginlicensing(r_dontAlreadyHaveLicense)
 end
 
 function endlicensing()
-    @checked Lib.XPRSendlicensing()
+    Lib.XPRSendlicensing()
 end
 
 """
@@ -162,11 +162,12 @@ Retrieves an error message describing the last licensing error, if any occurred.
 
 """
 function getlicerrmsg(; len = 1024)
-    msg = Cstring(pointer(Array{Cchar}(undef, len*8)))
-    Lib.XPRSgetlicerrmsg(msg, len)
-    # TODO - @ checked version does not work
-    # @checked Lib.XPRSgetlicerrmsg(msg, len)
-    return unsafe_string(msg)
+    buffer = Array{Cchar}(undef, len*8)
+    buffer_p = pointer(buffer)
+    GC.@preserve buffer begin
+        Lib.XPRSgetlicerrmsg(msg, len)
+        return unsafe_string(msg)
+    end
 end
 
 """
@@ -2788,7 +2789,13 @@ Returns the error message corresponding to the last error encountered by a libra
 """
 function getlasterror(prob::XpressProblem)
     @invoke Lib.XPRSgetlasterror(prob, _)::String
-end
+    buffer = Array{Cchar}(undef, 512)
+    buffer_p = pointer(buffer)
+    GC.@preserve buffer begin
+        s = Lib.XPRSgetlasterror(prob, buffer_p)
+        return s == 0 ? unsafe_string(buffer_p) : "Unable to get last error"
+    end
+ end
 
 """
     int XPRS_CC XPRSbasiscondition(XPRSprob prob, double *condnum, double *scondnum);
