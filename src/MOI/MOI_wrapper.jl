@@ -2412,7 +2412,7 @@ function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
         elseif stop == Xpress.Lib.XPRS_STOP_NODELIMIT
             return MOI.NODE_LIMIT
         elseif stop == Xpress.Lib.XPRS_STOP_ITERLIMIT
-            return MOI.MOI.ITERATION_LIMIT
+            return MOI.ITERATION_LIMIT
         elseif stop == Xpress.Lib.XPRS_STOP_MIPGAP
             stat = Xpress.Lib.XPRS_MIP_NOT_LOADED
             if is_mip(model)
