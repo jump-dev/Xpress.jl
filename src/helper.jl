@@ -260,6 +260,8 @@ XPRS_INT_CONTROLS = [
                         Lib.XPRS_PREPERMUTE
                         Lib.XPRS_PREPERMUTESEED
                         Lib.XPRS_MAXMEMORY
+                        Lib.XPRS_MAXMEMORYSOFT
+                        Lib.XPRS_MAXMEMORYHARD
                         Lib.XPRS_CUTFREQ
                         Lib.XPRS_SYMSELECT
                         Lib.XPRS_SYMMETRY
@@ -359,6 +361,7 @@ XPRS_INT_CONTROLS = [
                         Lib.XPRS_CONFLICTCUTS
                         Lib.XPRS_PREPROTECTDUAL
                         Lib.XPRS_CORESPERCPU
+                        Lib.XPRS_RESOURCESTRATEGY
                         Lib.XPRS_SLEEPONTHREADWAIT
                         Lib.XPRS_PREDUPROW
                         Lib.XPRS_CPUPLATFORM
