@@ -135,7 +135,7 @@ The Julia versions 1.1.x do not work properly with MOI dues to Julia bugs. Hence
 
 In the development of Xpress.jl it is useful to benchmark the MOI wrapper code performance.
 To perform benchmark we recommend you compare the performance of the master branch aggaints your 
-implementation. Here we leave an example on how to perform the benchmarks the correct way.
+implementation. Here there is an example on how to perform the benchmarks the correct way.
 
 1. before starting your implementation run a baseline benchmark aggainst the branch `master`.
 ```
