@@ -178,7 +178,7 @@ end
 
             # Once it's called, no problem.
             MOI.compute_conflict!(model)
-            @test MOI.get(model, MOI.ConflictStatus()) == MOI.OPTIMAL
+            @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
             @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.IN_CONFLICT
             @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == MOI.IN_CONFLICT
         end
