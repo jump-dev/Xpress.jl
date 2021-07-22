@@ -3588,7 +3588,7 @@ end
 
 function _ensure_conflict_computed(model::Optimizer)
     if model.conflict === nothing
-        error("Cannot access conflict status. Call `Xpress.compute_conflict(model)` first. " *
+        error("Cannot access conflict status. Call `MOI.compute_conflict!(model)` first. " *
               "In case the model is modified, the computed conflict will not be purged.")
     end
 end
@@ -3597,11 +3597,12 @@ function MOI.get(model::Optimizer, ::MOI.ConflictStatus)
     if model.conflict === nothing
         return MOI.COMPUTE_CONFLICT_NOT_CALLED
     elseif model.conflict.stat == 0 || !model.conflict.is_standard_iis
-        return MOI.OPTIMAL
+        # Currently this condition (!model.conflict.is_standard_iis) is always false.
+        return MOI.CONFLICT_FOUND
     elseif model.conflict.stat == 1
-        return MOI.INFEASIBLE
+        return MOI.NO_CONFLICT_FOUND 
     else
-        return MOI.OTHER_LIMIT
+        return error("IIS failed internally.")
     end
 end
 
@@ -3611,12 +3612,12 @@ end
 
 function MOI.get(model::Optimizer, ::MOI.ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
     _ensure_conflict_computed(model)
-    return (_info(model, index).row - 1) in model.conflict.miisrow
+    return (_info(model, index).row - 1) in model.conflict.miisrow ? MOI.IN_CONFLICT : MOI.NOT_IN_CONFLICT
 end
 
 function MOI.get(model::Optimizer, ::MOI.ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
     _ensure_conflict_computed(model)
-    return (_info(model, index).column) in model.conflict.miiscol
+    return (_info(model, index).column) in model.conflict.miiscol ? MOI.IN_CONFLICT : MOI.NOT_IN_CONFLICT
 end
 
 function MOI.supports(
