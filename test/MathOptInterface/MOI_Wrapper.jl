@@ -179,8 +179,8 @@ end
             # Once it's called, no problem.
             MOI.compute_conflict!(model)
             @test MOI.get(model, MOI.ConflictStatus()) == MOI.OPTIMAL
-            @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == true
-            @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == true
+            @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.IN_CONFLICT
+            @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == MOI.IN_CONFLICT
         end
     end
 
@@ -202,11 +202,11 @@ end
         # Once it's called, no problem.
         # Two possible IISes: b1, b2, c1 OR b2, c1, c2
         MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.OPTIMAL
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) in [true, false]
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) == true
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == true
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) in [true, false]
+        @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) in [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) == MOI.IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) in [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
     end
 
     @testset "Two conflicting constraints (EqualTo)" begin
@@ -227,11 +227,11 @@ end
         # Once it's called, no problem.
         # Two possible IISes: b1, b2, c1 OR b2, c1, c2
         MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.OPTIMAL
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) in [true, false]
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) == true
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == true
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) in [true, false]
+        @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) in [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) == MOI.IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) in [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
     end
 
     @testset "Variables outside conflict" begin
@@ -253,12 +253,12 @@ end
 
         # Once it's called, no problem.
         MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.OPTIMAL
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) == true
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) == true
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b3) == false
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == true
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == false
+        @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) == MOI.IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) == MOI.IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), b3) == MOI.NOT_IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == MOI.NOT_IN_CONFLICT
     end
 
     @testset "No conflict" begin
@@ -273,9 +273,9 @@ end
 
         # Once it's called, no problem.
         MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.INFEASIBLE
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == false
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == false
+        @test MOI.get(model, MOI.ConflictStatus()) == MOI.NO_CONFLICT_FOUND
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.NOT_IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == MOI.NOT_IN_CONFLICT
     end
 end
 
