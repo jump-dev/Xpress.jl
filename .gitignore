@@ -5,3 +5,5 @@ Manifest.toml
 *.sublime-workspace
 *.bat
 *.sublime-project
+*.json
+*.txt
