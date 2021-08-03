@@ -39,7 +39,7 @@ function local_installation()
     push!(paths_to_try, @__DIR__)
 
     if haskey(ENV, "XPRESSDIR")
-    push!(paths_to_try, joinpath(ENV["XPRESSDIR"], Sys.iswindows() ? "bin" : "lib"))
+        push!(paths_to_try, joinpath(ENV["XPRESSDIR"], Sys.iswindows() ? "bin" : "lib"))
     end
 
     global found = false
