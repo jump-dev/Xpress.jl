@@ -155,6 +155,16 @@ mutable struct BasisStatus
     var_status::Vector{Cint}
 end
 
+mutable struct ForwardSensitivityCache 
+    constraint_input::Vector{Float64}
+    variable_output::Vector{Float64}
+end
+
+mutable struct BackwardSensitivityCache 
+    variable_input::Vector{Float64}
+    constraint_output::Vector{Float64}
+end
+
 mutable struct IISData
     stat::Cint
     is_standard_iis::Bool
@@ -225,6 +235,10 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     solve_method::String
     solve_relaxation::Bool
+
+    #Stores the input and output of derivatives
+    forward_sensitivity_cache::ForwardSensitivityCache
+    backward_sensitivity_cache::BackwardSensitivityCache
 
     # Callback fields.
     callback_cached_solution::Union{Nothing, CachedSolution}
@@ -819,6 +833,111 @@ function MOI.set(
     model.name_to_variable = nothing
     return
 end
+
+struct ForwardSensitivityInConstraint <: MOI.AbstractConstraintAttribute end
+
+struct ForwardSensitivityOutVariable <: MOI.AbstractVariableAttribute end
+
+struct BackwardSensitivityInVariable <: MOI.AbstractVariableAttribute end
+
+struct BackwardSensitivityOutConstraint <: MOI.AbstractConstraintAttribute end
+
+function forward(model::Optimizer)
+    #1 - Create variable_output with size of All variables
+    if model.basis_status == nothing
+        _generate_basis_status(model::Optimizer)
+    end
+    vstatus = basis_status.var_status
+    variable_output = Vector{Float64}(0, length(vstatus))
+
+    #2 - Create vector 'vectAux' of size ROWS of type Float64 (constraints)
+    vectAux = copy(model.forward_sensitivity_cache.constraint_input)
+
+    #3 - Call XPRSftran with vector 'vectAux' as an argument
+    XPRSftran(model, vectAux)
+
+    #4 - Create Dict of Basic variable to All variables
+    dictAux = Dict{Int,Int}()
+    c = 0
+    for i in eachindex(vstatus)
+        if vstatus[i] == MOI.BASIC
+            c += 1
+            dictAux[c] = i
+        end
+    end
+
+    #5 - Populate vector of All variables with the correct value of the Basic variables
+    for i in eachindex(vectAux)
+        variable_output[dictAux[i]] = vectAux[i]
+    end
+
+    #6 - Set variable_output equal to variable_output
+    model.forward_sensitivity_cache.variable_output = variable_output
+
+    return
+end
+
+function backward(model::Optimizer)
+    #1 - Get Basic variables
+    if model.basis_status == nothing
+        _generate_basis_status(model::Optimizer)
+    end
+    vstatus = basis_status.var_status
+
+    dictAux = Dict{Int,Int}()
+    c = 0
+    for i in eachindex(vstatus)
+        if vstatus[i] == MOI.BASIC
+            c += 1
+            dictAux[c] = i 
+        end
+    end
+    #2 - Create vector 'vectAux' of size ROWS of type Float64 (constraints) initialized at zero
+    vectAux = Vector{Float64}(0, c)
+
+    #3 - Populate vector 'vectAux' with the respective values in the correct positions of the basic variables
+    for (bi,vi) in dictAux
+        vectAux[bi] = model.backward_sensitivity_cache.variable_input[vi]
+    end
+    
+    #4 - Call XPRSbtran with vector 'vectAux' as an argument
+    XPRSbtran(model, vectAux)
+
+    #5 - Set constraint_output equal to vector 'vectAux'
+    model.backward_sensitivity_cache.constraint_output = vectAux
+
+    return
+end
+
+function MOI.set(
+    model::Optimizer, ::ForwardSensitivityInConstraint, ci::MOI.ConstraintIndex, value::Float64
+)
+    if model.forward_sensitivity_cache.constraint_input == nothing || length(model.forward_sensitivity_cache.constraint_input) != model.last_constraint_index
+        model.forward_sensitivity_cache.constraint_input = Vector{Float64}(0.0, model.last_constraint_index)
+    end
+    model.forward_sensitivity_cache.constraint_input[_info(model, ci).row] = value
+    return
+end
+
+function MOI.get(model::Optimizer, ::ForwardSensitivityOutVariable, vi::MOI.VariableIndex)
+    return model.forward_sensitivity_cache.variable_output[_info(model, vi).column]
+end
+
+function MOI.set(
+    model::Optimizer, ::BackwardSensitivityInVariable, vi::MOI.VariableIndex, value::Float64
+)
+    if model.backward_sensitivity_cache.variable_input == nothing || length(model.backward_sensitivity_cache.variable_input) != length(model.variable_info)
+        model.backward_sensitivity_cache.variable_input = Vector{Float64}(0.0, length(model.variable_info))
+    end
+    model.backward_sensitivity_cache.variable_input[_info(model, vi).column] = value
+    return
+end
+
+function MOI.get(model::Optimizer, ::BackwardSensitivityOutConstraint, ci::MOI.ConstraintIndex)
+    return model.backward_sensitivity_cache.constraint_output[_info(model, ci).row]
+end
+
+
 
 ###
 ### Objectives
