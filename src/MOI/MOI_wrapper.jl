@@ -2350,18 +2350,18 @@ function MOI.optimize!(model::Optimizer)
     end
     # If the problem hits a limit it might be left in a presolved state
     # this is needed to go back to post solve state.
-    # @show state = getintattrib(model.inner, Lib.XPRS_PRESOLVESTATE)
+    state = getintattrib(model.inner, Lib.XPRS_PRESOLVESTATE)
     # Bit Meaning
     # 0 Problem has been loaded.
     # 1 Problem has been LP presolved.
     # 2 Problem has been MIP presolved.
     # 7 Solution in memory is valid.
-    # @show str = bitstring(Int32(state))
-    # @show is_loaded = str[end] == '1'
-    # @show is_lppres = str[end-1] == '1'
-    # @show is_mippre = str[end-2] == '1'
-    # @show is_solava = str[end-7] == '1'
-    # Xpress.postsolve(model.inner) - post solve fails is problem is post solved
+    is_lppres = state & 2^1 > 0
+    is_mippre = state & 2^2 > 0
+    is_solava = state & 2^7 > 0
+    if is_lppres || is_mippre # or just use `is_solava` # dont know what is better
+        Xpress.postsolve(model.inner) # - post solve fails is problem is post solved
+    end
     model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
 
     status = MOI.get(model, MOI.PrimalStatus())
