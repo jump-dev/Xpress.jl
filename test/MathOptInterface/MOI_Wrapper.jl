@@ -66,6 +66,7 @@ end
         "solve_farkas_variable_lessthan_max",
        ],
     )
+    # certificates
     MOIT.solve_farkas_equalto_upper(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
     MOIT.solve_farkas_equalto_lower(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
     MOIT.solve_farkas_lessthan(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
@@ -74,6 +75,7 @@ end
     MOIT.solve_farkas_interval_lower(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
     MOIT.solve_farkas_variable_lessthan(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
     MOIT.solve_farkas_variable_lessthan_max(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
+    # tolerance
     MOIT.solve_qcp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
     MOIT.solve_qp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
     MOIT.solve_qp_zero_offdiag(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
