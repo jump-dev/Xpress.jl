@@ -2350,18 +2350,18 @@ function MOI.optimize!(model::Optimizer)
     end
     # If the problem hits a limit it might be left in a presolved state
     # this is needed to go back to post solve state.
-    # @show state = getintattrib(model.inner, Lib.XPRS_PRESOLVESTATE)
+    state = getintattrib(model.inner, Lib.XPRS_PRESOLVESTATE)
     # Bit Meaning
     # 0 Problem has been loaded.
     # 1 Problem has been LP presolved.
     # 2 Problem has been MIP presolved.
     # 7 Solution in memory is valid.
-    # @show str = bitstring(Int32(state))
-    # @show is_loaded = str[end] == '1'
-    # @show is_lppres = str[end-1] == '1'
-    # @show is_mippre = str[end-2] == '1'
-    # @show is_solava = str[end-7] == '1'
-    # Xpress.postsolve(model.inner) - post solve fails is problem is post solved
+    is_lppres = state & 2^1 > 0
+    is_mippre = state & 2^2 > 0
+    is_solava = state & 2^7 > 0
+    if is_lppres || is_mippre # or just use `is_solava` # dont know what is better
+        Xpress.postsolve(model.inner) # - post solve fails is problem is post solved
+    end
     model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
 
     status = MOI.get(model, MOI.PrimalStatus())
@@ -2412,7 +2412,7 @@ function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
         elseif stop == Xpress.Lib.XPRS_STOP_NODELIMIT
             return MOI.NODE_LIMIT
         elseif stop == Xpress.Lib.XPRS_STOP_ITERLIMIT
-            return MOI.MOI.ITERATION_LIMIT
+            return MOI.ITERATION_LIMIT
         elseif stop == Xpress.Lib.XPRS_STOP_MIPGAP
             stat = Xpress.Lib.XPRS_MIP_NOT_LOADED
             if is_mip(model)
@@ -3581,79 +3581,48 @@ function getfirstiis(model::Optimizer)
 
 end
 
-"""
-    compute_conflict(model::Optimizer)
-
-Compute a minimal subset of the constraints and variables that keep the model
-infeasible.
-
-"""
-
-function compute_conflict(model::Optimizer)
+function MOI.compute_conflict!(model::Optimizer)
     model.conflict = getfirstiis(model)
     return
 end
 
 function _ensure_conflict_computed(model::Optimizer)
     if model.conflict === nothing
-        error("Cannot access conflict status. Call `Xpress.compute_conflict(model)` first. " *
+        error("Cannot access conflict status. Call `MOI.compute_conflict!(model)` first. " *
               "In case the model is modified, the computed conflict will not be purged.")
     end
 end
 
-"""
-    ConflictStatus()
-
-Return an `MOI.TerminationStatusCode` indicating the status of the last
-computed conflict. If a minimal conflict is found, it will return
-`MOI.OPTIMAL`. If the problem is feasible, it will return `MOI.INFEASIBLE`. If
-`compute_conflict` has not been called yet, it will return
-`MOI.OPTIMIZE_NOT_CALLED`.
-"""
-struct ConflictStatus <: MOI.AbstractModelAttribute  end
-
-MOI.is_set_by_optimize(::ConflictStatus) = true
-
-function MOI.get(model::Optimizer, ::ConflictStatus)
+function MOI.get(model::Optimizer, ::MOI.ConflictStatus)
     if model.conflict === nothing
-        return MOI.OPTIMIZE_NOT_CALLED
+        return MOI.COMPUTE_CONFLICT_NOT_CALLED
     elseif model.conflict.stat == 0 || !model.conflict.is_standard_iis
-        return MOI.OPTIMAL
+        # Currently this condition (!model.conflict.is_standard_iis) is always false.
+        return MOI.CONFLICT_FOUND
     elseif model.conflict.stat == 1
-        return MOI.INFEASIBLE
+        return MOI.NO_CONFLICT_FOUND 
     else
-        return MOI.OTHER_LIMIT
+        return error("IIS failed internally.")
     end
 end
 
-function MOI.supports(::Optimizer, ::ConflictStatus)
+function MOI.supports(::Optimizer, ::MOI.ConflictStatus)
     return true
 end
 
-"""
-    ConstraintConflictStatus()
-
-A Boolean constraint attribute indicating whether the constraint participates
-in the last computed conflict.
-"""
-
-struct ConstraintConflictStatus <: MOI.AbstractConstraintAttribute end
-
-MOI.is_set_by_optimize(::ConstraintConflictStatus) = true
-
-function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
+function MOI.get(model::Optimizer, ::MOI.ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.ScalarAffineFunction, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
     _ensure_conflict_computed(model)
-    return (_info(model, index).row - 1) in model.conflict.miisrow
+    return (_info(model, index).row - 1) in model.conflict.miisrow ? MOI.IN_CONFLICT : MOI.NOT_IN_CONFLICT
 end
 
-function MOI.get(model::Optimizer, ::ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
+function MOI.get(model::Optimizer, ::MOI.ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.SingleVariable, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
     _ensure_conflict_computed(model)
-    return (_info(model, index).column) in model.conflict.miiscol
+    return (_info(model, index).column) in model.conflict.miiscol ? MOI.IN_CONFLICT : MOI.NOT_IN_CONFLICT
 end
 
 function MOI.supports(
     ::Optimizer,
-    ::ConstraintConflictStatus,
+    ::MOI.ConstraintConflictStatus,
     ::Type{MOI.ConstraintIndex{<:MOI.SingleVariable, <:SCALAR_SETS}}
 )
     return true
@@ -3661,7 +3630,7 @@ end
 
 function MOI.supports(
     ::Optimizer,
-    ::ConstraintConflictStatus,
+    ::MOI.ConstraintConflictStatus,
     ::Type{MOI.ConstraintIndex{
         <:MOI.ScalarAffineFunction,
         <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}

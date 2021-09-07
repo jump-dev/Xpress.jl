@@ -25,12 +25,14 @@ function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
 
     # default env (not metioned in manual)
     if haskey(ENV, "XPAUTH_PATH")
-        push!(candidates, joinpath(ENV["XPAUTH_PATH"], XPAUTH))
+        xpauth_path = replace(ENV["XPAUTH_PATH"], "\"" => "")
+        push!(candidates, joinpath(xpauth_path, XPAUTH))
     end
 
     # default lib dir
     if haskey(ENV, "XPRESSDIR")
-        push!(candidates, joinpath(ENV["XPRESSDIR"], "bin", XPAUTH))
+        xpressdir = replace(ENV["XPRESSDIR"], "\"" => "")
+        push!(candidates, joinpath(xpressdir, "bin", XPAUTH))
     end
 
     # user´s lib dir
@@ -74,8 +76,11 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
     lic = liccheck(lic)
 
     # Send GIVEN LIC to XPRESS lib
-    slicmsg = Cstring(pointer(Array{Cchar}(undef, 1024*8)))
-    ierr = license(lic, slicmsg)
+    buffer = Array{Cchar}(undef, 1024*8)
+    buffer_p = pointer(buffer)
+    ierr = GC.@preserve buffer begin
+        license(lic, Cstring(buffer_p))
+    end
 
     # check LIC TYPE
     if ierr == 16
