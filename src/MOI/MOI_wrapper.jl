@@ -829,7 +829,7 @@ function _zero_objective(model::Optimizer)
     obj = zeros(Float64, num_vars)
     if model.objective_type == SCALAR_QUADRATIC
         # We need to zero out the existing quadratic objective.
-        Xpress.delq!(model.inner)
+        Xpress.delqmatrix(model.inner, 0)
     end
     Xpress.chgobj(model.inner, collect(1:num_vars), obj)
     Xpress.chgobj(model.inner, [0], [0.0])
@@ -892,7 +892,7 @@ function MOI.set(
 ) where {F <: MOI.ScalarAffineFunction{Float64}}
     if model.objective_type == SCALAR_QUADRATIC
         # We need to zero out the existing quadratic objective.
-        Xpress.delq!(model.inner)
+        Xpress.delqmatrix(model.inner, 0)
     end
     num_vars = length(model.variable_info)
     # We zero all terms because we want to gurantee that the old terms
