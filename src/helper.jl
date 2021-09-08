@@ -464,33 +464,6 @@ function Base.show(io::IO, prob::XpressProblem)
     println(io, "    number of integer entities             = $(n_entities(prob))")
 end
 
-
-"""
-    delq!(model::Model)
-
-delete all quadritic terms formthe objective
-"""
-function delq!(prob::XpressProblem)
-
-    n = n_variables(prob)
-    k = n*(n+1)÷2
-
-    qr = zeros(Cint, k)
-    qc = zeros(Cint, k)
-    qv = zeros(k)
-
-    cont = 1
-    for i in 1:n
-        for j in i:n
-            qr[cont] = i
-            qc[cont] = j
-            cont += 1
-        end
-    end
-
-    Xpress.chgmqobj(prob, qr, qc, qv)
-end
-
 const MIPSTATUS_STRING = Dict{Int,String}(
     Xpress.Lib.XPRS_MIP_NOT_LOADED => "0 Problem has not been loaded ( XPRS_MIP_NOT_LOADED).",
     Xpress.Lib.XPRS_MIP_LP_NOT_OPTIMAL => "1 Global search incomplete - the initial continuous relaxation has not been solved and no integer solution has been found ( XPRS_MIP_LP_NOT_OPTIMAL).",

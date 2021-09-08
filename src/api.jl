@@ -4708,7 +4708,7 @@ Deletes the quadratic part of a row or of the objective function.
 
 """
 function delqmatrix(prob::XpressProblem, irow)
-    @checked Lib.XPRSdelqmatrix(prob, irow)
+    @checked Lib.XPRSdelqmatrix(prob, irow-1)
 end
 
 """
