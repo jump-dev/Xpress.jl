@@ -260,6 +260,8 @@ XPRS_INT_CONTROLS = [
                         Lib.XPRS_PREPERMUTE
                         Lib.XPRS_PREPERMUTESEED
                         Lib.XPRS_MAXMEMORY
+                        Lib.XPRS_MAXMEMORYSOFT
+                        Lib.XPRS_MAXMEMORYHARD
                         Lib.XPRS_CUTFREQ
                         Lib.XPRS_SYMSELECT
                         Lib.XPRS_SYMMETRY
@@ -359,6 +361,7 @@ XPRS_INT_CONTROLS = [
                         Lib.XPRS_CONFLICTCUTS
                         Lib.XPRS_PREPROTECTDUAL
                         Lib.XPRS_CORESPERCPU
+                        Lib.XPRS_RESOURCESTRATEGY
                         Lib.XPRS_SLEEPONTHREADWAIT
                         Lib.XPRS_PREDUPROW
                         Lib.XPRS_CPUPLATFORM
@@ -459,33 +462,6 @@ function Base.show(io::IO, prob::XpressProblem)
     println(io, "    number of non-zero qp objective terms  = $(n_quadratic_elements(prob))")
     println(io, "    number of non-zero qp constraint terms = $(n_quadratic_row_coefficients(prob))")
     println(io, "    number of integer entities             = $(n_entities(prob))")
-end
-
-
-"""
-    delq!(model::Model)
-
-delete all quadritic terms formthe objective
-"""
-function delq!(prob::XpressProblem)
-
-    n = n_variables(prob)
-    k = n*(n+1)÷2
-
-    qr = zeros(Cint, k)
-    qc = zeros(Cint, k)
-    qv = zeros(k)
-
-    cont = 1
-    for i in 1:n
-        for j in i:n
-            qr[cont] = i
-            qc[cont] = j
-            cont += 1
-        end
-    end
-
-    Xpress.chgmqobj(prob, qr, qc, qv)
 end
 
 const MIPSTATUS_STRING = Dict{Int,String}(
