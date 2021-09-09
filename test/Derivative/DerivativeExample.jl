@@ -52,8 +52,6 @@ function GenerateModel_SingleVariable()
     # Solve the optimizer
     MOI.optimize!(optimizer)
 
-    MOI.write_to_file(optimizer, "LP_SV.lp")
-
     # Return the solved optimizer with interest variables and constraints
     return DispachModel(optimizer, g, Df, c_limit_inf, c_limit_sup, c_demand)
 end
@@ -105,8 +103,6 @@ function GenerateModel_ScalarAffineFunction()
 
     # Solve the optimizer
     MOI.optimize!(optimizer)
-
-    MOI.write_to_file(optimizer, "LP_SAF.lp")
 
     # Return the solved optimizer with interest variables and constraints
     return DispachModel(optimizer, g, Df, c_limit_inf, c_limit_sup, c_demand)
