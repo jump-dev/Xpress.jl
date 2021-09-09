@@ -5,8 +5,6 @@ using Test
 
 const MOI = MathOptInterface
 
-XpressPSR.initialize()
-
 #Example of simple Thermal Generation Dispatch and the derivatives of the generation by the demand (dg/dd)
 mutable struct DispachModel
     optimizer::MOI.AbstractOptimizer # Optimizer
