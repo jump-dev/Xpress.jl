@@ -2541,7 +2541,6 @@ function MOI.optimize!(model::Optimizer)
         Xpress.getdualray(model.inner, model.cached_solution.linear_dual , has_Ray)
         model.cached_solution.has_dual_certificate = _has_dual_ray(model)
     end
-    Xpress.writeprob(model.inner, "Lp-Problem", "l")
     return
 end
 
