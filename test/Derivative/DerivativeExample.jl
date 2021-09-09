@@ -156,8 +156,8 @@ function Backward(model::DispachModel, ϵ::Float64 = 1.0)
 end
 
 #Initialization of Parameters
-@testset verbose = true "Results" begin
-    @testset verbose = true "Single_Variable" begin
+@testset "Results" begin
+    @testset "Single_Variable" begin
         #Generate model by SingleVariable
         model1 = GenerateModel_SingleVariable()
         #Get the results of models with the DiffOpt Forward context
@@ -173,17 +173,17 @@ end
            @test resultBackward[5:8] == [0.0;0.0;1.0;0.0]
         end
     end
-    @testset verbose = true "Scalar_Affine_Function" begin
+    @testset "Scalar_Affine_Function" begin
         #Generate model by ScalarAffineFunction
         model2 = GenerateModel_ScalarAffineFunction()
         #Get the results of models with the DiffOpt Forward context
-        @testset verbose = true "Forward" begin
+        @testset "Forward" begin
             resultForward = Forward(model2)
             @test resultForward[1:4] == [10.0;20.0;15.0;0.0]
             @test resultForward[5:8] == [0.0;0.0;1.0;0.0]
         end
        #Get the results of models with the DiffOpt Backward context
-       @testset verbose = true "Backward" begin
+       @testset "Backward" begin
            resultBackward = Backward(model2)
            @test resultBackward[1:4] == [10.0;20.0;15.0;0.0]
            @test resultBackward[5:8] == [0.0;0.0;1.0;0.0]
