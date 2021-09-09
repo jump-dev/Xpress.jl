@@ -1,6 +1,5 @@
 using MathOptInterface
 using Xpress
-using XpressPSR
 using Test
 
 const MOI = MathOptInterface
