@@ -967,7 +967,6 @@ function MOI.set(
     return
 end
 
-#MathOptInterface.ConstraintIndex{MathOptInterface.ScalarAffineFunction{Float64}, MathOptInterface.EqualTo{Float64}}, ScalarShape}
 function MOI.get(model::Optimizer, ::BackwardSensitivityOutConstraint, ci::MOI.ConstraintIndex)
     if is_mip(model)
         @warn "The problem is a MIP, it may failed to get the derivatives!"
