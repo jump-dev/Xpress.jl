@@ -847,6 +847,10 @@ struct BackwardSensitivityInVariable <: MOI.AbstractVariableAttribute end
 
 struct BackwardSensitivityOutConstraint <: MOI.AbstractConstraintAttribute end
 
+MOI.is_set_by_optimize(::ForwardSensitivityOutVariable) = true
+
+MOI.is_set_by_optimize(::BackwardSensitivityOutConstraint) = true
+
 function forward(model::Optimizer)
     rows = getintattrib(model.inner, Lib.XPRS_ROWS)
     spare_rows = getintattrib(model.inner, Lib.XPRS_SPAREROWS)
@@ -913,6 +917,7 @@ end
 function MOI.set(
     model::Optimizer, ::ForwardSensitivityInConstraint, ci::MOI.ConstraintIndex, value::Float64
 )
+    println("Enter Set")
     rows = getintattrib(model.inner, Lib.XPRS_ROWS)
     cols = getintattrib(model.inner, Lib.XPRS_COLS)
     if model.forward_sensitivity_cache === nothing
@@ -931,6 +936,7 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::ForwardSensitivityOutVariable, vi::MOI.VariableIndex)
+    println("Enter Get")
     if is_mip(model)
         @warn "The problem is a MIP, it may failed to get the derivatives!"
     end
@@ -944,6 +950,7 @@ function MOI.get(model::Optimizer, ::ForwardSensitivityOutVariable, vi::MOI.Vari
         forward(model)
         model.forward_sensitivity_cache.is_updated = true
     end
+    println("Exit Get")
     return model.forward_sensitivity_cache.variable_output[_info(model, vi).column]
 end
 
