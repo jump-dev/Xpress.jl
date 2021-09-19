@@ -1,4 +1,4 @@
-function semiconttest(model::MOI.ModelLike, config::MOIT.TestConfig{T}) where T
+function semiconttest(model::MOI.ModelLike, config::MOIT.Config{T}) where T
     atol = config.atol
     rtol = config.rtol
 
@@ -148,7 +148,7 @@ function semiconttest(model::MOI.ModelLike, config::MOIT.TestConfig{T}) where T
     end
 end
 
-function semiinttest(model::MOI.ModelLike, config::MOIT.TestConfig{T}) where T
+function semiinttest(model::MOI.ModelLike, config::MOIT.Config{T}) where T
     atol = config.atol
     rtol = config.rtol
 

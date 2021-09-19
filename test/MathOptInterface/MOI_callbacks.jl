@@ -4,10 +4,6 @@ using Random
 using Test
 
 const MOI = MathOptInterface
-const MOIT = MathOptInterface.Test
-
-const MOIT = MOI.Test
-const MOIU = MOI.Utilities
 
 function callback_simple_model()
     model = Xpress.Optimizer(
@@ -43,7 +39,7 @@ function callback_knapsack_model()
 
     N = 30
     x = MOI.add_variables(model, N)
-    MOI.add_constraints(model, MOI.SingleVariable.(x), MOI.ZeroOne())
+    MOI.add_constraints(model, x, MOI.ZeroOne())
     MOI.set.(model, MOI.VariablePrimalStart(), x, 0.0)
     Random.seed!(1)
     item_weights, item_values = rand(N), rand(N)
