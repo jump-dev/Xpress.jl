@@ -15,7 +15,7 @@
 [discourse-url]: https://discourse.julialang.org/c/domain/opt
 
 
-Xpress.jl is a wrapper for the [FICO Xpress Solver](www.fico.com/products/fico-xpress-solver).
+Xpress.jl is a wrapper for the [FICO Xpress Solver](https://www.fico.com/products/fico-xpress-solver).
 
 It has two components:
  - a thin wrapper around the complete C API
