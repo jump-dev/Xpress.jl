@@ -584,6 +584,9 @@ function MOI.get(model::Optimizer, ::MOI.ListOfVariableAttributesSet)
 end
 
 function MOI.get(model::Optimizer, ::MOI.ListOfModelAttributesSet)
+    if MOI.is_empty(model)
+        return Any[]
+    end
     attributes = Any[MOI.ObjectiveSense()]
     typ = MOI.get(model, MOI.ObjectiveFunctionType())
     if typ !== nothing
