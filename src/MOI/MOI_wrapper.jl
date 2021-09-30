@@ -2309,6 +2309,117 @@ function is_mip(model)
     return Xpress.is_mixedinteger(model.inner) && !model.solve_relaxation
 end
 
+# Internal function.
+# Uses getpresolvemap to convert a set of row_idxs and col_idxs from the
+# original indexing to the presolve indexing. Note that some indexes
+# that exist in the original indexing may not exist in the presolved indexing,
+# these will be replaced with `-1`.
+function _map_original_idxs_to_presolve_idxs!(prob, row_idxs, col_idxs)
+    qt_p_rows = getintattrib(prob, Lib.XPRS_ROWS)
+    qt_p_cols = getintattrib(prob, Lib.XPRS_COLS)
+
+    prow2orow = Vector{Cint}(undef, qt_p_rows)
+    pcol2ocol = Vector{Cint}(undef, qt_p_cols)
+
+    # Unfortunately, getpresolvemap gets us the inverse map (i.e.,
+    # presolve indexes to original indexes) so we sort the map
+    # (while keeping the original positions in *_order) and use
+    # cheap searchsorted calls to make find the presolve index
+    # from the original index. This is probably the best way that
+    # does not allocate a ton of extra memory.
+    getpresolvemap(prob, prow2orow, pcol2ocol)
+
+    row_order = sortperm(prow2orow)
+    permute!(prow2orow, row_order)
+    for (k, i) in pairs(row_idxs)
+        r = searchsorted(prow2orow, i)
+        if isempty(r)
+            row_idxs[k] = -1
+        else
+            row_idxs[k] = row_order[only(r)] - 1
+        end
+    end
+
+    col_order = resize!(row_order, qt_p_cols)
+    sortperm!(col_order, pcol2ocol)
+    permute!(pcol2ocol, col_order)
+    for (k, i) in pairs(col_idxs)
+        r = searchsorted(pcol2ocol, i)
+        if isempty(r)
+            col_idxs[k] = -1
+        else
+            col_idxs[k] = col_order[only(r)] - 1
+        end
+    end
+
+    return col_idxs, row_idxs
+end
+
+# Internal function.
+# A variable may or may not have MIP-start. Such information is stored
+# in the field `start` inside a `VariableInfo`. If `start` is `nothing`
+# there is no MIP-start; otherwise it has a `Float64` MIP-start value.
+# `_gather_MIP_start` returns the sparse representation of all MIP-starts
+# that is needed by the XPRESS API function `addmipsol`.
+# The sparse representation amounts to two `Vector` of the same size:
+# `colind` and `solval`. `colind` has the internal column index for
+# each variable that has a MIP-start. `solval` has the corresponding
+# primal value for each column referred in `colind`.
+function _gather_MIP_start(model; consider_presolve = true)
+    variable_info = model.variable_info
+    qt_var = length(variable_info)
+    colind = Vector{Cint}(undef, qt_var)
+    solval = Vector{Cdouble}(undef, qt_var)
+    j = 0
+    for (_, var_info) in variable_info
+        if var_info.start !== nothing
+            j += 1
+            colind[j] = var_info.column - 1
+            solval[j] = var_info.start :: Float64
+        end
+    end
+    resize!(colind, j)
+    resize!(solval, j)
+
+    if consider_presolve
+        # Changes colind, indexes that does not exist in the presolved
+        # problem become '-1'.
+        _map_original_idxs_to_presolve_idxs!(model.inner, Int[], colind)
+        invalid_idxs = findall(==(-1), colind)
+        if !isempty(invalid_idxs)
+            deleteat!(colind, invalid_idxs)
+            deleteat!(solval, invalid_idxs)
+        end
+    end
+
+    return colind, solval
+end
+
+# Internal function.
+# Informs `inner.model` of the solution stored in the `start` fields
+# of each element of `model.variable_info`.
+function _update_MIP_start!(model)
+    colind, solval = _gather_MIP_start(model)
+    @assert length(colind) == length(solval)
+    qt_mip_started_var = length(colind)
+    iszero(qt_mip_started_var) && return
+    # See: https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSaddmipsol.html
+    # The documentation states that `colind` "Should be NULL when length is
+    # equal to COLS, in which case it is assumed that solval provides a
+    # complete solution vector."
+    if qt_mip_started_var == length(model.variable_info)
+        # For the corner case in which `colind` is NOT equal to
+        # `1:length(model.variable_info)` we need to be sure that `solval`
+        # is in the same order as the model.inner columns.
+        permute!(solval, sortperm(colind))
+        addmipsol(model.inner, qt_mip_started_var, solval, C_NULL, C_NULL)
+    else
+        addmipsol(model.inner, qt_mip_started_var, solval, colind, C_NULL)
+    end
+
+    return
+end
+
 function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
     if check_moi_callback_validity(model)
@@ -2322,6 +2433,7 @@ function MOI.optimize!(model::Optimizer)
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
     rhs = Xpress.getrhs(model.inner)
+    is_mip(model) && _update_MIP_start!(model)
     start_time = time()
     if is_mip(model)
         Xpress.mipoptimize(model.inner, model.solve_method)
