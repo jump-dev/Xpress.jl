@@ -2310,52 +2310,6 @@ function is_mip(model)
 end
 
 # Internal function.
-# Uses getpresolvemap to convert a set of row_idxs and col_idxs from the
-# original indexing to the presolve indexing. Note that some indexes
-# that exist in the original indexing may not exist in the presolved indexing,
-# these will be replaced with `-1`.
-function _map_original_idxs_to_presolve_idxs!(prob, row_idxs, col_idxs)
-    qt_p_rows = getintattrib(prob, Lib.XPRS_ROWS)
-    qt_p_cols = getintattrib(prob, Lib.XPRS_COLS)
-
-    prow2orow = Vector{Cint}(undef, qt_p_rows)
-    pcol2ocol = Vector{Cint}(undef, qt_p_cols)
-
-    # Unfortunately, getpresolvemap gets us the inverse map (i.e.,
-    # presolve indexes to original indexes) so we sort the map
-    # (while keeping the original positions in *_order) and use
-    # cheap searchsorted calls to make find the presolve index
-    # from the original index. This is probably the best way that
-    # does not allocate a ton of extra memory.
-    getpresolvemap(prob, prow2orow, pcol2ocol)
-
-    row_order = sortperm(prow2orow)
-    permute!(prow2orow, row_order)
-    for (k, i) in pairs(row_idxs)
-        r = searchsorted(prow2orow, i)
-        if isempty(r)
-            row_idxs[k] = -1
-        else
-            row_idxs[k] = row_order[only(r)] - 1
-        end
-    end
-
-    col_order = resize!(row_order, qt_p_cols)
-    sortperm!(col_order, pcol2ocol)
-    permute!(pcol2ocol, col_order)
-    for (k, i) in pairs(col_idxs)
-        r = searchsorted(pcol2ocol, i)
-        if isempty(r)
-            col_idxs[k] = -1
-        else
-            col_idxs[k] = col_order[only(r)] - 1
-        end
-    end
-
-    return col_idxs, row_idxs
-end
-
-# Internal function.
 # A variable may or may not have MIP-start. Such information is stored
 # in the field `start` inside a `VariableInfo`. If `start` is `nothing`
 # there is no MIP-start; otherwise it has a `Float64` MIP-start value.
@@ -2365,7 +2319,7 @@ end
 # `colind` and `solval`. `colind` has the internal column index for
 # each variable that has a MIP-start. `solval` has the corresponding
 # primal value for each column referred in `colind`.
-function _gather_MIP_start(model; consider_presolve = true)
+function _gather_MIP_start(model)
     variable_info = model.variable_info
     qt_var = length(variable_info)
     colind = Vector{Cint}(undef, qt_var)
@@ -2380,17 +2334,6 @@ function _gather_MIP_start(model; consider_presolve = true)
     end
     resize!(colind, j)
     resize!(solval, j)
-
-    if consider_presolve
-        # Changes colind, indexes that does not exist in the presolved
-        # problem become '-1'.
-        _map_original_idxs_to_presolve_idxs!(model.inner, Int[], colind)
-        invalid_idxs = findall(==(-1), colind)
-        if !isempty(invalid_idxs)
-            deleteat!(colind, invalid_idxs)
-            deleteat!(solval, invalid_idxs)
-        end
-    end
 
     return colind, solval
 end
@@ -2408,9 +2351,9 @@ function _update_MIP_start!(model)
     # equal to COLS, in which case it is assumed that solval provides a
     # complete solution vector."
     if qt_mip_started_var == length(model.variable_info)
-        # For the corner case in which `colind` is NOT equal to
-        # `1:length(model.variable_info)` we need to be sure that `solval`
-        # is in the same order as the model.inner columns.
+        # For the corner case in which `colind` is NOT already sorted we need
+        # to be sure that `solval` is in the same order as the model.inner
+        # columns.
         permute!(solval, sortperm(colind))
         addmipsol(model.inner, qt_mip_started_var, solval, C_NULL, C_NULL)
     else
