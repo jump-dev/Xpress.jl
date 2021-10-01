@@ -2343,21 +2343,20 @@ end
 # of each element of `model.variable_info`.
 function _update_MIP_start!(model)
     colind, solval = _gather_MIP_start(model)
-    @assert length(colind) == length(solval)
-    qt_mip_started_var = length(colind)
-    iszero(qt_mip_started_var) && return
+    number_mip_started_var = length(colind)
+    iszero(number_mip_started_var) && return
     # See: https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSaddmipsol.html
     # The documentation states that `colind` "Should be NULL when length is
     # equal to COLS, in which case it is assumed that solval provides a
     # complete solution vector."
-    if qt_mip_started_var == length(model.variable_info)
+    if number_mip_started_var == length(model.variable_info)
         # For the corner case in which `colind` is NOT already sorted we need
         # to be sure that `solval` is in the same order as the model.inner
         # columns.
         permute!(solval, sortperm(colind))
-        addmipsol(model.inner, qt_mip_started_var, solval, C_NULL, C_NULL)
+        addmipsol(model.inner, number_mip_started_var, solval, C_NULL, C_NULL)
     else
-        addmipsol(model.inner, qt_mip_started_var, solval, colind, C_NULL)
+        addmipsol(model.inner, number_mip_started_var, solval, colind, C_NULL)
     end
 
     return
@@ -2376,7 +2375,9 @@ function MOI.optimize!(model::Optimizer)
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
     rhs = Xpress.getrhs(model.inner)
-    is_mip(model) && _update_MIP_start!(model)
+    if is_mip(model)
+        _update_MIP_start!(model)
+    end
     start_time = time()
     if is_mip(model)
         Xpress.mipoptimize(model.inner, model.solve_method)
