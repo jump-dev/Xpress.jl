@@ -668,7 +668,6 @@ end
     MOI.set(model, MOI.RawParameter("MAXNODE"), 1)
 
     MOI.optimize!(model)
-    @show model.callback_state
 
     # One node may not be enough to even get any solution.
     if MOI.get(model, MOI.PrimalStatus()) == MOI.FEASIBLE_POINT
