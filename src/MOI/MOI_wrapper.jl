@@ -185,10 +185,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # An enum to remember what objective is currently stored in the model.
     objective_type::ObjectiveType
 
-    # A flag to keep track of MOI.FEASIBILITY_SENSE, since Xpress only stores
-    # MIN_SENSE or MAX_SENSE. This allows us to differentiate between MIN_SENSE
-    # and FEASIBILITY_SENSE.
-    is_feasibility::Bool
+    # track whether objective function is set and the state of objective sense
+    is_objective_set::Bool
+    objective_sense::Union{Nothing,MOI.OptimizationSense}
 
     # A mapping from the MOI.VariableIndex to the Xpress column. VariableInfo
     # also stores some additional fields like what bounds have been added, the
@@ -299,7 +298,8 @@ function MOI.empty!(model::Optimizer)
 
     model.name = ""
     model.objective_type = SCALAR_AFFINE
-    model.is_feasibility = true
+    model.is_objective_set = false
+    model.objective_sense = nothing
     empty!(model.variable_info)
     model.last_constraint_index = 0
     empty!(model.affine_constraint_info)
@@ -333,7 +333,8 @@ end
 function MOI.is_empty(model::Optimizer)
     !isempty(model.name) && return false
     model.objective_type != SCALAR_AFFINE && return false
-    model.is_feasibility == false && return false
+    model.is_objective_set == true && return false
+    model.objective_sense !== nothing && return false
     !isempty(model.variable_info) && return false
     length(model.affine_constraint_info) != 0 && return false
     length(model.sos_constraint_info) != 0 && return false
@@ -861,28 +862,22 @@ function MOI.set(
     # TODO: should this propagate across a `MOI.empty!(optimizer)` call
     if sense == MOI.MIN_SENSE
         Xpress.chgobjsense(model.inner, :Min)
-        model.is_feasibility = false
     elseif sense == MOI.MAX_SENSE
         Xpress.chgobjsense(model.inner, :Max)
-        model.is_feasibility = false
     else
         @assert sense == MOI.FEASIBILITY_SENSE
         _zero_objective(model)
         Xpress.chgobjsense(model.inner, :Min)
-        model.is_feasibility = true
     end
+    model.objective_sense = sense
     return
 end
 
 function MOI.get(model::Optimizer, ::MOI.ObjectiveSense)
-    sense = Xpress.objective_sense(model.inner)
-    if model.is_feasibility
-        return MOI.FEASIBILITY_SENSE
-    elseif sense == :maximize
-        return MOI.MAX_SENSE
+    if model.objective_sense !== nothing
+        return model.objective_sense
     else
-        @assert sense == :minimize
-        return MOI.MIN_SENSE
+        return MOI.FEASIBILITY_SENSE
     end
 end
 
@@ -895,6 +890,7 @@ function MOI.set(
         convert(MOI.ScalarAffineFunction{Float64}, f)
     )
     model.objective_type = SINGLE_VARIABLE
+    model.is_objective_set = true
     return
 end
 
@@ -924,6 +920,7 @@ function MOI.set(
     Xpress.chgobj(model.inner, collect(1:num_vars), obj)
     Xpress.chgobj(model.inner, [0], [-f.constant])
     model.objective_type = SCALAR_AFFINE
+    model.is_objective_set = true
     return
 end
 
@@ -959,6 +956,7 @@ function MOI.set(
     end
     Xpress.chgmqobj(model.inner, I, J, V)
     model.objective_type = SCALAR_QUADRATIC
+    model.is_objective_set = true
     return
 end
 
@@ -2990,7 +2988,7 @@ function MOI.get(model::Optimizer, ::MOI.ListOfConstraintTypesPresent)
 end
 
 function MOI.get(model::Optimizer, ::MOI.ObjectiveFunctionType)
-    if model.is_feasibility
+    if !model.is_objective_set
         return nothing
     elseif model.objective_type == SINGLE_VARIABLE
         return MOI.VariableIndex
