@@ -28,8 +28,25 @@ const CONFIG_LOW_TOL = MOIT.TestConfig(atol = 1e-3, rtol = 1e-3)
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == ""
     optimizer = Xpress.Optimizer(OUTPUTLOG = 0, logfile = "output.log")
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == "output.log"
-    @test MOI.set(optimizer, MOI.TimeLimitSec(),100) === nothing
-    @test MOI.set(optimizer, MOI.TimeLimitSec(),3600.0) === nothing
+    @test MOI.set(optimizer, MOI.TimeLimitSec(), 100) === nothing
+    @test MOI.set(optimizer, MOI.TimeLimitSec(), 3600.0) === nothing
+
+    @test MOI.get(optimizer, Xpress.RealControl("MIPRELSTOP")) == 0.0001
+    MOI.set(optimizer, Xpress.RealControl("MIPRELSTOP"), 0.123)
+    @test MOI.get(optimizer, Xpress.RealControl("MIPRELSTOP")) == 0.123
+
+    @test MOI.get(optimizer, Xpress.StringControl("MPSOBJNAME")) == ""
+    MOI.set(optimizer, Xpress.StringControl("MPSOBJNAME"), "qwerty")
+    @test MOI.get(optimizer, Xpress.StringControl("MPSOBJNAME")) == "qwerty"
+
+    @test MOI.get(optimizer, Xpress.IntegerControl("PRESOLVE")) == 1
+    MOI.set(optimizer, Xpress.IntegerControl("PRESOLVE"), 3)
+    @test MOI.get(optimizer, Xpress.IntegerControl("PRESOLVE")) == 3
+
+    @show MOI.get(optimizer, Xpress.StringAttribute("XPRESSVERSION"))
+    @test MOI.get(optimizer, Xpress.StringAttribute("MATRIXNAME")) == ""
+    @test MOI.get(optimizer, Xpress.RealAttribute("SUMPRIMALINF")) == 0.0
+    @test MOI.get(optimizer, Xpress.IntegerAttribute("NAMELENGTH")) == 8
 end
 
 @testset "SolverName" begin
@@ -652,15 +669,9 @@ end
         obtained_obj_value, computed_obj_value; rtol = rtol, atol = atol
     )
     @test isapprox(9945.0, computed_obj_value; rtol = rtol, atol = atol)
-    # Using MOI 9.22, so MOI.RawOptimizerAttribute was not available.
-    node_solution_was_found = Xpress.getintattrib(
-        model.inner, Xpress.Lib.XPRS_MIPSOLNODE
-    ) :: Cint
-    #=
-    MOI.get(
-        model, MOI.RawOptimizerAttribute("MIPSOLNODE")
-    ) :: CInt
-    =#
+
+    node_solution_was_found = MOI.get(model, Xpress.IntegerAttribute("MIPSOLNODE"))
+
     @test node_solution_was_found > 1
 
     # SECOND RUN: run without MIP-start and only searching the first node.

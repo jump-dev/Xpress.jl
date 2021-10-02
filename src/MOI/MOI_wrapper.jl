@@ -3695,6 +3695,85 @@ function MOI.supports(
     return true
 end
 
+struct IntegerAttribute <: MOI.AbstractOptimizerAttribute
+    index::Int32
+end
+IntegerAttribute(index::Integer) = IntegerAttribute(Int32(index))
+IntegerAttribute(name::String) = IntegerAttribute(_get_attribute_or_control(name))
+struct StringAttribute <: MOI.AbstractOptimizerAttribute
+    index::Int32
+end
+StringAttribute(index::Integer) = StringAttribute(Int32(index))
+StringAttribute(name::String) = StringAttribute(_get_attribute_or_control(name))
+struct RealAttribute <: MOI.AbstractOptimizerAttribute
+    index::Int32
+end
+RealAttribute(index::Integer) = RealAttribute(Int32(index))
+RealAttribute(name::String) = RealAttribute(_get_attribute_or_control(name))
+struct IntegerControl <: MOI.AbstractOptimizerAttribute
+    index::Int32
+end
+IntegerControl(index::Integer) = IntegerControl(Int32(index))
+IntegerControl(name::String) = IntegerControl(_get_attribute_or_control(name))
+struct StringControl <: MOI.AbstractOptimizerAttribute
+    index::Int32
+end
+StringControl(index::Integer) = StringControl(Int32(index))
+StringControl(name::String) = StringControl(_get_attribute_or_control(name))
+struct RealControl <: MOI.AbstractOptimizerAttribute
+    index::Int32
+end
+RealControl(index::Integer) = RealControl(Int32(index))
+RealControl(name::String) = RealControl(_get_attribute_or_control(name))
+
+function _get_attribute_or_control(name::String)
+    if !haskey(XPRS_ATTRIBUTES, name)
+        error(
+        "Attribute $name not found. Either it does not exist or it is not " *
+        "catalogued in Xpress.jl/src/commmon.jl\n" *
+        "Check Xpress.XPRS_ATTRIBUTES for the avalabel values.\n" *
+        "Alternatively, you can pass a integer value to the types: " *
+        "Xpress.(Integer/String/Real)Attribute or " *
+        "Xpress.(Integer/String/Real)Control instead of a String. " *
+        "The integer number can be found in the xprs.h file in the \"include\" " *
+        "folder of you Xpress installation.\n" *
+        "Consider contributing to https://github.com/jump-dev/Xpress.jl " *
+        "to update the file https://github.com/jump-dev/Xpress.jl/src/common.jl."
+        )
+    end
+    return Int32(XPRS_ATTRIBUTES[name])
+end
+#
+function MOI.get(model::Optimizer, param::IntegerAttribute)
+    Xpress.getintattrib(model.inner, param.index)
+end
+function MOI.get(model::Optimizer, param::StringAttribute)
+    Xpress.getstrattrib(model.inner, param.index)
+end
+function MOI.get(model::Optimizer, param::RealAttribute)
+    Xpress.getdblattrib(model.inner, param.index)
+end
+#
+function MOI.get(model::Optimizer, param::IntegerControl)
+    Xpress.getintcontrol(model.inner, param.index)
+end
+function MOI.get(model::Optimizer, param::StringControl)
+    Xpress.getstrcontrol(model.inner, param.index)
+end
+function MOI.get(model::Optimizer, param::RealControl)
+    Xpress.getdblcontrol(model.inner, param.index)
+end
+#
+function MOI.set(model::Optimizer, param::IntegerControl, value::Integer)
+    Xpress.setintcontrol(model.inner, param.index, Int32(value))
+end
+function MOI.set(model::Optimizer, param::StringControl, value::AbstractString)
+    Xpress.setstrcontrol(model.inner, param.index, string(value))
+end
+function MOI.set(model::Optimizer, param::RealControl, value::Real)
+    Xpress.setdblcontrol(model.inner, param.index, Float64(value))
+end
+
 include("MOI_callbacks.jl")
 
 function extension(str::String)
