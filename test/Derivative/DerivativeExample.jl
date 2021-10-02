@@ -118,10 +118,10 @@ function Forward(model::DispachModel, ϵ::Float64 = 1.0)
     vect =  MOI.get.(optimizer, MOI.VariablePrimal(), vectRef)
      
     #Pass the perturbation to the Xpress Framework and set the context to Forward
-    MOI.set(optimizer, Xpress.ForwardSensitivityInConstraint(), model.c_demand, ϵ)
+    MOI.set(optimizer, Xpress.ForwardSensitivityInputConstraint(), model.c_demand, ϵ)
     
     #Get the derivative of the model
-    dvect = MOI.get.(optimizer, Xpress.ForwardSensitivityOutVariable(), vectRef)
+    dvect = MOI.get.(optimizer, Xpress.ForwardSensitivityOutputVariable(), vectRef)
 
     #Return the values as a vector
     return [vect;dvect]
@@ -142,13 +142,13 @@ function Backward(model::DispachModel, ϵ::Float64 = 1.0)
     #Loop for each primal variable
     for i in 1:I + 1
         #Set the perturbation in the Primal Variables and set the context to Backward
-        MOI.set(optimizer, Xpress.BackwardSensitivityInVariable(), vectRef[i], ϵ)
+        MOI.set(optimizer, Xpress.BackwardSensitivityInputVariable(), vectRef[i], ϵ)
 
         #Get the value of the derivative of the model
-        dvect[i] = MOI.get(optimizer, Xpress.BackwardSensitivityOutConstraint(), model.c_demand)
+        dvect[i] = MOI.get(optimizer, Xpress.BackwardSensitivityOutputConstraint(), model.c_demand)
 
         #Reset perturbation
-        MOI.set(optimizer, Xpress.BackwardSensitivityInVariable(), vectRef[i], 0.0)
+        MOI.set(optimizer, Xpress.BackwardSensitivityInputVariable(), vectRef[i], 0.0)
     end
 
     #Return the values as a vector
