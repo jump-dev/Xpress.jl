@@ -616,7 +616,10 @@ function MOI.get(model::Optimizer, ::MOI.ListOfModelAttributesSet)
     if MOI.is_empty(model)
         return Any[]
     end
-    attributes = Any[MOI.ObjectiveSense()]
+    attributes = Any[]
+    if model.objective_sense !== nothing
+        push!(attributes, MOI.ObjectiveSense())
+    end
     typ = MOI.get(model, MOI.ObjectiveFunctionType())
     if typ !== nothing
         push!(attributes, MOI.ObjectiveFunction{typ}())
@@ -3260,8 +3263,10 @@ function MOI.modify(
     c::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
     chg::MOI.ScalarCoefficientChange{Float64}
 )
+    @assert model.objective_type == SCALAR_AFFINE
     column = _info(model, chg.variable).column
     Xpress.chgobj(model.inner, [column], [chg.new_coefficient])
+    model.is_objective_set = true
     return
 end
 
@@ -3791,7 +3796,8 @@ function getfirstiis(model::Optimizer)
     num = Cint(1)
     rownumber = Vector{Cint}(undef, 1)
     colnumber = Vector{Cint}(undef, 1)
-    Xpress.getiisdata(model.inner, num, rownumber, colnumber, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
+    Xpress.getiisdata(
+        model.inner, num, rownumber, colnumber, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
 
     nrows = rownumber[1]
     ncols = colnumber[1]
@@ -3799,7 +3805,8 @@ function getfirstiis(model::Optimizer)
     miiscol = Vector{Cint}(undef, ncols)
     constrainttype = Vector{UInt8}(undef, nrows)
     colbndtype = Vector{UInt8}(undef, ncols)
-    Xpress.getiisdata(model.inner, num, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL)
+    Xpress.getiisdata(
+        model.inner, num, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL)
 
     return IISData(status_code[1], true, nrows, ncols, miisrow, miiscol, constrainttype, colbndtype)
 
@@ -3824,9 +3831,12 @@ function MOI.get(model::Optimizer, ::MOI.ConflictStatus)
         # Currently this condition (!model.conflict.is_standard_iis) is always false.
         return MOI.CONFLICT_FOUND
     elseif model.conflict.stat == 1
-        return MOI.NO_CONFLICT_FOUND 
+        return MOI.NO_CONFLICT_EXISTS
     else
-        return error("IIS failed internally.")
+        # stat == 2 -> error
+        # stat == 3 -> timeout
+        return MOI.NO_CONFLICT_FOUND
+        # return error("IIS failed internally.")
     end
 end
 

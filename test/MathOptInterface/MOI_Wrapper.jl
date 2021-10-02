@@ -51,7 +51,7 @@ function test_runtests()
         model,
         MOI.Test.Config(atol = 1e-3, rtol = 1e-3),
         exclude = String[
-            # tested with PRESOLVE=0
+            # tested with PRESOLVE=0 below
             "_SecondOrderCone_",
             "test_constraint_PrimalStart_DualStart_SecondOrderCone",
             "_RotatedSecondOrderCone_",
@@ -59,9 +59,14 @@ function test_runtests()
             # Xpress cannot handle nonconvex quadratic constraint
             "test_quadratic_nonconvex_",
             # TODO: conflict tests should be investigated further
-            "test_solve_conflict_",
-            # TODO: needs investigation
-            "test_objective_set_via_modify"
+            # "test_solve_conflict_",
+            "test_solve_conflict_EqualTo",
+            "test_solve_conflict_NOT_IN_CONFLICT",
+            "test_solve_conflict_affine_affine",
+            "test_solve_conflict_feasible",
+            "test_solve_conflict_invalid_interval",
+            "test_solve_conflict_zeroone",
+            "test_solve_conflict_invalid_interval",
         ],
     )
 
