@@ -3759,7 +3759,7 @@ function getinfeasbounds(model::Optimizer)
     if model.moi_warnings
         @warn "Xpress can't find IIS with invalid bounds, the constraints that keep the model infeasible can't be found, only the infeasible bounds will be available"
     end
-    col = 1
+    col = 0
     ncols = 0
     infeas_cols = []
     for check_col in check_bounds
@@ -3784,7 +3784,7 @@ function getfirstiis(model::Optimizer)
     if status_code[1] == 1
         # The problem is actually feasible.
         return IISData(status_code[1], true, 0, 0, Vector{Cint}(undef, 0), Vector{Cint}(undef, 0), Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
-    elseif status_code[1] == 2
+    elseif 2 <= status_code[1] <= 3 # 2 = error, 3 = timeout
         ncols, miiscol = getinfeasbounds(model)
         return IISData(status_code[1], false, 0, ncols, Vector{Cint}(undef, 0), miiscol, Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
     end
@@ -3809,7 +3809,6 @@ function getfirstiis(model::Optimizer)
         model.inner, num, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL)
 
     return IISData(status_code[1], true, nrows, ncols, miisrow, miiscol, constrainttype, colbndtype)
-
 end
 
 function MOI.compute_conflict!(model::Optimizer)
@@ -3849,11 +3848,70 @@ function MOI.get(model::Optimizer, ::MOI.ConstraintConflictStatus, index::MOI.Co
     return (_info(model, index).row - 1) in model.conflict.miisrow ? MOI.IN_CONFLICT : MOI.NOT_IN_CONFLICT
 end
 
-function MOI.get(model::Optimizer, ::MOI.ConstraintConflictStatus, index::MOI.ConstraintIndex{<:MOI.VariableIndex, <:Union{MOI.LessThan, MOI.GreaterThan, MOI.EqualTo}})
+col_type_char(::Type{MOI.LessThan{Float64}}) = 'U'
+col_type_char(::Type{MOI.GreaterThan{Float64}}) = 'L'
+col_type_char(::Type{MOI.EqualTo{Float64}}) = 'F'
+# col_type_char(::Type{MOI.Interval{Float64}}) = 'T'
+col_type_char(::Type{MOI.ZeroOne}) = 'B'
+col_type_char(::Type{MOI.Integer}) = 'I'
+col_type_char(::Type{MOI.Semicontinuous{Float64}}) = 'S'
+col_type_char(::Type{MOI.Semiinteger{Float64}}) = 'R'
+function MOI.get(
+    model::Optimizer,
+    ::MOI.ConstraintConflictStatus,
+    index::MOI.ConstraintIndex{MOI.VariableIndex, S}
+) where S <: MOI.AbstractScalarSet
     _ensure_conflict_computed(model)
-    return (_info(model, index).column) in model.conflict.miiscol ? MOI.IN_CONFLICT : MOI.NOT_IN_CONFLICT
+    _char = col_type_char(S)
+    ref_col = _info(model, index).column - 1
+    for (idx, col) in enumerate(model.conflict.miiscol)
+        if col == ref_col && (
+            model.conflict.stat > 1 ||
+            Char(model.conflict.colbndtype[idx]) == _char
+            )
+            return MOI.IN_CONFLICT
+        end
+    end
+    return MOI.NOT_IN_CONFLICT
 end
-
+function MOI.get(
+    model::Optimizer,
+    ::MOI.ConstraintConflictStatus,
+    index::MOI.ConstraintIndex{MOI.VariableIndex, MOI.Interval{Float64}}
+)
+    _ensure_conflict_computed(model)
+    ref_col = _info(model, index).column - 1
+    for (idx, col) in enumerate(model.conflict.miiscol)
+        if col == ref_col && (
+            model.conflict.stat > 1 ||
+            Char(model.conflict.colbndtype[idx]) == 'U' ||
+            Char(model.conflict.colbndtype[idx]) == 'L'
+            )
+            return MOI.IN_CONFLICT
+        end
+    end
+    return MOI.NOT_IN_CONFLICT
+end
+function MOI.get(
+    model::Optimizer,
+    ::MOI.ConstraintConflictStatus,
+    index::MOI.ConstraintIndex{MOI.VariableIndex, MOI.ZeroOne}
+) where S <: MOI.AbstractScalarSet
+    _ensure_conflict_computed(model)
+    ref_col = _info(model, index).column - 1
+    for (idx, col) in enumerate(model.conflict.miiscol)
+        if col == ref_col
+            if Char(model.conflict.colbndtype[idx]) == 'B'
+                return MOI.IN_CONFLICT
+            elseif Char(model.conflict.colbndtype[idx]) == 'U'
+                return MOI.MAYBE_IN_CONFLICT
+            elseif Char(model.conflict.colbndtype[idx]) == 'L'
+                return MOI.MAYBE_IN_CONFLICT
+            end
+        end
+    end
+    return MOI.NOT_IN_CONFLICT
+end
 function MOI.supports(
     ::Optimizer,
     ::MOI.ConstraintConflictStatus,

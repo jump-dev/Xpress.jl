@@ -58,15 +58,6 @@ function test_runtests()
             "_GeometricMeanCone_",
             # Xpress cannot handle nonconvex quadratic constraint
             "test_quadratic_nonconvex_",
-            # TODO: conflict tests should be investigated further
-            # "test_solve_conflict_",
-            "test_solve_conflict_EqualTo",
-            "test_solve_conflict_NOT_IN_CONFLICT",
-            "test_solve_conflict_affine_affine",
-            "test_solve_conflict_feasible",
-            "test_solve_conflict_invalid_interval",
-            "test_solve_conflict_zeroone",
-            "test_solve_conflict_invalid_interval",
         ],
     )
 
@@ -90,6 +81,24 @@ function test_runtests()
 end
 
 function test_Conflicts()
+    @testset "Binary" begin
+        T = Float64
+        model = Xpress.Optimizer(OUTPUTLOG = 0, DEFAULTALG = 3, PRESOLVE = 0)
+        x, c1 = MOI.add_constrained_variable(model, MOI.ZeroOne())
+        c2 = MOI.add_constraint(
+            model,
+            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(one(T), [x]), zero(T)),
+            MOI.EqualTo(T(0.5)),
+        )
+        MOI.optimize!(model)
+        @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
+        MOI.compute_conflict!(model)
+        @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+        zeroone_conflict = MOI.get(model, MOI.ConstraintConflictStatus(), c1)
+        @test zeroone_conflict == MOI.MAYBE_IN_CONFLICT ||
+              zeroone_conflict == MOI.IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == MOI.IN_CONFLICT
+    end
     for warning in [true, false]
         @testset "Variable bounds" begin
             model = Xpress.Optimizer(OUTPUTLOG = 0, DEFAULTALG = 3, PRESOLVE = 0)
@@ -199,7 +208,7 @@ function test_Conflicts()
 
         # Once it's called, no problem.
         MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.NO_CONFLICT_FOUND
+        @test MOI.get(model, MOI.ConflictStatus()) == MOI.NO_CONFLICT_EXISTS
         @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.NOT_IN_CONFLICT
         @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == MOI.NOT_IN_CONFLICT
     end
