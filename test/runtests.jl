@@ -2,7 +2,7 @@ using Test
 using Xpress
 
 println(Xpress.getbanner())
-println("Optimizer version: " * Xpress.getversion())
+println("Optimizer version: $(Xpress.getversion())")
 
 @testset "$(folder)" for folder in [
     "MathOptInterface", "xprs_callbacks"
