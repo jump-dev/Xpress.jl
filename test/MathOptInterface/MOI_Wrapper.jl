@@ -671,6 +671,7 @@ end
     @test isapprox(9945.0, computed_obj_value; rtol = rtol, atol = atol)
 
     node_solution_was_found = MOI.get(model, Xpress.IntegerAttribute("MIPSOLNODE"))
+    node_solution_was_found = MOI.get(model, MOI.RawParameter("MIPSOLNODE"))
 
     @test node_solution_was_found > 1
 

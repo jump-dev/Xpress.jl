@@ -548,7 +548,7 @@ function MOI.get(model::Optimizer, param::MOI.RawParameter)
     elseif param == MOI.RawParameter("XPRESS_WARNING_WINDOWS")
         return model.show_warning
     else
-        return Xpress.getcontrol(model.inner, XPRS_ATTRIBUTES[param.name])
+        return Xpress.get_control_or_attribute(model.inner, param.name)
     end
 end
 
