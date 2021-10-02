@@ -182,6 +182,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # turn off warning by the MOI interface implementation [advanced usage]
     moi_warnings::Bool
 
+    # false by default - ignores starting points which might be expensive to load.
+    ignore_start::Bool
+
     # An enum to remember what objective is currently stored in the model.
     objective_type::ObjectiveType
 
@@ -253,6 +256,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.log_level = 1 # is xpress default
         model.show_warning = true
         model.moi_warnings = true
+        model.ignore_start = false
 
         model.solve_method = ""
         model.solve_relaxation = false
@@ -514,17 +518,22 @@ function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
         end
         model.inner.logfile = value
         reset_message_callback(model)
-    elseif param == MOI.RawParameter("MOIWarnings")
+    elseif param == MOI.RawParameter("MOI_IGNORE_START")
+        model.ignore_start = value
+    elseif param == MOI.RawParameter("MOI_WARNINGS")
         model.moi_warnings = value
+    elseif param == MOI.RawParameter("MOI_SOLVE_MODE")
+        # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/R/HTML/lpoptimize.html
+        model.solve_method = value
     elseif param == MOI.RawParameter("XPRESS_WARNING_WINDOWS")
         model.show_warning = value
         reset_message_callback(model)
     elseif param == MOI.RawParameter("OUTPUTLOG")
         model.log_level = value
-        Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
+        Xpress.setcontrol!(model.inner, "OUTPUTLOG", value)
         reset_message_callback(model)
     else
-        Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
+        Xpress.setcontrol!(model.inner, param.name, value)
     end
     return
 end
@@ -545,6 +554,12 @@ end
 function MOI.get(model::Optimizer, param::MOI.RawParameter)
     if param == MOI.RawParameter("logfile")
         return model.inner.logfile
+    elseif param == MOI.RawParameter("MOI_IGNORE_START")
+        return model.ignore_start
+    elseif param == MOI.RawParameter("MOI_WARNINGS")
+        return model.moi_warnings
+    elseif param == MOI.RawParameter("MOI_SOLVE_MODE")
+        return model.solve_method
     elseif param == MOI.RawParameter("XPRESS_WARNING_WINDOWS")
         return model.show_warning
     else
@@ -2321,13 +2336,17 @@ end
 # primal value for each column referred in `colind`.
 function _gather_MIP_start(model)
     variable_info = model.variable_info
-    qt_var = length(variable_info)
-    colind = Vector{Cint}(undef, qt_var)
-    solval = Vector{Cdouble}(undef, qt_var)
+    n_var = length(variable_info)
+    colind = Vector{Cint}(undef, 0)
+    solval = Vector{Cdouble}(undef, 0)
     j = 0
     for (_, var_info) in variable_info
         if var_info.start !== nothing
             j += 1
+            if j == 1 # only allocates if there is some start point
+                resize!(colind, n_var)
+                resize!(solval, n_var)
+            end
             colind[j] = var_info.column - 1
             solval[j] = var_info.start :: Float64
         end
@@ -2375,7 +2394,7 @@ function MOI.optimize!(model::Optimizer)
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
     rhs = Xpress.getrhs(model.inner)
-    if is_mip(model)
+    if !model.ignore_start && is_mip(model)
         _update_MIP_start!(model)
     end
     start_time = time()
@@ -3693,85 +3712,6 @@ function MOI.supports(
     }}
 )
     return true
-end
-
-struct IntegerAttribute <: MOI.AbstractOptimizerAttribute
-    index::Int32
-end
-IntegerAttribute(index::Integer) = IntegerAttribute(Int32(index))
-IntegerAttribute(name::String) = IntegerAttribute(_get_attribute_or_control(name))
-struct StringAttribute <: MOI.AbstractOptimizerAttribute
-    index::Int32
-end
-StringAttribute(index::Integer) = StringAttribute(Int32(index))
-StringAttribute(name::String) = StringAttribute(_get_attribute_or_control(name))
-struct RealAttribute <: MOI.AbstractOptimizerAttribute
-    index::Int32
-end
-RealAttribute(index::Integer) = RealAttribute(Int32(index))
-RealAttribute(name::String) = RealAttribute(_get_attribute_or_control(name))
-struct IntegerControl <: MOI.AbstractOptimizerAttribute
-    index::Int32
-end
-IntegerControl(index::Integer) = IntegerControl(Int32(index))
-IntegerControl(name::String) = IntegerControl(_get_attribute_or_control(name))
-struct StringControl <: MOI.AbstractOptimizerAttribute
-    index::Int32
-end
-StringControl(index::Integer) = StringControl(Int32(index))
-StringControl(name::String) = StringControl(_get_attribute_or_control(name))
-struct RealControl <: MOI.AbstractOptimizerAttribute
-    index::Int32
-end
-RealControl(index::Integer) = RealControl(Int32(index))
-RealControl(name::String) = RealControl(_get_attribute_or_control(name))
-
-function _get_attribute_or_control(name::String)
-    if !haskey(XPRS_ATTRIBUTES, name)
-        error(
-        "Attribute $name not found. Either it does not exist or it is not " *
-        "catalogued in Xpress.jl/src/commmon.jl\n" *
-        "Check Xpress.XPRS_ATTRIBUTES for the avalabel values.\n" *
-        "Alternatively, you can pass a integer value to the types: " *
-        "Xpress.(Integer/String/Real)Attribute or " *
-        "Xpress.(Integer/String/Real)Control instead of a String. " *
-        "The integer number can be found in the xprs.h file in the \"include\" " *
-        "folder of you Xpress installation.\n" *
-        "Consider contributing to https://github.com/jump-dev/Xpress.jl " *
-        "to update the file https://github.com/jump-dev/Xpress.jl/src/common.jl."
-        )
-    end
-    return Int32(XPRS_ATTRIBUTES[name])
-end
-#
-function MOI.get(model::Optimizer, param::IntegerAttribute)
-    Xpress.getintattrib(model.inner, param.index)
-end
-function MOI.get(model::Optimizer, param::StringAttribute)
-    Xpress.getstrattrib(model.inner, param.index)
-end
-function MOI.get(model::Optimizer, param::RealAttribute)
-    Xpress.getdblattrib(model.inner, param.index)
-end
-#
-function MOI.get(model::Optimizer, param::IntegerControl)
-    Xpress.getintcontrol(model.inner, param.index)
-end
-function MOI.get(model::Optimizer, param::StringControl)
-    Xpress.getstrcontrol(model.inner, param.index)
-end
-function MOI.get(model::Optimizer, param::RealControl)
-    Xpress.getdblcontrol(model.inner, param.index)
-end
-#
-function MOI.set(model::Optimizer, param::IntegerControl, value::Integer)
-    Xpress.setintcontrol(model.inner, param.index, Int32(value))
-end
-function MOI.set(model::Optimizer, param::StringControl, value::AbstractString)
-    Xpress.setstrcontrol(model.inner, param.index, string(value))
-end
-function MOI.set(model::Optimizer, param::RealControl, value::Real)
-    Xpress.setdblcontrol(model.inner, param.index, Float64(value))
 end
 
 include("MOI_callbacks.jl")
