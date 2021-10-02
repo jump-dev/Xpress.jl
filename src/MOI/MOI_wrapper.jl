@@ -182,6 +182,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # turn off warning by the MOI interface implementation [advanced usage]
     moi_warnings::Bool
 
+    # false by default - ignores starting points which might be expensive to load.
+    ignore_start::Bool
+
     # An enum to remember what objective is currently stored in the model.
     objective_type::ObjectiveType
 
@@ -253,6 +256,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.log_level = 1 # is xpress default
         model.show_warning = true
         model.moi_warnings = true
+        model.ignore_start = false
 
         model.solve_method = ""
         model.solve_relaxation = false
@@ -514,17 +518,22 @@ function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
         end
         model.inner.logfile = value
         reset_message_callback(model)
-    elseif param == MOI.RawParameter("MOIWarnings")
+    elseif param == MOI.RawParameter("MOI_IGNORE_START")
+        model.ignore_start = value
+    elseif param == MOI.RawParameter("MOI_WARNINGS")
         model.moi_warnings = value
+    elseif param == MOI.RawParameter("MOI_SOLVE_MODE")
+        # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/R/HTML/lpoptimize.html
+        model.solve_method = value
     elseif param == MOI.RawParameter("XPRESS_WARNING_WINDOWS")
         model.show_warning = value
         reset_message_callback(model)
     elseif param == MOI.RawParameter("OUTPUTLOG")
         model.log_level = value
-        Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
+        Xpress.setcontrol!(model.inner, "OUTPUTLOG", value)
         reset_message_callback(model)
     else
-        Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
+        Xpress.setcontrol!(model.inner, param.name, value)
     end
     return
 end
@@ -545,10 +554,16 @@ end
 function MOI.get(model::Optimizer, param::MOI.RawParameter)
     if param == MOI.RawParameter("logfile")
         return model.inner.logfile
+    elseif param == MOI.RawParameter("MOI_IGNORE_START")
+        return model.ignore_start
+    elseif param == MOI.RawParameter("MOI_WARNINGS")
+        return model.moi_warnings
+    elseif param == MOI.RawParameter("MOI_SOLVE_MODE")
+        return model.solve_method
     elseif param == MOI.RawParameter("XPRESS_WARNING_WINDOWS")
         return model.show_warning
     else
-        return Xpress.getcontrol(model.inner, XPRS_ATTRIBUTES[param.name])
+        return Xpress.get_control_or_attribute(model.inner, param.name)
     end
 end
 
@@ -2321,13 +2336,17 @@ end
 # primal value for each column referred in `colind`.
 function _gather_MIP_start(model)
     variable_info = model.variable_info
-    qt_var = length(variable_info)
-    colind = Vector{Cint}(undef, qt_var)
-    solval = Vector{Cdouble}(undef, qt_var)
+    n_var = length(variable_info)
+    colind = Vector{Cint}(undef, 0)
+    solval = Vector{Cdouble}(undef, 0)
     j = 0
     for (_, var_info) in variable_info
         if var_info.start !== nothing
             j += 1
+            if j == 1 # only allocates if there is some start point
+                resize!(colind, n_var)
+                resize!(solval, n_var)
+            end
             colind[j] = var_info.column - 1
             solval[j] = var_info.start :: Float64
         end
@@ -2375,7 +2394,7 @@ function MOI.optimize!(model::Optimizer)
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
     rhs = Xpress.getrhs(model.inner)
-    if is_mip(model)
+    if !model.ignore_start && is_mip(model)
         _update_MIP_start!(model)
     end
     start_time = time()

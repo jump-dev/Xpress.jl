@@ -80,6 +80,51 @@ end
 addcolnames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 2)
 addrownames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 1)
 
+function get_control_or_attribute(prob::XpressProblem, control::Integer)
+    if control in INTEGER_CONTROLS_VALUES
+        return getintcontrol(prob, Int32(control))
+    elseif control in DOUBLE_CONTROLS_VALUES
+        return getdblcontrol(prob, Int32(control))
+    elseif control in STRING_CONTROLS_VALUES
+        return getstrcontrol(prob, Int32(control))
+    elseif control in INTEGER_ATTRIBUTES_VALUES
+        return getintattrib(prob, Int32(control))
+    elseif control in DOUBLE_ATTRIBUTES_VALUES
+        return getdblattrib(prob, Int32(control))
+    elseif control in STRING_ATTRIBUTES_VALUES
+        return getstrattrib(prob, Int32(control))
+    else
+        error("Unrecognized parameter: $(control).")
+    end
+end
+function get_control_or_attribute(prob::XpressProblem, control::String)
+    control_index = get(INTEGER_CONTROLS, control, -1)
+    if control_index != -1
+        return getintcontrol(prob, control_index)
+    end
+    control_index = get(DOUBLE_CONTROLS, control, -1)
+    if control_index != -1
+        return getdblcontrol(prob, control_index)
+    end
+    control_index = get(STRING_CONTROLS, control, -1)
+    if control_index != -1
+        return getstrcontrol(prob, control_index)
+    end
+    control_index = get(INTEGER_ATTRIBUTES, control, -1)
+    if control_index != -1
+        return getintattrib(prob, control_index)
+    end
+    control_index = get(DOUBLE_ATTRIBUTES, control, -1)
+    if control_index != -1
+        return getdblattrib(prob, control_index)
+    end
+    control_index = get(STRING_ATTRIBUTES, control, -1)
+    if control_index != -1
+        return getstrattrib(prob, control_index)
+    end
+    error("Unrecognized control parameter: $(control).")
+end
+
 """
     getcontrol(prob::XpressProblem, control::Integer)
     getcontrol(prob::XpressProblem, control::String)
@@ -88,19 +133,34 @@ addrownames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 
 Get parameter of any type
 """
 function getcontrol(prob::XpressProblem, control::Integer)
-    # TODO: this function is not type stable
-    if convert(Int, control) in XPRS_INT_CONTROLS
-        return getintcontrol(prob, control)
-    elseif convert(Int, control) in XPRS_DBL_CONTROLS
-        return getdblcontrol(prob, control)
-    elseif convert(Int, control) in XPRS_STR_CONTROLS
-        return getstrcontrol(prob, control)
+    # TODO: dispatch on Val(control) instead?
+    if control in INTEGER_CONTROLS_VALUES
+        return getintcontrol(prob, Int32(control))
+    elseif control in DOUBLE_CONTROLS_VALUES
+        return getdblcontrol(prob, Int32(control))
+    elseif control in STRING_CONTROLS_VALUES
+        return getstrcontrol(prob, Int32(control))
     else
         error("Unrecognized control parameter: $(control).")
     end
 end
-getcontrol(prob::XpressProblem, control::Symbol) = getcontrol(prob, getproperty(Lib, Symbol("XPRS_$(String(control))")))
-getcontrol(prob::XpressProblem, control::String) = getcontrol(prob, XPRS_ATTRIBUTES[control])
+function getcontrol(prob::XpressProblem, control::String)
+    control_index = get(INTEGER_CONTROLS, control, -1)
+    if control_index != -1
+        return getintcontrol(prob, control_index)
+    end
+    control_index = get(DOUBLE_CONTROLS, control, -1)
+    if control_index != -1
+        return getdblcontrol(prob, control_index)
+    end
+    control_index = get(STRING_CONTROLS, control, -1)
+    if control_index != -1
+        return getstrcontrol(prob, control_index)
+    end
+    error("Unrecognized control parameter: $(control).")
+end
+
+# getcontrol(prob::XpressProblem, control::Symbol) = getcontrol(prob, getproperty(Lib, Symbol("XPRS_$(String(control))")))
 
 """
     setcontrol!(prob::XpressProblem, control::Symbol, val::Any)
@@ -109,24 +169,42 @@ getcontrol(prob::XpressProblem, control::String) = getcontrol(prob, XPRS_ATTRIBU
 
 Set parameter of any type
 """
-setcontrol!(prob::XpressProblem, control::Symbol, val::Any) = setcontrol!(prob, getproperty(Lib, Symbol("XPRS_$(String(control))")), val::Any)
-setcontrol!(prob::XpressProblem, control::String, val::Any) = setcontrol!(prob, XPRS_ATTRIBUTES[control], val)
-setcontrol!(prob::XpressProblem, control::Integer, val::Any) = setcontrol!(prob, Cint(control), val)
+# setcontrol!(prob::XpressProblem, control::Symbol, val::Any) = setcontrol!(prob, getproperty(Lib, Symbol("XPRS_$(String(control))")), val::Any)
+setcontrol!(prob::XpressProblem, control::Integer, val) = setcontrol!(prob, Cint(control), val)
 function setcontrol!(prob::XpressProblem, control::Cint, val)
     # TODO: dispatch on Val(control) instead?
-    if convert(Int, control) in XPRS_INT_CONTROLS
+    if control in INTEGER_CONTROLS_VALUES
         if isinteger(val)
-            setintcontrol(prob, control, convert(Int, val))
+            setintcontrol(prob, control, Int32(val))
         else
             error("Expected and integer and got $val")
         end
-    elseif convert(Int, control) in XPRS_DBL_CONTROLS
-        setdblcontrol(prob, control, val)
-    elseif convert(Int, control) in XPRS_STR_CONTROLS
+    elseif control in DOUBLE_CONTROLS_VALUES
+        setdblcontrol(prob, control, Float64(val))
+    elseif control in STRING_CONTROLS_VALUES
         setstrcontrol(prob, control, val)
     else
         error("Unrecognized control parameter: $(control).")
     end
+end
+function setcontrol!(prob::XpressProblem, control::String, val)
+    control_index = get(INTEGER_CONTROLS, control, -1)
+    if control_index != -1
+        if isinteger(val)
+            return setintcontrol(prob, control_index, Int32(val))
+        else
+            error("Expected and integer and got $val")
+        end
+    end
+    control_index = get(DOUBLE_CONTROLS, control, -1)
+    if control_index != -1
+        return setdblcontrol(prob, control_index, Float64(val))
+    end
+    control_index = get(STRING_CONTROLS, control, -1)
+    if control_index != -1
+        return setstrcontrol(prob, control_index, val)
+    end
+    error("Unrecognized control parameter: $(control).")
 end
 
 """
@@ -139,255 +217,6 @@ function setcontrols!(prob::XpressProblem; args...)
         setcontrols!(prob, getproperty(Lib, control), val)
     end
 end
-
-XPRS_STR_CONTROLS = [
-                        Lib.XPRS_MPSRHSNAME,
-                        Lib.XPRS_MPSOBJNAME,
-                        Lib.XPRS_MPSRANGENAME,
-                        Lib.XPRS_MPSBOUNDNAME,
-                        Lib.XPRS_OUTPUTMASK,
-                    ]
-
-XPRS_DBL_CONTROLS = [
-                        Lib.XPRS_MATRIXTOL
-                        Lib.XPRS_PIVOTTOL
-                        Lib.XPRS_FEASTOL
-                        Lib.XPRS_OUTPUTTOL
-                        Lib.XPRS_SOSREFTOL
-                        Lib.XPRS_OPTIMALITYTOL
-                        Lib.XPRS_ETATOL
-                        Lib.XPRS_RELPIVOTTOL
-                        Lib.XPRS_MIPTOL
-                        Lib.XPRS_MIPTOLTARGET
-                        Lib.XPRS_MIPADDCUTOFF
-                        Lib.XPRS_MIPABSCUTOFF
-                        Lib.XPRS_MIPRELCUTOFF
-                        Lib.XPRS_PSEUDOCOST
-                        Lib.XPRS_PENALTY
-                        Lib.XPRS_BIGM
-                        Lib.XPRS_MIPABSSTOP
-                        Lib.XPRS_MIPRELSTOP
-                        Lib.XPRS_CROSSOVERACCURACYTOL
-                        Lib.XPRS_BAROBJSCALE
-                        Lib.XPRS_BARRHSSCALE
-                        Lib.XPRS_CHOLESKYTOL
-                        Lib.XPRS_BARGAPSTOP
-                        Lib.XPRS_BARDUALSTOP
-                        Lib.XPRS_BARPRIMALSTOP
-                        Lib.XPRS_BARSTEPSTOP
-                        Lib.XPRS_ELIMTOL
-                        Lib.XPRS_PERTURB
-                        Lib.XPRS_MARKOWITZTOL
-                        Lib.XPRS_MIPABSGAPNOTIFY
-                        Lib.XPRS_MIPRELGAPNOTIFY
-                        Lib.XPRS_PPFACTOR
-                        Lib.XPRS_REPAIRINDEFINITEQMAX
-                        Lib.XPRS_BARGAPTARGET
-                        Lib.XPRS_SBEFFORT
-                        Lib.XPRS_HEURDIVERANDOMIZE
-                        Lib.XPRS_HEURSEARCHEFFORT
-                        Lib.XPRS_CUTFACTOR
-                        Lib.XPRS_EIGENVALUETOL
-                        Lib.XPRS_INDLINBIGM
-                        Lib.XPRS_TREEMEMORYSAVINGTARGET
-                        Lib.XPRS_GLOBALFILEBIAS
-                        Lib.XPRS_INDPRELINBIGM
-                        Lib.XPRS_RELAXTREEMEMORYLIMIT
-                        Lib.XPRS_MIPABSGAPNOTIFYOBJ
-                        Lib.XPRS_MIPABSGAPNOTIFYBOUND
-                        Lib.XPRS_PRESOLVEMAXGROW
-                        Lib.XPRS_HEURSEARCHTARGETSIZE
-                        Lib.XPRS_CROSSOVERRELPIVOTTOL
-                        Lib.XPRS_CROSSOVERRELPIVOTTOLSAFE
-                        Lib.XPRS_DETLOGFREQ
-                        Lib.XPRS_MAXIMPLIEDBOUND
-                        Lib.XPRS_FEASTOLTARGET
-                        Lib.XPRS_OPTIMALITYTOLTARGET
-                        Lib.XPRS_PRECOMPONENTSEFFORT
-                    ]
-
-XPRS_INT_CONTROLS = [
-                        Lib.XPRS_EXTRAROWS
-                        Lib.XPRS_EXTRACOLS
-                        Lib.XPRS_LPITERLIMIT
-                        Lib.XPRS_LPLOG
-                        Lib.XPRS_SCALING
-                        Lib.XPRS_PRESOLVE
-                        Lib.XPRS_CRASH
-                        Lib.XPRS_PRICINGALG
-                        Lib.XPRS_INVERTFREQ
-                        Lib.XPRS_INVERTMIN
-                        Lib.XPRS_MAXNODE
-                        Lib.XPRS_MAXTIME
-                        Lib.XPRS_MAXMIPSOL
-                        Lib.XPRS_DEFAULTALG
-                        Lib.XPRS_VARSELECTION
-                        Lib.XPRS_NODESELECTION
-                        Lib.XPRS_BACKTRACK
-                        Lib.XPRS_MIPLOG
-                        Lib.XPRS_KEEPNROWS
-                        Lib.XPRS_MPSECHO
-                        Lib.XPRS_MAXPAGELINES
-                        Lib.XPRS_OUTPUTLOG
-                        Lib.XPRS_BARSOLUTION
-                        Lib.XPRS_CACHESIZE
-                        Lib.XPRS_CROSSOVER
-                        Lib.XPRS_BARITERLIMIT
-                        Lib.XPRS_CHOLESKYALG
-                        Lib.XPRS_BAROUTPUT
-                        Lib.XPRS_CSTYLE
-                        Lib.XPRS_EXTRAMIPENTS
-                        Lib.XPRS_REFACTOR
-                        Lib.XPRS_BARTHREADS
-                        Lib.XPRS_KEEPBASIS
-                        Lib.XPRS_VERSION
-                        Lib.XPRS_BIGMMETHOD
-                        Lib.XPRS_MPSNAMELENGTH
-                        Lib.XPRS_PRESOLVEOPS
-                        Lib.XPRS_MIPPRESOLVE
-                        Lib.XPRS_MIPTHREADS
-                        Lib.XPRS_BARORDER
-                        Lib.XPRS_BREADTHFIRST
-                        Lib.XPRS_AUTOPERTURB
-                        Lib.XPRS_DENSECOLLIMIT
-                        Lib.XPRS_CALLBACKFROMMASTERTHREAD
-                        Lib.XPRS_MAXMCOEFFBUFFERELEMS
-                        Lib.XPRS_REFINEOPS
-                        Lib.XPRS_LPREFINEITERLIMIT
-                        Lib.XPRS_MIPREFINEITERLIMIT
-                        Lib.XPRS_DUALIZEOPS
-                        Lib.XPRS_PRESORT
-                        Lib.XPRS_PREPERMUTE
-                        Lib.XPRS_PREPERMUTESEED
-                        Lib.XPRS_MAXMEMORY
-                        Lib.XPRS_MAXMEMORYSOFT
-                        Lib.XPRS_MAXMEMORYHARD
-                        Lib.XPRS_CUTFREQ
-                        Lib.XPRS_SYMSELECT
-                        Lib.XPRS_SYMMETRY
-                        Lib.XPRS_LPTHREADS
-                        Lib.XPRS_MIQCPALG
-                        Lib.XPRS_QCCUTS
-                        Lib.XPRS_QCROOTALG
-                        Lib.XPRS_ALGAFTERNETWORK
-                        Lib.XPRS_TRACE
-                        Lib.XPRS_MAXIIS
-                        Lib.XPRS_CPUTIME
-                        Lib.XPRS_COVERCUTS
-                        Lib.XPRS_GOMCUTS
-                        Lib.XPRS_MPSFORMAT
-                        Lib.XPRS_CUTSTRATEGY
-                        Lib.XPRS_CUTDEPTH
-                        Lib.XPRS_TREECOVERCUTS
-                        Lib.XPRS_TREEGOMCUTS
-                        Lib.XPRS_CUTSELECT
-                        Lib.XPRS_TREECUTSELECT
-                        Lib.XPRS_DUALIZE
-                        Lib.XPRS_DUALGRADIENT
-                        Lib.XPRS_SBITERLIMIT
-                        Lib.XPRS_SBBEST
-                        Lib.XPRS_MAXCUTTIME
-                        Lib.XPRS_ACTIVESET
-                        Lib.XPRS_BARINDEFLIMIT
-                        Lib.XPRS_HEURSTRATEGY
-                        Lib.XPRS_HEURFREQ
-                        Lib.XPRS_HEURDEPTH
-                        Lib.XPRS_HEURMAXSOL
-                        Lib.XPRS_HEURNODES
-                        Lib.XPRS_LNPBEST
-                        Lib.XPRS_LNPITERLIMIT
-                        Lib.XPRS_BRANCHCHOICE
-                        Lib.XPRS_BARREGULARIZE
-                        Lib.XPRS_SBSELECT
-                        Lib.XPRS_LOCALCHOICE
-                        Lib.XPRS_LOCALBACKTRACK
-                        Lib.XPRS_DUALSTRATEGY
-                        Lib.XPRS_L1CACHE
-                        Lib.XPRS_HEURDIVESTRATEGY
-                        Lib.XPRS_HEURSELECT
-                        Lib.XPRS_BARSTART
-                        Lib.XPRS_BARNUMSTABILITY
-                        Lib.XPRS_BARORDERTHREADS
-                        Lib.XPRS_EXTRASETS
-                        Lib.XPRS_FEASIBILITYPUMP
-                        Lib.XPRS_PRECOEFELIM
-                        Lib.XPRS_PREDOMCOL
-                        Lib.XPRS_HEURSEARCHFREQ
-                        Lib.XPRS_HEURDIVESPEEDUP
-                        Lib.XPRS_SBESTIMATE
-                        Lib.XPRS_BARCORES
-                        Lib.XPRS_MAXCHECKSONMAXTIME
-                        Lib.XPRS_MAXCHECKSONMAXCUTTIME
-                        Lib.XPRS_HISTORYCOSTS
-                        Lib.XPRS_ALGAFTERCROSSOVER
-                        Lib.XPRS_LINELENGTH
-                        Lib.XPRS_MUTEXCALLBACKS
-                        Lib.XPRS_BARCRASH
-                        Lib.XPRS_HEURDIVESOFTROUNDING
-                        Lib.XPRS_HEURSEARCHROOTSELECT
-                        Lib.XPRS_HEURSEARCHTREESELECT
-                        Lib.XPRS_MPS18COMPATIBLE
-                        Lib.XPRS_ROOTPRESOLVE
-                        Lib.XPRS_CROSSOVERDRP
-                        Lib.XPRS_FORCEOUTPUT
-                        Lib.XPRS_DETERMINISTIC
-                        Lib.XPRS_PREPROBING
-                        Lib.XPRS_EXTRAQCELEMENTS
-                        Lib.XPRS_EXTRAQCROWS
-                        Lib.XPRS_TREEMEMORYLIMIT
-                        Lib.XPRS_TREECOMPRESSION
-                        Lib.XPRS_TREEDIAGNOSTICS
-                        Lib.XPRS_MAXGLOBALFILESIZE
-                        Lib.XPRS_REPAIRINFEASMAXTIME
-                        Lib.XPRS_IFCHECKCONVEXITY
-                        Lib.XPRS_PRIMALUNSHIFT
-                        Lib.XPRS_REPAIRINDEFINITEQ
-                        Lib.XPRS_MAXLOCALBACKTRACK
-                        Lib.XPRS_USERSOLHEURISTIC
-                        Lib.XPRS_FORCEPARALLELDUAL
-                        Lib.XPRS_BACKTRACKTIE
-                        Lib.XPRS_BRANCHDISJ
-                        Lib.XPRS_MIPFRACREDUCE
-                        Lib.XPRS_CONCURRENTTHREADS
-                        Lib.XPRS_MAXSCALEFACTOR
-                        Lib.XPRS_HEURTHREADS
-                        Lib.XPRS_THREADS
-                        Lib.XPRS_HEURBEFORELP
-                        Lib.XPRS_PREDOMROW
-                        Lib.XPRS_BRANCHSTRUCTURAL
-                        Lib.XPRS_QUADRATICUNSHIFT
-                        Lib.XPRS_BARPRESOLVEOPS
-                        Lib.XPRS_QSIMPLEXOPS
-                        Lib.XPRS_CONFLICTCUTS
-                        Lib.XPRS_PREPROTECTDUAL
-                        Lib.XPRS_CORESPERCPU
-                        Lib.XPRS_RESOURCESTRATEGY
-                        Lib.XPRS_SLEEPONTHREADWAIT
-                        Lib.XPRS_PREDUPROW
-                        Lib.XPRS_CPUPLATFORM
-                        Lib.XPRS_BARALG
-                        Lib.XPRS_TREEPRESOLVE
-                        Lib.XPRS_TREEPRESOLVE_KEEPBASIS
-                        Lib.XPRS_TREEPRESOLVEOPS
-                        Lib.XPRS_LPLOGSTYLE
-                        Lib.XPRS_RANDOMSEED
-                        Lib.XPRS_TREEQCCUTS
-                        Lib.XPRS_PRELINDEP
-                        Lib.XPRS_DUALTHREADS
-                        Lib.XPRS_PREOBJCUTDETECT
-                        Lib.XPRS_PREBNDREDQUAD
-                        Lib.XPRS_PREBNDREDCONE
-                        Lib.XPRS_PRECOMPONENTS
-                        Lib.XPRS_MAXMIPTASKS
-                        Lib.XPRS_MIPTERMINATIONMETHOD
-                        Lib.XPRS_PRECONEDECOMP
-                        Lib.XPRS_HEURSEARCHROOTCUTFREQ
-                        Lib.XPRS_EXTRAELEMS
-                        Lib.XPRS_EXTRAPRESOLVE
-                        Lib.XPRS_EXTRASETELEMS
-                    ]
-
-# TODO list attributes by type
 
 # originals are more important to be used everywhere, presolved are actually
 # secondary
