@@ -14,8 +14,8 @@ mutable struct DispachModel
     c_demand                         # Constraint of the generation by the demand
 end
 
-#Simple Model of Thermal Generation Dispatch by Constraints with MOI.SingleVariable
-function GenerateModel_SingleVariable()
+#Simple Model of Thermal Generation Dispatch by Constraints with MOI.VariableIndex
+function GenerateModel_VariableIndex()
     # Parameters
     d = 45.0                   # Demand
     I = 3                      # Number of generators
@@ -33,10 +33,10 @@ function GenerateModel_SingleVariable()
     c_limit_inf = Vector{Any}(undef, I + 1) # Lower limit constraints
     c_limit_sup = Vector{Any}(undef, I)     # Upper limit constraints
     for i in 1:I
-        c_limit_inf[i] = MOI.add_constraint(optimizer, MOI.SingleVariable(g[i]), MOI.GreaterThan(0.0))
-        c_limit_sup[i] = MOI.add_constraint(optimizer, MOI.SingleVariable(g[i]), MOI.LessThan(g_sup[i]))
+        c_limit_inf[i] = MOI.add_constraint(optimizer, g[i], MOI.GreaterThan(0.0))
+        c_limit_sup[i] = MOI.add_constraint(optimizer, g[i], MOI.LessThan(g_sup[i]))
     end
-    c_limit_inf[I+1] = MOI.add_constraint(optimizer, MOI.SingleVariable(Df), MOI.GreaterThan(0.0))
+    c_limit_inf[I+1] = MOI.add_constraint(optimizer, Df, MOI.GreaterThan(0.0))
 
     c_demand = MOI.add_constraint(optimizer, 
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(I+1),[g;Df]), 0.0),
@@ -158,8 +158,8 @@ end
 #Initialization of Parameters
 @testset "Results" begin
     @testset "Single_Variable" begin
-        #Generate model by SingleVariable
-        model1 = GenerateModel_SingleVariable()
+        #Generate model by VariableIndex
+        model1 = GenerateModel_VariableIndex()
         #Get the results of models with the DiffOpt Forward context
         @testset "Forward" begin
             resultForward = Forward(model1)
