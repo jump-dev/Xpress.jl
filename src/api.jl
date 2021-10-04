@@ -165,8 +165,8 @@ function getlicerrmsg(; len = 1024)
     buffer = Array{Cchar}(undef, len*8)
     buffer_p = pointer(buffer)
     GC.@preserve buffer begin
-        Lib.XPRSgetlicerrmsg(msg, len)
-        return unsafe_string(msg)
+        Lib.XPRSgetlicerrmsg(buffer_p, len)
+        return unsafe_string(buffer_p)
     end
 end
 
@@ -294,8 +294,8 @@ Used to set the value of a given string  control parameter.
 - `csval`: A string containing the value to which the control is to be set (plus a null terminator).
 
 """
-function setstrcontrol(prob::XpressProblem, _index::Integer)
-    @invoke Lib.XPRSsetstrcontrol(prob, _index, _)::String
+function setstrcontrol(prob::XpressProblem, _index::Integer, _value::String)
+    @checked Lib.XPRSsetstrcontrol(prob, _index, _value)#::String
 end
 
 """

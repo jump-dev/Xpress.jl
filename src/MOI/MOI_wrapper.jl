@@ -155,6 +155,12 @@ mutable struct BasisStatus
     var_status::Vector{Cint}
 end
 
+mutable struct SensitivityCache 
+    input::Vector{Float64}
+    output::Vector{Float64}
+    is_updated::Bool
+end
+
 mutable struct IISData
     stat::Cint
     is_standard_iis::Bool
@@ -181,6 +187,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # turn off warning by the MOI interface implementation [advanced usage]
     moi_warnings::Bool
+
+    # false by default - ignores starting points which might be expensive to load.
+    ignore_start::Bool
 
     # An enum to remember what objective is currently stored in the model.
     objective_type::ObjectiveType
@@ -220,11 +229,15 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # elements of the solution.
     
     cached_solution::Union{Nothing, CachedSolution}
-    basis_status::Union{Nothing,BasisStatus}
+    basis_status::Union{Nothing, BasisStatus}
     conflict::Union{Nothing, IISData}
 
     solve_method::String
     solve_relaxation::Bool
+
+    #Stores the input and output of derivatives
+    forward_sensitivity_cache::Union{Nothing, SensitivityCache}
+    backward_sensitivity_cache::Union{Nothing, SensitivityCache}
 
     # Callback fields.
     callback_cached_solution::Union{Nothing, CachedSolution}
@@ -253,6 +266,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.log_level = 1 # is xpress default
         model.show_warning = true
         model.moi_warnings = true
+        model.ignore_start = false
 
         model.solve_method = ""
         model.solve_relaxation = false
@@ -315,6 +329,9 @@ function MOI.empty!(model::Optimizer)
     model.cb_cut_data = CallbackCutData(false, Array{Xpress.Lib.XPRScut}(undef,0))
     model.callback_state = CB_NONE
     model.cb_exception = nothing
+
+    model.forward_sensitivity_cache = nothing
+    model.backward_sensitivity_cache = nothing
 
     model.lazy_callback = nothing
     model.user_cut_callback = nothing
@@ -514,17 +531,22 @@ function MOI.set(model::Optimizer, param::MOI.RawParameter, value)
         end
         model.inner.logfile = value
         reset_message_callback(model)
-    elseif param == MOI.RawParameter("MOIWarnings")
+    elseif param == MOI.RawParameter("MOI_IGNORE_START")
+        model.ignore_start = value
+    elseif param == MOI.RawParameter("MOI_WARNINGS")
         model.moi_warnings = value
+    elseif param == MOI.RawParameter("MOI_SOLVE_MODE")
+        # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/R/HTML/lpoptimize.html
+        model.solve_method = value
     elseif param == MOI.RawParameter("XPRESS_WARNING_WINDOWS")
         model.show_warning = value
         reset_message_callback(model)
     elseif param == MOI.RawParameter("OUTPUTLOG")
         model.log_level = value
-        Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
+        Xpress.setcontrol!(model.inner, "OUTPUTLOG", value)
         reset_message_callback(model)
     else
-        Xpress.setcontrol!(model.inner, XPRS_ATTRIBUTES[param.name], value)
+        Xpress.setcontrol!(model.inner, param.name, value)
     end
     return
 end
@@ -545,10 +567,16 @@ end
 function MOI.get(model::Optimizer, param::MOI.RawParameter)
     if param == MOI.RawParameter("logfile")
         return model.inner.logfile
+    elseif param == MOI.RawParameter("MOI_IGNORE_START")
+        return model.ignore_start
+    elseif param == MOI.RawParameter("MOI_WARNINGS")
+        return model.moi_warnings
+    elseif param == MOI.RawParameter("MOI_SOLVE_MODE")
+        return model.solve_method
     elseif param == MOI.RawParameter("XPRESS_WARNING_WINDOWS")
         return model.show_warning
     else
-        return Xpress.getcontrol(model.inner, XPRS_ATTRIBUTES[param.name])
+        return Xpress.get_control_or_attribute(model.inner, param.name)
     end
 end
 
@@ -818,6 +846,159 @@ function MOI.set(
     # That is, don't call `Xpress.addnames`.
     model.name_to_variable = nothing
     return
+end
+
+###
+### Sensitivities
+###
+
+struct ForwardSensitivityInputConstraint <: MOI.AbstractConstraintAttribute end
+
+struct ForwardSensitivityOutputVariable <: MOI.AbstractVariableAttribute end
+
+struct BackwardSensitivityInputVariable <: MOI.AbstractVariableAttribute end
+
+struct BackwardSensitivityOutputConstraint <: MOI.AbstractConstraintAttribute end
+
+MOI.is_set_by_optimize(::ForwardSensitivityOutputVariable) = true
+
+MOI.is_set_by_optimize(::BackwardSensitivityOutputConstraint) = true
+
+function forward(model::Optimizer)
+    rows = Xpress.getintattrib(model.inner, Lib.XPRS_ROWS)
+    spare_rows = Xpress.getintattrib(model.inner, Lib.XPRS_SPAREROWS)
+    cols = Xpress.getintattrib(model.inner, Lib.XPRS_COLS)
+
+    #1 - Create vector 'aux_vector' of size ROWS of type Float64 (constraints)
+    aux_vector = copy(model.forward_sensitivity_cache.input)
+
+    #2 - Call XPRSftran with vector 'aux_vector' as an argument
+    Xpress.ftran(model.inner, aux_vector)
+
+    #3 - Create Dict of Basic variable to All variables
+    basic_variables_ordered = Vector{Int32}(undef, rows)
+    Xpress.getpivotorder(model.inner, basic_variables_ordered)
+
+    aux_dict = Dict{Int, Int}()
+    for i in 1:length(basic_variables_ordered)
+        if rows+spare_rows <= basic_variables_ordered[i] <= rows+spare_rows + cols - 1
+            aux_dict[i] = basic_variables_ordered[i] - (rows+spare_rows) + 1
+        end
+    end
+
+    #5 - Populate vector of All variables with the correct value of the Basic variables
+    fill!(model.forward_sensitivity_cache.output, 0.0)
+    for (bi, vi) in aux_dict
+        model.forward_sensitivity_cache.output[vi] = aux_vector[bi]
+    end
+
+    return
+end
+
+function backward(model::Optimizer)
+    rows = Xpress.getintattrib(model.inner, Lib.XPRS_ROWS)
+    spare_rows = Xpress.getintattrib(model.inner, Lib.XPRS_SPAREROWS)
+    cols = Xpress.getintattrib(model.inner, Lib.XPRS_COLS)
+
+    #1 - Get Basic variables
+    basic_variables_ordered = Vector{Int32}(undef, rows)
+    Xpress.getpivotorder(model.inner, basic_variables_ordered)
+
+    aux_dict = Dict{Int,Int}()
+    for i in 1:length(basic_variables_ordered)
+        if rows + spare_rows <= basic_variables_ordered[i] <= rows + spare_rows + cols - 1
+            aux_dict[i] = basic_variables_ordered[i] - (rows+spare_rows) + 1
+        end
+    end
+
+    #2 - Create vector 'aux_vector' of size ROWS of type Float64 (constraints) initialized at zero
+    aux_vector = zeros(rows)
+
+    #3 - Populate vector 'aux_vector' with the respective values in the correct positions of the basic variables
+    for (bi, vi) in aux_dict
+        aux_vector[bi] = model.backward_sensitivity_cache.input[vi]
+    end
+
+    #4 - Call XPRSbtran with vector 'aux_vector' as an argument
+    Xpress.btran(model.inner, aux_vector)
+
+    #5 - Set constraint_output equal to vector 'aux_vector'
+    model.backward_sensitivity_cache.output .= aux_vector
+    return
+end
+
+function MOI.set(
+    model::Optimizer, ::ForwardSensitivityInputConstraint, ci::MOI.ConstraintIndex, value::Float64
+)
+    rows = Xpress.getintattrib(model.inner, Lib.XPRS_ROWS)
+    cols = Xpress.getintattrib(model.inner, Lib.XPRS_COLS)
+    if model.forward_sensitivity_cache === nothing
+        model.forward_sensitivity_cache = 
+            SensitivityCache(
+                zeros(rows),
+                zeros(cols),
+                false
+            )
+    elseif length(model.forward_sensitivity_cache.input) != rows
+        model.forward_sensitivity_cache.input = zeros(rows)
+    end
+    model.forward_sensitivity_cache.input[_info(model, ci).row] = value
+    model.forward_sensitivity_cache.is_updated = false
+    return
+end
+
+function MOI.get(model::Optimizer, ::ForwardSensitivityOutputVariable, vi::MOI.VariableIndex)
+    if is_mip(model) && model.moi_warnings
+        @warn "The problem is a MIP, it might fail to get correct sensitivities."
+    end
+    if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL 
+        error("Model not optimized. Cannot get sensitivities.")
+    end
+    if model.forward_sensitivity_cache === nothing 
+        error("Forward sensitivity cache not initiliazed correctly.")
+    end
+    if model.forward_sensitivity_cache.is_updated != true
+        forward(model)
+        model.forward_sensitivity_cache.is_updated = true
+    end
+    return model.forward_sensitivity_cache.output[_info(model, vi).column]
+end
+
+function MOI.set(
+    model::Optimizer, ::BackwardSensitivityInputVariable, vi::MOI.VariableIndex, value::Float64
+)
+    rows = Xpress.getintattrib(model.inner, Lib.XPRS_ROWS)
+    cols = Xpress.getintattrib(model.inner, Lib.XPRS_COLS)
+    if model.backward_sensitivity_cache === nothing
+        model.backward_sensitivity_cache = 
+            SensitivityCache(
+                zeros(cols),
+                zeros(rows),
+                false
+            )
+    elseif length(model.backward_sensitivity_cache.input) != cols
+        model.backward_sensitivity_cache.input = zeros(cols)
+    end
+    model.backward_sensitivity_cache.input[_info(model, vi).column] = value
+    model.backward_sensitivity_cache.is_updated = false
+    return
+end
+
+function MOI.get(model::Optimizer, ::BackwardSensitivityOutputConstraint, ci::MOI.ConstraintIndex)
+    if is_mip(model) && model.moi_warnings
+        @warn "The problem is a MIP, it might fail to get correct sensitivities."
+    end
+    if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL 
+        error("Model not optimized. Cannot get sensitivities.")
+    end
+    if model.backward_sensitivity_cache === nothing 
+        error("Backward sensitivity cache not initiliazed correctly.")
+    end
+    if model.backward_sensitivity_cache.is_updated != true
+        backward(model)
+        model.backward_sensitivity_cache.is_updated = true
+    end
+    return model.backward_sensitivity_cache.output[_info(model, ci).row]
 end
 
 ###
@@ -2321,13 +2502,17 @@ end
 # primal value for each column referred in `colind`.
 function _gather_MIP_start(model)
     variable_info = model.variable_info
-    qt_var = length(variable_info)
-    colind = Vector{Cint}(undef, qt_var)
-    solval = Vector{Cdouble}(undef, qt_var)
+    n_var = length(variable_info)
+    colind = Vector{Cint}(undef, 0)
+    solval = Vector{Cdouble}(undef, 0)
     j = 0
     for (_, var_info) in variable_info
         if var_info.start !== nothing
             j += 1
+            if j == 1 # only allocates if there is some start point
+                resize!(colind, n_var)
+                resize!(solval, n_var)
+            end
             colind[j] = var_info.column - 1
             solval[j] = var_info.start :: Float64
         end
@@ -2369,13 +2554,13 @@ function MOI.optimize!(model::Optimizer)
             @warn "Callbacks in XPRESS might not work correctly with PRESOLVE != 0"
         end
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
-        model.has_generic_callback = false # becaus it is set as tru in the above
+        model.has_generic_callback = false # because it is set as true in the above
     end
     pre_solve_reset(model)
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
     rhs = Xpress.getrhs(model.inner)
-    if is_mip(model)
+    if !model.ignore_start && is_mip(model)
         _update_MIP_start!(model)
     end
     start_time = time()

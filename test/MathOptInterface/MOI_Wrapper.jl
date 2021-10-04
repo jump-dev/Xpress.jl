@@ -28,8 +28,25 @@ const CONFIG_LOW_TOL = MOIT.TestConfig(atol = 1e-3, rtol = 1e-3)
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == ""
     optimizer = Xpress.Optimizer(OUTPUTLOG = 0, logfile = "output.log")
     @test MOI.get(optimizer, MOI.RawParameter("logfile")) == "output.log"
-    @test MOI.set(optimizer, MOI.TimeLimitSec(),100) === nothing
-    @test MOI.set(optimizer, MOI.TimeLimitSec(),3600.0) === nothing
+    @test MOI.set(optimizer, MOI.TimeLimitSec(), 100) === nothing
+    @test MOI.set(optimizer, MOI.TimeLimitSec(), 3600.0) === nothing
+
+    @test MOI.get(optimizer, MOI.RawParameter("MIPRELSTOP")) == 0.0001
+    MOI.set(optimizer, MOI.RawParameter("MIPRELSTOP"), 0.123)
+    @test MOI.get(optimizer, MOI.RawParameter("MIPRELSTOP")) == 0.123
+
+    @test MOI.get(optimizer, MOI.RawParameter("MPSOBJNAME")) == ""
+    MOI.set(optimizer, MOI.RawParameter("MPSOBJNAME"), "qwerty")
+    @test MOI.get(optimizer, MOI.RawParameter("MPSOBJNAME")) == "qwerty"
+
+    @test MOI.get(optimizer, MOI.RawParameter("PRESOLVE")) == 1
+    MOI.set(optimizer, MOI.RawParameter("PRESOLVE"), 3)
+    @test MOI.get(optimizer, MOI.RawParameter("PRESOLVE")) == 3
+
+    @show MOI.get(optimizer, MOI.RawParameter("XPRESSVERSION"))
+    @test MOI.get(optimizer, MOI.RawParameter("MATRIXNAME")) == ""
+    @test MOI.get(optimizer, MOI.RawParameter("SUMPRIMALINF")) == 0.0
+    @test MOI.get(optimizer, MOI.RawParameter("NAMELENGTH")) == 8
 end
 
 @testset "SolverName" begin
@@ -169,7 +186,7 @@ end
     for warning in [true, false]
         @testset "Variable bounds" begin
             model = Xpress.Optimizer(OUTPUTLOG = 0, DEFAULTALG = 3, PRESOLVE = 0)
-            MOI.set(model, MOI.RawParameter("MOIWarnings"), warning)
+            MOI.set(model, MOI.RawParameter("MOI_WARNINGS"), warning)
             x = MOI.add_variable(model)
             c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(2.0))
             c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(1.0))
@@ -619,7 +636,8 @@ end
         HEURSTRATEGY = 0,
         CUTSTRATEGY  = 0,
         PRESOLVE     = 0,
-        MIPPRESOLVE  = 0
+        MIPPRESOLVE  = 0,
+        PRESOLVEOPS  = 0,
     )
     # The variables: x[1:100], Bin
     x, _ = MOI.add_constrained_variables(model, fill(MOI.ZeroOne(), 100))
@@ -652,15 +670,9 @@ end
         obtained_obj_value, computed_obj_value; rtol = rtol, atol = atol
     )
     @test isapprox(9945.0, computed_obj_value; rtol = rtol, atol = atol)
-    # Using MOI 9.22, so MOI.RawOptimizerAttribute was not available.
-    node_solution_was_found = Xpress.getintattrib(
-        model.inner, Xpress.Lib.XPRS_MIPSOLNODE
-    ) :: Cint
-    #=
-    MOI.get(
-        model, MOI.RawOptimizerAttribute("MIPSOLNODE")
-    ) :: CInt
-    =#
+
+    node_solution_was_found = MOI.get(model, MOI.RawParameter("MIPSOLNODE"))
+
     @test node_solution_was_found > 1
 
     # SECOND RUN: run without MIP-start and only searching the first node.
