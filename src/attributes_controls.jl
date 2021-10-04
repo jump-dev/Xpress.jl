@@ -3,17 +3,17 @@
 File automatically generated with script:
 Xpress.jl/scripts/build_param_control_dicts.jl
 
-Last build: 2021-10-01T23:57:11.645
+Last build: 2021-10-03T23:26:18.954
 
-Optimizer version: 37.1.1
+Optimizer version: 38.1.4
 
 Banner from lib:
-FICO Xpress Solver 64bit v8.11.0 Oct 22 2020
+FICO Xpress Solver 64bit v8.12.3 Jul 21 2021
 (c) Copyright Fair Isaac Corporation 1983-2020. All rights reserved
 
 Banner from header (xprs.h):
- * (c) Copyright Fair Isaac Corporation 1983-2020. All rights reserved     *
- * For FICO Xpress Optimizer v37.01.01                                     *
+ * (c) Copyright Fair Isaac Corporation 1983-2021. All rights reserved     *
+ * For FICO Xpress Optimizer v38.01.04                                     *
 
 =#
 
@@ -99,6 +99,8 @@ const DOUBLE_CONTROLS = Dict{String, Int32}(
     "LUPIVOTTOL" => 7139,
     "MIPRESTARTGAPTHRESHOLD" => 7140,
     "NODEPROBINGEFFORT" => 7141,
+    "INPUTTOL" => 7143,
+    "MIPRESTARTFACTOR" => 7145,
 )
 
 const INTEGER_CONTROLS = Dict{String, Int32}(
@@ -115,6 +117,7 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "MAXNODE" => 8018,
     "MAXTIME" => 8020,
     "MAXMIPSOL" => 8021,
+    "SIFTPASSES" => 8022,
     "DEFAULTALG" => 8023,
     "VARSELECTION" => 8025,
     "NODESELECTION" => 8026,
@@ -272,9 +275,9 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "CPUPLATFORM" => 8312,
     "BARALG" => 8315,
     "SIFTING" => 8319,
-    "TREEPRESOLVE" => 8320,
-    "TREEPRESOLVE_KEEPBASIS" => 8321,
-    "TREEPRESOLVEOPS" => 8322,
+    "TREEPRESOLVE" => 8320, # Not in v38, kept for backwards compatibility.
+    "TREEPRESOLVE_KEEPBASIS" => 8321, # Not in v38, kept for backwards compatibility.
+    "TREEPRESOLVEOPS" => 8322, # Not in v38, kept for backwards compatibility.
     "LPLOGSTYLE" => 8326,
     "RANDOMSEED" => 8328,
     "TREEQCCUTS" => 8331,
@@ -315,12 +318,24 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "BARFAILITERLIMIT" => 8398,
     "AUTOSCALING" => 8406,
     "GENCONSABSTRANSFORMATION" => 8408,
+    "COMPUTEJOBPRIORITY" => 8409,
+    "PREFOLDING" => 8410,
+    "COMPUTE" => 8411,
+    "NETSTALLLIMIT" => 8412,
+    "SERIALIZEPREINTSOL" => 8413,
     "PWLNONCONVEXTRANSFORMATION" => 8420,
     "MIPCOMPONENTS" => 8421,
     "MIPCONCURRENTNODES" => 8422,
     "MIPCONCURRENTSOLVES" => 8423,
     "OUTPUTCONTROLS" => 8424,
     "SIFTSWITCH" => 8425,
+    "HEUREMPHASIS" => 8427,
+    "COMPUTEMATX" => 8428,
+    "COMPUTEMATX_IIS" => 8429,
+    "COMPUTEMATX_IISMAXTIME" => 8430,
+    "BARREFITER" => 8431,
+    "COMPUTELOG" => 8434,
+    "ESCAPENAMES" => 8440,
     "EXTRAELEMS" => 8006,
     "EXTRAPRESOLVE" => 8037,
     "EXTRASETELEMS" => 8191,
