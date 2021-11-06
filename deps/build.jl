@@ -68,7 +68,7 @@ function ci_installation()
     [
         (ENV["SECRET_XPRS_WIN_8110"], "xprs.dll")
         (ENV["SECRET_XPRL_WIN_8110"], "xprl.dll")
-        (ENV["SECRET_XPRA_WIN_8110"], "xpauth.xpr")
+        (ENV["SECRET_XPRA_WIN_8130"], "xpauth.xpr")
     ]
     end
     for (url, file) in files
