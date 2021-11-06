@@ -47,7 +47,7 @@ function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
         end
     end
 
-    error("Could not find xpauth.xpr license file")
+    error("Could not find xpauth.xpr license file. Check XPRESSDIR or XPAUTH_PATH environment variables.")
 end
 """
     userlic(; liccheck::Function = emptyliccheck, xpauth_path::String = "" )
