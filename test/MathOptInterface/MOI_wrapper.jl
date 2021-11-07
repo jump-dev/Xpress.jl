@@ -44,6 +44,7 @@ function test_Basic_Parameters()
 end
 
 function test_runtests()
+
     optimizer = Xpress.Optimizer(OUTPUTLOG = 0)
     model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
     MOI.set(model, MOI.Silent(), true)
@@ -274,7 +275,7 @@ function test_Farkas_Dual_Min_Interval()
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
 end
 
-function test_Farkas_Dual_Min__Equalto()
+function test_Farkas_Dual_Min_Equalto()
     model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
@@ -301,7 +302,7 @@ function test_Farkas_Dual_Min__Equalto()
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
 end
 
-function test_Farkas_Dual_Min__II()
+function test_Farkas_Dual_Min_2()
     model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
@@ -359,7 +360,7 @@ function test_Farkas_Dual_Max()
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
 end
 
-function test_Farkas_Dual_Max_ii()
+function test_Farkas_Dual_Max_2()
     model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)

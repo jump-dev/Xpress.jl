@@ -433,6 +433,14 @@ end
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Xpress"
 
+# Currently this returns the version of the Xpress package as a whole
+# which is different from the Xpress Optimizer version
+# the first is a good match because is the version number that appears
+# in the dowload package
+function MOI.get(optimizer::Optimizer, ::MOI.SolverVersion)
+    MOI.get(optimizer, MOI.RawOptimizerAttribute("XPRESSVERSION"))
+end
+
 function MOI.supports(
     ::Optimizer,
     ::MOI.ObjectiveFunction{F}
