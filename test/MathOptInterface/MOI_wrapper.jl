@@ -1,195 +1,112 @@
+module TestMOIWrapper
+
 using Xpress
 using MathOptInterface
 using Test
 
 const MOI = MathOptInterface
-const MOIT = MathOptInterface.Test
 
-const MOIT = MOI.Test
-const MOIU = MOI.Utilities
+function runtests()
+    for name in names(@__MODULE__; all = true)
+        if startswith("$(name)", "test_")
+            @testset "$(name)" begin
+                getfield(@__MODULE__, name)()
+            end
+        end
+    end
+end
 
-const OPTIMIZER = Xpress.Optimizer(OUTPUTLOG = 0)
-const OPTIMIZER_2 = Xpress.Optimizer(OUTPUTLOG = 0)
-
-# Xpress can only obtain primal and dual rays without presolve. Check more on
-# https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSgetprimalray.html
-
-const BRIDGED_OPTIMIZER = MOI.Bridges.full_bridge_optimizer(
-    OPTIMIZER, Float64)
-const BRIDGED_CERTIFICATE_OPTIMIZER =
-    MOI.Bridges.full_bridge_optimizer(
-        Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0), Float64)
-
-const CONFIG = MOIT.TestConfig()
-const CONFIG_LOW_TOL = MOIT.TestConfig(atol = 1e-3, rtol = 1e-3)
-
-@testset "MOI interface" begin
+function test_Basic_Parameters()
     optimizer = Xpress.Optimizer(OUTPUTLOG = 0)
-    @test MOI.get(optimizer, MOI.RawParameter("logfile")) == ""
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("logfile")) == ""
     optimizer = Xpress.Optimizer(OUTPUTLOG = 0, logfile = "output.log")
-    @test MOI.get(optimizer, MOI.RawParameter("logfile")) == "output.log"
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("logfile")) == "output.log"
     @test MOI.set(optimizer, MOI.TimeLimitSec(), 100) === nothing
     @test MOI.set(optimizer, MOI.TimeLimitSec(), 3600.0) === nothing
 
-    @test MOI.get(optimizer, MOI.RawParameter("MIPRELSTOP")) == 0.0001
-    MOI.set(optimizer, MOI.RawParameter("MIPRELSTOP"), 0.123)
-    @test MOI.get(optimizer, MOI.RawParameter("MIPRELSTOP")) == 0.123
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("MIPRELSTOP")) == 0.0001
+    MOI.set(optimizer, MOI.RawOptimizerAttribute("MIPRELSTOP"), 0.123)
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("MIPRELSTOP")) == 0.123
 
-    @test MOI.get(optimizer, MOI.RawParameter("MPSOBJNAME")) == ""
-    MOI.set(optimizer, MOI.RawParameter("MPSOBJNAME"), "qwerty")
-    @test MOI.get(optimizer, MOI.RawParameter("MPSOBJNAME")) == "qwerty"
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("MPSOBJNAME")) == ""
+    MOI.set(optimizer, MOI.RawOptimizerAttribute("MPSOBJNAME"), "qwerty")
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("MPSOBJNAME")) == "qwerty"
 
-    @test MOI.get(optimizer, MOI.RawParameter("PRESOLVE")) == 1
-    MOI.set(optimizer, MOI.RawParameter("PRESOLVE"), 3)
-    @test MOI.get(optimizer, MOI.RawParameter("PRESOLVE")) == 3
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("PRESOLVE")) == 1
+    MOI.set(optimizer, MOI.RawOptimizerAttribute("PRESOLVE"), 3)
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("PRESOLVE")) == 3
 
-    @show MOI.get(optimizer, MOI.RawParameter("XPRESSVERSION"))
-    @test MOI.get(optimizer, MOI.RawParameter("MATRIXNAME")) == ""
-    @test MOI.get(optimizer, MOI.RawParameter("SUMPRIMALINF")) == 0.0
-    @test MOI.get(optimizer, MOI.RawParameter("NAMELENGTH")) == 8
+    @show MOI.get(optimizer, MOI.RawOptimizerAttribute("XPRESSVERSION"))
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("MATRIXNAME")) == ""
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("SUMPRIMALINF")) == 0.0
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("NAMELENGTH")) == 8
+    @test MOI.get(optimizer, MOI.SolverName()) == "Xpress"
 end
 
-@testset "SolverName" begin
-    @test MOI.get(OPTIMIZER, MOI.SolverName()) == "Xpress"
-end
+function test_runtests()
 
-@testset "supports_default_copy_to" begin
-    @test MOIU.supports_default_copy_to(OPTIMIZER, true)
-end
-
-@testset "Unit Tests Constraints" begin
-    MOIT.basic_constraint_tests(OPTIMIZER, CONFIG)
-end
-
-@testset "Unit Tests" begin
-    MOIT.unittest(BRIDGED_OPTIMIZER, CONFIG, #= excludes =# String[
-        # TODO: fix errors
-        # does not work with caching optimizer
-        "delete_soc_variables",
-
-        # These tests fail due to tolerance issues; tested below.
-        "solve_qcp_edge_cases",
-        "solve_qp_edge_cases",
-        "solve_qp_zero_offdiag",
-            
-        # These tests require extra parameters to obtain certificates.
-        "solve_farkas_equalto_upper",
-        "solve_farkas_equalto_lower",
-        "solve_farkas_lessthan",
-        "solve_farkas_greaterthan",
-        "solve_farkas_interval_upper",
-        "solve_farkas_interval_lower",
-        "solve_farkas_variable_lessthan",
-        "solve_farkas_variable_lessthan_max",
-       ],
+    optimizer = Xpress.Optimizer(OUTPUTLOG = 0)
+    model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
+    MOI.set(model, MOI.Silent(), true)
+    MOI.Test.runtests(
+        model,
+        MOI.Test.Config(atol = 1e-3, rtol = 1e-3),
+        exclude = String[
+            # tested with PRESOLVE=0 below
+            "_SecondOrderCone_",
+            "test_constraint_PrimalStart_DualStart_SecondOrderCone",
+            "_RotatedSecondOrderCone_",
+            "_GeometricMeanCone_",
+            # Xpress cannot handle nonconvex quadratic constraint
+            "test_quadratic_nonconvex_",
+        ],
     )
-    # certificates
-    MOIT.solve_farkas_equalto_upper(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
-    MOIT.solve_farkas_equalto_lower(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
-    MOIT.solve_farkas_lessthan(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
-    MOIT.solve_farkas_greaterthan(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
-    MOIT.solve_farkas_interval_upper(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
-    MOIT.solve_farkas_interval_lower(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
-    MOIT.solve_farkas_variable_lessthan(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
-    MOIT.solve_farkas_variable_lessthan_max(BRIDGED_CERTIFICATE_OPTIMIZER,CONFIG)
-    # tolerance
-    MOIT.solve_qcp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
-    MOIT.solve_qp_edge_cases(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
-    MOIT.solve_qp_zero_offdiag(BRIDGED_OPTIMIZER, CONFIG_LOW_TOL)
-    # MOIT.delete_soc_variables(OPTIMIZER, CONFIG_LOW_TOL)
-    MOIT.modificationtest(BRIDGED_OPTIMIZER, CONFIG)
-end
 
-@testset "Linear tests" begin
-    MOIT.contlineartest(
-        BRIDGED_OPTIMIZER,
-        MOIT.TestConfig(
-            basis = true,
-            infeas_certificates = false
-        ), [
-            # These tests require extra parameters to obtain certificates.
-            "linear8a", "linear8b", "linear8c","linear12",
+    optimizer_no_presolve = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
+    model = MOI.Bridges.full_bridge_optimizer(optimizer_no_presolve, Float64)
+    MOI.Test.runtests(
+        model,
+        MOI.Test.Config(
+            atol = 1e-3,
+            rtol = 1e-3,
+            exclude = Any[MOI.ConstraintDual, MOI.DualObjectiveValue],
+        ),
+        include = String[
+            "_SecondOrderCone_",
+            "test_constraint_PrimalStart_DualStart_SecondOrderCone",
+            "_RotatedSecondOrderCone_",
+            "_GeometricMeanCone_"
         ]
     )
-    MOIT.linear8atest(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
-    MOIT.linear8btest(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
-    MOIT.linear8ctest(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
-    MOIT.linear12test(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
+    return
 end
 
-@testset "Quadratic tests" begin
-    MOIT.contquadratictest(
-        BRIDGED_OPTIMIZER,
-        MOIT.TestConfig(atol = 1e-3, rtol = 1e-3),
-        [
-            # Xpress does NOT support ncqcp.
-            "ncqcp",
-        ]
-    )
-end
-
-@testset "Conic tests" begin
-    MOIT.lintest(BRIDGED_OPTIMIZER, CONFIG, [
-        # These tests require extra parameters to obtain certificates.
-        "lin3", "lin4"
-    ])
-    MOIT.lin3test(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
-    MOIT.lin4test(BRIDGED_CERTIFICATE_OPTIMIZER, CONFIG)
-    MOIT.soctest(BRIDGED_OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3), ["soc3"])
-    MOIT.soc3test(
-        BRIDGED_OPTIMIZER,
-        MOIT.TestConfig(duals = false, infeas_certificates = false, atol = 1e-3)
-    )
-    MOIT.rsoctest(BRIDGED_OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3), ["rotatedsoc3"])
-    MOIT.rotatedsoc3test(BRIDGED_OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-2))
-    MOIT.geomeantest(BRIDGED_OPTIMIZER, MOIT.TestConfig(duals = false, atol=1e-3))
-end
-
-@testset "Integer Linear tests" begin
-    MOIT.intlineartest(BRIDGED_OPTIMIZER, CONFIG)
-end
-
-@testset "ModelLike tests" begin
-    @testset "default_objective_test" begin
-        MOIT.default_objective_test(OPTIMIZER)
-    end
-
-    @testset "default_status_test" begin
-        MOIT.default_status_test(OPTIMIZER)
-    end
-
-    @testset "nametest" begin
-        MOIT.nametest(BRIDGED_OPTIMIZER)
-    end
-
-    @testset "validtest" begin
-        MOIT.validtest(OPTIMIZER)
-    end
-
-    @testset "emptytest" begin
-        MOIT.emptytest(BRIDGED_OPTIMIZER)
-    end
-
-    @testset "orderedindicestest" begin
-        MOIT.orderedindicestest(OPTIMIZER)
-    end
-
-    @testset "copytest" begin
-        BRIDGED_OPTIMIZER_2 = MOI.Bridges.full_bridge_optimizer(
-            OPTIMIZER_2, Float64
+function test_Conflicts()
+    @testset "Binary" begin
+        T = Float64
+        model = Xpress.Optimizer(OUTPUTLOG = 0, DEFAULTALG = 3, PRESOLVE = 0)
+        x, c1 = MOI.add_constrained_variable(model, MOI.ZeroOne())
+        c2 = MOI.add_constraint(
+            model,
+            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(one(T), [x]), zero(T)),
+            MOI.EqualTo(T(0.5)),
         )
-        MOIT.copytest(BRIDGED_OPTIMIZER, BRIDGED_OPTIMIZER_2)
+        MOI.optimize!(model)
+        @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
+        MOI.compute_conflict!(model)
+        @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+        zeroone_conflict = MOI.get(model, MOI.ConstraintConflictStatus(), c1)
+        @test zeroone_conflict == MOI.MAYBE_IN_CONFLICT ||
+              zeroone_conflict == MOI.IN_CONFLICT
+        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == MOI.IN_CONFLICT
     end
-end
-
-@testset "IIS tests" begin
     for warning in [true, false]
         @testset "Variable bounds" begin
             model = Xpress.Optimizer(OUTPUTLOG = 0, DEFAULTALG = 3, PRESOLVE = 0)
-            MOI.set(model, MOI.RawParameter("MOI_WARNINGS"), warning)
+            MOI.set(model, MOI.RawOptimizerAttribute("MOI_WARNINGS"), warning)
             x = MOI.add_variable(model)
-            c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(2.0))
-            c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(1.0))
+            c1 = MOI.add_constraint(model, x, MOI.GreaterThan(2.0))
+            c2 = MOI.add_constraint(model, x, MOI.LessThan(1.0))
 
             # Getting the results before the conflict refiner has been called must return an error.
             @test MOI.get(model, MOI.ConflictStatus()) == MOI.COMPUTE_CONFLICT_NOT_CALLED
@@ -292,23 +209,25 @@ end
 
         # Once it's called, no problem.
         MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.NO_CONFLICT_FOUND
+        @test MOI.get(model, MOI.ConflictStatus()) == MOI.NO_CONFLICT_EXISTS
         @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.NOT_IN_CONFLICT
         @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == MOI.NOT_IN_CONFLICT
     end
 end
 
-@testset "test_farkas_dual_min" begin
+# Xpress can only obtain primal and dual rays without presolve. Check more on
+# https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSgetprimalray.html
+function test_Farkas_Dual_Min()
     model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.set(
         model,
-        MOI.ObjectiveFunction{MOI.SingleVariable}(),
-        MOI.SingleVariable(x[1]),
+        MOI.ObjectiveFunction{MOI.VariableIndex}(),
+        x[1],
     )
     clb = MOI.add_constraint.(
-        model, MOI.SingleVariable.(x), MOI.GreaterThan(0.0)
+        model, x, MOI.GreaterThan(0.0)
     )
     c = MOI.add_constraint(
         model,
@@ -327,17 +246,17 @@ end
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
 end
 
-@testset "test_farkas_dual_min_interval" begin
+function test_Farkas_Dual_Min_Interval()
     model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.set(
         model,
-        MOI.ObjectiveFunction{MOI.SingleVariable}(),
-        MOI.SingleVariable(x[1]),
+        MOI.ObjectiveFunction{MOI.VariableIndex}(),
+        x[1],
     )
     clb = MOI.add_constraint.(
-        model, MOI.SingleVariable.(x), MOI.Interval(0.0, 10.0)
+        model, x, MOI.Interval(0.0, 10.0)
     )
     c = MOI.add_constraint(
         model,
@@ -356,16 +275,16 @@ end
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
 end
 
-@testset "test_farkas_dual_min_equalto" begin
+function test_Farkas_Dual_Min_Equalto()
     model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.set(
         model,
-        MOI.ObjectiveFunction{MOI.SingleVariable}(),
-        MOI.SingleVariable(x[1]),
+        MOI.ObjectiveFunction{MOI.VariableIndex}(),
+        x[1],
     )
-    clb = MOI.add_constraint.(model, MOI.SingleVariable.(x), MOI.EqualTo(0.0))
+    clb = MOI.add_constraint.(model, x, MOI.EqualTo(0.0))
     c = MOI.add_constraint(
         model,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0, 1.0], x), 0.0),
@@ -383,7 +302,7 @@ end
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
 end
 
-@testset "test_farkas_dual_min_ii" begin
+function test_Farkas_Dual_Min_2()
     model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
@@ -393,7 +312,7 @@ end
         MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(-1.0, x[1])], 0.0),
     )
     clb = MOI.add_constraint.(
-        model, MOI.SingleVariable.(x), MOI.LessThan(0.0)
+        model, x, MOI.LessThan(0.0)
     )
     c = MOI.add_constraint(
         model,
@@ -412,17 +331,17 @@ end
     @test clb_dual[2] ≈ c_dual atol = 1e-6
 end
 
-@testset "test_farkas_dual_max" begin
+function test_Farkas_Dual_Max()
     model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     MOI.set(
         model,
-        MOI.ObjectiveFunction{MOI.SingleVariable}(),
-        MOI.SingleVariable(x[1]),
+        MOI.ObjectiveFunction{MOI.VariableIndex}(),
+        x[1],
     )
     clb = MOI.add_constraint.(
-        model, MOI.SingleVariable.(x), MOI.GreaterThan(0.0)
+        model, x, MOI.GreaterThan(0.0)
     )
     c = MOI.add_constraint(
         model,
@@ -441,7 +360,7 @@ end
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
 end
 
-@testset "test_farkas_dual_max_ii" begin
+function test_Farkas_Dual_Max_2()
     model = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
@@ -451,7 +370,7 @@ end
         MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(-1.0, x[1])], 0.0),
     )
     clb = MOI.add_constraint.(
-        model, MOI.SingleVariable.(x), MOI.LessThan(0.0)
+        model, x, MOI.LessThan(0.0)
     )
     c = MOI.add_constraint(
         model,
@@ -470,7 +389,7 @@ end
     @test clb_dual[2] ≈ c_dual atol = 1e-6
 end
 
-@testset "Delete equality constraint in binary variable" begin
+function test_Delete_equality_constraint_in_binary_variable()
     atol = rtol = 1e-6
     model = Xpress.Optimizer(OUTPUTLOG = 0)
     # an example on mixed integer programming
@@ -492,16 +411,16 @@ end
 
     vc1 = MOI.add_constraint(
         model,
-        MOI.SingleVariable(v[1]),
+        v[1],
         MOI.Interval(0.0, 5.0),
     )
     vc2 = MOI.add_constraint(
         model,
-        MOI.SingleVariable(v[2]),
+        v[2],
         MOI.Interval(0.0, 10.0),
     )
-    vc3 = MOI.add_constraint(model, MOI.SingleVariable(v[2]), MOI.Integer())
-    vc4 = MOI.add_constraint(model, MOI.SingleVariable(v[3]), MOI.ZeroOne())
+    vc3 = MOI.add_constraint(model, v[2], MOI.Integer())
+    vc4 = MOI.add_constraint(model, v[3], MOI.ZeroOne())
 
     objf =
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.1, 2.0, 5.0], v), 0.0)
@@ -534,7 +453,7 @@ end
     MOI.delete(model, vc4)
 
     # Fix z to its optimal value
-    vc5 = MOI.add_constraint(model, MOI.SingleVariable(v[3]), MOI.EqualTo(z_value))
+    vc5 = MOI.add_constraint(model, v[3], MOI.EqualTo(z_value))
 
     MOI.optimize!(model)
 
@@ -553,7 +472,7 @@ end
     @test MOI.get(model, MOI.ObjectiveBound()) >= 19.4 - atol
 
     # Add back binary bounds to z
-    vc4 = MOI.add_constraint(model, MOI.SingleVariable(v[3]), MOI.ZeroOne())
+    vc4 = MOI.add_constraint(model, v[3], MOI.ZeroOne())
 
     # Remove equality constraint
     MOI.delete(model, vc5)
@@ -573,36 +492,36 @@ end
     @test MOI.get(model, MOI.ObjectiveBound()) >= 19.4 - atol
 end
 
-@testset "Binary Variables Infeasibility" begin
+function test_Binary_Variables_Infeasibility()
     atol = rtol = 1e-6
     model = Xpress.Optimizer(OUTPUTLOG = 0)
     v = MOI.add_variable(model)
 
     infeas_err = ErrorException("The problem is infeasible")
-    vc1 = MOI.add_constraint(model, MOI.SingleVariable(v), MOI.ZeroOne())
+    vc1 = MOI.add_constraint(model, v, MOI.ZeroOne())
     @test_throws infeas_err vc2 = MOI.add_constraint(
         model,
-        MOI.SingleVariable(v),
+        v,
         MOI.GreaterThan(2.0),
     )
     @test_throws infeas_err vc3 = MOI.add_constraint(
         model,
-        MOI.SingleVariable(v),
+        v,
         MOI.LessThan(-1.0),
-        )
+    )
     @test_throws infeas_err vc4 = MOI.add_constraint(
         model,
-        MOI.SingleVariable(v),
+        v,
         MOI.Interval(-1.0,-0.5),
     )
     @test_throws infeas_err vc5 = MOI.add_constraint(
         model,
-        MOI.SingleVariable(v),
+        v,
         MOI.EqualTo(2.0),
     )
 end
 
-@testset "MIP Start testing" begin
+function test_MIP_Start()
     # The idea of the test is the following:
     # * Give Xpress a problem it can solve quickly but not simple enough to be
     #   solved at the root node when heuristics and cuts are disabled.
@@ -671,13 +590,13 @@ end
     )
     @test isapprox(9945.0, computed_obj_value; rtol = rtol, atol = atol)
 
-    node_solution_was_found = MOI.get(model, MOI.RawParameter("MIPSOLNODE"))
+    node_solution_was_found = MOI.get(model, MOI.RawOptimizerAttribute("MIPSOLNODE"))
 
     @test node_solution_was_found > 1
 
     # SECOND RUN: run without MIP-start and only searching the first node.
     # Should give a worse solution than the previous one.
-    MOI.set(model, MOI.RawParameter("MAXNODE"), 1)
+    MOI.set(model, MOI.RawOptimizerAttribute("MAXNODE"), 1)
 
     MOI.optimize!(model)
 
@@ -716,3 +635,6 @@ end
     @test isapprox(9945.0, computed_obj_value3; rtol = rtol, atol = atol)
 end
 
+end
+
+TestMOIWrapper.runtests()

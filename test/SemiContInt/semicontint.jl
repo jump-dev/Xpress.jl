@@ -1,11 +1,11 @@
-function semiconttest(model::MOI.ModelLike, config::MOIT.TestConfig{T}) where T
+function semiconttest(model::MOI.ModelLike, config::MOIT.Config{T}) where T
     atol = config.atol
     rtol = config.rtol
 
     @test MOIU.supports_default_copy_to(model, #=copy_names=# false)
     @test MOI.supports(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}())
     @test MOI.supports(model, MOI.ObjectiveSense())
-    @test MOI.supports_constraint(model, MOI.SingleVariable, MOI.MathOptInterface.Semicontinuous{T})
+    @test MOI.supports_constraint(model, MOI.VariableIndex, MOI.MathOptInterface.Semicontinuous{T})
 
     # 2 variables
     # min  x
@@ -19,11 +19,11 @@ function semiconttest(model::MOI.ModelLike, config::MOIT.TestConfig{T}) where T
     v = MOI.add_variables(model, 2)
     @test MOI.get(model, MOI.NumberOfVariables()) == 2
 
-    vc1 = MOI.add_constraint(model, MOI.SingleVariable(v[1]), MOI.Semicontinuous(T(2), T(3)))
-    @test MOI.get(model, MOI.NumberOfConstraints{MOI.SingleVariable,MOI.Semicontinuous{T}}()) == 1
+    vc1 = MOI.add_constraint(model, v[1], MOI.Semicontinuous(T(2), T(3)))
+    @test MOI.get(model, MOI.NumberOfConstraints{MOI.VariableIndex,MOI.Semicontinuous{T}}()) == 1
 
-    vc2 = MOI.add_constraint(model, MOI.SingleVariable(v[2]), MOI.EqualTo(zero(T)))
-    @test MOI.get(model, MOI.NumberOfConstraints{MOI.SingleVariable,MOI.EqualTo{T}}()) == 1
+    vc2 = MOI.add_constraint(model, v[2], MOI.EqualTo(zero(T)))
+    @test MOI.get(model, MOI.NumberOfConstraints{MOI.VariableIndex,MOI.EqualTo{T}}()) == 1
 
     cf = MOI.ScalarAffineFunction{T}(MOI.ScalarAffineTerm{T}.([one(T), -one(T)], v), zero(T))
     c = MOI.add_constraint(model, cf, MOI.GreaterThan(zero(T)))
@@ -148,14 +148,14 @@ function semiconttest(model::MOI.ModelLike, config::MOIT.TestConfig{T}) where T
     end
 end
 
-function semiinttest(model::MOI.ModelLike, config::MOIT.TestConfig{T}) where T
+function semiinttest(model::MOI.ModelLike, config::MOIT.Config{T}) where T
     atol = config.atol
     rtol = config.rtol
 
     @test MOIU.supports_default_copy_to(model, #=copy_names=# false)
     @test MOI.supports(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}())
     @test MOI.supports(model, MOI.ObjectiveSense())
-    @test MOI.supports_constraint(model, MOI.SingleVariable, MOI.MathOptInterface.Semiinteger{T})
+    @test MOI.supports_constraint(model, MOI.VariableIndex, MOI.MathOptInterface.Semiinteger{T})
 
     # 2 variables
     # min  x
@@ -169,11 +169,11 @@ function semiinttest(model::MOI.ModelLike, config::MOIT.TestConfig{T}) where T
     v = MOI.add_variables(model, 2)
     @test MOI.get(model, MOI.NumberOfVariables()) == 2
 
-    vc1 = MOI.add_constraint(model, MOI.SingleVariable(v[1]), MOI.Semiinteger(T(2), T(3)))
-    @test MOI.get(model, MOI.NumberOfConstraints{MOI.SingleVariable,MOI.Semiinteger{T}}()) == 1
+    vc1 = MOI.add_constraint(model, v[1], MOI.Semiinteger(T(2), T(3)))
+    @test MOI.get(model, MOI.NumberOfConstraints{MOI.VariableIndex,MOI.Semiinteger{T}}()) == 1
 
-    vc2 = MOI.add_constraint(model, MOI.SingleVariable(v[2]), MOI.EqualTo(zero(T)))
-    @test MOI.get(model, MOI.NumberOfConstraints{MOI.SingleVariable,MOI.EqualTo{T}}()) == 1
+    vc2 = MOI.add_constraint(model, v[2], MOI.EqualTo(zero(T)))
+    @test MOI.get(model, MOI.NumberOfConstraints{MOI.VariableIndex,MOI.EqualTo{T}}()) == 1
 
     cf = MOI.ScalarAffineFunction{T}(MOI.ScalarAffineTerm{T}.([one(T), -one(T)], v), zero(T))
     c = MOI.add_constraint(model, cf, MOI.GreaterThan(zero(T)))
