@@ -20,6 +20,6 @@ end
 
     @test Xpress.getcontrol(prob, "HEURTHREADS") == 0
 
-    msg = "Unable to call `Xpress.copyprob`:\n\n91 Error: No problem has been input.\n"
-    @test_throws Xpress.XpressError(32, msg) Xpress.copyprob(prob, prob)
+    msg = "Unable to call `Xpress.readprob`:\n\n85 Error: File not found: .\n"
+    @test_throws Xpress.XpressError(32, msg) Xpress.readprob(prob,"","")
 end
