@@ -20,6 +20,8 @@ end
 
     @test Xpress.getcontrol(prob, "HEURTHREADS") == 0
 
-    msg = "Unable to call `Xpress.readprob`:\n\n85 Error: File not found: .mps.\n"
+    vXpress_major = Int(Xpress.getversion().major)
+    file_extension = ifelse(vXpress_major <= 38, ".mps","")
+    msg = "Unable to call `Xpress.readprob`:\n\n85 Error: File not found: $(file_extension).\n"
     @test_throws Xpress.XpressError(32, msg) Xpress.readprob(prob,"","")
 end
