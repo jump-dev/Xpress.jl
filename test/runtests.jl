@@ -20,6 +20,6 @@ end
 
     @test Xpress.getcontrol(prob, "HEURTHREADS") == 0
 
-    msg = "Unable to call `Xpress.readprob`:\n\n85 Error: File not found: .\n"
+    msg = "Unable to call `Xpress.readprob`:\n\n85 Error: File not found: .mps.\n"
     @test_throws Xpress.XpressError(32, msg) Xpress.readprob(prob,"","")
 end
