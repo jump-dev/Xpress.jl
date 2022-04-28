@@ -3259,12 +3259,59 @@ end
 
 function MOI.modify(
     model::Optimizer,
+    cis::Vector{MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, <:Any}},
+    chgs::Vector{MOI.ScalarCoefficientChange{Float64}}
+)
+    nels = length(cis)
+    @assert nels == length(chgs)
+
+    rows = Vector{Int}(undef, nels)
+    cols = Vector{Int}(undef, nels)
+    coefs = Vector{Float64}(undef, nels)
+
+    for i in 1:nels
+        rows[i] = _info(model, cis[i]).row
+        cols[i] = _info(model, chgs[i].variable).column
+        coefs[i] = chgs[i].new_coefficient
+    end
+
+    Xpress.chgmcoef(
+        model.inner,
+        nels,
+        rows,
+        cols,
+        coefs
+    )
+    return
+end
+
+function MOI.modify(
+    model::Optimizer,
     c::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
     chg::MOI.ScalarCoefficientChange{Float64}
 )
     @assert model.objective_type == SCALAR_AFFINE
     column = _info(model, chg.variable).column
     Xpress.chgobj(model.inner, [column], [chg.new_coefficient])
+    model.is_objective_set = true
+    return
+end
+
+function MOI.modify(
+    model::Optimizer,
+    c::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
+    chgs::Vector{MOI.ScalarCoefficientChange{Float64}}
+)
+    @assert model.objective_type == SCALAR_AFFINE
+    cols = Vector{Int}(undef, nels)
+    coefs = Vector{Float64}(undef, nels)
+
+    for i in 1:nels
+        cols[i] = _info(model, chgs[i].variable).column
+        coefs[i] = chgs[i].new_coefficient
+    end
+
+    Xpress.chgobj(model.inner, cols, coefs)
     model.is_objective_set = true
     return
 end
