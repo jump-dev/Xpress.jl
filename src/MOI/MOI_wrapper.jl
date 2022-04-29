@@ -3259,19 +3259,19 @@ end
 
 function MOI.modify(
     model::Optimizer,
-    cis::Vector{MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, <:Any}},
+    cis::Vector{MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}},
     chgs::Vector{MOI.ScalarCoefficientChange{Float64}}
-)
+) where {S}
     nels = length(cis)
     @assert nels == length(chgs)
 
-    rows = Vector{Int}(undef, nels)
-    cols = Vector{Int}(undef, nels)
+    rows = Vector{Cint}(undef, nels)
+    cols = Vector{Cint}(undef, nels)
     coefs = Vector{Float64}(undef, nels)
 
     for i in 1:nels
-        rows[i] = _info(model, cis[i]).row
-        cols[i] = _info(model, chgs[i].variable).column
+        rows[i] = Cint(_info(model, cis[i]).row)
+        cols[i] = Cint(_info(model, chgs[i].variable).column)
         coefs[i] = chgs[i].new_coefficient
     end
 
@@ -3303,6 +3303,7 @@ function MOI.modify(
     chgs::Vector{MOI.ScalarCoefficientChange{Float64}}
 )
     @assert model.objective_type == SCALAR_AFFINE
+    nels = length(chgs)
     cols = Vector{Int}(undef, nels)
     coefs = Vector{Float64}(undef, nels)
 

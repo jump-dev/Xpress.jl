@@ -2271,7 +2271,7 @@ Used to change multiple coefficients in the  matrix. If any coefficient does not
 
 """
 function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{<:Integer}, _mcol::Vector{<:Integer}, _dval)
-    @checked Lib.XPRSchgmcoef(prob, ncoeffs, _mrow .- 1, _mcol .- 1, _dval)
+    @checked Lib.XPRSchgmcoef(prob, ncoeffs, _mrow .- one(Cint), _mcol .- one(Cint), _dval)
 end
 
 # # Disable 64Bit versions do to reliability issues.
