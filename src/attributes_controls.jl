@@ -3,17 +3,17 @@
 File automatically generated with script:
 Xpress.jl/scripts/build_param_control_dicts.jl
 
-Last build: 2021-10-03T23:26:18.954
+Last build: 2022-05-12T16:11:57.623
 
-Optimizer version: 38.1.4
+Optimizer version: 40.1.1
 
 Banner from lib:
-FICO Xpress Solver 64bit v8.12.3 Jul 21 2021
-(c) Copyright Fair Isaac Corporation 1983-2020. All rights reserved
+FICO Xpress Solver 64bit v8.14.0 Apr 22 2022
+(c) Copyright Fair Isaac Corporation 1983-2022. All rights reserved
 
 Banner from header (xprs.h):
- * (c) Copyright Fair Isaac Corporation 1983-2021. All rights reserved     *
- * For FICO Xpress Optimizer v38.01.04                                     *
+ * (c) Copyright Fair Isaac Corporation 1983-2022. All rights reserved     *
+ * For FICO Xpress Optimizer v40.01.01                                     *
 
 =#
 
@@ -101,6 +101,8 @@ const DOUBLE_CONTROLS = Dict{String, Int32}(
     "NODEPROBINGEFFORT" => 7141,
     "INPUTTOL" => 7143,
     "MIPRESTARTFACTOR" => 7145,
+    "BAROBJPERTURB" => 7146,
+    "CPIALPHA" => 7149,
 )
 
 const INTEGER_CONTROLS = Dict{String, Int32}(
@@ -243,6 +245,7 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "TREECOMPRESSION" => 8243,
     "TREEDIAGNOSTICS" => 8244,
     "MAXGLOBALFILESIZE" => 8245,
+    "PRECLIQUESTRATEGY" => 8247,
     "REPAIRINFEASMAXTIME" => 8250,
     "IFCHECKCONVEXITY" => 8251,
     "PRIMALUNSHIFT" => 8252,
@@ -323,6 +326,7 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "COMPUTE" => 8411,
     "NETSTALLLIMIT" => 8412,
     "SERIALIZEPREINTSOL" => 8413,
+    "NUMERICALEMPHASIS" => 8416,
     "PWLNONCONVEXTRANSFORMATION" => 8420,
     "MIPCOMPONENTS" => 8421,
     "MIPCONCURRENTNODES" => 8422,
@@ -335,7 +339,11 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "COMPUTEMATX_IISMAXTIME" => 8430,
     "BARREFITER" => 8431,
     "COMPUTELOG" => 8434,
+    "SIFTPRESOLVEOPS" => 8435,
     "ESCAPENAMES" => 8440,
+    "IOTIMEOUT" => 8442,
+    "MAXSTALLTIME" => 8443,
+    "AUTOCUTTING" => 8446,
     "EXTRAELEMS" => 8006,
     "EXTRAPRESOLVE" => 8037,
     "EXTRASETELEMS" => 8191,
@@ -374,6 +382,8 @@ const DOUBLE_ATTRIBUTES = Dict{String, Int32}(
     "MAXKAPPA" => 2098,
     "TREECOMPLETION" => 2104,
     "PREDICTEDATTLEVEL" => 2105,
+    "OBSERVEDPRIMALINTEGRAL" => 2106,
+    "CPISCALEFACTOR" => 2117,
     "BARPRIMALOBJ" => 4001,
     "BARDUALOBJ" => 4002,
     "BARPRIMALINF" => 4003,
@@ -450,6 +460,8 @@ const INTEGER_ATTRIBUTES = Dict{String, Int32}(
     "ORIGINALPWLS" => 1336,
     "ORIGINALGENCONS" => 1338,
     "COMPUTEEXECUTIONS" => 1356,
+    "MIPSOLTIME" => 1371,
+    "RESTARTS" => 1381,
     "BARITER" => 5001,
     "BARDENSECOL" => 5004,
     "BARCROSSOVER" => 5005,
@@ -469,6 +481,7 @@ const INTEGER_ATTRIBUTES = Dict{String, Int32}(
     "ORIGINALPWLPOINTS" => 1337,
     "ORIGINALGENCONCOLS" => 1339,
     "ORIGINALGENCONVALS" => 1340,
+    "MEMORYLIMITDETECTED" => 1380,
     "BARAASIZE" => 5002,
     "BARLSIZE" => 5003,
 )
