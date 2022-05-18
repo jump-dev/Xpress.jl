@@ -566,9 +566,8 @@ function reset_message_callback(model)
         removecbmessage(model.inner, C_NULL, C_NULL)
         model.message_callback = nothing
     end
-    if Sys.iswindows() &&                   # is win
-            model.inner.logfile == "" &&    # no file -> screen
-            model.log_level != 0            # has log
+    if model.inner.logfile == "" &&    # no file -> screen
+           model.log_level != 0        # has log
         model.message_callback = setoutputcb!(model.inner, model.show_warning)
     end
 end
