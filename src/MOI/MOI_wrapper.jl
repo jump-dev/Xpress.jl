@@ -2556,8 +2556,8 @@ end
 function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
     if check_moi_callback_validity(model)
-        if model.moi_warnings && Xpress.getcontrol(model.inner,Xpress.Lib.XPRS_HEUREMPHASIS) != 0
-            @warn "Callbacks in XPRESS might not work correctly with HEUREMPHASIS != 0"
+        if model.moi_warnings && Xpress.getcontrol(model.inner,Xpress.Lib.XPRS_HEURSTRATEGY) != 0
+            @warn "Callbacks in XPRESS might not work correctly with HEURSTRATEGY != 0"
         end
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
         model.has_generic_callback = false # because it is set as true in the above
