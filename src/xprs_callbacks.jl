@@ -4,6 +4,9 @@ mutable struct CallbackData
     data::Any # data for user
     model::XpressProblem # local model # ptr_model::Ptr{Nothing}
 end
+Base.cconvert(::Type{Ptr{Cvoid}}, x::CallbackData) = x
+Base.unsafe_convert(::Type{Ptr{Cvoid}}, x::CallbackData) = x.ptr::Ptr{Cvoid}
+Base.broadcastable(x::CallbackData) = Ref(x)
 
 # must be mutable
 mutable struct _CallbackUserData
