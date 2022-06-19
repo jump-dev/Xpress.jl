@@ -1682,6 +1682,14 @@ function MOI.add_constraint(
         end
     end
     Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
+    if info.type == CONTINUOUS
+        if lower >= 0
+            _set_variable_lower_bound(model, info, info.previous_lower_bound)
+        end
+        if upper <= 1
+            _set_variable_upper_bound(model, info, info.previous_upper_bound)
+        end
+    end
     info.type = BINARY
     return MOI.ConstraintIndex{MOI.VariableIndex, MOI.ZeroOne}(f.value)
 end
