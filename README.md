@@ -134,7 +134,7 @@ The Julia versions 1.1.x do not work properly with MOI dues to Julia bugs. Hence
 ## Skipping Xpress.postsolve
 
 In older versions of Xpress the command `XPRSpostsolve` throws an error in Infeasible models. In these older versions the post solve
-should not be executed. To do this one can use the `RawOptimizerAttribute("MOI_SKIP_POST_SOLVE")` to skip this routine.
+should not be executed. To do this one can use the `RawOptimizerAttribute("MOI_POST_SOLVE")` to skip this routine.
 
 ## Reference:
 
