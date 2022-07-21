@@ -191,6 +191,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # false by default - ignores starting points which might be expensive to load.
     ignore_start::Bool
 
+    # false by default - skip the postsolve routine
+    skip_post_solve::Bool
+
     # An enum to remember what objective is currently stored in the model.
     objective_type::ObjectiveType
 
@@ -266,6 +269,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.show_warning = true
         model.moi_warnings = true
         model.ignore_start = false
+        model.skip_post_solve = false
 
         model.solve_method = ""
         model.solve_relaxation = false
@@ -540,6 +544,8 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
         end
         model.inner.logfile = value
         reset_message_callback(model)
+    elseif param == MOI.RawOptimizerAttribute("MOI_SKIP_POST_SOLVE")
+        model.skip_post_solve = value
     elseif param == MOI.RawOptimizerAttribute("MOI_IGNORE_START")
         model.ignore_start = value
     elseif param == MOI.RawOptimizerAttribute("MOI_WARNINGS")
@@ -578,6 +584,8 @@ function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
         return model.inner.logfile
     elseif param == MOI.RawOptimizerAttribute("MOI_IGNORE_START")
         return model.ignore_start
+    elseif param == MOI.RawOptimizerAttribute("MOI_SKIP_POST_SOLVE")
+        return model.skip_post_solve
     elseif param == MOI.RawOptimizerAttribute("MOI_WARNINGS")
         return model.moi_warnings
     elseif param == MOI.RawOptimizerAttribute("MOI_SOLVE_MODE")
@@ -2598,7 +2606,9 @@ function MOI.optimize!(model::Optimizer)
 
     # should be almost a no-op if not needed
     # might have minor overhead due to memory being freed
-    Xpress.postsolve(model.inner)
+    if !model.skip_post_solve
+        Xpress.postsolve(model.inner)
+    end
 
     model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
 
