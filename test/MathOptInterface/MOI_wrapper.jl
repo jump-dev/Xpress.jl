@@ -81,6 +81,45 @@ function test_runtests()
     return
 end
 
+function test_Binaryfixing()
+    @testset "Binary Equal to 1" begin
+        T = Float64
+        config = MOI.Test.Config(atol = 1e-3, rtol = 1e-3)
+        model = Xpress.Optimizer(OUTPUTLOG = 0)
+        x = MOI.add_variable(model)
+        MOI.add_constraint(model, x, MOI.EqualTo(T(1)))
+        f = MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(T(1), x)], T(0))
+        MOI.add_constraint(model, x, MOI.ZeroOne())
+        MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+        MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+        MOI.Test._test_model_solution(
+                model,
+                config;
+                objective_value = T(1),
+                variable_primal = [(x, T(1))],
+            )
+    end
+
+    @testset "Binary Equal to 1 - delete constraint" begin
+        T = Float64
+        config = MOI.Test.Config(atol = 1e-3, rtol = 1e-3)
+        model = Xpress.Optimizer(OUTPUTLOG = 0)
+        x = MOI.add_variable(model)
+        MOI.add_constraint(model, x, MOI.ZeroOne())
+        c1 = MOI.add_constraint(model, x, MOI.EqualTo(T(1)))
+        MOI.delete(model, c1)
+        f = MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(T(1), x)], T(0))
+        MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+        MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+        MOI.Test._test_model_solution(
+                model,
+                config;
+                objective_value = T(0),
+                variable_primal = [(x, T(0))],
+            )
+    end
+end
+
 function test_Conflicts()
     @testset "Binary" begin
         T = Float64
