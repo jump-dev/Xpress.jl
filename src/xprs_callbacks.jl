@@ -4,6 +4,7 @@ mutable struct CallbackData
     data::Any # data for user
     model::XpressProblem # local model # ptr_model::Ptr{Nothing}
 end
+Base.broadcastable(x::CallbackData) = Ref(x)
 
 # must be mutable
 mutable struct _CallbackUserData

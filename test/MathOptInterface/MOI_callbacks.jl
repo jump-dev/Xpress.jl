@@ -7,10 +7,7 @@ const MOI = MathOptInterface
 
 function callback_simple_model()
     model = Xpress.Optimizer(
-        PRESOLVE = 0,
-        CUTSTRATEGY = 0,
         HEURSTRATEGY = 0,
-        SYMMETRY = 0,
         OUTPUTLOG = 0
     )
 
@@ -29,10 +26,7 @@ end
 
 function callback_knapsack_model()
     model = Xpress.Optimizer(
-        PRESOLVE = 0,
-        CUTSTRATEGY = 0,
         HEURSTRATEGY = 0,
-        SYMMETRY = 0,
         OUTPUTLOG = 0
     )
     MOI.set(model, MOI.NumberOfThreads(), 2)
