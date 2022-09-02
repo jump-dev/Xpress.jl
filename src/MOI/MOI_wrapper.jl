@@ -141,6 +141,7 @@ mutable struct CachedSolution
 
     has_primal_certificate::Bool
     has_dual_certificate::Bool
+    has_feasible_point::Bool
 
     solve_time::Float64
 end
@@ -395,6 +396,7 @@ function reset_cached_solution(model::Optimizer)
             fill(NaN, num_affine),
             false,
             false,
+            false,
             NaN
         )
     else
@@ -404,6 +406,7 @@ function reset_cached_solution(model::Optimizer)
         resize!(model.cached_solution.linear_dual, num_affine)
         model.cached_solution.has_primal_certificate = false
         model.cached_solution.has_dual_certificate = false
+        model.cached_solution.has_feasible_point = false
         model.cached_solution.solve_time = NaN
     end
     return model.cached_solution
@@ -420,6 +423,7 @@ function reset_callback_cached_solution(model::Optimizer)
             fill(NaN, num_affine),
             false,
             false,
+            false,
             NaN
         )
     else
@@ -429,6 +433,7 @@ function reset_callback_cached_solution(model::Optimizer)
         resize!(model.callback_cached_solution.linear_dual, num_affine)
         model.callback_cached_solution.has_primal_certificate = false
         model.callback_cached_solution.has_dual_certificate = false
+        model.callback_cached_solution.has_feasible_point = false
         model.callback_cached_solution.solve_time = NaN
     end
     return model.callback_cached_solution
@@ -2630,6 +2635,8 @@ function MOI.optimize!(model::Optimizer)
         has_Ray = Int64[0]
         Xpress.getprimalray(model.inner, model.cached_solution.variable_primal , has_Ray)
         model.cached_solution.has_primal_certificate = _has_primal_ray(model)
+    elseif status == MOI.FEASIBLE_POINT 
+        model.cached_solution.has_feasible_point = true
     end
     status = MOI.get(model, MOI.DualStatus())
     if status == MOI.INFEASIBILITY_CERTIFICATE
@@ -3085,8 +3092,7 @@ function MOI.get(model::Optimizer, attr::MOI.ResultCount)
     elseif model.cached_solution.has_primal_certificate
         return 1
     else
-        st = MOI.get(model, MOI.PrimalStatus())
-        return st == MOI.FEASIBLE_POINT ? 1 : 0
+        return (model.cached_solution.has_feasible_point) ? 1 : 0
     end
 end
 
