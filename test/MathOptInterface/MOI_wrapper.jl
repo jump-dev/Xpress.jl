@@ -515,7 +515,7 @@ function test_Delete_equality_constraint_in_binary_variable()
 
     # Remove equality constraint
     MOI.delete(model, vc5)
-
+    MOI.optimize!(model)
     @test MOI.get(model, MOI.TerminationStatus()) == MOI.OPTIMAL
     @test MOI.get(model, MOI.ResultCount()) >= 1
     @test MOI.get(model, MOI.PrimalStatus()) in
