@@ -173,8 +173,6 @@ mutable struct IISData
     colbndtype::Vector{UInt8} # sense of the column bounds that participate
 end
 
-const CleverDicts = MOI.Utilities.CleverDicts
-
 mutable struct Optimizer <: MOI.AbstractOptimizer
     # The low-level Xpress model.
     inner::XpressProblem
