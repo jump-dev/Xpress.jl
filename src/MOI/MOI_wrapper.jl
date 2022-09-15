@@ -776,14 +776,9 @@ _sense_and_rhs(s::MOI.EqualTo{Float64}) = (Cchar('E'), s.value)
 # Short-cuts to return the VariableInfo associated with an index.
 function _info(model::Optimizer, key::MOI.VariableIndex)
     if !haskey(model.variable_info, key)
-        _invalid_index(key)
+        throw(MOI.InvalidIndex(key))
     end
     return model.variable_info[key]
-end
-
-function _invalid_index(key::MOI.VariableIndex)
-    throw(MOI.InvalidIndex(key))
-    return nothing
 end
 
 function MOI.add_variable(model::Optimizer)
