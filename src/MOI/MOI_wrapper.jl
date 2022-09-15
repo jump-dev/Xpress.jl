@@ -205,7 +205,12 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # A mapping from the MOI.VariableIndex to the Xpress column. VariableInfo
     # also stores some additional fields like what bounds have been added, the
     # variable type, and the names of VariableIndex-in-Set constraints.
-    variable_info::CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}
+    variable_info::CleverDicts.CleverDict{
+        MOI.VariableIndex,
+        VariableInfo,
+        typeof(CleverDicts.key_to_index),
+        typeof(CleverDicts.index_to_key),
+        }
 
     # An index that is incremented for each new constraint (regardless of type).
     # We can check if a constraint is valid by checking if it is in the correct
@@ -770,10 +775,10 @@ _sense_and_rhs(s::MOI.EqualTo{Float64}) = (Cchar('E'), s.value)
 
 # Short-cuts to return the VariableInfo associated with an index.
 function _info(model::Optimizer, key::MOI.VariableIndex)
-    if haskey(model.variable_info, key)
-        return model.variable_info[key]
+    if !haskey(model.variable_info, key)
+        throw(MOI.InvalidIndex(key))
     end
-    throw(MOI.InvalidIndex(key))
+    return model.variable_info[key]
 end
 
 function MOI.add_variable(model::Optimizer)
