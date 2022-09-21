@@ -239,6 +239,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     cached_solution::Union{Nothing, CachedSolution}
     basis_status::Union{Nothing, BasisStatus}
     conflict::Union{Nothing, IISData}
+    termination_status::MOI.TerminationStatusCode
+    primal_status::MOI.ResultStatusCode
+    dual_status::MOI.ResultStatusCode
 
     solve_method::String
     solve_relaxation::Bool
@@ -281,6 +284,10 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.solve_relaxation = false
 
         model.message_callback = nothing
+
+        model.termination_status = MOI.OPTIMIZE_NOT_CALLED
+        model.primal_status = MOI.NO_SOLUTION
+        model.dual_status = MOI.NO_SOLUTION
 
         for (name, value) in kwargs
             name = MOI.RawOptimizerAttribute(string(name))
@@ -335,6 +342,10 @@ function MOI.empty!(model::Optimizer)
     model.basis_status = nothing
     model.conflict = nothing
 
+    model.termination_status = MOI.OPTIMIZE_NOT_CALLED
+    model.primal_status = MOI.NO_SOLUTION
+    model.dual_status = MOI.NO_SOLUTION
+
     model.callback_cached_solution = nothing
     model.cb_cut_data = CallbackCutData(false, Array{Xpress.Lib.XPRScut}(undef,0))
     model.callback_state = CB_NONE
@@ -371,6 +382,10 @@ function MOI.is_empty(model::Optimizer)
     model.cached_solution !== nothing && return false
     model.basis_status !== nothing && return false
     model.conflict !== nothing && return false
+
+    model.termination_status != MOI.OPTIMIZE_NOT_CALLED && return false
+    model.primal_status != MOI.NO_SOLUTION && return false
+    model.dual_status != MOI.NO_SOLUTION && return false
     
     model.callback_cached_solution !== nothing && return false
     # model.cb_cut_data !== nothing && return false
@@ -1483,19 +1498,19 @@ function _set_variable_lower_bound(model, info, value)
     if info.num_soc_constraints == 0
         # No SOC constraints, set directly.
         @assert isnan(info.lower_bound_if_soc)
-        Xpress.chgbounds(model.inner, [info.column], Cchar['L'], [value])
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('L')), Ref(value))
     elseif value >= 0.0
         # Regardless of whether there are SOC constraints, this is a valid bound
         # for the SOC constraint and should over-ride any previous bounds.
         info.lower_bound_if_soc = NaN
-        Xpress.chgbounds(model.inner, [info.column], Cchar['L'], [value])
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('L')), Ref(value))
     elseif isnan(info.lower_bound_if_soc)
         # Previously, we had a non-negative lower bound (i.e., it was set in the
         # case above). Now we're setting this with a negative one, but there are
         # still some SOC constraints, so we cache `value` and set the variable
         # lower bound to `0.0`.
         @assert value < 0.0
-        Xpress.chgbounds(model.inner, [info.column], Cchar['L'], [0.0])
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('L')), Ref(0.0))
         info.lower_bound_if_soc = value
     else
         # Previously, we had a negative lower bound. We're setting this with
@@ -1520,8 +1535,9 @@ function _get_variable_lower_bound(model, info)
         @assert info.lower_bound_if_soc < 0.0
         return info.lower_bound_if_soc
     end
-    lb = Xpress.getlb(model.inner, info.column, info.column)[]
-    return lb == -Xpress.Lib.XPRS_MINUSINFINITY ? -Inf : lb
+    lb = Ref(0.0)
+    Lib.XPRSgetlb(model.inner, lb, Cint(info.column-1), Cint(info.column-1))
+    return lb[] == Xpress.Lib.XPRS_MINUSINFINITY ? -Inf : lb[] #todo
 end
 
 """
@@ -1546,13 +1562,14 @@ function _get_variable_semi_lower_bound(model, info)
 end
 
 function _set_variable_upper_bound(model, info, value)
-    Xpress.chgbounds(model.inner, [info.column], Cchar['U'], [value])
+    Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('U')), Ref(value))
     return
 end
 
 function _get_variable_upper_bound(model, info)
-    ub = Xpress.getub(model.inner, info.column, info.column)[]
-    return ub == Xpress.Lib.XPRS_PLUSINFINITY ? Inf : ub
+    ub = Ref(0.0)
+    Lib.XPRSgetub(model.inner, ub, Cint(info.column-1), Cint(info.column-1))
+    return ub[] == Xpress.Lib.XPRS_PLUSINFINITY ? Inf : ub[]
 end
 
 function MOI.delete(
@@ -2634,7 +2651,9 @@ function MOI.optimize!(model::Optimizer)
     end
 
     model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
-
+    model.termination_status = _cache_termination_status(model)
+    model.primal_status = _cache_primal_status(model)
+    model.dual_status = _cache_dual_status(model)
     status = MOI.get(model, MOI.PrimalStatus())
     if status == MOI.INFEASIBILITY_CERTIFICATE
         has_Ray = Int64[0]
@@ -2671,11 +2690,7 @@ function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
     end
 end
 
-function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
-    _throw_if_optimize_in_progress(model, attr)
-    if model.cached_solution === nothing
-        return MOI.OPTIMIZE_NOT_CALLED
-    end
+function _cache_termination_status(model::Optimizer)
     stop = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_STOPSTATUS)
     if stop != Xpress.Lib.XPRS_STOP_NONE
         if stop == Xpress.Lib.XPRS_STOP_TIMELIMIT
@@ -2786,6 +2801,14 @@ function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
     return MOI.OTHER_ERROR
 end
 
+function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
+    _throw_if_optimize_in_progress(model, attr)
+    if model.cached_solution === nothing
+        return MOI.OPTIMIZE_NOT_CALLED
+    end
+    return model.termination_status
+end
+
 function _has_dual_ray(model::Optimizer)
     has_Ray = Int64[0]
     Xpress.getdualray(model.inner, C_NULL , has_Ray)
@@ -2798,11 +2821,7 @@ function _has_primal_ray(model::Optimizer)
     return has_Ray[1] != 0
 end
 
-function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
-    _throw_if_optimize_in_progress(model, attr)
-    if attr.result_index != 1
-        return MOI.NO_SOLUTION
-    end
+function _cache_primal_status(model)
     term_stat = MOI.get(model, MOI.TerminationStatus())
     if term_stat == MOI.OPTIMAL || term_stat == MOI.LOCALLY_SOLVED
         return MOI.FEASIBLE_POINT
@@ -2840,11 +2859,16 @@ function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
     return MOI.NO_SOLUTION
 end
 
-function MOI.get(model::Optimizer, attr::MOI.DualStatus)
+function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
     _throw_if_optimize_in_progress(model, attr)
     if attr.result_index != 1
         return MOI.NO_SOLUTION
-    elseif is_mip(model)
+    end
+    return model.primal_status
+end
+
+function _cache_dual_status(model)
+    if is_mip(model)
         return MOI.NO_SOLUTION
     end
     term_stat = MOI.get(model, MOI.TerminationStatus())
@@ -2856,6 +2880,22 @@ function MOI.get(model::Optimizer, attr::MOI.DualStatus)
         end
     end
     return MOI.NO_SOLUTION
+    
+end
+
+function MOI.get(model::Optimizer, attr::MOI.DualStatus)
+    _throw_if_optimize_in_progress(model, attr)
+    if attr.result_index != 1
+        return MOI.NO_SOLUTION
+    end
+    return model.dual_status
+end
+
+function _reset_cache_status(model)
+    model.termination_status = MOI.OPTIMIZE_NOT_CALLED
+    model.primal_status = MOI.NO_SOLUTION
+    model.dual_status = MOI.NO_SOLUTION
+    return nothing
 end
 
 function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, x::MOI.VariableIndex)
@@ -3583,7 +3623,7 @@ function MOI.add_constraint(
     lb = _get_variable_lower_bound(model, t_info)
     if isnan(t_info.lower_bound_if_soc) && lb < 0.0
         t_info.lower_bound_if_soc = lb
-        Xpress.chgbounds(model.inner, [t_info.column], Cchar['L'], [0.0])
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(t_info.column-1)), Ref(UInt8('L')), Ref(0.0))
     end
     t_info.num_soc_constraints += 1
 
@@ -3649,7 +3689,7 @@ function MOI.add_constraint(
         lb = _get_variable_lower_bound(model, t_info)
         if isnan(t_info.lower_bound_if_soc) && lb < 0.0
             t_info.lower_bound_if_soc = lb
-            Xpress.chgbounds(model.inner, [t_info.column], Cchar['L'], [0.0])
+            Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(t_info.column-1)), Ref(UInt8('L')), Ref(0.0))
         end
         t_info.num_soc_constraints += 1
     end
