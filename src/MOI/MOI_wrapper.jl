@@ -1537,7 +1537,7 @@ function _get_variable_lower_bound(model, info)
     end
     lb = Ref(0.0)
     Lib.XPRSgetlb(model.inner, lb, Cint(info.column-1), Cint(info.column-1))
-    return lb[] == Xpress.Lib.XPRS_MINUSINFINITY ? -Inf : lb[] #todo
+    return lb[] == Xpress.Lib.XPRS_MINUSINFINITY ? -Inf : lb[]
 end
 
 """
