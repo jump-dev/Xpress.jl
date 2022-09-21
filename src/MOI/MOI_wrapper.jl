@@ -2891,13 +2891,6 @@ function MOI.get(model::Optimizer, attr::MOI.DualStatus)
     return model.dual_status
 end
 
-function _reset_cache_status(model)
-    model.termination_status = MOI.OPTIMIZE_NOT_CALLED
-    model.primal_status = MOI.NO_SOLUTION
-    model.dual_status = MOI.NO_SOLUTION
-    return nothing
-end
-
 function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, x::MOI.VariableIndex)
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
