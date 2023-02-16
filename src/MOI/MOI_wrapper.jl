@@ -2072,7 +2072,6 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
     row = _info(model, c).row
     nzcnt_max = Xpress.n_non_zero_elements(model.inner)
 
-    # nzcnt = Xpress.getrows_nnz(model.inner, row, row)
     nzcnt = Lib.XPRSgetrows(model.inner, C_NULL, C_NULL, C_NULL, 0, Cint(0), 
         Ref(Cint(row-1)), Ref(Cint(row-1)))
 
@@ -2091,15 +2090,6 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
         row,#first::Integer,
         row,#last::Integer
         )
-    # Lib.XPRSgetrows(
-    #     model.inner,
-    #     Cint.(rmatbeg),#_mstart,
-    #     Cint.(rmatind),#_mclind,
-    #     Ref(rmatval),#_dmatval,
-    #     Cint.(nzcnt),#maxcoeffs,
-    #     Ref(Cint(row-1)),#first::Integer,
-    #     Ref(Cint(row-1)),#last::Integer
-    #     )
 
     terms = MOI.ScalarAffineTerm{Float64}[]
     for i = 1:nzcnt
