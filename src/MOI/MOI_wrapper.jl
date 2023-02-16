@@ -156,7 +156,7 @@ mutable struct BasisStatus
     var_status::Vector{Cint}
 end
 
-mutable struct SensitivityCache 
+mutable struct SensitivityCache
     input::Vector{Float64}
     output::Vector{Float64}
     is_updated::Bool
@@ -235,7 +235,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # TODO: add functionality to the lower-level API to support querying single
     # elements of the solution.
-    
+
     cached_solution::Union{Nothing, CachedSolution}
     basis_status::Union{Nothing, BasisStatus}
     conflict::Union{Nothing, IISData}
@@ -386,7 +386,7 @@ function MOI.is_empty(model::Optimizer)
     model.termination_status != MOI.OPTIMIZE_NOT_CALLED && return false
     model.primal_status != MOI.NO_SOLUTION && return false
     model.dual_status != MOI.NO_SOLUTION && return false
-    
+
     model.callback_cached_solution !== nothing && return false
     # model.cb_cut_data !== nothing && return false
     model.callback_state != CB_NONE && return false
@@ -996,7 +996,7 @@ function MOI.set(
     rows = Xpress.getintattrib(model.inner, Lib.XPRS_ROWS)
     cols = Xpress.getintattrib(model.inner, Lib.XPRS_COLS)
     if model.forward_sensitivity_cache === nothing
-        model.forward_sensitivity_cache = 
+        model.forward_sensitivity_cache =
             SensitivityCache(
                 zeros(rows),
                 zeros(cols),
@@ -1014,10 +1014,10 @@ function MOI.get(model::Optimizer, ::ForwardSensitivityOutputVariable, vi::MOI.V
     if is_mip(model) && model.moi_warnings
         @warn "The problem is a MIP, it might fail to get correct sensitivities."
     end
-    if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL 
+    if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL
         error("Model not optimized. Cannot get sensitivities.")
     end
-    if model.forward_sensitivity_cache === nothing 
+    if model.forward_sensitivity_cache === nothing
         error("Forward sensitivity cache not initiliazed correctly.")
     end
     if model.forward_sensitivity_cache.is_updated != true
@@ -1033,7 +1033,7 @@ function MOI.set(
     rows = Xpress.getintattrib(model.inner, Lib.XPRS_ROWS)
     cols = Xpress.getintattrib(model.inner, Lib.XPRS_COLS)
     if model.backward_sensitivity_cache === nothing
-        model.backward_sensitivity_cache = 
+        model.backward_sensitivity_cache =
             SensitivityCache(
                 zeros(cols),
                 zeros(rows),
@@ -1051,10 +1051,10 @@ function MOI.get(model::Optimizer, ::BackwardSensitivityOutputConstraint, ci::MO
     if is_mip(model) && model.moi_warnings
         @warn "The problem is a MIP, it might fail to get correct sensitivities."
     end
-    if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL 
+    if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL
         error("Model not optimized. Cannot get sensitivities.")
     end
-    if model.backward_sensitivity_cache === nothing 
+    if model.backward_sensitivity_cache === nothing
         error("Backward sensitivity cache not initiliazed correctly.")
     end
     if model.backward_sensitivity_cache.is_updated != true
@@ -1484,11 +1484,18 @@ function MOI.delete(
     return
 end
 
+function _fix_variable_value(model, info, value)
+    Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')), Ref(value))
+    info.previous_lower_bound = _get_variable_lower_bound(model, info)
+    info.previous_upper_bound = _get_variable_upper_bound(model, info)
+    return
+end
+
 """
     _set_variable_lower_bound(model, info, value)
 
 This function is used to indirectly set the lower bound of a variable.
-
+    MathOptInterface.EqualTo{Float64}
 We need to do it this way to account for potential lower bounds of 0.0 added by
 VectorOfVariables-in-SecondOrderCone constraints.
 
@@ -1670,6 +1677,20 @@ function MOI.get(
     lower = _get_variable_lower_bound(model, info)
     upper = _get_variable_upper_bound(model, info)
     return MOI.Interval(lower, upper)
+end
+
+function MOI.set(
+    model::Optimizer,
+    ::MOI.ConstraintSet,
+    c::MOI.ConstraintIndex{MOI.VariableIndex, MOI.EqualTo{Float64}},
+    s::MOI.EqualTo{Float64}
+)
+    MOI.throw_if_not_valid(model, c)
+    lower, upper = _bounds(s)
+    @assert lower == upper
+    info = _info(model, c)
+    _fix_variable_value(model, info, lower)
+    return
 end
 
 function MOI.set(
@@ -2659,7 +2680,7 @@ function MOI.optimize!(model::Optimizer)
         has_Ray = Int64[0]
         Xpress.getprimalray(model.inner, model.cached_solution.variable_primal , has_Ray)
         model.cached_solution.has_primal_certificate = _has_primal_ray(model)
-    elseif status == MOI.FEASIBLE_POINT 
+    elseif status == MOI.FEASIBLE_POINT
         model.cached_solution.has_feasible_point = true
     end
     status = MOI.get(model, MOI.DualStatus())
@@ -2880,7 +2901,7 @@ function _cache_dual_status(model)
         end
     end
     return MOI.NO_SOLUTION
-    
+
 end
 
 function MOI.get(model::Optimizer, attr::MOI.DualStatus)
