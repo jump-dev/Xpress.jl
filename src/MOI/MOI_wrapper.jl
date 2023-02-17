@@ -1683,7 +1683,7 @@ function MOI.set(
     info = _info(model, c)
     # expects vectors as input
     # B is used to indicate that both bounds are fixed to the value. B indicates a change in both bounds, i.e. the column is fixed.
-    Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(Cchar('B')), Ref(value))
+    Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')), Ref(lower))
     info.previous_lower_bound = _get_variable_lower_bound(model, info)
     info.previous_upper_bound = _get_variable_upper_bound(model, info)
     return
