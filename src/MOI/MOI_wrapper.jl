@@ -1076,7 +1076,7 @@ function _zero_objective(model::Optimizer)
         Xpress.delqmatrix(model.inner, 0)
     end
     Xpress.chgobj(model.inner, collect(1:num_vars), obj)
-    Lib.XPRSchgobj(prob, Cint(1), Ref(Cint(-1)), Ref(0.0))
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(0.0))
     return
 end
 
@@ -1485,6 +1485,47 @@ function MOI.delete(
 end
 
 """
+    _set_variable_fixed_bound(model, info, value)
+
+This function is used to indirectly set the fixed bound of a variable.
+
+We need to do it this way to account for potential lower bounds of 0.0 added by
+VectorOfVariables-in-SecondOrderCone constraints.
+
+See also `_get_variable_lower_bound`.
+"""
+function _set_variable_fixed_bound(model, info, value)
+    if info.num_soc_constraints == 0
+        # No SOC constraints, set directly.
+        @assert isnan(info.lower_bound_if_soc)
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')), Ref(value))
+    elseif value >= 0.0
+        # Regardless of whether there are SOC constraints, this is a valid bound
+        # for the SOC constraint and should over-ride any previous bounds.
+        info.lower_bound_if_soc = NaN
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')), Ref(value))
+    elseif isnan(info.lower_bound_if_soc)
+        # Previously, we had a non-negative lower bound (i.e., it was set in the
+        # case above). Now we're setting this with a negative one, but there are
+        # still some SOC constraints, so the negative upper bound jointly with
+        # the SOC constraint will make the problem infeasible.
+        # error("???")
+        @assert value < 0.0
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('L')), Ref(0.0))
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('U')), Ref(value))
+        info.lower_bound_if_soc = value
+    else
+        # Previously, we had a negative lower bound. We're setting this with
+        # another negative one, but there are still some SOC constraints.
+        # this case will also lead to a infeasibility
+        # error("???")
+        @assert info.lower_bound_if_soc < 0.0
+        info.lower_bound_if_soc = value
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('U')), Ref(value))
+    end
+end
+
+"""
     _set_variable_lower_bound(model, info, value)
 
 This function is used to indirectly set the lower bound of a variable.
@@ -1555,7 +1596,7 @@ function _set_variable_semi_lower_bound(model, info, value)
     info.semi_lower_bound = value
     _set_variable_lower_bound(model, info, 0.0)
     Lib.XPRSchgglblimit(model.inner, Cint(1), Ref(Cint(info.column-1)), 
-        Ref(Float64[value]))
+        Ref(Cdouble(value)))
 end
 
 function _get_variable_semi_lower_bound(model, info)
@@ -1681,11 +1722,17 @@ function MOI.set(
     MOI.throw_if_not_valid(model, c)
     lower, upper = _bounds(s)
     info = _info(model, c)
-    if lower !== nothing
-        _set_variable_lower_bound(model, info, lower)
-    end
-    if upper !== nothing
-        _set_variable_upper_bound(model, info, upper)
+    if lower == upper
+        if lower !== nothing
+            _set_variable_fixed_bound(model, info, lower)
+        end
+    else
+        if lower !== nothing
+            _set_variable_lower_bound(model, info, lower)
+        end
+        if upper !== nothing
+            _set_variable_upper_bound(model, info, upper)
+        end
     end
     info.previous_lower_bound = _get_variable_lower_bound(model, info)
     info.previous_upper_bound = _get_variable_upper_bound(model, info)
@@ -2051,11 +2098,10 @@ function MOI.get(
     MOI.ScalarAffineFunction{Float64},
     MOI.ScalarQuadraticFunction{Float64},
 }}
-    rhs = Vector{Cdouble}(undef, 1)
+    rhs = Ref(Cdouble(NaN))
     row = _info(model, c).row
-    # Xpress.getrhs!(model.inner, rhs, row, row)
-    Lib.XPRSgetrhs(model.inner, Cint(rhs), Ref(Cint(row-1)), Ref(Cint(row-1)))
-    return S(rhs[1])
+    Lib.XPRSgetrhs(model.inner, rhs, Cint(row-1), Cint(row-1))
+    return S(rhs[])
 end
 
 function MOI.set(
@@ -2072,8 +2118,10 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
     row = _info(model, c).row
     nzcnt_max = Xpress.n_non_zero_elements(model.inner)
 
-    nzcnt = Lib.XPRSgetrows(model.inner, C_NULL, C_NULL, C_NULL, 0, Cint(0), 
-        Ref(Cint(row-1)), Ref(Cint(row-1)))
+    _nzcnt = Ref(Cint(0))
+    Lib.XPRSgetrows(model.inner, C_NULL, C_NULL, C_NULL, 0, _nzcnt, 
+        Cint(row-1), Cint(row-1))
+    nzcnt = _nzcnt[]
 
     @assert nzcnt <= nzcnt_max
 
@@ -2651,7 +2699,7 @@ function MOI.optimize!(model::Optimizer)
     # should be almost a no-op if not needed
     # might have minor overhead due to memory being freed
     if model.post_solve
-        Xpress.postsolve(model.inner)
+        # Xpress.postsolve(model.inner)
     end
 
     model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
@@ -3321,9 +3369,9 @@ function MOI.modify(
 )
     Lib.XPRSchgcoef(
         model.inner,
-        Ref(Cint(_info(model, c).row - 1)),
-        Ref(Cint(_info(model, chg.variable).column - 1)),
-        Ref(chg.new_coefficient)
+        Cint(_info(model, c).row - 1),
+        Cint(_info(model, chg.variable).column - 1),
+        chg.new_coefficient,
     )
     return
 end
@@ -3341,17 +3389,17 @@ function MOI.modify(
     coefs = Vector{Float64}(undef, nels)
 
     for i in 1:nels
-        rows[i] = Cint(_info(model, cis[i]).row)
-        cols[i] = Cint(_info(model, chgs[i].variable).column)
+        rows[i] = Cint(_info(model, cis[i]).row-1)
+        cols[i] = Cint(_info(model, chgs[i].variable).column-1)
         coefs[i] = chgs[i].new_coefficient
     end
 
     Lib.XPRSchgmcoef(
         model.inner,
         Cint(nels),
-        Ref(Cint.(rows)),
-        Ref(Cint.(cols)),
-        Ref(coefs)
+        rows,
+        cols,
+        coefs,
     )
     return
 end
@@ -3363,7 +3411,8 @@ function MOI.modify(
 )
     @assert model.objective_type == SCALAR_AFFINE
     column = _info(model, chg.variable).column
-    Lib.XPRSchgobj(model.inner, Cint(column), Ref(Cint(-1)), Ref(chg.new_coefficient))
+    Lib.XPRSchgobj(model.inner, Cint(column), Ref(Cint(-1)),
+        Ref(chg.new_coefficient))
     model.is_objective_set = true
     return
 end
@@ -3412,8 +3461,8 @@ function _replace_with_matching_sparsity!(
     for term in replacement.terms
         col = _info(model, term.variable).column
         Lib.XPRSchgcoef(
-            model.inner, (Cint(row-1)), (Cint(col-1)), 
-            Ref(MOI.coefficient(term))
+            model.inner, Cint(row-1), Cint(col-1), 
+            MOI.coefficient(term)
         )
     end
     return
@@ -3445,15 +3494,15 @@ function _replace_with_different_sparsity!(
     # First, zero out the old constraint function terms.
     for term in previous.terms
         col = _info(model, term.variable).column
-        Lib.XPRSchgcoef(model.inner, (Cint(row - 1)), (Cint(col - 1)), 
-        Ref(0.0))
+        Lib.XPRSchgcoef(model.inner, Cint(row - 1), Cint(col - 1), 
+            0.0)
     end
 
     # Next, set the new constraint function terms.
     for term in previous.terms
         col = _info(model, term.variable).column
-        Lib.XPRSchgcoef(model.inner, (Cint(row - 1)), (Cint(col - 1)), 
-            Ref(MOI.coefficient(term)))
+        Lib.XPRSchgcoef(model.inner, Cint(row - 1), Cint(col - 1), 
+            MOI.coefficient(term))
     end
     return
 end
