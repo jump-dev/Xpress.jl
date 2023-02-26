@@ -2699,7 +2699,7 @@ function MOI.optimize!(model::Optimizer)
     # should be almost a no-op if not needed
     # might have minor overhead due to memory being freed
     if model.post_solve
-        # Xpress.postsolve(model.inner)
+        Xpress.postsolve(model.inner)
     end
 
     model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
