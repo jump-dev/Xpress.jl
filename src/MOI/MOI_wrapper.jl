@@ -1076,7 +1076,7 @@ function _zero_objective(model::Optimizer)
         Xpress.delqmatrix(model.inner, 0)
     end
     Xpress.chgobj(model.inner, collect(1:num_vars), obj)
-    Xpress.chgobj(model.inner, [0], [0.0])
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(0.0))
     return
 end
 
@@ -1142,7 +1142,7 @@ function MOI.set(
         obj[column] += term.coefficient
     end
     Xpress.chgobj(model.inner, collect(1:num_vars), obj)
-    Xpress.chgobj(model.inner, [0], [-f.constant])
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(-f.constant))
     model.objective_type = SCALAR_AFFINE
     model.is_objective_set = true
     return
@@ -1232,7 +1232,7 @@ function MOI.modify(
     ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
     chg::MOI.ScalarConstantChange{Float64}
 )
-    Xpress.chgobj(model.inner, [0], [-chg.new_constant])
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(-chg.new_constant))
     return
 end
 
@@ -1479,9 +1479,50 @@ function MOI.delete(
     if info.type == BINARY
         info.previous_lower_bound = _get_variable_lower_bound(model, info)
         info.previous_upper_bound = _get_variable_upper_bound(model, info)
-        Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
+        Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')))
     end
     return
+end
+
+"""
+    _set_variable_fixed_bound(model, info, value)
+
+This function is used to indirectly set the fixed bound of a variable.
+
+We need to do it this way to account for potential lower bounds of 0.0 added by
+VectorOfVariables-in-SecondOrderCone constraints.
+
+See also `_get_variable_lower_bound`.
+"""
+function _set_variable_fixed_bound(model, info, value)
+    if info.num_soc_constraints == 0
+        # No SOC constraints, set directly.
+        @assert isnan(info.lower_bound_if_soc)
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')), Ref(value))
+    elseif value >= 0.0
+        # Regardless of whether there are SOC constraints, this is a valid bound
+        # for the SOC constraint and should over-ride any previous bounds.
+        info.lower_bound_if_soc = NaN
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')), Ref(value))
+    elseif isnan(info.lower_bound_if_soc)
+        # Previously, we had a non-negative lower bound (i.e., it was set in the
+        # case above). Now we're setting this with a negative one, but there are
+        # still some SOC constraints, so the negative upper bound jointly with
+        # the SOC constraint will make the problem infeasible.
+        # error("???")
+        @assert value < 0.0
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('L')), Ref(0.0))
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('U')), Ref(value))
+        info.lower_bound_if_soc = value
+    else
+        # Previously, we had a negative lower bound. We're setting this with
+        # another negative one, but there are still some SOC constraints.
+        # this case will also lead to a infeasibility
+        # error("???")
+        @assert info.lower_bound_if_soc < 0.0
+        info.lower_bound_if_soc = value
+        Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('U')), Ref(value))
+    end
 end
 
 """
@@ -1554,7 +1595,8 @@ or semi-integer lower bound and to change the lower bound.
 function _set_variable_semi_lower_bound(model, info, value)
     info.semi_lower_bound = value
     _set_variable_lower_bound(model, info, 0.0)
-    Xpress.chgglblimit(model.inner, [info.column], Float64[value])
+    Lib.XPRSchgglblimit(model.inner, Cint(1), Ref(Cint(info.column-1)), 
+        Ref(Cdouble(value)))
 end
 
 function _get_variable_semi_lower_bound(model, info)
@@ -1589,7 +1631,7 @@ function MOI.delete(
     if info.type == BINARY
         info.previous_lower_bound = _get_variable_lower_bound(model, info)
         info.previous_upper_bound = _get_variable_upper_bound(model, info)
-        Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
+        Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')))
     end
     return
 end
@@ -1608,7 +1650,7 @@ function MOI.delete(
     if info.type == BINARY
         info.previous_lower_bound = _get_variable_lower_bound(model, info)
         info.previous_upper_bound = _get_variable_upper_bound(model, info)
-        Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
+        Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')))
     end
     return
 end
@@ -1627,7 +1669,7 @@ function MOI.delete(
     if info.type == BINARY
         info.previous_lower_bound = _get_variable_lower_bound(model, info)
         info.previous_upper_bound = _get_variable_upper_bound(model, info)
-        Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
+        Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')))
     end
     return
 end
@@ -1680,11 +1722,17 @@ function MOI.set(
     MOI.throw_if_not_valid(model, c)
     lower, upper = _bounds(s)
     info = _info(model, c)
-    if lower !== nothing
-        _set_variable_lower_bound(model, info, lower)
-    end
-    if upper !== nothing
-        _set_variable_upper_bound(model, info, upper)
+    if lower == upper
+        if lower !== nothing
+            _set_variable_fixed_bound(model, info, lower)
+        end
+    else
+        if lower !== nothing
+            _set_variable_lower_bound(model, info, lower)
+        end
+        if upper !== nothing
+            _set_variable_upper_bound(model, info, upper)
+        end
     end
     info.previous_lower_bound = _get_variable_lower_bound(model, info)
     info.previous_upper_bound = _get_variable_upper_bound(model, info)
@@ -1715,7 +1763,7 @@ function MOI.add_constraint(
             end
         end
     end
-    Xpress.chgcoltype(model.inner, [info.column], Cchar['B'])
+    Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')))
     if info.type == CONTINUOUS
         # The function chgcoltype reset the variable bounds to [0, 1],
         # so we need to add them again if they're set before.
@@ -1739,7 +1787,7 @@ function MOI.delete(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
+    Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('C')))
     _set_variable_lower_bound(model, info, info.previous_lower_bound)
     _set_variable_upper_bound(model, info, info.previous_upper_bound)
     info.type = CONTINUOUS
@@ -1761,7 +1809,7 @@ function MOI.add_constraint(
     model::Optimizer, f::MOI.VariableIndex, ::MOI.Integer
 )
     info = _info(model, f)
-    Xpress.chgcoltype(model.inner, [info.column], Cchar['I'])
+    Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('I')))
     info.type = INTEGER
     return MOI.ConstraintIndex{MOI.VariableIndex, MOI.Integer}(f.value)
 end
@@ -1771,7 +1819,7 @@ function MOI.delete(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
+    Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('C')))
     info.type = CONTINUOUS
     info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
@@ -1793,7 +1841,7 @@ function MOI.add_constraint(
     info = _info(model, f)
     _throw_if_existing_lower(info.bound, info.type, typeof(s), f)
     _throw_if_existing_upper(info.bound, info.type, typeof(s), f)
-    Xpress.chgcoltype(model.inner, [info.column], Cchar['S'])
+    Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('S')))
     _set_variable_semi_lower_bound(model, info, s.lower)
     _set_variable_upper_bound(model, info, s.upper)
     info.type = SEMICONTINUOUS
@@ -1806,7 +1854,7 @@ function MOI.delete(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
+    Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('C')))
     _set_variable_lower_bound(model, info, -Inf)
     _set_variable_upper_bound(model, info, Inf)
     info.semi_lower_bound = NaN
@@ -1834,7 +1882,7 @@ function MOI.add_constraint(
     info = _info(model, f)
     _throw_if_existing_lower(info.bound, info.type, typeof(s), f)
     _throw_if_existing_upper(info.bound, info.type, typeof(s), f)
-    Xpress.chgcoltype(model.inner, [info.column], Cchar['R'])
+    Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('R')))
     _set_variable_semi_lower_bound(model, info, s.lower)
     _set_variable_upper_bound(model, info, s.upper)
     info.type = SEMIINTEGER
@@ -1847,7 +1895,7 @@ function MOI.delete(
 )
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
-    Xpress.chgcoltype(model.inner, [info.column], Cchar['C'])
+    Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('C')))
     _set_variable_lower_bound(model, info, -Inf)
     _set_variable_upper_bound(model, info, Inf)
     info.semi_lower_bound = NaN
@@ -2050,10 +2098,10 @@ function MOI.get(
     MOI.ScalarAffineFunction{Float64},
     MOI.ScalarQuadraticFunction{Float64},
 }}
-    rhs = Vector{Cdouble}(undef, 1)
+    rhs = Ref(Cdouble(NaN))
     row = _info(model, c).row
-    Xpress.getrhs!(model.inner, rhs, row, row)
-    return S(rhs[1])
+    Lib.XPRSgetrhs(model.inner, rhs, Cint(row-1), Cint(row-1))
+    return S(rhs[])
 end
 
 function MOI.set(
@@ -2061,7 +2109,8 @@ function MOI.set(
     ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, S}, s::S
 ) where {S}
-    Xpress.chgrhs(model.inner, [_info(model, c).row], [MOI.constant(s)])
+    Lib.XPRSchgrhs(model.inner, Cint(1), Ref(Cint(_info(model, c).row - 1)), 
+        Ref(MOI.constant(s)))
     return
 end
 
@@ -2069,7 +2118,10 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
     row = _info(model, c).row
     nzcnt_max = Xpress.n_non_zero_elements(model.inner)
 
-    nzcnt = Xpress.getrows_nnz(model.inner, row, row)
+    _nzcnt = Ref(Cint(0))
+    Lib.XPRSgetrows(model.inner, C_NULL, C_NULL, C_NULL, 0, _nzcnt, 
+        Cint(row-1), Cint(row-1))
+    nzcnt = _nzcnt[]
 
     @assert nzcnt <= nzcnt_max
 
@@ -3315,11 +3367,11 @@ function MOI.modify(
     c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, <:Any},
     chg::MOI.ScalarCoefficientChange{Float64}
 )
-    Xpress.chgcoef(
+    Lib.XPRSchgcoef(
         model.inner,
-        _info(model, c).row,
-        _info(model, chg.variable).column,
-        chg.new_coefficient
+        Cint(_info(model, c).row - 1),
+        Cint(_info(model, chg.variable).column - 1),
+        chg.new_coefficient,
     )
     return
 end
@@ -3337,17 +3389,17 @@ function MOI.modify(
     coefs = Vector{Float64}(undef, nels)
 
     for i in 1:nels
-        rows[i] = Cint(_info(model, cis[i]).row)
-        cols[i] = Cint(_info(model, chgs[i].variable).column)
+        rows[i] = Cint(_info(model, cis[i]).row-1)
+        cols[i] = Cint(_info(model, chgs[i].variable).column-1)
         coefs[i] = chgs[i].new_coefficient
     end
 
-    Xpress.chgmcoef(
+    Lib.XPRSchgmcoef(
         model.inner,
-        nels,
+        Cint(nels),
         rows,
         cols,
-        coefs
+        coefs,
     )
     return
 end
@@ -3359,7 +3411,8 @@ function MOI.modify(
 )
     @assert model.objective_type == SCALAR_AFFINE
     column = _info(model, chg.variable).column
-    Xpress.chgobj(model.inner, [column], [chg.new_coefficient])
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(column-1)),
+        Ref(chg.new_coefficient))
     model.is_objective_set = true
     return
 end
@@ -3407,8 +3460,9 @@ function _replace_with_matching_sparsity!(
 )
     for term in replacement.terms
         col = _info(model, term.variable).column
-        Xpress.chgcoef(
-            model.inner, row, col, MOI.coefficient(term)
+        Lib.XPRSchgcoef(
+            model.inner, Cint(row-1), Cint(col-1), 
+            MOI.coefficient(term)
         )
     end
     return
@@ -3440,13 +3494,15 @@ function _replace_with_different_sparsity!(
     # First, zero out the old constraint function terms.
     for term in previous.terms
         col = _info(model, term.variable).column
-        Xpress.chgcoef(model.inner, row, col, 0.0)
+        Lib.XPRSchgcoef(model.inner, Cint(row - 1), Cint(col - 1), 
+            0.0)
     end
 
     # Next, set the new constraint function terms.
     for term in previous.terms
         col = _info(model, term.variable).column
-        Xpress.chgcoef(model.inner, row, col, MOI.coefficient(term))
+        Lib.XPRSchgcoef(model.inner, Cint(row - 1), Cint(col - 1), 
+            MOI.coefficient(term))
     end
     return
 end
@@ -3499,7 +3555,7 @@ function MOI.set(
     end
     rhs = Xpress.getrhs(model.inner, row, row)
     rhs[1] -= replacement.constant - previous.constant
-    Xpress.chgrhs(model.inner, [row], rhs)
+    Lib.XPRSchgrhs(model.inner, Cint(1), Ref(Cint(row - 1)), Ref(rhs[]))
     return
 end
 
