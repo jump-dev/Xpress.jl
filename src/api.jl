@@ -819,10 +819,13 @@ When a model is loaded, the rows, columns and sets of the model may not have  na
     first -= 1
     last -= 1
 
-    _cnames = ""
-    for str in names
-        _cnames = string(_cnames, join(Base.Iterators.take(str,NAMELENGTH)), "\0")
+   for (idx,str) in enumerate(names)
+        if length(str) > NAMELENGTH
+            names[idx] = first(str, NAMELENGTH)
+        end
     end
+
+    _cnames = join(names, "\0")
 
     @checked Lib.XPRSaddnames(prob, Cint(_itype), _cnames, Cint(first), Cint(last))
 end
