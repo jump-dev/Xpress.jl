@@ -1142,7 +1142,7 @@ function MOI.set(
         obj[column] += term.coefficient
     end
     Xpress.chgobj(model.inner, collect(1:num_vars), obj)
-    Lib.XPRSchgobj(model.inner, Cint(0), Ref(Cint(-1)), Ref(-f.constant))
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(-f.constant))
     model.objective_type = SCALAR_AFFINE
     model.is_objective_set = true
     return
@@ -1232,7 +1232,7 @@ function MOI.modify(
     ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
     chg::MOI.ScalarConstantChange{Float64}
 )
-    Lib.XPRSchgobj(model.inner, Cint(0), Ref(Cint(-1)), Ref(-chg.new_constant))
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(-chg.new_constant))
     return
 end
 
@@ -3411,7 +3411,7 @@ function MOI.modify(
 )
     @assert model.objective_type == SCALAR_AFFINE
     column = _info(model, chg.variable).column
-    Lib.XPRSchgobj(model.inner, Cint(column), Ref(Cint(-1)),
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(column-1)),
         Ref(chg.new_coefficient))
     model.is_objective_set = true
     return
