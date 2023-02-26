@@ -3555,7 +3555,7 @@ function MOI.set(
     end
     rhs = Xpress.getrhs(model.inner, row, row)
     rhs[1] -= replacement.constant - previous.constant
-    Lib.XPRSchgrhs(model.inner, Cint(1), Ref(Cint(row - 1)), Ref(rhs))
+    Lib.XPRSchgrhs(model.inner, Cint(1), Ref(Cint(row - 1)), Ref(rhs[]))
     return
 end
 
