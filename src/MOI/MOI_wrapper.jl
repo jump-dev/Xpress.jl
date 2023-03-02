@@ -868,6 +868,7 @@ function MOI.delete(model::Optimizer, v::MOI.VariableIndex)
         throw(MOI.DeleteNotAllowed(v))
     end
     Lib.XPRSdelcols(model.inner, length([info.column]),[info.column].- 1)
+   
     delete!(model.variable_info, v)
     for other_info in values(model.variable_info)
         if other_info.column > info.column
@@ -1094,7 +1095,8 @@ function _zero_objective(model::Optimizer)
         # We need to zero out the existing quadratic objective.
         Lib.XPRSdelqmatrix(model.inner, -1)
     end
-    Xpress.chgobj(model.inner, collect(1:num_vars), obj)
+
+    Lib.XPRSchgobj(model.inner, Cint(length(obj)), Cint.(collect(1:num_vars).-= 1), obj)
     
     Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(0.0))
     return
