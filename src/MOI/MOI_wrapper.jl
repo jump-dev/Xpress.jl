@@ -997,7 +997,7 @@ function backward(model::Optimizer)
     end
 
     #4 - Call XPRSbtran with vector 'aux_vector' as an argument
-    Xpress.btran(model.inner, aux_vector)
+    Lib.XPRSbtran(model.inner, aux_vector)
 
     #5 - Set constraint_output equal to vector 'aux_vector'
     model.backward_sensitivity_cache.output .= aux_vector
@@ -1087,7 +1087,7 @@ function _zero_objective(model::Optimizer)
     obj = zeros(Float64, num_vars)
     if model.objective_type == SCALAR_QUADRATIC
         # We need to zero out the existing quadratic objective.
-        Xpress.delqmatrix(model.inner, 0)
+        Lib.XPRSdelqmatrix(model.inner, -1)
     end
     Xpress.chgobj(model.inner, collect(1:num_vars), obj)
     Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(0.0))
@@ -1145,7 +1145,7 @@ function MOI.set(
 ) where {F <: MOI.ScalarAffineFunction{Float64}}
     if model.objective_type == SCALAR_QUADRATIC
         # We need to zero out the existing quadratic objective.
-        Xpress.delqmatrix(model.inner, 0)
+        Lib.XPRSdelqmatrix(model.inner, -1)
     end
     num_vars = length(model.variable_info)
     # We zero all terms because we want to gurantee that the old terms
