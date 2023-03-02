@@ -814,25 +814,30 @@ function MOI.add_variable(model::Optimizer)
     info = _info(model, index)
     info.index = index
     info.column = length(model.variable_info)
-    Xpress.addcols(
+    Lib.XPRSaddcols(
         model.inner,
+        1,#length(_dbdl)::Int,
+        0,#length(_dmatval)::Int,
         [0.0],#_dobj::Vector{Float64},
-        Int[],#_mstart::Vector{Int},
-        Int[],#_mrwind::Vector{Int},
+        Cint.(Int[] .- 1),#Cint.(_mrwind::Vector{Int}),
+        Cint.(Int[] .- 1),#Cint.(_mrstart::Vector{Int}), 
         Float64[],#_dmatval::Vector{Float64},
         [-Inf],#_dbdl::Vector{Float64},
         [Inf],#_dbdu::Vector{Float64}
     )
+    
     return index
     
 end
 
 function MOI.add_variables(model::Optimizer, N::Int)
-    Xpress.addcols(
+    Lib.XPRSaddcols(
         model.inner,
+        N,#length(_dbdl)::Int,
+        0,#length(_dmatval)::Int,
         zeros(N),# _dobj::Vector{Float64},
-        Int[],# _mstart::Vector{Int},
-        Int[],# _mrwind::Vector{Int},
+        Cint.(Int[] .- 1),#Cint.(_mrwind::Vector{Int}),
+        Cint.(Int[] .- 1),#Cint.(_mrstart::Vector{Int}), 
         Float64[],# _dmatval::Vector{Float64},
         fill(-Inf, N),# _dbdl::Vector{Float64},
         fill(Inf, N),# _dbdu::Vector{Float64}
@@ -862,7 +867,7 @@ function MOI.delete(model::Optimizer, v::MOI.VariableIndex)
     if info.num_soc_constraints > 0
         throw(MOI.DeleteNotAllowed(v))
     end
-    Xpress.delcols(model.inner, [info.column])
+    Lib.XPRSdelcols(model.inner, length([info.column]),[info.column].- 1)
     delete!(model.variable_info, v)
     for other_info in values(model.variable_info)
         if other_info.column > info.column
@@ -1090,6 +1095,7 @@ function _zero_objective(model::Optimizer)
         Lib.XPRSdelqmatrix(model.inner, -1)
     end
     Xpress.chgobj(model.inner, collect(1:num_vars), obj)
+    
     Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(0.0))
     return
 end
