@@ -150,7 +150,7 @@ end
 
 mutable struct CallbackCutData
     submitted::Bool
-    cutptrs::Vector{Xpress.Lib.XPRScut}
+    cutptrs::Vector{Lib.XPRScut}
 end
 
 mutable struct BasisStatus
@@ -353,7 +353,7 @@ function MOI.empty!(model::Optimizer)
     model.dual_status = MOI.NO_SOLUTION
 
     model.callback_cached_solution = nothing
-    model.cb_cut_data = CallbackCutData(false, Array{Xpress.Lib.XPRScut}(undef,0))
+    model.cb_cut_data = CallbackCutData(false, Array{Lib.XPRScut}(undef,0))
     model.callback_state = CB_NONE
     model.cb_exception = nothing
 
@@ -569,9 +569,11 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
     if param == MOI.RawOptimizerAttribute("logfile")
         if value == ""
             # disable log file
-            Xpress.setlogfile(model.inner, C_NULL)
+            Lib.XPRSsetlogfile(model.inner, C_NULL)
+            #println("Output directed to a log file (",Lib.XPRSsetlogfile(model.inner, C_NULL),").")
         else
-            Xpress.setlogfile(model.inner, value)
+            Lib.XPRSsetlogfile(model.inner, value)
+            #println("Output directed to a log file (",Lib.XPRSsetlogfile(model.inner, value),").")
         end
         model.inner.logfile = value
         reset_message_callback(model)
