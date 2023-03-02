@@ -952,7 +952,8 @@ function forward(model::Optimizer)
 
     #3 - Create Dict of Basic variable to All variables
     basic_variables_ordered = Vector{Int32}(undef, rows)
-    Xpress.getpivotorder(model.inner, basic_variables_ordered)
+    Lib.XPRSgetpivotorder(model.inner, basic_variables_ordered)
+    
 
     aux_dict = Dict{Int, Int}()
     for i in 1:length(basic_variables_ordered)
@@ -977,7 +978,8 @@ function backward(model::Optimizer)
 
     #1 - Get Basic variables
     basic_variables_ordered = Vector{Int32}(undef, rows)
-    Xpress.getpivotorder(model.inner, basic_variables_ordered)
+    Lib.XPRSgetpivotorder(model.inner, basic_variables_ordered)
+    
 
     aux_dict = Dict{Int,Int}()
     for i in 1:length(basic_variables_ordered)
