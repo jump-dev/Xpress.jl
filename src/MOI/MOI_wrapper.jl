@@ -602,7 +602,8 @@ end
 function reset_message_callback(model)
     if model.message_callback !== nothing
         # remove all message callbacks
-        removecbmessage(model.inner, C_NULL, C_NULL)
+        Lib.XPRSremovecbmessage(model.inner, C_NULL, C_NULL)
+
         model.message_callback = nothing
     end
     if model.inner.logfile == "" &&    # no file -> screen
@@ -822,7 +823,6 @@ function MOI.add_variable(model::Optimizer)
         [-Inf],#_dbdl::Vector{Float64},
         [Inf],#_dbdu::Vector{Float64}
     )
-    #println("Variable successfully added")
     return index
     
 end
@@ -946,7 +946,9 @@ function forward(model::Optimizer)
     aux_vector = copy(model.forward_sensitivity_cache.input)
 
     #2 - Call XPRSftran with vector 'aux_vector' as an argument
-    Xpress.ftran(model.inner, aux_vector)
+    Lib.XPRSftran(model.inner, aux_vector)
+    
+    
 
     #3 - Create Dict of Basic variable to All variables
     basic_variables_ordered = Vector{Int32}(undef, rows)
