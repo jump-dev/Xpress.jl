@@ -3,8 +3,10 @@
     error("Versions 1.1.x of julia are not supported. The current verions is $(VERSION)")
 end
 
+
 import MathOptInterface
 using SparseArrays
+
 
 const MOI = MathOptInterface
 const CleverDicts = MOI.Utilities.CleverDicts
@@ -323,7 +325,11 @@ function MOI.empty!(model::Optimizer)
     log_level = model.log_level
     log_level != 0 && MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
     # silently load a empty model - to avoid useless printing
-    Xpress.loadlp(model.inner)
+    
+ 
+    Lib.XPRSloadlp(model.inner,"", 0, 0, Cchar[], Float64[], Float64[], Float64[], Int[], Int[], Int[], Float64[], Float64[],Float64[])
+    #println("Result of loadlp : ",Lib.XPRSloadlp(model.inner,"", 0, 0, Cchar[], Float64[], Float64[], Float64[], Int[], Int[], Int[], Float64[], Float64[],Float64[]),". ")
+    
     # re-enable logging
     log_level != 0 && MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), log_level)
 
@@ -814,7 +820,9 @@ function MOI.add_variable(model::Optimizer)
         [-Inf],#_dbdl::Vector{Float64},
         [Inf],#_dbdu::Vector{Float64}
     )
+    #println("Variable successfully added")
     return index
+    
 end
 
 function MOI.add_variables(model::Optimizer, N::Int)
@@ -1408,6 +1416,7 @@ function MOI.add_constraint(
                 error("The problem is infeasible")
             end
         end
+        
     end
     if S <: MOI.LessThan{Float64}
         _throw_if_existing_upper(info.bound, info.type, S, f)
@@ -1427,6 +1436,7 @@ function MOI.add_constraint(
     end
     index = MOI.ConstraintIndex{MOI.VariableIndex, typeof(s)}(f.value)
     MOI.set(model, MOI.ConstraintSet(), index, s)
+    #println("constraint successfully added")
     return index
 end
 

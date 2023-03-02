@@ -2,6 +2,11 @@
 # Automatically generated using Clang.jl
 
 
+
+function addition(x,y)
+    return x+y
+end
+
 function XPRScopycallbacks(dest, src)
     ccall((:XPRScopycallbacks, libxprs), Cint, (XPRSprob, XPRSprob), dest, src)
 end
@@ -88,6 +93,7 @@ end
 
 function XPRSinterrupt(prob, reason)
     ccall((:XPRSinterrupt, libxprs), Cint, (XPRSprob, Cint), prob, reason)
+    
 end
 
 function XPRSgetprobname(prob, _svalue)

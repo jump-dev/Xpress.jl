@@ -10,7 +10,9 @@ println("Optimizer version: $(Xpress.getversion())")
     "Derivative",
 ]
     @testset "$(file)" for file in readdir(folder)
+        println("Testing ", joinpath(folder, file))
         include(joinpath(folder, file))
+        
     end
 end
 

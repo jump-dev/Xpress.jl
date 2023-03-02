@@ -6,6 +6,7 @@ using Test
 
 const MOI = MathOptInterface
 
+
 function runtests()
     for name in names(@__MODULE__; all = true)
         if startswith("$(name)", "test_")

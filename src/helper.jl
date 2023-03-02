@@ -214,7 +214,7 @@ Set multiple parameters of any type
 """
 function setcontrols!(prob::XpressProblem; args...)
     for (control, val) in args
-        setcontrols!(prob, getproperty(Lib, control), val)
+        setcontrol!(prob, getproperty(Lib, control), val)
     end
 end
 
