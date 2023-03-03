@@ -1107,14 +1107,18 @@ function MOI.set(
 )
     # TODO: should this propagate across a `MOI.empty!(optimizer)` call
     if sense == MOI.MIN_SENSE
-        Xpress.chgobjsense(model.inner, :Min)
+        objsense=:Min
     elseif sense == MOI.MAX_SENSE
-        Xpress.chgobjsense(model.inner, :Max)
+        objsense=:Max
     else
         @assert sense == MOI.FEASIBILITY_SENSE
         _zero_objective(model)
-        Xpress.chgobjsense(model.inner, :Min)
+        objsense=:Min
     end
+    v = objsense == :maximize || objsense == :Max || objsense == Lib.XPRS_OBJ_MAXIMIZE ? Lib.XPRS_OBJ_MAXIMIZE :
+        objsense == :minimize || objsense == :Min || objsense == Lib.XPRS_OBJ_MINIMIZE ? Lib.XPRS_OBJ_MINIMIZE :
+        throw(ArgumentError("Invalid objective sense: $objsense. It can only be `:maximize`, `:minimize`, `:Max`, `:Min`, `$(Lib.XPRS_OBJ_MAXIMIZE)`, or `$(Lib.XPRS_OBJ_MINIMIZE)`."))
+    Lib.XPRSchgobjsense(model.inner, v)
     model.objective_sense = sense
     return
 end
@@ -1163,7 +1167,8 @@ function MOI.set(
         column = _info(model, term.variable).column
         obj[column] += term.coefficient
     end
-    Xpress.chgobj(model.inner, collect(1:num_vars), obj)
+    Lib.XPRSchgobj(model.inner, Cint(length(obj)), Cint.(collect(1:num_vars).-= 1), obj)
+   
     Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(-f.constant))
     model.objective_type = SCALAR_AFFINE
     model.is_objective_set = true
