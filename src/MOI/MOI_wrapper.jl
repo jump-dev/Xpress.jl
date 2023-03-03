@@ -1173,7 +1173,12 @@ end
 function MOI.get(
     model::Optimizer, ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}
 )
-    dest = Xpress.getobj(model.inner)
+    ncols = n_variables(model.inner)
+    first = 0
+    last = ncols - 1
+    _dobj = Vector{Float64}(undef, ncols)
+    Lib.XPRSgetobj(model.inner, _dobj, first, last)
+    dest = _dobj
     terms = MOI.ScalarAffineTerm{Float64}[]
     for (index, info) in model.variable_info
         coefficient = dest[info.column]
