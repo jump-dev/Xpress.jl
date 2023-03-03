@@ -1205,7 +1205,9 @@ function MOI.set(
     for (i, c) in zip(affine_indices, affine_coefficients)
         obj[i] = c
     end
-    Xpress.chgmqobj(model.inner, I, J, V)
+    ncols = length(I)
+    Lib.XPRSchgmqobj(model.inner,Cint(ncols), Cint.(I .- 1), Cint.(J .- 1), V)
+    
     model.objective_type = SCALAR_QUADRATIC
     model.is_objective_set = true
     return
@@ -1223,7 +1225,7 @@ function MOI.get(
     mstart = Array{Cint}(undef, n + 1)
     mclind = Array{Cint}(undef, nnz)
     dobjval = Array{Float64}(undef, nnz)
-    getmqobj(model.inner, mstart, mclind, dobjval, nnz, nels, 0, n - 1)
+    Lib.XPRSgetmqobj(model.inner, mstart, mclind, dobjval, nnz, nels, Cint(0), Cint(n - 1))
     triangle_nnz = nels[1]
     mstart[end] = triangle_nnz
     I = Array{Int}(undef, triangle_nnz)
