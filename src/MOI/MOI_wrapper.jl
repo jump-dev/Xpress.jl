@@ -1614,7 +1614,7 @@ function _get_variable_lower_bound(model, info)
     end
     lb = Ref(0.0)
     Lib.XPRSgetlb(model.inner, lb, Cint(info.column-1), Cint(info.column-1))
-    return lb[] == Xpress.Lib.XPRS_MINUSINFINITY ? -Inf : lb[]
+    return lb[] == Lib.XPRS_MINUSINFINITY ? -Inf : lb[]
 end
 
 """
@@ -2043,15 +2043,19 @@ function MOI.add_constraint(
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, AFFINE)
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
-    Xpress.addrows(
+    Lib.XPRSaddrows(
         model.inner,
+        length([rhs]),#length(_drhs),
+        Cint(length((indices))),#Cint(length(_mclind)),
         [sense],#_srowtype,
         [rhs],#_drhs,
         C_NULL,#_drng,
-        [1],#_mstart,
-        (indices),#_mclind,
-        coefficients,#_dmatval
+        Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
+        Cint.((indices).-= 1),#Cint.(_mrwind::Vector{Int}), 
+        coefficients#_dmatval
     )
+ 
+
     return MOI.ConstraintIndex{typeof(f), typeof(s)}(model.last_constraint_index)
 end
 
