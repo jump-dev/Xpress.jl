@@ -1190,7 +1190,7 @@ function MOI.get(
         iszero(coefficient) && continue
         push!(terms, MOI.ScalarAffineTerm(coefficient, index))
     end
-    constant = Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_OBJRHS)
+    constant = Xpress.getdblattrib(model.inner, Lib.XPRS_OBJRHS)
     return MOI.ScalarAffineFunction(terms, constant)
 end
 
@@ -1257,7 +1257,7 @@ function MOI.get(
         )
     end
     affine_terms = MOI.get(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}()).terms
-    constant = Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_OBJRHS)
+    constant = Xpress.getdblattrib(model.inner, Lib.XPRS_OBJRHS)
     return MOI.ScalarQuadraticFunction(q_terms, affine_terms, constant)
 end
 
@@ -1647,7 +1647,7 @@ end
 function _get_variable_upper_bound(model, info)
     ub = Ref(0.0)
     Lib.XPRSgetub(model.inner, ub, Cint(info.column-1), Cint(info.column-1))
-    return ub[] == Xpress.Lib.XPRS_PLUSINFINITY ? Inf : ub[]
+    return ub[] == Lib.XPRS_PLUSINFINITY ? Inf : ub[]
 end
 
 function MOI.delete(
@@ -2721,7 +2721,7 @@ end
 function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
     if check_moi_callback_validity(model)
-        if model.moi_warnings && Xpress.getcontrol(model.inner,Xpress.Lib.XPRS_HEURSTRATEGY) != 0
+        if model.moi_warnings && Xpress.getcontrol(model.inner,Lib.XPRS_HEURSTRATEGY) != 0
             @warn "Callbacks in XPRESS might not work correctly with HEURSTRATEGY != 0"
         end
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
@@ -2782,7 +2782,7 @@ function MOI.optimize!(model::Optimizer)
     status = MOI.get(model, MOI.DualStatus())
     if status == MOI.INFEASIBILITY_CERTIFICATE
         has_Ray = Int64[0]
-        Xpress.getdualray(model.inner, model.cached_solution.linear_dual , has_Ray)
+        Lib.XPRSgetdualray(model.inner, model.cached_solution.linear_dual , has_Ray)
         model.cached_solution.has_dual_certificate = _has_dual_ray(model)
     end
     return
@@ -2796,33 +2796,33 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
     _throw_if_optimize_in_progress(model, attr)
-    stop = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_STOPSTATUS)
+    stop = Xpress.getintattrib(model.inner, Lib.XPRS_STOPSTATUS)
     stop_str = STOPSTATUS_STRING[stop]
     if is_mip(model)
-        stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_MIPSTATUS)
+        stat = Xpress.getintattrib(model.inner, Lib.XPRS_MIPSTATUS)
         return Xpress.MIPSTATUS_STRING[stat] * " - " * stop_str
     else
-        stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_LPSTATUS)
+        stat = Xpress.getintattrib(model.inner, Lib.XPRS_LPSTATUS)
         return Xpress.LPSTATUS_STRING[stat] * " - " * stop_str
     end
 end
 
 function _cache_termination_status(model::Optimizer)
-    stop = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_STOPSTATUS)
-    if stop != Xpress.Lib.XPRS_STOP_NONE
-        if stop == Xpress.Lib.XPRS_STOP_TIMELIMIT
+    stop = Xpress.getintattrib(model.inner, Lib.XPRS_STOPSTATUS)
+    if stop != Lib.XPRS_STOP_NONE
+        if stop == Lib.XPRS_STOP_TIMELIMIT
             return MOI.TIME_LIMIT
-        elseif stop == Xpress.Lib.XPRS_STOP_CTRLC
+        elseif stop == Lib.XPRS_STOP_CTRLC
             return MOI.INTERRUPTED
-        elseif stop == Xpress.Lib.XPRS_STOP_NODELIMIT
+        elseif stop == Lib.XPRS_STOP_NODELIMIT
             return MOI.NODE_LIMIT
-        elseif stop == Xpress.Lib.XPRS_STOP_ITERLIMIT
+        elseif stop == Lib.XPRS_STOP_ITERLIMIT
             return MOI.ITERATION_LIMIT
-        elseif stop == Xpress.Lib.XPRS_STOP_MIPGAP
-            stat = Xpress.Lib.XPRS_MIP_NOT_LOADED
+        elseif stop == Lib.XPRS_STOP_MIPGAP
+            stat = Lib.XPRS_MIP_NOT_LOADED
             if is_mip(model)
-                stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_MIPSTATUS)
-                if stat == Xpress.Lib.XPRS_MIP_OPTIMAL
+                stat = Xpress.getintattrib(model.inner, Lib.XPRS_MIPSTATUS)
+                if stat == Lib.XPRS_MIP_OPTIMAL
                     return MOI.OPTIMAL
                 else
                     return MOI.OTHER_ERROR
@@ -2830,10 +2830,10 @@ function _cache_termination_status(model::Optimizer)
             else
                 return MOI.OTHER_ERROR
             end
-        elseif stop == Xpress.Lib.XPRS_STOP_SOLLIMIT
+        elseif stop == Lib.XPRS_STOP_SOLLIMIT
             return MOI.SOLUTION_LIMIT
         else
-            @assert stop == Xpress.Lib.XPRS_STOP_USER
+            @assert stop == Lib.XPRS_STOP_USER
             return MOI.INTERRUPTED
         end
         #=
@@ -2848,23 +2848,23 @@ function _cache_termination_status(model::Optimizer)
         =#
     end # else:
     if is_mip(model)
-        stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_MIPSTATUS)
-        if stat == Xpress.Lib.XPRS_MIP_NOT_LOADED
+        stat = Xpress.getintattrib(model.inner, Lib.XPRS_MIPSTATUS)
+        if stat == Lib.XPRS_MIP_NOT_LOADED
             return MOI.OPTIMIZE_NOT_CALLED
-        elseif stat == Xpress.Lib.XPRS_MIP_LP_NOT_OPTIMAL # is a STOP
+        elseif stat == Lib.XPRS_MIP_LP_NOT_OPTIMAL # is a STOP
             return MOI.OTHER_ERROR
-        elseif stat == Xpress.Lib.XPRS_MIP_LP_OPTIMAL # is a STOP
+        elseif stat == Lib.XPRS_MIP_LP_OPTIMAL # is a STOP
             return MOI.OTHER_ERROR
-        elseif stat == Xpress.Lib.XPRS_MIP_NO_SOL_FOUND # is a STOP
+        elseif stat == Lib.XPRS_MIP_NO_SOL_FOUND # is a STOP
             return MOI.OTHER_ERROR
-        elseif stat == Xpress.Lib.XPRS_MIP_SOLUTION # is a STOP
+        elseif stat == Lib.XPRS_MIP_SOLUTION # is a STOP
             return MOI.LOCALLY_SOLVED
-        elseif stat == Xpress.Lib.XPRS_MIP_INFEAS
+        elseif stat == Lib.XPRS_MIP_INFEAS
             return MOI.INFEASIBLE
-        elseif stat == Xpress.Lib.XPRS_MIP_OPTIMAL
+        elseif stat == Lib.XPRS_MIP_OPTIMAL
             return MOI.OPTIMAL
         else
-            @assert stat == Xpress.Lib.XPRS_MIP_UNBOUNDED
+            @assert stat == Lib.XPRS_MIP_UNBOUNDED
             return MOI.INFEASIBLE_OR_UNBOUNDED #? DUAL_INFEASIBLE?
         end
         #=
@@ -2882,25 +2882,25 @@ function _cache_termination_status(model::Optimizer)
             unbounded. A solution may have been found (XPRS_MIP_UNBOUNDED).
         =#
     else
-        stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_LPSTATUS)
-        if stat == Xpress.Lib.XPRS_LP_UNSTARTED
+        stat = Xpress.getintattrib(model.inner, Lib.XPRS_LPSTATUS)
+        if stat == Lib.XPRS_LP_UNSTARTED
             return MOI.OPTIMIZE_NOT_CALLED
-        elseif stat == Xpress.Lib.XPRS_LP_OPTIMAL
+        elseif stat == Lib.XPRS_LP_OPTIMAL
             return MOI.OPTIMAL
-        elseif stat == Xpress.Lib.XPRS_LP_INFEAS
+        elseif stat == Lib.XPRS_LP_INFEAS
             return MOI.INFEASIBLE
-        elseif stat == Xpress.Lib.XPRS_LP_CUTOFF
+        elseif stat == Lib.XPRS_LP_CUTOFF
             return MOI.OTHER_LIMIT
-        elseif stat == Xpress.Lib.XPRS_LP_UNFINISHED # is a STOP
+        elseif stat == Lib.XPRS_LP_UNFINISHED # is a STOP
             return MOI.OTHER_ERROR
-        elseif stat == Xpress.Lib.XPRS_LP_UNBOUNDED
+        elseif stat == Lib.XPRS_LP_UNBOUNDED
             return MOI.DUAL_INFEASIBLE
-        elseif stat == Xpress.Lib.XPRS_LP_CUTOFF_IN_DUAL
+        elseif stat == Lib.XPRS_LP_CUTOFF_IN_DUAL
             return MOI.OTHER_LIMIT
-        elseif stat == Xpress.Lib.XPRS_LP_UNSOLVED
+        elseif stat == Lib.XPRS_LP_UNSOLVED
             return MOI.NUMERICAL_ERROR
         else
-            @assert stat == Xpress.Lib.XPRS_LP_NONCONVEX
+            @assert stat == Lib.XPRS_LP_NONCONVEX
             return MOI.INVALID_OPTION
         end
         #=
@@ -2928,13 +2928,13 @@ end
 
 function _has_dual_ray(model::Optimizer)
     has_Ray = Int64[0]
-    Xpress.getdualray(model.inner, C_NULL , has_Ray)
+    Lib.XPRSgetdualray(model.inner, C_NULL , has_Ray)
     return has_Ray[1] != 0
 end
 
 function _has_primal_ray(model::Optimizer)
     has_Ray = Int64[0]
-    Xpress.getprimalray(model.inner, C_NULL, has_Ray)
+    Lib.XPRSgetprimalray(model.inner, C_NULL, has_Ray)
     return has_Ray[1] != 0
 end
 
@@ -2949,27 +2949,27 @@ function _cache_primal_status(model)
             return MOI.INFEASIBILITY_CERTIFICATE
         end
     elseif is_mip(model)
-        stat = Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_MIPSTATUS)
-        if stat == Xpress.Lib.XPRS_MIP_NOT_LOADED
+        stat = Xpress.getintattrib(model.inner, Lib.XPRS_MIPSTATUS)
+        if stat == Lib.XPRS_MIP_NOT_LOADED
             return MOI.NO_SOLUTION
-        elseif stat == Xpress.Lib.XPRS_MIP_LP_NOT_OPTIMAL # - is a STOP
+        elseif stat == Lib.XPRS_MIP_LP_NOT_OPTIMAL # - is a STOP
             return MOI.NO_SOLUTION
-        elseif stat == Xpress.Lib.XPRS_MIP_LP_OPTIMAL # - is a STOP
+        elseif stat == Lib.XPRS_MIP_LP_OPTIMAL # - is a STOP
             return MOI.INFEASIBLE_POINT
-        elseif stat == Xpress.Lib.XPRS_MIP_NO_SOL_FOUND # - is a STOP
+        elseif stat == Lib.XPRS_MIP_NO_SOL_FOUND # - is a STOP
             return MOI.NO_SOLUTION
-        elseif stat == Xpress.Lib.XPRS_MIP_SOLUTION # - is a STOP
+        elseif stat == Lib.XPRS_MIP_SOLUTION # - is a STOP
             return MOI.FEASIBLE_POINT
-        elseif stat == Xpress.Lib.XPRS_MIP_INFEAS
+        elseif stat == Lib.XPRS_MIP_INFEAS
             return MOI.INFEASIBLE_POINT
-        elseif stat == Xpress.Lib.XPRS_MIP_OPTIMAL
+        elseif stat == Lib.XPRS_MIP_OPTIMAL
             return MOI.FEASIBLE_POINT
-        elseif stat == Xpress.Lib.XPRS_MIP_UNBOUNDED
+        elseif stat == Lib.XPRS_MIP_UNBOUNDED
             return MOI.NO_SOLUTION #? DUAL_INFEASIBLE?
         end
     end
     if is_mip(model)
-        if Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_MIPSOLS) > 0
+        if Xpress.getintattrib(model.inner, Lib.XPRS_MIPSOLS) > 0
             return MOI.FEASIBLE_POINT
         end
     end
@@ -3064,12 +3064,12 @@ function _farkas_variable_dual(model::Optimizer, col::Int64)
     nvars = length(model.variable_info)
     nrows = length(model.affine_constraint_info)
     ncoeffs = Array{Cint}(undef,1)
-    getcols(model.inner, C_NULL, C_NULL, C_NULL, nrows, ncoeffs, col, col)
+    Lib.XPRSgetcols(model.inner, C_NULL, C_NULL, C_NULL, nrows, ncoeffs, Cint(col-1), Cint(col-1))
     ncoeffs_ = ncoeffs[1]
     mstart = Array{Cint}(undef,2)
     mrwind = Array{Cint}(undef,ncoeffs_)
     dmatval = Array{Float64}(undef,ncoeffs_)
-    getcols(model.inner, mstart, mrwind, dmatval, nrows, ncoeffs, col, col)
+    Lib.XPRSgetcols(model.inner, mstart, mrwind, dmatval, nrows, ncoeffs, Cint(col-1), Cint(col-1))
     return sum(v * model.cached_solution.linear_dual[i + 1] for (i, v) in zip(mrwind, dmatval))
 end
 
@@ -3190,18 +3190,18 @@ function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
     if is_mip(model)
-        return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_MIPOBJVAL)
+        return Xpress.getdblattrib(model.inner, Lib.XPRS_MIPOBJVAL)
     else
-        return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_LPOBJVAL)
+        return Xpress.getdblattrib(model.inner, Lib.XPRS_LPOBJVAL)
     end
 end
 
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveBound)
     _throw_if_optimize_in_progress(model, attr)
     if is_mip(model)
-        return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_BESTBOUND)
+        return Xpress.getdblattrib(model.inner, Lib.XPRS_BESTBOUND)
     else
-        return Xpress.getdblattrib(model.inner, Xpress.Lib.XPRS_LPOBJVAL)
+        return Xpress.getdblattrib(model.inner, Lib.XPRS_LPOBJVAL)
     end
 end
 
@@ -3212,17 +3212,17 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.SimplexIterations)
     _throw_if_optimize_in_progress(model, attr)
-    return Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_SIMPLEXITER)
+    return Xpress.getintattrib(model.inner, Lib.XPRS_SIMPLEXITER)
 end
 
 function MOI.get(model::Optimizer, attr::MOI.BarrierIterations)
     _throw_if_optimize_in_progress(model, attr)
-    return Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_BARITER)
+    return Xpress.getintattrib(model.inner, Lib.XPRS_BARITER)
 end
 
 function MOI.get(model::Optimizer, attr::MOI.NodeCount)
     _throw_if_optimize_in_progress(model, attr)
-    return Xpress.getintattrib(model.inner, Xpress.Lib.XPRS_NODES)
+    return Xpress.getintattrib(model.inner, Lib.XPRS_NODES)
 end
 
 function MOI.get(model::Optimizer, attr::MOI.RelativeGap)
