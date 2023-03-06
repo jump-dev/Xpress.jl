@@ -2584,7 +2584,7 @@ function _get_sparse_sos(model)
     intents = Array{Cint}(undef, 1)
     nsets = Array{Cint}(undef, 1)
 
-    Xpress.getglobal(
+    Lib.XPRSgetglobal(
         model.inner, intents, nsets, C_NULL, C_NULL, C_NULL, settypes, setstart, setcols, setvals
     )
 
