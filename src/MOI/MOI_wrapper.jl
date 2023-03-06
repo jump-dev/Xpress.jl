@@ -328,7 +328,6 @@ function MOI.empty!(model::Optimizer)
     
  
     Lib.XPRSloadlp(model.inner,"", 0, 0, Cchar[], Float64[], Float64[], Float64[], Int[], Int[], Int[], Float64[], Float64[],Float64[])
-    #println("Result of loadlp : ",Lib.XPRSloadlp(model.inner,"", 0, 0, Cchar[], Float64[], Float64[], Float64[], Int[], Int[], Int[], Float64[], Float64[],Float64[]),". ")
     
     # re-enable logging
     log_level != 0 && MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), log_level)
@@ -570,10 +569,8 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
         if value == ""
             # disable log file
             Lib.XPRSsetlogfile(model.inner, C_NULL)
-            #println("Output directed to a log file (",Lib.XPRSsetlogfile(model.inner, C_NULL),").")
         else
             Lib.XPRSsetlogfile(model.inner, value)
-            #println("Output directed to a log file (",Lib.XPRSsetlogfile(model.inner, value),").")
         end
         model.inner.logfile = value
         reset_message_callback(model)
@@ -819,8 +816,8 @@ function MOI.add_variable(model::Optimizer)
         1,#length(_dbdl)::Int,
         0,#length(_dmatval)::Int,
         [0.0],#_dobj::Vector{Float64},
-        Cint.(Int[] .- 1),#Cint.(_mrwind::Vector{Int}),
-        Cint.(Int[] .- 1),#Cint.(_mrstart::Vector{Int}), 
+        Cint[],#Cint.(_mrwind::Vector{Int}),
+        Cint[],#Cint.(_mrstart::Vector{Int}), 
         Float64[],#_dmatval::Vector{Float64},
         [-Inf],#_dbdl::Vector{Float64},
         [Inf],#_dbdu::Vector{Float64}
@@ -836,8 +833,8 @@ function MOI.add_variables(model::Optimizer, N::Int)
         N,#length(_dbdl)::Int,
         0,#length(_dmatval)::Int,
         zeros(N),# _dobj::Vector{Float64},
-        Cint.(Int[] .- 1),#Cint.(_mrwind::Vector{Int}),
-        Cint.(Int[] .- 1),#Cint.(_mrstart::Vector{Int}), 
+        Cint[],#Cint.(_mrwind::Vector{Int}),
+        Cint[],#Cint.(_mrstart::Vector{Int}), 
         Float64[],# _dmatval::Vector{Float64},
         fill(-Inf, N),# _dbdl::Vector{Float64},
         fill(Inf, N),# _dbdu::Vector{Float64}
@@ -1462,7 +1459,6 @@ function MOI.add_constraint(
     end
     index = MOI.ConstraintIndex{MOI.VariableIndex, typeof(s)}(f.value)
     MOI.set(model, MOI.ConstraintSet(), index, s)
-    #println("constraint successfully added")
     return index
 end
 

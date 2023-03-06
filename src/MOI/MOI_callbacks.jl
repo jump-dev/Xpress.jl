@@ -70,7 +70,6 @@ function default_moi_callback(model::Optimizer)
             # only allow one heuristic solution per LP optimal node
 
             if Xpress.getintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
-                #println("Attribute ",Lib.XPRS_CALLBACKCOUNT_OPTNODE," value recovered : ",Lib.XPRSgetintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE, _))
                 return
             end
             model.heuristic_callback(cb_data)
@@ -88,7 +87,7 @@ function default_moi_callback(model::Optimizer)
             # limiting two calls to guarantee th user has a chance to add
             # a cut. if the user cut is loose the problem will be resolved anyway.
             if Xpress.getintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE)> 2
-                #println("Attribute ",Lib.XPRS_CALLBACKCOUNT_OPTNODE," value recovered : ",Lib.XPRSgetintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE, _)::Int)
+
                 return
             end
             model.user_cut_callback(cb_data)
@@ -163,25 +162,21 @@ function MOI.submit(
         cache_exception(model,
             MOI.InvalidCallbackUsage(MOI.HeuristicCallback(), cb))
             Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
-            #println("Optimizer algorithm interrupted")
         return
     elseif model.callback_state == CB_LAZY && CB <: MOI.UserCut{CallbackData}
         cache_exception(model,
             MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), cb))
             Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
-            #println("Optimizer algorithm interrupted")
         return
     elseif model.callback_state == CB_USER_CUT && CB <: MOI.LazyConstraint{CallbackData}
         cache_exception(model,
             MOI.InvalidCallbackUsage(MOI.UserCutCallback(), cb))
             Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
-            #println("Optimizer algorithm interrupted")
         return
     elseif !iszero(f.constant)
         cache_exception(model,
             MOI.ScalarFunctionConstantNotZero{Float64, typeof(f), typeof(s)}(f.constant))
             Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
-            #println("Optimizer algorithm interrupted")
         return
     end
     indices, coefficients = _indices_and_coefficients(model, f)
