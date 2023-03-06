@@ -1075,7 +1075,7 @@ function _zero_objective(model::Optimizer)
         # We need to zero out the existing quadratic objective.
         Lib.XPRSdelqmatrix(model.inner, -1)
     end
-    Lib.XPRSchgobj(model.inner, Cint(length(obj)), Cint.(collect(1:num_vars).-= 1), obj)
+    Lib.XPRSchgobj(model.inner, Cint(length(obj)), Cint.(collect(1:num_vars).- 1), obj)
     Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(0.0))
     return
 end
@@ -2358,7 +2358,7 @@ function MOI.add_constraint(
         Cint.((indices).-= 1),#Cint.(_mrwind::Vector{Int}), 
         coefficients#_dmatval
     )
-    Xpress.setindicators(model.inner, [Xpress.n_constraints(model.inner)], [con_value], [indicator_activation(Val{A})])
+    Lib.XPRSsetindicators(model.inner, Cint(length([Xpress.n_constraints(model.inner)].-1)),Cint.([Xpress.n_constraints(model.inner)] .-1), Cint.([con_value] .-1), Cint.([indicator_activation(Val{A})]))
     index = MOI.ConstraintIndex{MOI.VectorAffineFunction{T}, typeof(is)}(model.last_constraint_index)
     return index
 end
@@ -3443,7 +3443,7 @@ function MOI.modify(
         coefs[i] = chgs[i].new_coefficient
     end
 
-    Xpress.chgobj(model.inner, cols, coefs)
+    Lib.XPRSchgobj(model.inner, Cint(length(coefs)), Cint.(cols .-1), coefs)
     model.is_objective_set = true
     return
 end
