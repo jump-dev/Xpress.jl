@@ -2744,7 +2744,7 @@ function MOI.optimize!(model::Optimizer)
     check_cb_exception(model)
 
     if is_mip(model)
-        Xpress.Lib.XPRSgetmipsol(
+        Lib.XPRSgetmipsol(
             model.inner,
             model.cached_solution.variable_primal,
             model.cached_solution.linear_primal,
@@ -2752,7 +2752,7 @@ function MOI.optimize!(model::Optimizer)
         fill!(model.cached_solution.linear_dual, NaN)
         fill!(model.cached_solution.variable_dual, NaN)
     else
-        Xpress.Lib.XPRSgetlpsol(
+        Lib.XPRSgetlpsol(
             model.inner,
             model.cached_solution.variable_primal,
             model.cached_solution.linear_primal,
