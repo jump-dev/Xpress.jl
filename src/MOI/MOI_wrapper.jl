@@ -4215,10 +4215,10 @@ end
 function MOI.write_to_file(model::Optimizer, name::String)
     ext = extension(name)
     if ext == ".lp"
-        Xpress.writeprob(model.inner, name, "l")
+        Lib.XPRSwriteprob(model.inner, name, "l")
     elseif ext == ".mps"
-        Xpress.writeprob(model.inner, name)
+        Lib.XPRSwriteprob(model.inner, name, "")
     else
-        Xpress.writeprob(model.inner, name, "l")
+        Lib.XPRSwriteprob(model.inner, name, "l")
     end
 end
