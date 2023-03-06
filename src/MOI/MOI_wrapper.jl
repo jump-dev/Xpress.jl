@@ -2051,7 +2051,7 @@ function MOI.add_constraint(
         [rhs],#_drhs,
         C_NULL,#_drng,
         Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
-        Cint.((indices).-= 1),#Cint.(_mrwind::Vector{Int}), 
+        Cint.((indices).-= 1),#Cint.(_mclind::Vector{Int}), 
         coefficients#_dmatval
     )
  
@@ -2097,15 +2097,17 @@ function MOI.add_constraints(
         model.affine_constraint_info[model.last_constraint_index] =
             ConstraintInfo(length(model.affine_constraint_info) + 1, si, AFFINE)
     end
-    pop!(row_starts)
-    Xpress.addrows(
+    pop!(row_starts)     
+    Lib.XPRSaddrows(
         model.inner,
+        length(rhss),#length(_drhs),
+        Cint(length(columns)),#Cint(length(_mclind)),
         senses,#_srowtype,
         rhss,#_drhs,
         C_NULL,#_drng,
-        row_starts,#_mstart,
-        columns,#_mclind,
-        coefficients,#_dmatval
+        Cint.(row_starts.-= 1),#Cint.(_mrstart::Vector{Int}), 
+        Cint.(columns.-= 1),#Cint.(_mclind::Vector{Int}), 
+        coefficients#_dmatval
         )
     return indices
 end
@@ -2384,14 +2386,16 @@ function MOI.add_constraint(
     cte = MOI.constant(f)[2]
     # a^T x + b <= c ===> a^T <= c - b
     sense, rhs = _sense_and_rhs(is.set)
-    Xpress.addrows(
+    Lib.XPRSaddrows(
         model.inner,
+        length([rhs-cte]),#length(_drhs),
+        Cint(length((indices))),#Cint(length(_mclind)),
         [sense],#_srowtype,
         [rhs-cte],#_drhs,
         C_NULL,#_drng,
-        [1],#_mstart,
-        (indices),#_mclind,
-        coefficients,#_dmatval
+        Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
+        Cint.((indices).-= 1),#Cint.(_mrwind::Vector{Int}), 
+        coefficients#_dmatval
     )
     Xpress.setindicators(model.inner, [Xpress.n_constraints(model.inner)], [con_value], [indicator_activation(Val{A})])
     index = MOI.ConstraintIndex{MOI.VectorAffineFunction{T}, typeof(is)}(model.last_constraint_index)
@@ -2441,8 +2445,16 @@ function MOI.add_constraint(
     end
     sense, rhs = _sense_and_rhs(s)
     indices, coefficients, I, J, V = _indices_and_coefficients(model, f)
-    Xpress.addrows(
-        model.inner, [sense], [rhs], C_NULL, [1], indices, coefficients
+    Lib.XPRSaddrows(
+        model.inner,
+        length([rhs]),#length(_drhs),
+        Cint(length(indices)),#Cint(length(_mclind)),
+        [sense],#_srowtype,
+        [rhs],#_drhs,
+        C_NULL,#_drng,
+        Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
+        Cint.(indices.-= 1),#Cint.(_mrwind::Vector{Int}), 
+        coefficients#_dmatval
     )
     V .*= 0.5 # only for constraints
     Xpress.addqmatrix(model.inner, Xpress.n_constraints(model.inner), I, J, V)
@@ -3721,8 +3733,16 @@ function MOI.add_constraint(
     I = Cint[vs_info[i].column for i in 1:N]
     V = fill(1.0, N)
     V[1] = -1.0
-    Xpress.addrows(
-        model.inner, [Cchar('L')], [0.0], C_NULL, [1], Cint[], Float64[]
+    Lib.XPRSaddrows(
+        model.inner,
+        length([0.0]),#length(_drhs),
+        Cint(length(Cint[])),#Cint(length(_mclind)),
+        [Cchar('L')],#_srowtype,
+        [0.0],#_drhs,
+        C_NULL,#_drng,
+        Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
+        Cint.(Cint[].-= 1),#Cint.(_mrwind::Vector{Int}), 
+        Float64[]#_dmatval
     )
     Xpress.addqmatrix(model.inner, Xpress.n_constraints(model.inner), I, I, V)
     model.last_constraint_index += 1
@@ -3789,8 +3809,16 @@ function MOI.add_constraint(
     J = Cint[vs_info[i].column for i in 1:N if i != 1]
     V = fill(1.0, N-1)
     V[1] = -1.0 # just the upper triangle
-    Xpress.addrows(
-        model.inner, [Cchar('L')], [0.0], C_NULL, [1], Cint[], Float64[]
+    Lib.XPRSaddrows(
+        model.inner,
+        length([0.0]),#length(_drhs),
+        Cint(length(Cint[])),#Cint(length(_mclind)),
+        [Cchar('L')],#_srowtype,
+        [0.0],#_drhs,
+        C_NULL,#_drng,
+        Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
+        Cint.(Cint[].-= 1),#Cint.(_mrwind::Vector{Int}), 
+        Float64[]#_dmatval
     )
     Xpress.addqmatrix(model.inner, Xpress.n_constraints(model.inner), I, J, V)
     model.last_constraint_index += 1
