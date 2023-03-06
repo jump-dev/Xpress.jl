@@ -1,6 +1,7 @@
 # Julia wrapper for header: xprs.h
 # Automatically generated using Clang.jl
 
+
 function XPRScopycallbacks(dest, src)
     ccall((:XPRScopycallbacks, libxprs), Cint, (XPRSprob, XPRSprob), dest, src)
 end
@@ -86,8 +87,7 @@ function XPRSsetdblcontrol(prob, _index, _dvalue)
 end
 
 function XPRSinterrupt(prob, reason)
-    ccall((:XPRSinterrupt, libxprs), Cint, (XPRSprob, Cint), prob, reason)
-    
+    ccall((:XPRSinterrupt, libxprs), Cint, (XPRSprob, Cint), prob, reason)   
 end
 
 function XPRSgetprobname(prob, _svalue)

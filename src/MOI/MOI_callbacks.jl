@@ -7,7 +7,6 @@ Set a generic Xpress callback function.
 struct CallbackFunction <: MOI.AbstractCallback end
 
 function MOI.set(model::Optimizer, ::CallbackFunction, ::Nothing)
-
     if model.callback_data !== nothing
         Lib.XPRSremovecboptnode(model.inner, C_NULL, C_NULL)
         model.callback_data = nothing
@@ -17,10 +16,8 @@ function MOI.set(model::Optimizer, ::CallbackFunction, ::Nothing)
 end
 
 function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
-
     if model.callback_data !== nothing
         Lib.XPRSremovecboptnode(model.inner, C_NULL, C_NULL)
-        
         model.callback_data = nothing
     end
     model.has_generic_callback = true
@@ -62,13 +59,11 @@ end
 # ==============================================================================
 
 function default_moi_callback(model::Optimizer)
-    
     return (cb_data) -> begin
         get_cb_solution(model, cb_data.model)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             # only allow one heuristic solution per LP optimal node
-
             if Xpress.getintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
                 return
             end
@@ -87,7 +82,6 @@ function default_moi_callback(model::Optimizer)
             # limiting two calls to guarantee th user has a chance to add
             # a cut. if the user cut is loose the problem will be resolved anyway.
             if Xpress.getintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE)> 2
-
                 return
             end
             model.user_cut_callback(cb_data)
@@ -186,7 +180,6 @@ function MOI.submit(
     mstart = Int32[0, length(indices)]
     mindex  = Array{Xpress.Lib.XPRScut}(undef,1)
     ncuts = Cint(1)
-
     ncuts_ptr = Cint[0]
     nodupl = Cint(2) # Duplicates are excluded from the cut pool, ignoring cut type
     sensetype = Cchar[Char(sense)]

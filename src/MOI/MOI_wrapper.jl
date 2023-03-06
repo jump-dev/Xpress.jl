@@ -3,10 +3,8 @@
     error("Versions 1.1.x of julia are not supported. The current verions is $(VERSION)")
 end
 
-
 import MathOptInterface
 using SparseArrays
-
 
 const MOI = MathOptInterface
 const CleverDicts = MOI.Utilities.CleverDicts
@@ -325,10 +323,7 @@ function MOI.empty!(model::Optimizer)
     log_level = model.log_level
     log_level != 0 && MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
     # silently load a empty model - to avoid useless printing
-    
- 
     Lib.XPRSloadlp(model.inner,"", 0, 0, Cchar[], Float64[], Float64[], Float64[], Int[], Int[], Int[], Float64[], Float64[],Float64[])
-    
     # re-enable logging
     log_level != 0 && MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), log_level)
 
@@ -600,7 +595,6 @@ function reset_message_callback(model)
     if model.message_callback !== nothing
         # remove all message callbacks
         Lib.XPRSremovecbmessage(model.inner, C_NULL, C_NULL)
-
         model.message_callback = nothing
     end
     if model.inner.logfile == "" &&    # no file -> screen
@@ -812,9 +806,7 @@ function MOI.add_variable(model::Optimizer)
     info.index = index
     info.column = length(model.variable_info)
     Lib.XPRSaddcols(
-        model.inner,
-        1,#length(_dbdl)::Int,
-        0,#length(_dmatval)::Int,
+        model.inner,1,0,#length(_dbdl)::Int,length(_dmatval)::Int,
         [0.0],#_dobj::Vector{Float64},
         Cint[],#Cint.(_mrwind::Vector{Int}),
         Cint[],#Cint.(_mrstart::Vector{Int}), 
@@ -822,16 +814,12 @@ function MOI.add_variable(model::Optimizer)
         [-Inf],#_dbdl::Vector{Float64},
         [Inf],#_dbdu::Vector{Float64}
     )
-    
     return index
-    
 end
 
 function MOI.add_variables(model::Optimizer, N::Int)
     Lib.XPRSaddcols(
-        model.inner,
-        N,#length(_dbdl)::Int,
-        0,#length(_dmatval)::Int,
+        model.inner,N,0,#length(_dbdl)::Int,length(_dmatval)::Int,
         zeros(N),# _dobj::Vector{Float64},
         Cint[],#Cint.(_mrwind::Vector{Int}),
         Cint[],#Cint.(_mrstart::Vector{Int}), 
@@ -865,7 +853,6 @@ function MOI.delete(model::Optimizer, v::MOI.VariableIndex)
         throw(MOI.DeleteNotAllowed(v))
     end
     Lib.XPRSdelcols(model.inner, length([info.column]),[info.column].- 1)
-   
     delete!(model.variable_info, v)
     for other_info in values(model.variable_info)
         if other_info.column > info.column
@@ -950,13 +937,10 @@ function forward(model::Optimizer)
 
     #2 - Call XPRSftran with vector 'aux_vector' as an argument
     Lib.XPRSftran(model.inner, aux_vector)
-    
-    
 
     #3 - Create Dict of Basic variable to All variables
     basic_variables_ordered = Vector{Int32}(undef, rows)
     Lib.XPRSgetpivotorder(model.inner, basic_variables_ordered)
-    
 
     aux_dict = Dict{Int, Int}()
     for i in 1:length(basic_variables_ordered)
@@ -982,7 +966,6 @@ function backward(model::Optimizer)
     #1 - Get Basic variables
     basic_variables_ordered = Vector{Int32}(undef, rows)
     Lib.XPRSgetpivotorder(model.inner, basic_variables_ordered)
-    
 
     aux_dict = Dict{Int,Int}()
     for i in 1:length(basic_variables_ordered)
@@ -1092,9 +1075,7 @@ function _zero_objective(model::Optimizer)
         # We need to zero out the existing quadratic objective.
         Lib.XPRSdelqmatrix(model.inner, -1)
     end
-
     Lib.XPRSchgobj(model.inner, Cint(length(obj)), Cint.(collect(1:num_vars).-= 1), obj)
-    
     Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(0.0))
     return
 end
@@ -1104,18 +1085,14 @@ function MOI.set(
 )
     # TODO: should this propagate across a `MOI.empty!(optimizer)` call
     if sense == MOI.MIN_SENSE
-        objsense=:Min
+        Lib.XPRSchgobjsense(model.inner, Lib.XPRS_OBJ_MINIMIZE)
     elseif sense == MOI.MAX_SENSE
-        objsense=:Max
+        Lib.XPRSchgobjsense(model.inner, Lib.XPRS_OBJ_MAXIMIZE)
     else
         @assert sense == MOI.FEASIBILITY_SENSE
         _zero_objective(model)
-        objsense=:Min
+        Lib.XPRSchgobjsense(model.inner, Lib.XPRS_OBJ_MINIMIZE)
     end
-    v = objsense == :maximize || objsense == :Max || objsense == Lib.XPRS_OBJ_MAXIMIZE ? Lib.XPRS_OBJ_MAXIMIZE :
-        objsense == :minimize || objsense == :Min || objsense == Lib.XPRS_OBJ_MINIMIZE ? Lib.XPRS_OBJ_MINIMIZE :
-        throw(ArgumentError("Invalid objective sense: $objsense. It can only be `:maximize`, `:minimize`, `:Max`, `:Min`, `$(Lib.XPRS_OBJ_MAXIMIZE)`, or `$(Lib.XPRS_OBJ_MINIMIZE)`."))
-    Lib.XPRSchgobjsense(model.inner, v)
     model.objective_sense = sense
     return
 end
@@ -1165,7 +1142,6 @@ function MOI.set(
         obj[column] += term.coefficient
     end
     Lib.XPRSchgobj(model.inner, Cint(length(obj)), Cint.(collect(1:num_vars).-= 1), obj)
-   
     Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(-f.constant))
     model.objective_type = SCALAR_AFFINE
     model.is_objective_set = true
@@ -1207,9 +1183,7 @@ function MOI.set(
     for (i, c) in zip(affine_indices, affine_coefficients)
         obj[i] = c
     end
-    ncols = length(I)
-    Lib.XPRSchgmqobj(model.inner,Cint(ncols), Cint.(I .- 1), Cint.(J .- 1), V)
-    
+    Lib.XPRSchgmqobj(model.inner,Cint(length(I)), Cint.(I .- 1), Cint.(J .- 1), V)
     model.objective_type = SCALAR_QUADRATIC
     model.is_objective_set = true
     return
@@ -1439,7 +1413,6 @@ function MOI.add_constraint(
                 error("The problem is infeasible")
             end
         end
-        
     end
     if S <: MOI.LessThan{Float64}
         _throw_if_existing_upper(info.bound, info.type, S, f)
@@ -2040,9 +2013,7 @@ function MOI.add_constraint(
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
     Lib.XPRSaddrows(
-        model.inner,
-        length([rhs]),#length(_drhs),
-        Cint(length((indices))),#Cint(length(_mclind)),
+        model.inner,length([rhs]),Cint(length((indices))),#length(_drhs),Cint(length(_mclind)),
         [sense],#_srowtype,
         [rhs],#_drhs,
         C_NULL,#_drng,
@@ -2050,8 +2021,6 @@ function MOI.add_constraint(
         Cint.((indices).-= 1),#Cint.(_mclind::Vector{Int}), 
         coefficients#_dmatval
     )
- 
-
     return MOI.ConstraintIndex{typeof(f), typeof(s)}(model.last_constraint_index)
 end
 
@@ -2095,9 +2064,7 @@ function MOI.add_constraints(
     end
     pop!(row_starts)     
     Lib.XPRSaddrows(
-        model.inner,
-        length(rhss),#length(_drhs),
-        Cint(length(columns)),#Cint(length(_mclind)),
+        model.inner,length(rhss),Cint(length(columns)),#length(_drhs),Cint(length(_mclind)),
         senses,#_srowtype,
         rhss,#_drhs,
         C_NULL,#_drng,
@@ -2167,11 +2134,8 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
     rmatind = Array{Cint}(undef,  nzcnt)
     rmatval = Array{Float64}(undef,  nzcnt)
 
-    Lib.XPRSgetrows(
-        model.inner,
-        rmatbeg,#_mstart,
-        rmatind,#_mclind,
-        rmatval,#_dmatval,
+    Lib.XPRSgetrows(model.inner,
+        rmatbeg,rmatind,rmatval,#_mstart,_mclind,_dmatval,
         nzcnt,#maxcoeffs,
         zeros(Cint, 1),#temp,
         Cint(row- 1),#Cint(first-1)::Integer,
@@ -2179,7 +2143,6 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
     )
     rmatbeg .+= 1
     rmatind .+= 1
-    
 
     terms = MOI.ScalarAffineTerm{Float64}[]
     for i = 1:nzcnt
@@ -2386,10 +2349,8 @@ function MOI.add_constraint(
     cte = MOI.constant(f)[2]
     # a^T x + b <= c ===> a^T <= c - b
     sense, rhs = _sense_and_rhs(is.set)
-    Lib.XPRSaddrows(
-        model.inner,
-        length([rhs-cte]),#length(_drhs),
-        Cint(length((indices))),#Cint(length(_mclind)),
+    Lib.XPRSaddrows(model.inner,
+        length([rhs-cte]),Cint(length((indices))),#length(_drhs),Cint(length(_mclind)),
         [sense],#_srowtype,
         [rhs-cte],#_drhs,
         C_NULL,#_drng,
@@ -2398,7 +2359,6 @@ function MOI.add_constraint(
         coefficients#_dmatval
     )
     Xpress.setindicators(model.inner, [Xpress.n_constraints(model.inner)], [con_value], [indicator_activation(Val{A})])
-    
     index = MOI.ConstraintIndex{MOI.VectorAffineFunction{T}, typeof(is)}(model.last_constraint_index)
     return index
 end
@@ -2447,15 +2407,7 @@ function MOI.add_constraint(
     sense, rhs = _sense_and_rhs(s)
     indices, coefficients, I, J, V = _indices_and_coefficients(model, f)
     Lib.XPRSaddrows(
-        model.inner,
-        length([rhs]),#length(_drhs),
-        Cint(length(indices)),#Cint(length(_mclind)),
-        [sense],#_srowtype,
-        [rhs],#_drhs,
-        C_NULL,#_drng,
-        Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
-        Cint.(indices.-= 1),#Cint.(_mrwind::Vector{Int}), 
-        coefficients#_dmatval
+        model.inner, length([rhs]), Cint(length(indices)), [sense], [rhs], C_NULL, Cint.([1].-= 1), Cint.(indices.-= 1), coefficients
     )
     V .*= 0.5 # only for constraints
     Lib.XPRSaddqmatrix(model.inner, Xpress.n_constraints(model.inner) - 1, length(I), Cint.(I .- 1), Cint.(J .- 1), V)
@@ -2478,10 +2430,9 @@ function MOI.get(
     mqcol2 = Array{Cint}(undef,  nqelem[])
     dqe = Array{Float64}(undef,  nqelem[])
     Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, mqcol1, mqcol2, dqe)
-
     mqcol1 .+= 1
     mqcol2 .+= 1
-
+    
     quadratic_terms = MOI.ScalarQuadraticTerm{Float64}[]
     for (i, j, coef) in zip(mqcol1, mqcol2, dqe)
         push!(
@@ -2541,7 +2492,6 @@ function MOI.add_constraint(
         Cint.(columns .- 1), # Cint.(mscols)
         s.weights, # dref
     )
-    
     model.last_constraint_index += 1
     index = MOI.ConstraintIndex{MOI.VectorOfVariables, typeof(s)}(model.last_constraint_index)
     model.sos_constraint_info[index.value] = ConstraintInfo(
@@ -3743,18 +3693,9 @@ function MOI.add_constraint(
     V = fill(1.0, N)
     V[1] = -1.0
     Lib.XPRSaddrows(
-        model.inner,
-        length([0.0]),#length(_drhs),
-        Cint(length(Cint[])),#Cint(length(_mclind)),
-        [Cchar('L')],#_srowtype,
-        [0.0],#_drhs,
-        C_NULL,#_drng,
-        Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
-        Cint.(Cint[].-= 1),#Cint.(_mrwind::Vector{Int}), 
-        Float64[]#_dmatval
+        model.inner, length([0.0]), Cint(length(Cint[])), [Cchar('L')], [0.0], C_NULL, Cint.([1].-= 1), Cint.(Cint[].-= 1), Float64[]
     )
     Lib.XPRSaddqmatrix(model.inner, Xpress.n_constraints(model.inner) - 1, length(I), Cint.(I .- 1), Cint.(I .- 1), V)
-
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, SOC)
@@ -3820,15 +3761,7 @@ function MOI.add_constraint(
     V = fill(1.0, N-1)
     V[1] = -1.0 # just the upper triangle
     Lib.XPRSaddrows(
-        model.inner,
-        length([0.0]),#length(_drhs),
-        Cint(length(Cint[])),#Cint(length(_mclind)),
-        [Cchar('L')],#_srowtype,
-        [0.0],#_drhs,
-        C_NULL,#_drng,
-        Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
-        Cint.(Cint[].-= 1),#Cint.(_mrwind::Vector{Int}), 
-        Float64[]#_dmatval
+        model.inner, length([0.0]), Cint(length(Cint[])), [Cchar('L')], [0.0], C_NULL, Cint.([1].-= 1), Cint.(Cint[].-= 1), Float64[]
     )
     Lib.XPRSaddqmatrix(model.inner, Xpress.n_constraints(model.inner) - 1, length(I), Cint.(I .- 1), Cint.(J .- 1), V)
     model.last_constraint_index += 1
@@ -3939,10 +3872,8 @@ function MOI.get(
     mqcol2 = Array{Cint}(undef,  nqelem[])
     dqe = Array{Float64}(undef,  nqelem[])
     Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, mqcol1, mqcol2, dqe)
-
     mqcol1 .+= 1
     mqcol2 .+= 1
-
     I, J, V = mqcol1, mqcol2, dqe
 
     t = nothing
@@ -3967,18 +3898,14 @@ function MOI.get(
     model::Optimizer, ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, MOI.RotatedSecondOrderCone}
 )
-
     nqelem = Ref{Cint}()
     Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, C_NULL, C_NULL, C_NULL)
     I = Array{Cint}(undef,  nqelem[])
     J = Array{Cint}(undef,  nqelem[])
     V = Array{Float64}(undef,  nqelem[])
     Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, I, J, V)
-
     I .+= 1
     J .+= 1
-
-    
 
     t = nothing
     u = nothing
