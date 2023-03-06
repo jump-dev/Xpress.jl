@@ -2476,8 +2476,15 @@ function MOI.get(
 ) where {S}
 
     affine_terms = _get_affine_terms(model, c)
+    nqelem = Ref{Cint}()
+    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, C_NULL, C_NULL, C_NULL)
+    mqcol1 = Array{Cint}(undef,  nqelem[])
+    mqcol2 = Array{Cint}(undef,  nqelem[])
+    dqe = Array{Float64}(undef,  nqelem[])
+    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, mqcol1, mqcol2, dqe)
 
-    mqcol1, mqcol2, dqe = getqrowqmatrixtriplets(model.inner, _info(model, c).row)
+    mqcol1 .+= 1
+    mqcol2 .+= 1
 
     quadratic_terms = MOI.ScalarQuadraticTerm{Float64}[]
     for (i, j, coef) in zip(mqcol1, mqcol2, dqe)
@@ -3929,8 +3936,17 @@ function MOI.get(
     model::Optimizer, ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, MOI.SecondOrderCone}
 )
+    nqelem = Ref{Cint}()
+    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, C_NULL, C_NULL, C_NULL)
+    mqcol1 = Array{Cint}(undef,  nqelem[])
+    mqcol2 = Array{Cint}(undef,  nqelem[])
+    dqe = Array{Float64}(undef,  nqelem[])
+    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, mqcol1, mqcol2, dqe)
 
-    I, J, V = getqrowqmatrixtriplets(model.inner, _info(model, c).row)
+    mqcol1 .+= 1
+    mqcol2 .+= 1
+
+    I, J, V = mqcol1, mqcol2, dqe
 
     t = nothing
     x = MOI.VariableIndex[]
@@ -3955,7 +3971,17 @@ function MOI.get(
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, MOI.RotatedSecondOrderCone}
 )
 
-    I, J, V = getqrowqmatrixtriplets(model.inner, _info(model, c).row)
+    nqelem = Ref{Cint}()
+    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, C_NULL, C_NULL, C_NULL)
+    mqcol1 = Array{Cint}(undef,  nqelem[])
+    mqcol2 = Array{Cint}(undef,  nqelem[])
+    dqe = Array{Float64}(undef,  nqelem[])
+    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, mqcol1, mqcol2, dqe)
+
+    mqcol1 .+= 1
+    mqcol2 .+= 1
+
+    I, J, V = mqcol1, mqcol2, dqe
 
     t = nothing
     u = nothing
