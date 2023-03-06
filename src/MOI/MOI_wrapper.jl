@@ -3274,7 +3274,7 @@ end
 
 function MOI.set(model::Optimizer, ::MOI.Name, name::String)
     model.name = name
-    Xpress.setprobname(model.inner, name)
+    Lib.XPRSsetprobname(model.inner, name)
     return
 end
 
@@ -3629,7 +3629,7 @@ function _generate_basis_status(model::Optimizer)
     nrows = length(model.affine_constraint_info)
     cstatus = Vector{Cint}(undef, nrows)
     vstatus = Vector{Cint}(undef, nvars)
-    getbasis(model.inner, cstatus, vstatus)
+    Lib.XPRSgetbasis(model.inner, cstatus, vstatus)
     basis_status = BasisStatus(cstatus, vstatus)
     model.basis_status = basis_status
     return
