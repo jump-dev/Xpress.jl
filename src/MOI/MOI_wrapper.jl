@@ -2710,9 +2710,9 @@ function _update_MIP_start!(model)
         # to be sure that `solval` is in the same order as the model.inner
         # columns.
         permute!(solval, sortperm(colind))
-        addmipsol(model.inner, number_mip_started_var, solval, C_NULL, C_NULL)
+        Lib.XPRSaddmipsol(model.inner, number_mip_started_var, solval, C_NULL, C_NULL)
     else
-        addmipsol(model.inner, number_mip_started_var, solval, colind, C_NULL)
+        Lib.XPRSaddmipsol(model.inner, number_mip_started_var, solval, colind, C_NULL)
     end
 
     return
