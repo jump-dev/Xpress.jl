@@ -2402,6 +2402,7 @@ function MOI.add_constraint(
         coefficients#_dmatval
     )
     Xpress.setindicators(model.inner, [Xpress.n_constraints(model.inner)], [con_value], [indicator_activation(Val{A})])
+    
     index = MOI.ConstraintIndex{MOI.VectorAffineFunction{T}, typeof(is)}(model.last_constraint_index)
     return index
 end
@@ -2461,7 +2462,7 @@ function MOI.add_constraint(
         coefficients#_dmatval
     )
     V .*= 0.5 # only for constraints
-    Xpress.addqmatrix(model.inner, Xpress.n_constraints(model.inner), I, J, V)
+    Lib.XPRSaddqmatrix(model.inner, Xpress.n_constraints(model.inner) - 1, length(I), Cint.(I .- 1), Cint.(J .- 1), V)
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, QUADRATIC)
@@ -3748,7 +3749,8 @@ function MOI.add_constraint(
         Cint.(Cint[].-= 1),#Cint.(_mrwind::Vector{Int}), 
         Float64[]#_dmatval
     )
-    Xpress.addqmatrix(model.inner, Xpress.n_constraints(model.inner), I, I, V)
+    Lib.XPRSaddqmatrix(model.inner, Xpress.n_constraints(model.inner) - 1, length(I), Cint.(I .- 1), Cint.(I .- 1), V)
+
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, SOC)
@@ -3824,7 +3826,7 @@ function MOI.add_constraint(
         Cint.(Cint[].-= 1),#Cint.(_mrwind::Vector{Int}), 
         Float64[]#_dmatval
     )
-    Xpress.addqmatrix(model.inner, Xpress.n_constraints(model.inner), I, J, V)
+    Lib.XPRSaddqmatrix(model.inner, Xpress.n_constraints(model.inner) - 1, length(I), Cint.(I .- 1), Cint.(J .- 1), V)
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, RSOC)
