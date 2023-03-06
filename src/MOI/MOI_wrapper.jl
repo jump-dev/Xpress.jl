@@ -2121,7 +2121,7 @@ function MOI.delete(
     MOI.ScalarQuadraticFunction{Float64},
 }}
     row = _info(model, c).row
-    Xpress.delrows(model.inner, [row])
+    Lib.XPRSdelrows(model.inner, length([row]), Cint.([row] .- 1))
     for (key, info) in model.affine_constraint_info
         if info.row > row
             info.row -= 1
@@ -3838,7 +3838,7 @@ function MOI.delete(
 )
     f = MOI.get(model, MOI.ConstraintFunction(), c)
     info = _info(model, c)
-    Xpress.delrows(model.inner, [info.row])
+    Lib.XPRSdelrows(model.inner, length([info.row]), Cint.([info.row] .- 1))
     for (key, info_2) in model.affine_constraint_info
         if info_2.row > info.row
             info_2.row -= 1
@@ -3877,7 +3877,7 @@ function MOI.delete(
 )
     f = MOI.get(model, MOI.ConstraintFunction(), c)
     info = _info(model, c)
-    Xpress.delrows(model.inner, [info.row])
+    Lib.XPRSdelrows(model.inner, length([info.row]), Cint.([info.row] .- 1))
     for (key, info_2) in model.affine_constraint_info
         if info_2.row > info.row
             info_2.row -= 1
