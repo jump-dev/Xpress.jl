@@ -2536,15 +2536,16 @@ function MOI.add_constraint(
 )
     columns = Int[_info(model, v).column for v in f.variables]
     idx = [0, 0]
-    Xpress.addsets(
+    Lib.XPRSaddsets(
         model.inner, # prob
         1, # newsets
         length(columns), # newnz
         Cchar[_sos_type(s)], # qstype
-        idx, # msstart
-        columns, # mscols
+        Cint.(idx), # Cint.(msstart)
+        Cint.(columns .- 1), # Cint.(mscols)
         s.weights, # dref
     )
+    
     model.last_constraint_index += 1
     index = MOI.ConstraintIndex{MOI.VectorOfVariables, typeof(s)}(model.last_constraint_index)
     model.sos_constraint_info[index.value] = ConstraintInfo(
@@ -3973,15 +3974,15 @@ function MOI.get(
 
     nqelem = Ref{Cint}()
     Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, C_NULL, C_NULL, C_NULL)
-    mqcol1 = Array{Cint}(undef,  nqelem[])
-    mqcol2 = Array{Cint}(undef,  nqelem[])
-    dqe = Array{Float64}(undef,  nqelem[])
-    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, mqcol1, mqcol2, dqe)
+    I = Array{Cint}(undef,  nqelem[])
+    J = Array{Cint}(undef,  nqelem[])
+    V = Array{Float64}(undef,  nqelem[])
+    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, I, J, V)
 
-    mqcol1 .+= 1
-    mqcol2 .+= 1
+    I .+= 1
+    J .+= 1
 
-    I, J, V = mqcol1, mqcol2, dqe
+    
 
     t = nothing
     u = nothing
