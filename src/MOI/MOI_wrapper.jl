@@ -4067,7 +4067,7 @@ function getfirstiis(model::Optimizer)
     num = Cint(1)
     rownumber = Vector{Cint}(undef, 1)
     colnumber = Vector{Cint}(undef, 1)
-    Xpress.getiisdata(
+    Lib.XPRSgetiisdata(
         model.inner, num, rownumber, colnumber, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
 
     nrows = rownumber[1]
@@ -4076,7 +4076,7 @@ function getfirstiis(model::Optimizer)
     miiscol = Vector{Cint}(undef, ncols)
     constrainttype = Vector{UInt8}(undef, nrows)
     colbndtype = Vector{UInt8}(undef, ncols)
-    Xpress.getiisdata(
+    Lib.XPRSgetiisdata(
         model.inner, num, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL)
 
     return IISData(status_code[1], true, nrows, ncols, miisrow, miiscol, constrainttype, colbndtype)
