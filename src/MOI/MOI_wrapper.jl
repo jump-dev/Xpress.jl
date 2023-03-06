@@ -2171,15 +2171,19 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
     rmatind = Array{Cint}(undef,  nzcnt)
     rmatval = Array{Float64}(undef,  nzcnt)
 
-    Xpress.getrows(
+    Lib.XPRSgetrows(
         model.inner,
         rmatbeg,#_mstart,
         rmatind,#_mclind,
         rmatval,#_dmatval,
         nzcnt,#maxcoeffs,
-        row,#first::Integer,
-        row,#last::Integer
-        )
+        zeros(Cint, 1),#temp,
+        Cint(row- 1),#Cint(first-1)::Integer,
+        Cint(row- 1),#Cint(last-1)::Integer,
+    )
+    rmatbeg .+= 1
+    rmatind .+= 1
+    
 
     terms = MOI.ScalarAffineTerm{Float64}[]
     for i = 1:nzcnt
