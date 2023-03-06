@@ -2764,7 +2764,7 @@ function MOI.optimize!(model::Optimizer)
     # should be almost a no-op if not needed
     # might have minor overhead due to memory being freed
     if model.post_solve
-        Xpress.postsolve(model.inner)
+        Lib.XPRSpostsolve(model.inner)
     end
 
     model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
@@ -2774,7 +2774,7 @@ function MOI.optimize!(model::Optimizer)
     status = MOI.get(model, MOI.PrimalStatus())
     if status == MOI.INFEASIBILITY_CERTIFICATE
         has_Ray = Int64[0]
-        Xpress.getprimalray(model.inner, model.cached_solution.variable_primal , has_Ray)
+        Lib.XPRSgetprimalray(model.inner, model.cached_solution.variable_primal , has_Ray)
         model.cached_solution.has_primal_certificate = _has_primal_ray(model)
     elseif status == MOI.FEASIBLE_POINT 
         model.cached_solution.has_feasible_point = true
