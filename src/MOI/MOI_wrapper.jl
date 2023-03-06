@@ -2736,9 +2736,9 @@ function MOI.optimize!(model::Optimizer)
     end
     start_time = time()
     if is_mip(model)
-        Xpress.mipoptimize(model.inner, model.solve_method)
+        Lib.XPRSmipoptimize(model.inner, model.solve_method)
     else
-        Xpress.lpoptimize(model.inner, model.solve_method)
+        Lib.XPRSlpoptimize(model.inner, model.solve_method)
     end
     model.cached_solution.solve_time = time() - start_time
     check_cb_exception(model)
