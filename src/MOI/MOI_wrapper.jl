@@ -2560,7 +2560,7 @@ function MOI.delete(
     row = _info(model, c).row
     idx = collect(row:row)
     numdel = length(idx)
-    delsets(model.inner, numdel, idx .- 1)
+    Lib.XPRSdelsets(model.inner, numdel, idx .- 1)
     for (key, info) in model.sos_constraint_info
         if info.row > row
             info.row -= 1
