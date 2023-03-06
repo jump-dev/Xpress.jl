@@ -1,12 +1,6 @@
 # Julia wrapper for header: xprs.h
 # Automatically generated using Clang.jl
 
-
-
-function addition(x,y)
-    return x+y
-end
-
 function XPRScopycallbacks(dest, src)
     ccall((:XPRScopycallbacks, libxprs), Cint, (XPRSprob, XPRSprob), dest, src)
 end
