@@ -806,7 +806,9 @@ function MOI.add_variable(model::Optimizer)
     info.index = index
     info.column = length(model.variable_info)
     Lib.XPRSaddcols(
-        model.inner,1,0,#length(_dbdl)::Int,length(_dmatval)::Int,
+        model.inner,
+        1,#length(_dbdl)::Int,
+        0,#length(_dmatval)::Int,
         [0.0],#_dobj::Vector{Float64},
         Cint[],#Cint.(_mrwind::Vector{Int}),
         Cint[],#Cint.(_mrstart::Vector{Int}), 
@@ -819,7 +821,9 @@ end
 
 function MOI.add_variables(model::Optimizer, N::Int)
     Lib.XPRSaddcols(
-        model.inner,N,0,#length(_dbdl)::Int,length(_dmatval)::Int,
+        model.inner,
+        N,#length(_dbdl)::Int,
+        0,#length(_dmatval)::Int,
         zeros(N),# _dobj::Vector{Float64},
         Cint[],#Cint.(_mrwind::Vector{Int}),
         Cint[],#Cint.(_mrstart::Vector{Int}), 
@@ -1085,14 +1089,18 @@ function MOI.set(
 )
     # TODO: should this propagate across a `MOI.empty!(optimizer)` call
     if sense == MOI.MIN_SENSE
-        Lib.XPRSchgobjsense(model.inner, Lib.XPRS_OBJ_MINIMIZE)
+        objsense=:Min
     elseif sense == MOI.MAX_SENSE
-        Lib.XPRSchgobjsense(model.inner, Lib.XPRS_OBJ_MAXIMIZE)
+        objsense=:Max
     else
         @assert sense == MOI.FEASIBILITY_SENSE
         _zero_objective(model)
-        Lib.XPRSchgobjsense(model.inner, Lib.XPRS_OBJ_MINIMIZE)
+        objsense=:Min
     end
+    v = objsense == :maximize || objsense == :Max || objsense == Lib.XPRS_OBJ_MAXIMIZE ? Lib.XPRS_OBJ_MAXIMIZE :
+    objsense == :minimize || objsense == :Min || objsense == Lib.XPRS_OBJ_MINIMIZE ? Lib.XPRS_OBJ_MINIMIZE :
+    throw(ArgumentError("Invalid objective sense: $objsense. It can only be `:maximize`, `:minimize`, `:Max`, `:Min`, `$(Lib.XPRS_OBJ_MAXIMIZE)`, or `$(Lib.XPRS_OBJ_MINIMIZE)`."))
+    Lib.XPRSchgobjsense(model.inner, v)
     model.objective_sense = sense
     return
 end
@@ -2013,7 +2021,9 @@ function MOI.add_constraint(
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
     Lib.XPRSaddrows(
-        model.inner,length([rhs]),Cint(length((indices))),#length(_drhs),Cint(length(_mclind)),
+        model.inner,
+        length([rhs]),#length(_drhs),
+        Cint(length((indices))),#Cint(length(_mclind)),
         [sense],#_srowtype,
         [rhs],#_drhs,
         C_NULL,#_drng,
@@ -2064,7 +2074,9 @@ function MOI.add_constraints(
     end
     pop!(row_starts)     
     Lib.XPRSaddrows(
-        model.inner,length(rhss),Cint(length(columns)),#length(_drhs),Cint(length(_mclind)),
+        model.inner,
+        length(rhss),#length(_drhs),
+        Cint(length(columns)),#Cint(length(_mclind)),
         senses,#_srowtype,
         rhss,#_drhs,
         C_NULL,#_drng,
@@ -2134,8 +2146,11 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
     rmatind = Array{Cint}(undef,  nzcnt)
     rmatval = Array{Float64}(undef,  nzcnt)
 
-    Lib.XPRSgetrows(model.inner,
-        rmatbeg,rmatind,rmatval,#_mstart,_mclind,_dmatval,
+    Lib.XPRSgetrows(
+        model.inner,
+        rmatbeg,#_mstart,
+        rmatind,#_mclind,
+        rmatval,#_dmatval,
         nzcnt,#maxcoeffs,
         zeros(Cint, 1),#temp,
         Cint(row- 1),#Cint(first-1)::Integer,
@@ -2349,8 +2364,10 @@ function MOI.add_constraint(
     cte = MOI.constant(f)[2]
     # a^T x + b <= c ===> a^T <= c - b
     sense, rhs = _sense_and_rhs(is.set)
-    Lib.XPRSaddrows(model.inner,
-        length([rhs-cte]),Cint(length((indices))),#length(_drhs),Cint(length(_mclind)),
+    Lib.XPRSaddrows(
+        model.inner,
+        length([rhs-cte]),#length(_drhs),
+        Cint(length((indices))),#Cint(length(_mclind)),
         [sense],#_srowtype,
         [rhs-cte],#_drhs,
         C_NULL,#_drng,
