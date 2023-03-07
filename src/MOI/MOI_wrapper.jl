@@ -3948,8 +3948,10 @@ end
 
 function getinfeasbounds(model::Optimizer)
     nvars = length(model.variable_info)
-    lbs = getlb(model.inner, 1, nvars)
-    ubs = getub(model.inner, 1, nvars)
+    lbs = Vector{Float64}(undef, 1)
+    Lib.XPRSgetlb(model.inner, lbs, Cint(0), Cint(nvars-1))
+    ubs = Vector{Float64}(undef, 1)
+    Lib.XPRSgetub(model.inner, ubs, Cint(0), Cint(nvars-1))
     check_bounds = lbs .<= ubs
     if sum(check_bounds) == nvars
         error("There was an error in computation")
