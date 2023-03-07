@@ -64,7 +64,7 @@ function default_moi_callback(model::Optimizer)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             # only allow one heuristic solution per LP optimal node
-            if Xpress.getintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
+            if Xpress.getintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE)> 1
                 return
             end
             model.heuristic_callback(cb_data)
