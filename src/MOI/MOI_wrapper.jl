@@ -2380,7 +2380,8 @@ function MOI.get(
 
     comps = Array{Cint}(undef, 1)
     inds = Array{Cint}(undef, 1)
-    Xpress.getindicators(model.inner, inds, comps, row, row)
+    Lib.XPRSgetindicators(model.inner, inds, comps, Cint(row-1), Cint(row-1))
+    inds .+= 1
     push!(terms,
             MOI.VectorAffineTerm(1,
                 MOI.ScalarAffineTerm(1.0,
