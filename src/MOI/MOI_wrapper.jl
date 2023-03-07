@@ -2388,7 +2388,9 @@ function MOI.get(
                 )
             )
         )
-    rhs = Xpress.getrhs(model.inner, row, row)[1]
+    _drhs=Vector{Float64}(undef, 1)
+    Lib.XPRSgetrhs(model.inner, _drhs, Cint(row-1), Cint(row-1))
+    rhs = _drhs[]
     val = - rhs + MOI.constant(info.set.set)
     return MOI.VectorAffineFunction(terms, [0.0,val])
 end
@@ -2676,7 +2678,8 @@ function MOI.optimize!(model::Optimizer)
     pre_solve_reset(model)
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
-    rhs = Xpress.getrhs(model.inner)
+    rhs = Vector{Float64}(undef, n_constraints(model.inner))
+    Lib.XPRSgetrhs(model.inner, rhs, Cint(0), Cint(n_constraints(model.inner)-1))
     if !model.ignore_start && is_mip(model)
         _update_MIP_start!(model)
     end
@@ -3564,7 +3567,8 @@ function MOI.set(
     else
         _replace_with_different_sparsity!(model, previous, replacement, row)
     end
-    rhs = Xpress.getrhs(model.inner, row, row)
+    rhs=Vector{Float64}(undef, 1)
+    Lib.XPRSgetrhs(model.inner, rhs, Cint(row-1), Cint(row-1))
     rhs[1] -= replacement.constant - previous.constant
     Lib.XPRSchgrhs(model.inner, Cint(1), Ref(Cint(row - 1)), Ref(rhs[]))
     return
