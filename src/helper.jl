@@ -63,36 +63,37 @@ mutable struct XpressProblem <: CWrapper
 end
 
 function get_xpress_error_message(prob::XpressProblem)
-    lstrip(Xpress.getlasterror(prob), ['?'])
+    last_error = @invoke Lib.XPRSgetlasterror(prob, _)::String 
+    lstrip(last_error, ['?'])
 end
 
 function XpressProblem(; logfile = "")
     ref = Ref{Lib.XPRSprob}()
-    createprob(ref)
+    Lib.XPRScreateprob(ref)
     @assert ref[] != C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
     p = XpressProblem(ref[], logfile = logfile)
     if logfile != ""
-        setlogfile(p, logfile)
+        Lib.XPRSsetlogfile(p, logfile)
     end
     return p
 end
 
-addcolnames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 2)
-addrownames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 1)
+#addcolnames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 2)
+#addrownames(prob::XpressProblem, names::Vector{String}) = addnames(prob, names, 1)
 
 function get_control_or_attribute(prob::XpressProblem, control::Integer)
     if control in INTEGER_CONTROLS_VALUES
-        return getintcontrol(prob, Int32(control))
+        return @invoke Lib.XPRSgetintcontrol(prob, Int32(control), _)::Int
     elseif control in DOUBLE_CONTROLS_VALUES
-        return getdblcontrol(prob, Int32(control))
+        return @invoke Lib.XPRSgetdblcontrol(prob, Int32(control), _)::Float64
     elseif control in STRING_CONTROLS_VALUES
-        return getstrcontrol(prob, Int32(control))
+        return @invoke Lib.XPRSgetstrcontrol(prob, Int32(control), _)::String
     elseif control in INTEGER_ATTRIBUTES_VALUES
-        return getintattrib(prob, Int32(control))
+        return @invoke Lib.XPRSgetintattrib(prob, Int32(control), _)::Int
     elseif control in DOUBLE_ATTRIBUTES_VALUES
-        return getdblattrib(prob, Int32(control))
+        return @invoke Lib.XPRSgetdblattrib(prob, Int32(control), _)::Float64
     elseif control in STRING_ATTRIBUTES_VALUES
-        return getstrattrib(prob, Int32(control))
+        return @invoke Lib.XPRSgetstrattrib(prob, Int32(control), _)::String
     else
         error("Unrecognized parameter: $(control).")
     end
@@ -100,27 +101,27 @@ end
 function get_control_or_attribute(prob::XpressProblem, control::String)
     control_index = get(INTEGER_CONTROLS, control, -1)
     if control_index != -1
-        return getintcontrol(prob, control_index)
+        return @invoke Lib.XPRSgetintcontrol(prob, Int32(control_index), _)::Int
     end
     control_index = get(DOUBLE_CONTROLS, control, -1)
     if control_index != -1
-        return getdblcontrol(prob, control_index)
+        return @invoke Lib.XPRSgetdblcontrol(prob, Int32(control_index), _)::Float64
     end
     control_index = get(STRING_CONTROLS, control, -1)
     if control_index != -1
-        return getstrcontrol(prob, control_index)
+        return @invoke Lib.XPRSgetstrcontrol(prob, Int32(control_index), _)::String
     end
     control_index = get(INTEGER_ATTRIBUTES, control, -1)
     if control_index != -1
-        return getintattrib(prob, control_index)
+        return @invoke Lib.XPRSgetintattrib(prob, control_index, _)::Int
     end
     control_index = get(DOUBLE_ATTRIBUTES, control, -1)
     if control_index != -1
-        return getdblattrib(prob, control_index)
+        return @invoke Lib.XPRSgetdblattrib(prob, control_index, _)::Float64
     end
     control_index = get(STRING_ATTRIBUTES, control, -1)
     if control_index != -1
-        return getstrattrib(prob, control_index)
+        return @invoke Lib.XPRSgetstrattrib(prob, control_index, _)::String
     end
     error("Unrecognized control parameter: $(control).")
 end
@@ -135,11 +136,11 @@ Get parameter of any type
 function getcontrol(prob::XpressProblem, control::Integer)
     # TODO: dispatch on Val(control) instead?
     if control in INTEGER_CONTROLS_VALUES
-        return getintcontrol(prob, Int32(control))
+        return @invoke Lib.XPRSgetintcontrol(prob, Int32(control), _)::Int
     elseif control in DOUBLE_CONTROLS_VALUES
-        return getdblcontrol(prob, Int32(control))
+        return @invoke Lib.XPRSgetdblcontrol(prob, Int32(control), _)::Float64
     elseif control in STRING_CONTROLS_VALUES
-        return getstrcontrol(prob, Int32(control))
+        return @invoke Lib.XPRSgetstrcontrol(prob, Int32(control), _)::String
     else
         error("Unrecognized control parameter: $(control).")
     end
@@ -147,15 +148,15 @@ end
 function getcontrol(prob::XpressProblem, control::String)
     control_index = get(INTEGER_CONTROLS, control, -1)
     if control_index != -1
-        return getintcontrol(prob, control_index)
+        return @invoke Lib.XPRSgetintcontrol(prob, Int32(control_index), _)::Int
     end
     control_index = get(DOUBLE_CONTROLS, control, -1)
     if control_index != -1
-        return getdblcontrol(prob, control_index)
+        return @invoke Lib.XPRSgetdblcontrol(prob, Int32(control_index), _)::Float64
     end
     control_index = get(STRING_CONTROLS, control, -1)
     if control_index != -1
-        return getstrcontrol(prob, control_index)
+        return @invoke Lib.XPRSgetstrcontrol(prob, Int32(control_index), _)::String
     end
     error("Unrecognized control parameter: $(control).")
 end
@@ -220,20 +221,21 @@ end
 
 # originals are more important to be used everywhere, presolved are actually
 # secondary
-n_variables(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALCOLS)
-n_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALROWS)
-n_special_ordered_sets(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALSETS)
-n_quadratic_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALQCONSTRAINTS)
-n_non_zero_elements(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ELEMS)
-n_quadratic_elements(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALQELEMS)
-n_quadratic_row_coefficients(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALQCELEMS)
-n_entities(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALMIPENTS)
-n_setmembers(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALSETMEMBERS)
+n_variables(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int
+n_constraints(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALROWS, _)::Int
+n_special_ordered_sets(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETS, _)::Int
+n_quadratic_constraints(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQCONSTRAINTS, _)::Int
+n_non_zero_elements(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ELEMS, _)::Int
+n_quadratic_elements(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQELEMS, _)::Int
+n_quadratic_row_coefficients(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQCELEMS, _)::Int
+n_entities(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALMIPENTS, _)::Int
+n_setmembers(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETMEMBERS, _)::Int
 
-n_original_variables(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALCOLS)
-n_original_constraints(prob::XpressProblem) = getintattrib(prob, Lib.XPRS_ORIGINALROWS)
+n_original_variables(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int
+n_original_constraints(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALROWS, _)::Int
 
-objective_sense(prob::XpressProblem) = getdblattrib(prob, Lib.XPRS_OBJSENSE) == Lib.XPRS_OBJ_MINIMIZE ? :minimize : :maximize
+obj_sense(prob::XpressProblem) = @invoke Lib.XPRSgetdblattrib(prob, Lib.XPRS_OBJSENSE_, _)::Float64
+objective_sense(prob::XpressProblem) = obj_sense(prob)  == Lib.XPRS_OBJ_MINIMIZE ? :minimize : :maximize
 
 # derived attribute functions
 

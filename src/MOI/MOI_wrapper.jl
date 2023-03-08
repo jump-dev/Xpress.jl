@@ -910,7 +910,7 @@ function MOI.set(
     info.name = name
     # Note: don't set the string names in the Xpress C API because it complains
     # on duplicate variables.
-    # That is, don't call `Xpress.addnames`.
+    # That is, don't call `Lib.XPRSaddnames`.
     model.name_to_variable = nothing
     return
 end
@@ -2209,7 +2209,7 @@ function MOI.set(
     info.name = name
     # Note: don't set the string names in the Xpress C API because it complains
     # on duplicate contraints.
-    # That is, don't call `Xpress.addnames`.
+    # That is, don't call `Lib.XPRsaddnames`.
     model.name_to_constraint_index = nothing
     return
 end
