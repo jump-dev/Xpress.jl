@@ -44,7 +44,7 @@ end
 function applycuts(opt::Optimizer, model::XpressProblem)
     itype = Cint(1)
     interp = Cint(-1) # Get all cuts
-    delta = 0.0#Xpress.Lib.XPRS_MINUSINFINITY
+    delta = 0.0#Lib.XPRS_MINUSINFINITY
     ncuts = Array{Cint}(undef,1)
     size = Cint(length(opt.cb_cut_data.cutptrs))
     mcutptr = Array{Lib.XPRScut}(undef,size)
@@ -64,7 +64,8 @@ function default_moi_callback(model::Optimizer)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             # only allow one heuristic solution per LP optimal node
-            if Xpress.getintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE)> 1
+            cb_count=@invoke Lib.XPRSgetintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE,_)::Int
+            if cb_count > 1
                 return
             end
             model.heuristic_callback(cb_data)
@@ -81,7 +82,8 @@ function default_moi_callback(model::Optimizer)
             # only allow one user cut solution per LP optimal node
             # limiting two calls to guarantee th user has a chance to add
             # a cut. if the user cut is loose the problem will be resolved anyway.
-            if Xpress.getintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE)> 2
+            cb_count=@invoke Lib.XPRSgetintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE,_)::Int
+            if cb_count> 2
                 return
             end
             model.user_cut_callback(cb_data)
@@ -105,7 +107,7 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.CallbackNodeStatus{CallbackData})
     if check_moi_callback_validity(model)
-        mip_infeas = Xpress.getintattrib(attr.callback_data.model, Xpress.Lib.XPRS_MIPINFEAS)
+        mip_infeas = @invoke Lib.XPRSgetintattrib(attr.callback_data.model, Lib.XPRS_MIPINFEAS,_)::Int
         if mip_infeas == 0
             return MOI.CALLBACK_NODE_STATUS_INTEGER
         elseif mip_infeas > 0
@@ -178,7 +180,7 @@ function MOI.submit(
 
     mtype = Int32[1] # Cut type
     mstart = Int32[0, length(indices)]
-    mindex  = Array{Xpress.Lib.XPRScut}(undef,1)
+    mindex  = Array{Lib.XPRScut}(undef,1)
     ncuts = Cint(1)
     ncuts_ptr = Cint[0]
     nodupl = Cint(2) # Duplicates are excluded from the cut pool, ignoring cut type

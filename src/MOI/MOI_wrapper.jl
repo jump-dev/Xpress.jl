@@ -932,9 +932,9 @@ MOI.is_set_by_optimize(::ForwardSensitivityOutputVariable) = true
 MOI.is_set_by_optimize(::BackwardSensitivityOutputConstraint) = true
 
 function forward(model::Optimizer)
-    rows = Xpress.getintattrib(model.inner, Lib.XPRS_ROWS)
-    spare_rows = Xpress.getintattrib(model.inner, Lib.XPRS_SPAREROWS)
-    cols = Xpress.getintattrib(model.inner, Lib.XPRS_COLS)
+    rows = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ROWS, _)::Int
+    spare_rows = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_SPAREROWS, _)::Int
+    cols = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_COLS, _)::Int
 
     #1 - Create vector 'aux_vector' of size ROWS of type Float64 (constraints)
     aux_vector = copy(model.forward_sensitivity_cache.input)
@@ -963,9 +963,9 @@ function forward(model::Optimizer)
 end
 
 function backward(model::Optimizer)
-    rows = Xpress.getintattrib(model.inner, Lib.XPRS_ROWS)
-    spare_rows = Xpress.getintattrib(model.inner, Lib.XPRS_SPAREROWS)
-    cols = Xpress.getintattrib(model.inner, Lib.XPRS_COLS)
+    rows = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ROWS, _)::Int
+    spare_rows = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_SPAREROWS, _)::Int
+    cols = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_COLS, _)::Int
 
     #1 - Get Basic variables
     basic_variables_ordered = Vector{Int32}(undef, rows)
@@ -997,8 +997,8 @@ end
 function MOI.set(
     model::Optimizer, ::ForwardSensitivityInputConstraint, ci::MOI.ConstraintIndex, value::Float64
 )
-    rows = Xpress.getintattrib(model.inner, Lib.XPRS_ROWS)
-    cols = Xpress.getintattrib(model.inner, Lib.XPRS_COLS)
+    rows = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ROWS, _)::Int
+    cols = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_COLS, _)::Int
     if model.forward_sensitivity_cache === nothing
         model.forward_sensitivity_cache = 
             SensitivityCache(
@@ -1034,8 +1034,8 @@ end
 function MOI.set(
     model::Optimizer, ::BackwardSensitivityInputVariable, vi::MOI.VariableIndex, value::Float64
 )
-    rows = Xpress.getintattrib(model.inner, Lib.XPRS_ROWS)
-    cols = Xpress.getintattrib(model.inner, Lib.XPRS_COLS)
+    rows = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ROWS, _)::Int
+    cols = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_COLS, _)::Int
     if model.backward_sensitivity_cache === nothing
         model.backward_sensitivity_cache = 
             SensitivityCache(
@@ -2763,19 +2763,19 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
     _throw_if_optimize_in_progress(model, attr)
-    stop = Xpress.getintattrib(model.inner, Lib.XPRS_STOPSTATUS)
+    stop = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
     stop_str = STOPSTATUS_STRING[stop]
     if is_mip(model)
-        stat = Xpress.getintattrib(model.inner, Lib.XPRS_MIPSTATUS)
+        stat = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSTATUS, _)::Int
         return Xpress.MIPSTATUS_STRING[stat] * " - " * stop_str
     else
-        stat = Xpress.getintattrib(model.inner, Lib.XPRS_LPSTATUS)
+        stat = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_LPSTATUS, _)::Int
         return Xpress.LPSTATUS_STRING[stat] * " - " * stop_str
     end
 end
 
 function _cache_termination_status(model::Optimizer)
-    stop = Xpress.getintattrib(model.inner, Lib.XPRS_STOPSTATUS)
+    stop = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
     if stop != Lib.XPRS_STOP_NONE
         if stop == Lib.XPRS_STOP_TIMELIMIT
             return MOI.TIME_LIMIT
@@ -2788,7 +2788,7 @@ function _cache_termination_status(model::Optimizer)
         elseif stop == Lib.XPRS_STOP_MIPGAP
             stat = Lib.XPRS_MIP_NOT_LOADED
             if is_mip(model)
-                stat = Xpress.getintattrib(model.inner, Lib.XPRS_MIPSTATUS)
+                stat = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSTATUS, _)::Int
                 if stat == Lib.XPRS_MIP_OPTIMAL
                     return MOI.OPTIMAL
                 else
@@ -2815,7 +2815,7 @@ function _cache_termination_status(model::Optimizer)
         =#
     end # else:
     if is_mip(model)
-        stat = Xpress.getintattrib(model.inner, Lib.XPRS_MIPSTATUS)
+        stat = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSTATUS, _)::Int
         if stat == Lib.XPRS_MIP_NOT_LOADED
             return MOI.OPTIMIZE_NOT_CALLED
         elseif stat == Lib.XPRS_MIP_LP_NOT_OPTIMAL # is a STOP
@@ -2849,7 +2849,7 @@ function _cache_termination_status(model::Optimizer)
             unbounded. A solution may have been found (XPRS_MIP_UNBOUNDED).
         =#
     else
-        stat = Xpress.getintattrib(model.inner, Lib.XPRS_LPSTATUS)
+        stat = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_LPSTATUS, _)::Int
         if stat == Lib.XPRS_LP_UNSTARTED
             return MOI.OPTIMIZE_NOT_CALLED
         elseif stat == Lib.XPRS_LP_OPTIMAL
@@ -2916,7 +2916,7 @@ function _cache_primal_status(model)
             return MOI.INFEASIBILITY_CERTIFICATE
         end
     elseif is_mip(model)
-        stat = Xpress.getintattrib(model.inner, Lib.XPRS_MIPSTATUS)
+        stat = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSTATUS, _)::Int
         if stat == Lib.XPRS_MIP_NOT_LOADED
             return MOI.NO_SOLUTION
         elseif stat == Lib.XPRS_MIP_LP_NOT_OPTIMAL # - is a STOP
