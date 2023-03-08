@@ -1171,7 +1171,7 @@ function MOI.get(
         iszero(coefficient) && continue
         push!(terms, MOI.ScalarAffineTerm(coefficient, index))
     end
-    constant = Xpress.getdblattrib(model.inner, Lib.XPRS_OBJRHS)
+    constant = @invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_OBJRHS, _)::Float64
     return MOI.ScalarAffineFunction(terms, constant)
 end
 
@@ -1236,7 +1236,7 @@ function MOI.get(
         )
     end
     affine_terms = MOI.get(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}()).terms
-    constant = Xpress.getdblattrib(model.inner, Lib.XPRS_OBJRHS)
+    constant = @invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_OBJRHS, _)::Float64
     return MOI.ScalarQuadraticFunction(q_terms, affine_terms, constant)
 end
 
@@ -2936,7 +2936,8 @@ function _cache_primal_status(model)
         end
     end
     if is_mip(model)
-        if Xpress.getintattrib(model.inner, Lib.XPRS_MIPSOLS) > 0
+        mip_sols = @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSOLS, _)::Int
+        if mip_sols > 0
             return MOI.FEASIBLE_POINT
         end
     end
@@ -3157,18 +3158,18 @@ function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
     if is_mip(model)
-        return Xpress.getdblattrib(model.inner, Lib.XPRS_MIPOBJVAL)
+        return @invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_MIPOBJVAL, _)::Float64
     else
-        return Xpress.getdblattrib(model.inner, Lib.XPRS_LPOBJVAL)
+        return @invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_LPOBJVAL, _)::Float64
     end
 end
 
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveBound)
     _throw_if_optimize_in_progress(model, attr)
     if is_mip(model)
-        return Xpress.getdblattrib(model.inner, Lib.XPRS_BESTBOUND)
+        return @invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_BESTBOUND, _)::Float64
     else
-        return Xpress.getdblattrib(model.inner, Lib.XPRS_LPOBJVAL)
+        return @invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_LPOBJVAL, _)::Float64
     end
 end
 
@@ -3179,17 +3180,17 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.SimplexIterations)
     _throw_if_optimize_in_progress(model, attr)
-    return Xpress.getintattrib(model.inner, Lib.XPRS_SIMPLEXITER)
+    return @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_SIMPLEXITER, _)::Int
 end
 
 function MOI.get(model::Optimizer, attr::MOI.BarrierIterations)
     _throw_if_optimize_in_progress(model, attr)
-    return Xpress.getintattrib(model.inner, Lib.XPRS_BARITER)
+    return @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_BARITER, _)::Int
 end
 
 function MOI.get(model::Optimizer, attr::MOI.NodeCount)
     _throw_if_optimize_in_progress(model, attr)
-    return Xpress.getintattrib(model.inner, Lib.XPRS_NODES)
+    return @invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_NODES, _)::Int
 end
 
 function MOI.get(model::Optimizer, attr::MOI.RelativeGap)
