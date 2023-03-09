@@ -20,7 +20,7 @@ Xpress.jl/scripts/build_param_control_dicts.jl
 
 Last build: $(now())
 
-$("Optimizer version: $(Xpress.invoke(Xpress.Lib.XPRSgetversion, 2, String))")
+$("Optimizer version: $(VersionNumber(parse.(Int, split(Xpress.invoke(Xpress.Lib.XPRSgetversion, 2, String), "."))...))")
 
 Banner from lib:
 $(Xpress.invoke(Xpress.Lib.XPRSgetbanner, 2, String))
