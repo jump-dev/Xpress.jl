@@ -3,7 +3,6 @@ using MathOptInterface
 using Random
 using Test
 
-using .Xpress: @invoke
 const MOI = MathOptInterface
 
 function callback_simple_model()
