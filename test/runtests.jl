@@ -1,8 +1,8 @@
 using Test
 using Xpress
 
-println(Xpress.getbanner())
-println("Optimizer version: $(Xpress.getversion())")
+println(Xpress.invoke(Xpress.Lib.XPRSgetbanner, 2, String))
+println("Optimizer version: $(Xpress.invoke(Xpress.Lib.XPRSgetversion, 2, String))")
 
 @testset "$(folder)" for folder in [
     "MathOptInterface",
