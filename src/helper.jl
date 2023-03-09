@@ -234,7 +234,7 @@ n_setmembers(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_
 n_original_variables(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int
 n_original_constraints(prob::XpressProblem) = @invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALROWS, _)::Int
 
-obj_sense(prob::XpressProblem) = @invoke Lib.XPRSgetdblattrib(prob, Lib.XPRS_OBJSENSE_, _)::Float64
+obj_sense(prob::XpressProblem) = @invoke Lib.XPRSgetdblattrib(prob, Lib.XPRS_OBJSENSE, _)::Float64
 objective_sense(prob::XpressProblem) = obj_sense(prob)  == Lib.XPRS_OBJ_MINIMIZE ? :minimize : :maximize
 
 # derived attribute functions
