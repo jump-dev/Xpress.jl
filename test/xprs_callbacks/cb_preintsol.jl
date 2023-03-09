@@ -34,9 +34,9 @@ function foo(cb::Xpress.CallbackData)
 
     cb.data[1] = 98
 
-    cols = Xpress.getintattrib(cb.model,Xpress.Lib.XPRS_COLS)
-    rows = Xpress.getintattrib(cb.model,Xpress.Lib.XPRS_ROWS)
-    Xpress.getdblattrib(cb.model, Xpress.Lib.XPRS_BESTBOUND)
+    cols = Xpress.invoke(Xpress.Lib.XPRSgetintattrib, 4, Int, cb.model, Xpress.Lib.XPRS_COLS)
+    rows = Xpress.invoke(Xpress.Lib.XPRSgetintattrib, 4, Int, cb.model, Xpress.Lib.XPRS_ROWS)
+    Xpress.invoke(Xpress.Lib.XPRSgetdblattrib, 4, Float64, cb.model, Xpress.Lib.XPRS_BESTBOUND)
 
     ans_variable_primal = Vector{Float64}(undef,Int(cols))
     ans_linear_primal = Vector{Float64}(undef,Int(cols))

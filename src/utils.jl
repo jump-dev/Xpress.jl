@@ -140,9 +140,3 @@ macro checked(expr)
         end
     end)
 end
-
-exprstr = "Xpress.Lib.XPRSgetintattrib(model.inner, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE, _)::Int"
-
-
-expr=Base.Meta.parse(exprstr)
-:(Xpress.Lib.XPRSgetintattrib(model.inner, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE, _)::Int)
