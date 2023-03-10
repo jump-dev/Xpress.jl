@@ -261,8 +261,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     heuristic_callback::Union{Nothing, Function}
 
     has_generic_callback::Bool
-    callback_data::Union{Nothing, Tuple{Ptr{Nothing}, _CallbackUserData}}
-    message_callback::Union{Nothing, Tuple{Ptr{Nothing}, _CallbackUserData}}
+    callback_data::Union{Nothing, Tuple{Ptr{Nothing}, UserCallbackData}}
+    message_callback::Union{Nothing, Tuple{Ptr{Nothing}, UserCallbackData}}
 
     params::Dict{Any, Any}
     """

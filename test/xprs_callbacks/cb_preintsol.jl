@@ -10,7 +10,7 @@ function callback_simple_model()
         CUTSTRATEGY = 0,
         HEURSTRATEGY = 0,
         SYMMETRY = 0,
-        OUTPUTLOG = 0
+        OUTPUTLOG = 0,
     )
 
     MOI.Utilities.loadfromstring!(model, """
@@ -21,39 +21,48 @@ function callback_simple_model()
         c3: x in Interval(0.0, 2.5)
         c4: y in Interval(0.0, 2.5)
     """)
+
     x = MOI.get(model, MOI.VariableIndex, "x")
     y = MOI.get(model, MOI.VariableIndex, "y")
-    return model, x, y
+
+    return (model, x, y)
 end
 
-model, x, y = callback_simple_model()
+function foo(callback_data::Xpress.CallbackData)
+    callback_data.data[1] = 98
 
-data = Matrix(1.0I, 3, 3)
+    cols = Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_COLS)
+    rows = Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_ROWS)
 
-function foo(cb::Xpress.CallbackData)
+    Xpress.getdblattrib(callback_data.node_model, Xpress.Lib.XPRS_BESTBOUND)
 
-    cb.data[1] = 98
+    ans_variable_primal = Vector{Float64}(undef, Int(cols))
+    ans_linear_primal   = Vector{Float64}(undef, Int(cols))
 
-    cols = Xpress.getintattrib(cb.model,Xpress.Lib.XPRS_COLS)
-    rows = Xpress.getintattrib(cb.model,Xpress.Lib.XPRS_ROWS)
-    Xpress.getdblattrib(cb.model, Xpress.Lib.XPRS_BESTBOUND)
-
-    ans_variable_primal = Vector{Float64}(undef,Int(cols))
-    ans_linear_primal = Vector{Float64}(undef,Int(cols))
-
-    Xpress.Lib.XPRSgetlpsol(cb.model,
+    Xpress.Lib.XPRSgetlpsol(
+        callback_data.node_model,
         ans_variable_primal,
         ans_linear_primal,
-        C_NULL, C_NULL)
+        C_NULL,
+        C_NULL,
+    )
 
     return
 end
 
-func_ptr, data_ptr = Xpress.set_callback_preintsol!(model.inner, foo, data)
+@testset "preintsol" begin
+    let 
+        model, x, y = callback_simple_model()
 
-@test data[1] == 1
-MOI.optimize!(model)
-@test data[1] == 98
+        data = Matrix(1.0I, 3, 3)
 
-@test typeof(data_ptr) <: Any
-@test typeof(func_ptr) <: Ptr{Cvoid}
+        func_ptr, data_ptr = Xpress.set_callback_preintsol!(model.inner, foo, data)
+
+        @test data[1] == 1
+        MOI.optimize!(model)
+        @test data[1] == 98
+
+        @test typeof(data_ptr) <: Any
+        @test typeof(func_ptr) <: Ptr{Cvoid}
+    end
+end
