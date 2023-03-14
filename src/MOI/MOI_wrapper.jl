@@ -4121,3 +4121,40 @@ function MOI.write_to_file(model::Optimizer, name::String)
         Xpress.writeprob(model.inner, name, "l")
     end
 end
+
+function get_name(v::Xpress.VariableInfo)
+    return v.name
+end
+
+function get_name(c::Xpress.ConstraintInfo)
+    return c.name
+end
+
+function get_column(c::Xpress.VariableInfo)
+    return c.column
+end
+
+function get_row(v::Xpress.ConstraintInfo)
+    return v.row
+end
+
+function add_names_to_xpress_problem(model::Xpress.Optimizer)
+
+    # variables
+    variable_infos = model.variable_info |> values |> collect
+    for variable in variable_infos
+        if !isempty(get_name(variable))
+            Xpress.Lib.XPRSaddnames(model.inner, Cint(2), get_name(variable) * "\0", Cint(get_column(variable)-1), Cint(get_column(variable)-1))
+        end
+    end
+
+    # constraints
+    constraint_infos = model.affine_constraint_info |> values |> collect
+    for constraint in constraint_infos
+        if !isempty(get_name(constraint))
+            Xpress.Lib.XPRSaddnames(model.inner, Cint(1), get_name(constraint) * "\0", Cint(get_row(constraint) - 1), Cint(get_row(constraint) - 1))
+        end
+    end
+
+    return nothing
+end
