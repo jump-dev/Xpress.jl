@@ -3,10 +3,9 @@
     error("Versions 1.1.x of julia are not supported. The current verions is $(VERSION)")
 end
 
-import MathOptInterface
+import MathOptInterface as MOI
 using SparseArrays
 
-const MOI = MathOptInterface
 const CleverDicts = MOI.Utilities.CleverDicts
 
 @enum(
@@ -43,15 +42,6 @@ const CleverDicts = MOI.Utilities.CleverDicts
     SINGLE_VARIABLE,
     SCALAR_AFFINE,
     SCALAR_QUADRATIC,
-)
-
-@enum(
-    CallbackState,
-    CB_NONE,
-    CB_GENERIC,
-    CB_LAZY,
-    CB_USER_CUT,
-    CB_HEURISTIC,
 )
 
 const SCALAR_SETS = Union{
@@ -146,11 +136,6 @@ mutable struct CachedSolution
     solve_time::Float64
 end
 
-mutable struct CallbackCutData
-    submitted::Bool
-    cutptrs::Vector{Xpress.Lib.XPRScut}
-end
-
 mutable struct BasisStatus
     con_status::Vector{Cint}
     var_status::Vector{Cint}
@@ -173,6 +158,8 @@ mutable struct IISData
     colbndtype::Vector{UInt8} # sense of the column bounds that participate
 end
 
+include("../callbacks/interface.jl")
+
 mutable struct Optimizer <: MOI.AbstractOptimizer
     # The low-level Xpress model.
     inner::XpressProblem
@@ -183,6 +170,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # A flag to keep track of MOI.Silent, which over-rides the OUTPUTLOG
     # parameter.
     log_level::Int32
+
     # option to show warnings in Windows
     show_warning::Bool
 
@@ -210,7 +198,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         VariableInfo,
         typeof(CleverDicts.key_to_index),
         typeof(CleverDicts.index_to_key),
-        }
+    }
 
     # An index that is incremented for each new constraint (regardless of type).
     # We can check if a constraint is valid by checking if it is in the correct
@@ -250,21 +238,16 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     forward_sensitivity_cache::Union{Nothing, SensitivityCache}
     backward_sensitivity_cache::Union{Nothing, SensitivityCache}
 
-    # Callback fields.
+    # Callback fields
+    callback_info::Dict{Symbol,Union{CallbackInfo,Nothing}}
+
     callback_cached_solution::Union{Nothing, CachedSolution}
-    cb_cut_data::CallbackCutData
+    callback_cut_data::CallbackCutData
     callback_state::CallbackState
-    cb_exception::Union{Nothing, Exception}
-
-    lazy_callback::Union{Nothing, Function}
-    user_cut_callback::Union{Nothing, Function}
-    heuristic_callback::Union{Nothing, Function}
-
-    has_generic_callback::Bool
-    callback_data::Union{Nothing, Tuple{Ptr{Nothing}, UserCallbackData}}
-    message_callback::Union{Nothing, Tuple{Ptr{Nothing}, UserCallbackData}}
+    callback_exception::Union{Nothing, Exception}
 
     params::Dict{Any, Any}
+
     """
         Optimizer()
 
@@ -283,8 +266,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.solve_method = ""
         model.solve_relaxation = false
 
-        model.message_callback = nothing
-
         model.termination_status = MOI.OPTIMIZE_NOT_CALLED
         model.primal_status = MOI.NO_SOLUTION
         model.dual_status = MOI.NO_SOLUTION
@@ -298,6 +279,15 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
 
+        model.callback_info = Dict{Symbol,Union{CallbackInfo,Nothing}}(
+            :moi_heuristic       => nothing,
+            :moi_lazy_constraint => nothing,
+            :moi_user_cut        => nothing,
+            :xprs_message        => nothing,
+            :xprs_optnode        => nothing,
+            :xprs_preintsol      => nothing,
+        )
+
         MOI.empty!(model)  # inner is initialized here
 
         return model
@@ -307,7 +297,6 @@ end
 Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 
 function MOI.empty!(model::Optimizer)
-
     model.inner = XpressProblem()
 
     for (name, value) in model.params
@@ -346,21 +335,22 @@ function MOI.empty!(model::Optimizer)
     model.primal_status = MOI.NO_SOLUTION
     model.dual_status = MOI.NO_SOLUTION
 
+    model.callback_info = Dict{Symbol,Union{CallbackInfo,Nothing}}(
+        :moi_heuristic       => nothing,
+        :moi_lazy_constraint => nothing,
+        :moi_user_cut        => nothing,
+        :xprs_message        => nothing,
+        :xprs_optnode        => nothing,
+        :xprs_preintsol      => nothing,
+    )
+
     model.callback_cached_solution = nothing
-    model.cb_cut_data = CallbackCutData(false, Array{Xpress.Lib.XPRScut}(undef,0))
-    model.callback_state = CB_NONE
-    model.cb_exception = nothing
+    model.callback_cut_data = CallbackCutData(false, Array{Xpress.Lib.XPRScut}(undef,0))
+    model.callback_state = CS_NONE
+    model.callback_exception = nothing
 
     model.forward_sensitivity_cache = nothing
     model.backward_sensitivity_cache = nothing
-
-    model.lazy_callback = nothing
-    model.user_cut_callback = nothing
-    model.heuristic_callback = nothing
-
-    model.has_generic_callback = false
-    model.callback_data = nothing
-    # model.message_callback = nothing
 
     for (name, value) in model.params
         MOI.set(model, name, value)
@@ -387,10 +377,11 @@ function MOI.is_empty(model::Optimizer)
     model.primal_status != MOI.NO_SOLUTION && return false
     model.dual_status != MOI.NO_SOLUTION && return false
     
+    any(!isnothing, values(model.callback_info)) && return false
     model.callback_cached_solution !== nothing && return false
-    # model.cb_cut_data !== nothing && return false
-    model.callback_state != CB_NONE && return false
-    model.cb_exception !== nothing && return false
+    model.callback_cut_data !== nothing && return false
+    model.callback_state != CS_NONE && return false
+    model.callback_exception !== nothing && return false
 
     model.lazy_callback !== nothing && return false
     model.user_cut_callback !== nothing && return false
@@ -405,7 +396,11 @@ function MOI.is_empty(model::Optimizer)
     return true
 end
 
-function reset_cached_solution(model::Optimizer)
+include("../callbacks/generic.jl")
+include("../callbacks/XPRS_callbacks.jl")
+include("../callbacks/MOI_callbacks.jl")
+
+function reset_cached_solution!(model::Optimizer)
     num_variables = length(model.variable_info)
     num_affine = length(model.affine_constraint_info)
     if model.cached_solution === nothing
@@ -431,34 +426,6 @@ function reset_cached_solution(model::Optimizer)
     end
     return model.cached_solution
 end
-
-function reset_callback_cached_solution(model::Optimizer)
-    num_variables = length(model.variable_info)
-    num_affine = length(model.affine_constraint_info)
-    if model.callback_cached_solution === nothing
-        model.callback_cached_solution = CachedSolution(
-            fill(NaN, num_variables),
-            fill(NaN, num_variables),
-            fill(NaN, num_affine),
-            fill(NaN, num_affine),
-            false,
-            false,
-            false,
-            NaN
-        )
-    else
-        resize!(model.callback_cached_solution.variable_primal, num_variables)
-        resize!(model.callback_cached_solution.variable_dual, num_variables)
-        resize!(model.callback_cached_solution.linear_primal, num_affine)
-        resize!(model.callback_cached_solution.linear_dual, num_affine)
-        model.callback_cached_solution.has_primal_certificate = false
-        model.callback_cached_solution.has_dual_certificate = false
-        model.callback_cached_solution.has_feasible_point = false
-        model.callback_cached_solution.solve_time = NaN
-    end
-    return model.callback_cached_solution
-end
-
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Xpress"
 
@@ -568,7 +535,7 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
             Xpress.setlogfile(model.inner, value)
         end
         model.inner.logfile = value
-        reset_message_callback(model)
+        reset_message_callback!(model)
     elseif param == MOI.RawOptimizerAttribute("MOI_POST_SOLVE")
         model.post_solve = value
     elseif param == MOI.RawOptimizerAttribute("MOI_IGNORE_START")
@@ -580,27 +547,15 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
         model.solve_method = value
     elseif param == MOI.RawOptimizerAttribute("XPRESS_WARNING_WINDOWS")
         model.show_warning = value
-        reset_message_callback(model)
+        reset_message_callback!(model)
     elseif param == MOI.RawOptimizerAttribute("OUTPUTLOG")
         model.log_level = value
         Xpress.setcontrol!(model.inner, "OUTPUTLOG", value)
-        reset_message_callback(model)
+        reset_message_callback!(model)
     else
         Xpress.setcontrol!(model.inner, param.name, value)
     end
     return
-end
-
-function reset_message_callback(model)
-    if model.message_callback !== nothing
-        # remove all message callbacks
-        removecbmessage(model.inner, C_NULL, C_NULL)
-        model.message_callback = nothing
-    end
-    if model.inner.logfile == "" &&    # no file -> screen
-           model.log_level != 0        # has log
-        model.message_callback = setoutputcb!(model.inner, model.show_warning)
-    end
 end
 
 function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
@@ -2510,31 +2465,18 @@ end
 ### Optimize methods.
 ###
 
-function check_moi_callback_validity(model::Optimizer)
-    has_moi_callback =
-        model.lazy_callback !== nothing ||
-        model.user_cut_callback !== nothing ||
-        model.heuristic_callback !== nothing
-    if has_moi_callback && model.has_generic_callback
-        error(
-            "Cannot use Xpress.CallbackFunction as well as " *
-            "MOI.AbstractCallbackFunction"
-        )
-    end
-    return has_moi_callback
-end
-
 # TODO alternatively do like Gurobi.jl and wrap all callbacks in a try/catch block
 function pre_solve_reset(model::Optimizer)
     model.basis_status = nothing
-    model.cb_exception = nothing
-    reset_cached_solution(model)
+    model.callback_exception = nothing
+    reset_cached_solution!(model)
     return
 end
-function check_cb_exception(model::Optimizer)
-    if model.cb_exception !== nothing
-        e = model.cb_exception
-        model.cb_exception = nothing
+
+function check_callback_exception(model::Optimizer)
+    if model.callback_exception !== nothing
+        e = model.callback_exception
+        model.callback_exception = nothing
         throw(e)
     end
     return
@@ -2603,14 +2545,10 @@ end
 
 function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
-    if check_moi_callback_validity(model)
-        if model.moi_warnings && Xpress.getcontrol(model.inner,Xpress.Lib.XPRS_HEURSTRATEGY) != 0
-            @warn "Callbacks in XPRESS might not work correctly with HEURSTRATEGY != 0"
-        end
-        MOI.set(model, CallbackFunction(), default_moi_callback(model))
-        model.has_generic_callback = false # because it is set as true in the above
-    end
+    initialize_callback_interface!(model)
+
     pre_solve_reset(model)
+    
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
     rhs = Xpress.getrhs(model.inner)
@@ -2624,7 +2562,7 @@ function MOI.optimize!(model::Optimizer)
         Xpress.lpoptimize(model.inner, model.solve_method)
     end
     model.cached_solution.solve_time = time() - start_time
-    check_cb_exception(model)
+    check_callback_exception(model)
 
     if is_mip(model)
         Xpress.Lib.XPRSgetmipsol(
@@ -2672,7 +2610,7 @@ function MOI.optimize!(model::Optimizer)
 end
 
 function _throw_if_optimize_in_progress(model, attr)
-    if model.callback_state != CB_NONE
+    if model.callback_state != CS_NONE
         throw(MOI.OptimizeInProgress(attr))
     end
 end
@@ -4045,18 +3983,9 @@ function MOI.supports(
     return true
 end
 
-include("MOI_callbacks.jl")
-
-function extension(str::String)
-    try
-        match(r"\.[A-Za-z0-9]+$", str).match
-    catch
-        ""
-    end
-end
-
 function MOI.write_to_file(model::Optimizer, name::String)
-    ext = extension(name)
+    _, ext = splitext(name)
+
     if ext == ".lp"
         Xpress.writeprob(model.inner, name, "l")
     elseif ext == ".mps"
