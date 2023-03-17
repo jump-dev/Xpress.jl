@@ -323,7 +323,7 @@ function MOI.empty!(model::Optimizer)
     log_level = model.log_level
     log_level != 0 && MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
     # silently load a empty model - to avoid useless printing
-    Lib.XPRSloadlp(model.inner,"", 0, 0, Cchar[], Float64[], Float64[], Float64[], Int[], Int[], Int[], Float64[], Float64[],Float64[])
+    Lib.XPRSloadlp(model.inner, "", 0, 0, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
     # re-enable logging
     log_level != 0 && MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), log_level)
 
@@ -809,12 +809,12 @@ function MOI.add_variable(model::Optimizer)
         model.inner,
         1,#length(_dbdl)::Int,
         0,#length(_dmatval)::Int,
-        [0.0],#_dobj::Vector{Float64},
-        Cint[],#Cint.(_mrwind::Vector{Int}),
-        Cint[],#Cint.(_mrstart::Vector{Int}), 
-        Float64[],#_dmatval::Vector{Float64},
-        [-Inf],#_dbdl::Vector{Float64},
-        [Inf],#_dbdu::Vector{Float64}
+        Ref(0.0),#_dobj::Vector{Float64},
+        C_NULL,#Cint.(_mrwind::Vector{Int}),
+        C_NULL,#Cint.(_mrstart::Vector{Int}), 
+        C_NULL,#_dmatval::Vector{Float64},
+        Ref(-Inf),#_dbdl::Vector{Float64},
+        Ref(Inf),#_dbdu::Vector{Float64}
     )
     return index
 end
@@ -825,9 +825,9 @@ function MOI.add_variables(model::Optimizer, N::Int)
         N,#length(_dbdl)::Int,
         0,#length(_dmatval)::Int,
         zeros(N),# _dobj::Vector{Float64},
-        Cint[],#Cint.(_mrwind::Vector{Int}),
-        Cint[],#Cint.(_mrstart::Vector{Int}), 
-        Float64[],# _dmatval::Vector{Float64},
+        C_NULL,#Cint.(_mrwind::Vector{Int}),
+        C_NULL,#Cint.(_mrstart::Vector{Int}), 
+        C_NULL,# _dmatval::Vector{Float64},
         fill(-Inf, N),# _dbdl::Vector{Float64},
         fill(Inf, N),# _dbdu::Vector{Float64}
     )
@@ -856,7 +856,7 @@ function MOI.delete(model::Optimizer, v::MOI.VariableIndex)
     if info.num_soc_constraints > 0
         throw(MOI.DeleteNotAllowed(v))
     end
-    Lib.XPRSdelcols(model.inner, length([info.column]),[info.column].- 1)
+    Lib.XPRSdelcols(model.inner, 1, Ref(info.column - 1))
     delete!(model.variable_info, v)
     for other_info in values(model.variable_info)
         if other_info.column > info.column
@@ -1079,7 +1079,7 @@ function _zero_objective(model::Optimizer)
         # We need to zero out the existing quadratic objective.
         Lib.XPRSdelqmatrix(model.inner, -1)
     end
-    Lib.XPRSchgobj(model.inner, Cint(length(obj)), Cint.(collect(1:num_vars).- 1), obj)
+    Lib.XPRSchgobj(model.inner, Cint(num_vars), collect(Cint(0):Cint(num_vars-1)), obj)
     Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(0.0))
     return
 end
@@ -1149,7 +1149,7 @@ function MOI.set(
         column = _info(model, term.variable).column
         obj[column] += term.coefficient
     end
-    Lib.XPRSchgobj(model.inner, Cint(length(obj)), Cint.(collect(1:num_vars).-= 1), obj)
+    Lib.XPRSchgobj(model.inner, Cint(num_vars), collect(Cint(0):Cint(num_vars-1)), obj)
     Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(-f.constant))
     model.objective_type = SCALAR_AFFINE
     model.is_objective_set = true
@@ -1191,7 +1191,9 @@ function MOI.set(
     for (i, c) in zip(affine_indices, affine_coefficients)
         obj[i] = c
     end
-    Lib.XPRSchgmqobj(model.inner,Cint(length(I)), Cint.(I .- 1), Cint.(J .- 1), V)
+    I .-= 1
+    J .-= 1
+    Lib.XPRSchgmqobj(model.inner,Cint(length(I)), I, J, V)
     model.objective_type = SCALAR_QUADRATIC
     model.is_objective_set = true
     return
@@ -2022,13 +2024,13 @@ function MOI.add_constraint(
     sense, rhs = _sense_and_rhs(s)
     Lib.XPRSaddrows(
         model.inner,
-        length([rhs]),#length(_drhs),
-        Cint(length((indices))),#Cint(length(_mclind)),
-        [sense],#_srowtype,
-        [rhs],#_drhs,
+        1,#length(_drhs),
+        Cint(length(indices)),#Cint(length(_mclind)),
+        Ref(sense),#_srowtype,
+        Ref(rhs),#_drhs,
         C_NULL,#_drng,
-        Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
-        Cint.((indices).-= 1),#Cint.(_mclind::Vector{Int}), 
+        Ref(0),#Cint.(_mrstart::Vector{Int}), 
+        Cint.(indices.-= 1),#Cint.(_mclind::Vector{Int}), 
         coefficients#_dmatval
     )
     return MOI.ConstraintIndex{typeof(f), typeof(s)}(model.last_constraint_index)
@@ -2096,7 +2098,7 @@ function MOI.delete(
     MOI.ScalarQuadraticFunction{Float64},
 }}
     row = _info(model, c).row
-    Lib.XPRSdelrows(model.inner, length([row]), Cint.([row] .- 1))
+    Lib.XPRSdelrows(model.inner, 1, Ref(row-1))
     for (key, info) in model.affine_constraint_info
         if info.row > row
             info.row -= 1
@@ -2152,9 +2154,9 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
         rmatind,#_mclind,
         rmatval,#_dmatval,
         nzcnt,#maxcoeffs,
-        zeros(Cint, 1),#temp,
-        Cint(row- 1),#Cint(first-1)::Integer,
-        Cint(row- 1),#Cint(last-1)::Integer,
+        Ref(Cint(0)),#temp,
+        Cint(row - 1),#Cint(first-1)::Integer,
+        Cint(row - 1),#Cint(last-1)::Integer,
     )
     rmatbeg .+= 1
     rmatind .+= 1
@@ -2366,16 +2368,21 @@ function MOI.add_constraint(
     sense, rhs = _sense_and_rhs(is.set)
     Lib.XPRSaddrows(
         model.inner,
-        length([rhs-cte]),#length(_drhs),
-        Cint(length((indices))),#Cint(length(_mclind)),
-        [sense],#_srowtype,
-        [rhs-cte],#_drhs,
+        1,#length(_drhs),
+        Cint(length(indices)),#Cint(length(_mclind)),
+        Ref(sense),#_srowtype,
+        Ref(rhs-cte),#_drhs,
         C_NULL,#_drng,
-        Cint.([1].-= 1),#Cint.(_mrstart::Vector{Int}), 
-        Cint.((indices).-= 1),#Cint.(_mrwind::Vector{Int}), 
+        Ref(0),#Cint.(_mrstart::Vector{Int}), 
+        Cint.(indices.-= 1),#Cint.(_mrwind::Vector{Int}), 
         coefficients#_dmatval
     )
-    Lib.XPRSsetindicators(model.inner, Cint(length([Xpress.n_constraints(model.inner)].-1)),Cint.([Xpress.n_constraints(model.inner)] .-1), Cint.([con_value] .-1), Cint.([indicator_activation(Val{A})]))
+    Lib.XPRSsetindicators(model.inner,
+        1,
+        Ref(Xpress.n_constraints(model.inner) - 1),
+        Ref(con_value - 1),
+        Ref(indicator_activation(Val{A})),
+    )
     index = MOI.ConstraintIndex{MOI.VectorAffineFunction{T}, typeof(is)}(model.last_constraint_index)
     return index
 end
@@ -2406,11 +2413,11 @@ function MOI.get(
                 )
             )
         )
-    _drhs=Vector{Float64}(undef, 1)
+    _drhs = Ref(0.0)
     Lib.XPRSgetrhs(model.inner, _drhs, Cint(row-1), Cint(row-1))
     rhs = _drhs[]
     val = - rhs + MOI.constant(info.set.set)
-    return MOI.VectorAffineFunction(terms, [0.0,val])
+    return MOI.VectorAffineFunction(terms, [0.0, val])
 end
 
 ###
@@ -2427,10 +2434,27 @@ function MOI.add_constraint(
     sense, rhs = _sense_and_rhs(s)
     indices, coefficients, I, J, V = _indices_and_coefficients(model, f)
     Lib.XPRSaddrows(
-        model.inner, length([rhs]), Cint(length(indices)), [sense], [rhs], C_NULL, Cint.([1].-= 1), Cint.(indices.-= 1), coefficients
+        model.inner,
+        1,
+        Cint(length(indices)),
+        Ref(sense),
+        Ref(rhs),
+        C_NULL,
+        Ref(0),
+        Cint.(indices.-= 1),
+        coefficients
     )
     V .*= 0.5 # only for constraints
-    Lib.XPRSaddqmatrix(model.inner, Xpress.n_constraints(model.inner) - 1, length(I), Cint.(I .- 1), Cint.(J .- 1), V)
+    I .-= 1
+    J .-= 1
+    Lib.XPRSaddqmatrix(
+        model.inner,
+        Xpress.n_constraints(model.inner) - 1,
+        length(I),
+        Cint.(I),
+        Cint.(J),
+        V,
+    )
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, QUADRATIC)
@@ -2501,15 +2525,15 @@ end
 function MOI.add_constraint(
     model::Optimizer, f::MOI.VectorOfVariables, s::SOS
 )
-    columns = Int[_info(model, v).column for v in f.variables]
-    idx = [0, 0]
+    columns = Int[_info(model, v).column - 1 for v in f.variables]
+    idx = Cint[0, 0]
     Lib.XPRSaddsets(
         model.inner, # prob
         1, # newsets
         length(columns), # newnz
-        Cchar[_sos_type(s)], # qstype
-        Cint.(idx), # Cint.(msstart)
-        Cint.(columns .- 1), # Cint.(mscols)
+        Ref{Cchar}(_sos_type(s)), # qstype
+        idx, # Cint.(msstart)
+        Cint.(columns), # Cint.(mscols)
         s.weights, # dref
     )
     model.last_constraint_index += 1
@@ -2523,10 +2547,10 @@ end
 function MOI.delete(
     model::Optimizer, c::MOI.ConstraintIndex{MOI.VectorOfVariables, <:SOS}
 )
-    row = _info(model, c).row
+    row = _info(model, c).row - 1
     idx = collect(row:row)
     numdel = length(idx)
-    Lib.XPRSdelsets(model.inner, numdel, idx .- 1)
+    Lib.XPRSdelsets(model.inner, numdel, idx)
     for (key, info) in model.sos_constraint_info
         if info.row > row
             info.row -= 1
@@ -2547,8 +2571,8 @@ function _get_sparse_sos(model)
     setcols = Array{Cint}(undef, nnz)
     setvals = Array{Float64}(undef, nnz)
 
-    intents = Array{Cint}(undef, 1)
-    nsets = Array{Cint}(undef, 1)
+    intents = Ref{Cint}(0)
+    nsets = Ref{Cint}(0)
 
     Lib.XPRSgetglobal(
         model.inner, intents, nsets, C_NULL, C_NULL, C_NULL, settypes, setstart, setcols, setvals
@@ -2895,7 +2919,7 @@ end
 
 function _has_dual_ray(model::Optimizer)
     has_Ray = Int64[0]
-    Lib.XPRSgetdualray(model.inner, C_NULL , has_Ray)
+    Lib.XPRSgetdualray(model.inner, C_NULL, has_Ray)
     return has_Ray[1] != 0
 end
 
@@ -3031,12 +3055,12 @@ and it applies to the lower bound if ā > 0.
 function _farkas_variable_dual(model::Optimizer, col::Int64)
     nvars = length(model.variable_info)
     nrows = length(model.affine_constraint_info)
-    ncoeffs = Array{Cint}(undef,1)
+    ncoeffs = Ref{Cint}(0)
     Lib.XPRSgetcols(model.inner, C_NULL, C_NULL, C_NULL, nrows, ncoeffs, Cint(col-1), Cint(col-1))
-    ncoeffs_ = ncoeffs[1]
-    mstart = Array{Cint}(undef,2)
-    mrwind = Array{Cint}(undef,ncoeffs_)
-    dmatval = Array{Float64}(undef,ncoeffs_)
+    ncoeffs_ = ncoeffs[]
+    mstart = Array{Cint}(undef, 2)
+    mrwind = Array{Cint}(undef, ncoeffs_)
+    dmatval = Array{Float64}(undef, ncoeffs_)
     Lib.XPRSgetcols(model.inner, mstart, mrwind, dmatval, nrows, ncoeffs, Cint(col-1), Cint(col-1))
     return sum(v * model.cached_solution.linear_dual[i + 1] for (i, v) in zip(mrwind, dmatval))
 end
@@ -3461,11 +3485,11 @@ function MOI.modify(
     coefs = Vector{Float64}(undef, nels)
 
     for i in 1:nels
-        cols[i] = _info(model, chgs[i].variable).column
+        cols[i] = _info(model, chgs[i].variable).column - 1
         coefs[i] = chgs[i].new_coefficient
     end
 
-    Lib.XPRSchgobj(model.inner, Cint(length(coefs)), Cint.(cols .-1), coefs)
+    Lib.XPRSchgobj(model.inner, Cint(length(coefs)), Cint.(cols), coefs)
     model.is_objective_set = true
     return
 end
@@ -3712,13 +3736,27 @@ function MOI.add_constraint(
 
     # Now add the quadratic constraint.
 
-    I = Cint[vs_info[i].column for i in 1:N]
+    I = Cint[vs_info[i].column - 1 for i in 1:N]
     V = fill(1.0, N)
     V[1] = -1.0
     Lib.XPRSaddrows(
-        model.inner, length([0.0]), Cint(length(Cint[])), [Cchar('L')], [0.0], C_NULL, Cint.([1].-= 1), Cint.(Cint[].-= 1), Float64[]
+        model.inner,
+        1,
+        Cint(0),
+        Ref{Cchar}(Cchar('L')),
+        Ref(0.0),
+        C_NULL,
+        Ref(0),
+        C_NULL,
+        C_NULL,
     )
-    Lib.XPRSaddqmatrix(model.inner, Xpress.n_constraints(model.inner) - 1, length(I), Cint.(I .- 1), Cint.(I .- 1), V)
+    Lib.XPRSaddqmatrix(model.inner,
+        Xpress.n_constraints(model.inner) - 1,
+        length(I),
+        Cint.(I),
+        Cint.(I),
+        V,
+    )
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, SOC)
@@ -3779,14 +3817,29 @@ function MOI.add_constraint(
 
     # Now add the quadratic constraint.
 
-    I = Cint[vs_info[i].column for i in 1:N if i != 2]
-    J = Cint[vs_info[i].column for i in 1:N if i != 1]
+    I = Cint[vs_info[i].column - 1 for i in 1:N if i != 2]
+    J = Cint[vs_info[i].column - 1 for i in 1:N if i != 1]
     V = fill(1.0, N-1)
     V[1] = -1.0 # just the upper triangle
     Lib.XPRSaddrows(
-        model.inner, length([0.0]), Cint(length(Cint[])), [Cchar('L')], [0.0], C_NULL, Cint.([1].-= 1), Cint.(Cint[].-= 1), Float64[]
+        model.inner,
+        1,
+        Cint(0),
+        Ref{Cchar}(Cchar('L')),
+        Ref(0.0),
+        C_NULL,
+        Ref(0),
+        C_NULL,
+        C_NULL,
     )
-    Lib.XPRSaddqmatrix(model.inner, Xpress.n_constraints(model.inner) - 1, length(I), Cint.(I .- 1), Cint.(J .- 1), V)
+    Lib.XPRSaddqmatrix(
+        model.inner,
+        Xpress.n_constraints(model.inner) - 1,
+        length(I),
+        Cint.(I),
+        Cint.(J),
+        V,
+    )
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, RSOC)
@@ -3804,7 +3857,7 @@ function MOI.delete(
 )
     f = MOI.get(model, MOI.ConstraintFunction(), c)
     info = _info(model, c)
-    Lib.XPRSdelrows(model.inner, length([info.row]), Cint.([info.row] .- 1))
+    Lib.XPRSdelrows(model.inner, 1, Ref(info.row - 1))
     for (key, info_2) in model.affine_constraint_info
         if info_2.row > info.row
             info_2.row -= 1
@@ -3843,7 +3896,7 @@ function MOI.delete(
 )
     f = MOI.get(model, MOI.ConstraintFunction(), c)
     info = _info(model, c)
-    Lib.XPRSdelrows(model.inner, length([info.row]), Cint.([info.row] .- 1))
+    Lib.XPRSdelrows(model.inner, 1, Ref(info.row - 1))
     for (key, info_2) in model.affine_constraint_info
         if info_2.row > info.row
             info_2.row -= 1
@@ -3890,11 +3943,25 @@ function MOI.get(
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, MOI.SecondOrderCone}
 )
     nqelem = Ref{Cint}()
-    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, C_NULL, C_NULL, C_NULL)
+    Lib.XPRSgetqrowqmatrixtriplets(
+        model.inner,
+        _info(model, c).row-1,
+        nqelem,
+        C_NULL,
+        C_NULL,
+        C_NULL,
+    )
     mqcol1 = Array{Cint}(undef,  nqelem[])
     mqcol2 = Array{Cint}(undef,  nqelem[])
     dqe = Array{Float64}(undef,  nqelem[])
-    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, mqcol1, mqcol2, dqe)
+    Lib.XPRSgetqrowqmatrixtriplets(
+        model.inner,
+        _info(model, c).row - 1,
+        nqelem,
+        mqcol1,
+        mqcol2,
+        dqe,
+    )
     mqcol1 .+= 1
     mqcol2 .+= 1
     I, J, V = mqcol1, mqcol2, dqe
@@ -3922,11 +3989,24 @@ function MOI.get(
     c::MOI.ConstraintIndex{MOI.VectorOfVariables, MOI.RotatedSecondOrderCone}
 )
     nqelem = Ref{Cint}()
-    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, C_NULL, C_NULL, C_NULL)
+    Lib.XPRSgetqrowqmatrixtriplets(model.inner,
+        _info(model, c).row - 1,
+        nqelem,
+        C_NULL,
+        C_NULL,
+        C_NULL,
+    )
     I = Array{Cint}(undef,  nqelem[])
     J = Array{Cint}(undef,  nqelem[])
     V = Array{Float64}(undef,  nqelem[])
-    Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, I, J, V)
+    Lib.XPRSgetqrowqmatrixtriplets(
+        model.inner,
+        _info(model, c).row - 1,
+        nqelem,
+        I,
+        J,
+        V,
+    )
     I .+= 1
     J .+= 1
 
@@ -3967,9 +4047,9 @@ end
 
 function getinfeasbounds(model::Optimizer)
     nvars = length(model.variable_info)
-    lbs = Vector{Float64}(undef, 1)
+    lbs = Ref(0.0)
     Lib.XPRSgetlb(model.inner, lbs, Cint(0), Cint(nvars-1))
-    ubs = Vector{Float64}(undef, 1)
+    ubs = Ref(0.0)
     Lib.XPRSgetub(model.inner, ubs, Cint(0), Cint(nvars-1))
     check_bounds = lbs .<= ubs
     if sum(check_bounds) == nvars
@@ -3980,7 +4060,7 @@ function getinfeasbounds(model::Optimizer)
     end
     col = 0
     ncols = 0
-    infeas_cols = []
+    infeas_cols = Int[]
     for check_col in check_bounds
         if !check_col
             push!(infeas_cols, col)
