@@ -4138,23 +4138,55 @@ function get_row(v::Xpress.ConstraintInfo)
     return v.row
 end
 
-function add_names_to_xpress_problem(model::Xpress.Optimizer)
+function number_of_rows(model::Xpress.Optimizer)
+    constraint_infos = model.affine_constraint_info |> values |> collect
+    return length(constraint_infos)
+end
 
+function number_of_cols(model::Xpress.Optimizer)
+    variable_infos = model.variable_info |> values |> collect
+    return length(variable_infos)
+end
+
+function add_names_to_inner_model(model::Xpress.Optimizer)
     # variables
     variable_infos = model.variable_info |> values |> collect
+    variables = Vector[]
     for variable in variable_infos
-        if !isempty(get_name(variable))
-            Xpress.Lib.XPRSaddnames(model.inner, Cint(2), get_name(variable) * "\0", Cint(get_column(variable)-1), Cint(get_column(variable)-1))
+        push!(variables, [get_column(variable), get_name(variable)])
+    end
+    variables = sort(variables)
+    var_names = String[]; for i in 1:length(variables)
+       push!(var_names, variables[i][2])
+    end
+    NAMELENGTH = 64
+    for (idx,str) in enumerate(var_names)
+        if length(str) > NAMELENGTH
+            var_names[idx] = first(str, NAMELENGTH)
         end
     end
+
+    var_cnames = join(var_names, "\0")
+    Xpress.Lib.XPRSaddnames(model.inner, Cint(2), var_cnames, Cint(0), Cint(number_of_cols(model) - 1))
 
     # constraints
     constraint_infos = model.affine_constraint_info |> values |> collect
+    constraints = Vector[]
     for constraint in constraint_infos
-        if !isempty(get_name(constraint))
-            Xpress.Lib.XPRSaddnames(model.inner, Cint(1), get_name(constraint) * "\0", Cint(get_row(constraint) - 1), Cint(get_row(constraint) - 1))
+        push!(constraints, [get_row(constraint), get_name(constraint)])
+    end
+    constraints = sort(constraints)
+    const_names = String[]; for i in 1:length(constraints)
+       push!(const_names, constraints[i][2])
+    end
+    for (idx,str) in enumerate(const_names)
+        if length(str) > NAMELENGTH
+            const_names[idx] = first(str, NAMELENGTH)
         end
     end
 
-    return nothing
+    const_cnames = join(const_names, "\0")
+    Xpress.Lib.XPRSaddnames(model.inner, Cint(1), const_cnames, Cint(0), Cint(number_of_rows(model) - 1))
+
+    return var_names, const_names
 end
