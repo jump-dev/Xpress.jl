@@ -819,7 +819,7 @@ When a model is loaded, the rows, columns and sets of the model may not have  na
     first -= 1
     last -= 1
 
-   for (idx,str) in enumerate(names)
+    for (idx,str) in enumerate(names)
         if length(str) > NAMELENGTH
             names[idx] = first(str, NAMELENGTH)
         end

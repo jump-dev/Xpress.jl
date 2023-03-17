@@ -1,8 +1,8 @@
 using Test
 using Xpress
 
-println(Xpress.getbanner())
-println("Optimizer version: $(Xpress.getversion())")
+println(Xpress.invoke(Xpress.Lib.XPRSgetbanner, 2, String))
+println("Optimizer version: $(VersionNumber(parse.(Int, split(Xpress.invoke(Xpress.Lib.XPRSgetversion, 2, String), "."))...))")
 
 @testset "$(folder)" for folder in [
     "MathOptInterface",
@@ -20,7 +20,7 @@ end
 
     @test Xpress.getcontrol(prob, "HEURTHREADS") == 0
 
-    vXpress_major = Int(Xpress.getversion().major)
+    vXpress_major = Int(VersionNumber(parse.(Int, split(Xpress.invoke(Xpress.Lib.XPRSgetversion, 2, String), "."))...).major)
     file_extension = ifelse(vXpress_major <= 38, ".mps","")
     msg = "Unable to call `Xpress.readprob`:\n\n85 Error: File not found: $(file_extension).\n"
     @test_throws Xpress.XpressError(32, msg) Xpress.readprob(prob,"","")

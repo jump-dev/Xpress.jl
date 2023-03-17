@@ -310,7 +310,7 @@ end
         cb_calls = Int32[]
         MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
             push!(cb_calls)
-            if Xpress.getintattrib(cb_data.model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
+            if Xpress.invoke(Xpress.Lib.XPRSgetintattrib, 4, Int, cb_data.model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
                 return
             end
             Xpress.get_cb_solution(model, cb_data.model)
@@ -341,7 +341,7 @@ end
         callback_called = false
         cb_calls = Int32[]
         MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
-            if Xpress.getintattrib(cb_data.model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
+            if Xpress.invoke(Xpress.Lib.XPRSgetintattrib, 4, Int, cb_data.model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
                 return
             end
             Xpress.get_cb_solution(model, cb_data.model)

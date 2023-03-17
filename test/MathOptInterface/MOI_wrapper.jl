@@ -661,7 +661,7 @@ function test_MIP_Start()
     # postsolve is necessary otherwise a new call to MOI.optimize will
     # trigger error 707 ("707 Error: Function cannot be called during the
     # global search, except in callbacks.").
-    Xpress.postsolve(model.inner)
+    Xpress.Lib.XPRSpostsolve(model.inner)
 
     MOI.optimize!(model)
 
