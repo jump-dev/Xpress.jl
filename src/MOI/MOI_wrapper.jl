@@ -2026,7 +2026,7 @@ function MOI.add_constraint(
         model.inner,
         1,#length(_drhs),
         Cint(length(indices)),#Cint(length(_mclind)),
-        Ref(sense),#_srowtype,
+        Ref{UInt8}(sense),#_srowtype,
         Ref(rhs),#_drhs,
         C_NULL,#_drng,
         Ref(0),#Cint.(_mrstart::Vector{Int}), 
@@ -2370,7 +2370,7 @@ function MOI.add_constraint(
         model.inner,
         1,#length(_drhs),
         Cint(length(indices)),#Cint(length(_mclind)),
-        Ref(sense),#_srowtype,
+        Ref{UInt8}(sense),#_srowtype,
         Ref(rhs-cte),#_drhs,
         C_NULL,#_drng,
         Ref(0),#Cint.(_mrstart::Vector{Int}), 
@@ -2437,7 +2437,7 @@ function MOI.add_constraint(
         model.inner,
         1,
         Cint(length(indices)),
-        Ref(sense),
+        Ref{UInt8}(sense),
         Ref(rhs),
         C_NULL,
         Ref(0),
@@ -2531,7 +2531,7 @@ function MOI.add_constraint(
         model.inner, # prob
         1, # newsets
         length(columns), # newnz
-        Ref{Cchar}(_sos_type(s)), # qstype
+        Ref{UInt8}(_sos_type(s)), # qstype
         idx, # Cint.(msstart)
         Cint.(columns), # Cint.(mscols)
         s.weights, # dref
@@ -3743,7 +3743,7 @@ function MOI.add_constraint(
         model.inner,
         1,
         Cint(0),
-        Ref{Cchar}(Cchar('L')),
+        Ref{UInt8}(Cchar('L')),
         Ref(0.0),
         C_NULL,
         Ref(0),
@@ -3825,7 +3825,7 @@ function MOI.add_constraint(
         model.inner,
         1,
         Cint(0),
-        Ref{Cchar}(Cchar('L')),
+        Ref{UInt8}(Cchar('L')),
         Ref(0.0),
         C_NULL,
         Ref(0),
