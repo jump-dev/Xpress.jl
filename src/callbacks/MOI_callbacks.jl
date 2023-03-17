@@ -6,7 +6,7 @@ function moi_generic_wrapper(model::Optimizer, callback_data::CallbackData)
     get_callback_solution!(model, callback_data.node_model)
 
     moi_heuristic_wrapper(model, callback_data)
-    # moi_lazy_constraint_wrapper(model, callback_data)
+    moi_lazy_constraint_wrapper(model, callback_data)
     # moi_user_cut_wrapper(model, callback_data)
 
     return nothing

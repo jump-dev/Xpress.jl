@@ -3944,11 +3944,12 @@ function MOI.get(
     end
     return MOI.NOT_IN_CONFLICT
 end
+
 function MOI.get(
     model::Optimizer,
     ::MOI.ConstraintConflictStatus,
     index::MOI.ConstraintIndex{MOI.VariableIndex, MOI.ZeroOne}
-) where S <: MOI.AbstractScalarSet
+)
     _ensure_conflict_computed(model)
     ref_col = _info(model, index).column - 1
     for (idx, col) in enumerate(model.conflict.miiscol)
@@ -3964,6 +3965,7 @@ function MOI.get(
     end
     return MOI.NOT_IN_CONFLICT
 end
+
 function MOI.supports(
     ::Optimizer,
     ::MOI.ConstraintConflictStatus,

@@ -122,7 +122,7 @@ function get_callback_solution!(model::Optimizer, node_model::XpressProblem)
         model.callback_cached_solution.linear_dual,
         model.callback_cached_solution.variable_dual,
     )
- 
+
     return
 end
 
@@ -130,12 +130,12 @@ function apply_cuts!(opt::Optimizer, model::XpressProblem)
     itype = Cint(1)
     interp = Cint(-1) # Get all cuts
     delta = zero(Cdouble) # Xpress.Lib.XPRS_MINUSINFINITY
-    ncuts = Array{Cint}(undef,1)
+    ncuts = Array{Cint}(undef, 1)
     size = Cint(length(opt.callback_cut_data.cut_ptrs))
-    mcutptr = Array{Xpress.Lib.XPRScut}(undef,size)
-    dviol = Array{Cdouble}(undef,size)
+    mcutptr = Array{Xpress.Lib.XPRScut}(undef, size)
+    dviol = Array{Cdouble}(undef, size)
 
-    getcpcutlist( # requires an available solution
+    Xpress.Lib.XPRSgetcpcutlist( # requires an available solution
         model,
         itype,
         interp,
@@ -144,11 +144,17 @@ function apply_cuts!(opt::Optimizer, model::XpressProblem)
         size,
         mcutptr,
         dviol,
-    ) 
+    )
 
-    loadcuts(model, itype, interp, ncuts[1], mcutptr)
+    Xpress.Lib.XPRSloadcuts(
+        model,
+        itype,
+        interp,
+        ncuts[],
+        mcutptr
+    )
 
-    return (ncuts[1] > 0)
+    return (ncuts[] > 0)
 end
 
 function default_moi_user_cut_callback!(model::Optimizer, callback_data::CallbackData)
@@ -162,7 +168,7 @@ function default_moi_user_cut_callback!(model::Optimizer, callback_data::Callbac
             return nothing
         end
     end
-    
+
     # Allow only one user cut solution per LP optimal node limiting
     # two calls to guarantee th user has a chance to add a cut.
     # If the user cut is loose the problem will be resolved anyway.

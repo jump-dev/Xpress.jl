@@ -1,11 +1,34 @@
-function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, ::Nothing)
-    model.lazy_callback = callback
+function moi_lazy_constraint_wrapper(model::Optimizer, callback_data::CallbackData)
+    callback_info = model.callback_info[:moi_lazy_constraint]
+
+    if !isnothing(callback_info)
+        model.callback_state = CS_MOI_LAZY_CONSTRAINT # TODO: push
+
+        # Add previous cuts if any to gurantee that the user is dealing with
+        # an optimal solution feasibile for existing cuts
+        if isempty(model.callback_cut_data.cut_ptrs) || !apply_cuts!(model, callback_data.node_model)
+            callback_info.data_wrapper.func(callback_data)
+        end
+
+        model.callback_state = CS_NONE # TODO: pop
+    end
 
     return nothing
 end
 
-function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, callback::Function)
-    model.lazy_callback = callback
+function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, ::Nothing)
+    model.callback_info[:moi_lazy_constraint] = nothing
+
+    return nothing
+end
+
+function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, func::Function)
+    model.callback_info[:moi_lazy_constraint] = CallbackInfo{GenericCallbackData}(
+        C_NULL,
+        CallbackDataWrapper(model.inner, func),
+    )
+
+    set_moi_generic_callback!(model)
 
     return nothing
 end
@@ -15,38 +38,37 @@ MOI.supports(::Optimizer, ::MOI.LazyConstraint{CD}) where {CD<:CallbackData} = t
 
 function MOI.submit(
     model::Optimizer,
-    moi_callback::MOI.LazyConstraint{CD},
+    submittable::MOI.LazyConstraint{CD},
     f::MOI.ScalarAffineFunction{T},
     s::Union{MOI.LessThan{T},MOI.GreaterThan{T},MOI.EqualTo{T}}
 ) where {T,CD<:CallbackData}
-    node_model = moi_callback.callback_data.node_model
+    # It is assumed that every '<:CallbackData' has a 'node_model' field
+    node_model = submittable.callback_data.node_model::Xpress.XpressProblem
+
+    # TODO: Should we mark as submitted in the beginning of the function?
     model.callback_cut_data.submitted = true
 
-    if model.callback_state == CS_MOI_HEURISTIC
-        cache_exception(
-            model,
-            MOI.InvalidCallbackUsage(MOI.HeuristicCallback(), moi_callback)
-        )
-        Xpress.interrupt(node_model, Xpress.Lib.XPRS_STOP_USER)
+    # Check callback state
+    let state = callback_state(model)
+        if state !== CS_MOI_LAZY_CONSTRAINT
+            cache_callback_exception!(
+                model,
+                MOI.InvalidCallbackUsage(
+                    state_callback(state),
+                    submittable,
+                )
+            )
 
-        return nothing
-    elseif model.callback_state == CS_MOI_LAZY_CONSTRAINT && CB <: MOI.UserCut{CallbackData}
-        cache_exception(
-            model,
-            MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), moi_callback)
-        )
-        Xpress.interrupt(node_model, Xpress.Lib.XPRS_STOP_USER)
+            Xpress.interrupt(node_model, Xpress.Lib.XPRS_STOP_USER)
 
-        return nothing
-    elseif model.callback_state == CS_MOI_USER_CUT && CB <: MOI.LazyConstraint{CallbackData}
-        cache_exception(
-            model,
-            MOI.InvalidCallbackUsage(MOI.UserCutCallback(), moi_callback)
-        )
-        Xpress.interrupt(node_model, Xpress.Lib.XPRS_STOP_USER)
+            return nothing
+        end
+    end
 
-        return nothing
-    elseif !iszero(f.constant)
+    # Check if b is 0 in a'x + b <= c?
+    # f(x) = a'x + b
+    # S = {<= c}
+    if !iszero(f.constant)
         cache_exception(
             model,
             MOI.ScalarFunctionConstantNotZero{T,typeof(f),typeof(s)}(f.constant)
@@ -55,6 +77,7 @@ function MOI.submit(
 
         return nothing
     end
+
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
 
@@ -69,34 +92,28 @@ function MOI.submit(
     mcols = Cint.(indices)
     interp = Cint(-1) # Load all cuts
 
-    Lib.XPRSstorecuts(node_model, ncuts, nodupl, mtype, sensetype, drhs, mstart, mindex, mcols, coefficients)
-    Lib.XPRSloadcuts(node_model, mtype[], interp, ncuts, mindex)
+    Xpress.Lib.XPRSstorecuts(
+        node_model,
+        ncuts,
+        nodupl,
+        mtype,
+        sensetype,
+        drhs,
+        mstart,
+        mindex,
+        mcols,
+        coefficients,
+    )
 
-    push!(model.callback_cut_data.cut_ptrs, mindex[1])
+    Xpress.Lib.XPRSloadcuts(
+        node_model,
+        mtype[],
+        interp,
+        ncuts,
+        mindex,
+    )
 
-    model.callback_cut_data.cut_ptrs
-
-    return nothing
-end
-
-function moi_lazy_callback_wrapper()
-
-end
-
-function default_moi_lazy_callback(callback_data::GenericCallbackData)
-    model.callback_state = CS_MOI_LAZY_CONSTRAINT
-
-    # Add previous cuts if any to gurantee that the user is dealing with
-    # an optimal solution feasibile for exisitng cuts
-    if !isempty(model.callback_cut_data.cut_ptrs)
-        added = apply_cuts!(model, callback_data.node_model)
-
-        if added
-            return nothing
-        end
-    end
-
-    model.lazy_callback(callback_data)
+    push!(model.callback_cut_data.cut_ptrs, mindex[])
 
     return nothing
 end

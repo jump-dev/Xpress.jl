@@ -29,140 +29,147 @@ function callback_knapsack_model()
         HEURSTRATEGY = 0,
         OUTPUTLOG = 0
     )
+
     MOI.set(model, MOI.NumberOfThreads(), 2)
 
     N = 30
     x = MOI.add_variables(model, N)
     MOI.add_constraints(model, x, MOI.ZeroOne())
     MOI.set.(model, MOI.VariablePrimalStart(), x, 0.0)
+    
     Random.seed!(1)
+    
     item_weights, item_values = rand(N), rand(N)
+
     MOI.add_constraint(
         model,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(item_weights, x), 0.0),
         MOI.LessThan(10.0)
     )
+
     MOI.set(
         model,
         MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(item_values, x), 0.0)
     )
+
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
-    return model, x, item_weights
+    
+    return (model, x, item_weights)
 end
 
-# @testset "LazyConstraintCallback" begin
-#     @testset "LazyConstraint" begin
-#         model, x, y = callback_simple_model()
+@testset "LazyConstraintCallback" begin
+    @testset "LazyConstraint" begin
+        model, x, y = callback_simple_model()
 
-#         global lazy_called = false
+        global lazy_called = false
 
-#         MOI.set(
-#             model,
-#             MOI.LazyConstraintCallback(),
-#             (cb_data) -> begin
-#                 global lazy_called = true
+        MOI.set(
+            model,
+            MOI.LazyConstraintCallback(),
+            (cb_data) -> begin
+                global lazy_called = true
 
-#                 x_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), x)
-#                 y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
+                x_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), x)
+                y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
 
-#                 status = MOI.get(model, MOI.CallbackNodeStatus(cb_data))::MOI.CallbackNodeStatusCode
+                status = MOI.get(model, MOI.CallbackNodeStatus(cb_data))::MOI.CallbackNodeStatusCode
 
-#                 if round.(Int, [x_val, y_val]) ≈ [x_val, y_val] atol=1e-6
-#                     @test status == MOI.CALLBACK_NODE_STATUS_INTEGER
-#                 else
-#                     @test status == MOI.CALLBACK_NODE_STATUS_FRACTIONAL
-#                 end
+                if round.(Int, [x_val, y_val]) ≈ [x_val, y_val] atol=1e-6
+                    @test status == MOI.CALLBACK_NODE_STATUS_INTEGER
+                else
+                    @test status == MOI.CALLBACK_NODE_STATUS_FRACTIONAL
+                end
         
-#                 @test MOI.supports(model, MOI.LazyConstraint(cb_data))
+                @test MOI.supports(model, MOI.LazyConstraint(cb_data))
             
-#                 if y_val - x_val > 1 + 1e-6
-#                     MOI.submit(
-#                         model,
-#                         MOI.LazyConstraint(cb_data),
-#                         MOI.ScalarAffineFunction{Float64}(
-#                             MOI.ScalarAffineTerm.([-1.0, 1.0], [x, y]),
-#                             0.0
-#                         ),
-#                         MOI.LessThan{Float64}(1.0)
-#                     )
-#                 elseif y_val + x_val > 3 + 1e-6
-#                     MOI.submit(
-#                         model,
-#                         MOI.LazyConstraint(cb_data),
-#                         MOI.ScalarAffineFunction{Float64}(
-#                             MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]),
-#                             0.0
-#                         ), MOI.LessThan{Float64}(3.0)
-#                     )
-#                 end
-#             end
-#         )
+                if y_val - x_val > 1 + 1e-6
+                    MOI.submit(
+                        model,
+                        MOI.LazyConstraint(cb_data),
+                        MOI.ScalarAffineFunction{Float64}(
+                            MOI.ScalarAffineTerm.([-1.0, 1.0], [x, y]),
+                            0.0
+                        ),
+                        MOI.LessThan{Float64}(1.0)
+                    )
+                elseif y_val + x_val > 3 + 1e-6
+                    MOI.submit(
+                        model,
+                        MOI.LazyConstraint(cb_data),
+                        MOI.ScalarAffineFunction{Float64}(
+                            MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]),
+                            0.0
+                        ), MOI.LessThan{Float64}(3.0)
+                    )
+                end
+            end
+        )
 
-#         @test MOI.supports(model, MOI.LazyConstraintCallback())
+        @test MOI.supports(model, MOI.LazyConstraintCallback())
 
-#         MOI.optimize!(model)
+        MOI.optimize!(model)
 
-#         @test lazy_called
+        @test lazy_called
 
-#         @test MOI.get(model, MOI.VariablePrimal(), x) == 1
-#         @test MOI.get(model, MOI.VariablePrimal(), y) == 2
-#     end
+        @test MOI.get(model, MOI.VariablePrimal(), x) == 1
+        @test MOI.get(model, MOI.VariablePrimal(), y) == 2
+    end
 
-#     @testset "OptimizeInProgress" begin
-#         model, x, y = callback_simple_model()
+    @testset "OptimizeInProgress" begin
+        model, x, y = callback_simple_model()
 
-#         MOI.set(
-#             model,
-#             MOI.LazyConstraintCallback(),
-#             (cb_data) -> begin
-#                 @test_throws(
-#                     MOI.OptimizeInProgress(MOI.VariablePrimal()),
-#                     MOI.get(model, MOI.VariablePrimal(), x)
-#                 )
-#                 @test_throws(
-#                     MOI.OptimizeInProgress(MOI.ObjectiveValue()),
-#                     MOI.get(model, MOI.ObjectiveValue())
-#                 )
-#                 @test_throws(
-#                     MOI.OptimizeInProgress(MOI.ObjectiveBound()),
-#                     MOI.get(model, MOI.ObjectiveBound())
-#                 )
-#             end
-#         )
+        MOI.set(
+            model,
+            MOI.LazyConstraintCallback(),
+            (cb_data) -> begin
+                @test_throws(
+                    MOI.OptimizeInProgress(MOI.VariablePrimal()),
+                    MOI.get(model, MOI.VariablePrimal(), x)
+                )
+                @test_throws(
+                    MOI.OptimizeInProgress(MOI.ObjectiveValue()),
+                    MOI.get(model, MOI.ObjectiveValue())
+                )
+                @test_throws(
+                    MOI.OptimizeInProgress(MOI.ObjectiveBound()),
+                    MOI.get(model, MOI.ObjectiveBound())
+                )
+            end
+        )
 
-#         MOI.optimize!(model)
-#     end
+        MOI.optimize!(model)
+    end
 
-#     @testset "HeuristicSolution" begin
-#         model, x, y = callback_simple_model()
+    @testset "HeuristicSolution" begin
+        model, x, y = callback_simple_model()
 
-#         cb = nothing
+        cb = nothing
 
-#         MOI.set(
-#             model,
-#             MOI.LazyConstraintCallback(),
-#             (cb_data) -> begin
-#                 cb = cb_data
+        MOI.set(
+            model,
+            MOI.LazyConstraintCallback(),
+            (cb_data) -> begin
+                cb = cb_data
         
-#                 MOI.submit(
-#                     model,
-#                     MOI.HeuristicSolution(cb_data),
-#                     [x],
-#                     [2.0]
-#                 )
-#             end
-#         )
+                MOI.submit(
+                    model,
+                    MOI.HeuristicSolution(cb_data),
+                    [x],
+                    [2.0]
+                )
+            end
+        )
 
-#         @test_throws(
-#             MOI.InvalidCallbackUsage(
-#                 MOI.LazyConstraintCallback(),
-#                 MOI.HeuristicSolution(cb)
-#             ),
-#             MOI.optimize!(model)
-#         )
-#    end
-# end
+        @test_throws(
+            MOI.InvalidCallbackUsage(
+                MOI.LazyConstraintCallback(),
+                MOI.HeuristicSolution(cb)
+            ),
+            MOI.optimize!(model)
+        )
+   end
+end
 
 # @testset "UserCutCallback" begin
 #     @testset "UserCut" begin
@@ -270,26 +277,34 @@ end
 
         @test callback_called
     end
-    # @testset "LazyConstraint" begin
-    #     model, x, item_weights = callback_knapsack_model()
-    #     cb = nothing
-    #     MOI.set(model, MOI.HeuristicCallback(), cb_data -> begin
-    #         cb = cb_data
-    #         MOI.submit(
-    #             model,
-    #             MOI.LazyConstraint(cb_data),
-    #             MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
-    #             MOI.LessThan(5.0)
-    #         )
-    #     end)
-    #     @test_throws(
-    #         MOI.InvalidCallbackUsage(
-    #             MOI.HeuristicCallback(),
-    #             MOI.LazyConstraint(cb)
-    #         ),
-    #         MOI.optimize!(model)
-    #     )
-    # end
+    @testset "LazyConstraint" begin
+        model, x, item_weights = callback_knapsack_model()
+
+        cb = nothing
+        
+        MOI.set(
+            model,
+            MOI.HeuristicCallback(),
+            (cb_data) -> begin
+                cb = cb_data
+                
+                MOI.submit(
+                    model,
+                    MOI.LazyConstraint(cb_data),
+                    MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
+                    MOI.LessThan(5.0)
+                )
+            end,
+        )
+
+        @test_throws(
+            MOI.InvalidCallbackUsage(
+                MOI.HeuristicCallback(),
+                MOI.LazyConstraint(cb)
+            ),
+            MOI.optimize!(model)
+        )
+    end
     # @testset "UserCut" begin
     #     model, x, item_weights = callback_knapsack_model()
     #     cb = nothing
@@ -312,6 +327,7 @@ end
     # end
 end
 
+# NOTE: 'Xpress.CallbackFunction' doesn't exist anymore
 # @testset "Xpress.CallbackFunction" begin
 #     @testset "OptimizeInProgress" begin
 #         model, x, y = callback_simple_model()
