@@ -50,6 +50,46 @@ function foo(callback_data::Xpress.CallbackData)
     return
 end
 
+@testset "message" begin
+    let 
+        model, x, y = callback_simple_model()
+
+        data = Matrix(1.0I, 3, 3)
+
+        Xpress.set_xprs_message_callback!(model, foo, data)
+
+        data_ptr = model.callback_info[:xprs_message].data_wrapper
+        func_ptr = model.callback_info[:xprs_message].callback_ptr
+
+        @test data[1] == 1
+        MOI.optimize!(model)
+        @test data[1] == 98 broken = true # callback registered but not getting called
+
+        @test typeof(data_ptr) <: Xpress.CallbackDataWrapper{Xpress.MessageCallbackData}
+        @test typeof(func_ptr) <: Ptr{Cvoid}
+    end
+end
+
+@testset "optnode" begin
+    let 
+        model, x, y = callback_simple_model()
+
+        data = Matrix(1.0I, 3, 3)
+
+        Xpress.set_xprs_optnode_callback!(model, foo, data)
+
+        data_ptr = model.callback_info[:xprs_optnode].data_wrapper
+        func_ptr = model.callback_info[:xprs_optnode].callback_ptr
+
+        @test data[1] == 1
+        MOI.optimize!(model)
+        @test data[1] == 98
+
+        @test typeof(data_ptr) <: Xpress.CallbackDataWrapper{Xpress.OptNodeCallbackData}
+        @test typeof(func_ptr) <: Ptr{Cvoid}
+    end
+end
+
 @testset "preintsol" begin
     let 
         model, x, y = callback_simple_model()

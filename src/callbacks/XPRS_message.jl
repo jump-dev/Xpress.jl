@@ -30,11 +30,12 @@ mutable struct MessageCallbackData <: CallbackData
 end
 
 @doc raw"""
-    addcbmessage_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, msg::Ptr{Cchar}, len::Cint, msgtype::Cint)
+    default_xprs_message(callback_data::MessageCallbackData)
 """
-function addcbmessage_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, msg::Ptr{Cchar}, msglen::Cint, msgtype::Cint)
-    data_wrapper = unsafe_pointer_to_objref(cbdata)::CallbackDataWrapper{MessageCallbackData}    
-    show_warning = data_wrapper.data.data::Bool
+function default_xprs_message(callback_data::MessageCallbackData)
+    show_warning = callback_data.data::Bool
+    msg          = callback_data.msg
+    msgtype      = callback_data.msgtype
 
     if msgtype == 1 # Information
         println(unsafe_string(msg))
@@ -52,6 +53,29 @@ function addcbmessage_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, msg::Ptr
         flush(stdout)
         return zero(Cint)
     end
+
+    return nothing
+end
+
+@doc raw"""
+    xprs_message_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, msg::Ptr{Cchar}, len::Cint, msgtype::Cint)
+"""
+function xprs_message_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, msg::Ptr{Cchar}, msglen::Cint, msgtype::Cint)
+    data_wrapper = unsafe_pointer_to_objref(cbdata)::CallbackDataWrapper{MessageCallbackData}    
+    
+    # Update callback data
+    data_wrapper.data.node_model = XpressProblem(cbprob; finalize_env = false)
+
+    # Update function args
+    data_wrapper.data.cbprob = cbprob
+    data_wrapper.data.msg = msg
+    data_wrapper.data.msglen = msglen
+    data_wrapper.data.msgtype = msgtype
+
+    # Call user-defined function
+    data_wrapper.func(data_wrapper.data)
+    
+    return zero(Cint)
 end
 
 @doc raw"""
@@ -133,7 +157,7 @@ void XPRS_CC Message(XPRSprob cbprob, void* data, const char *msg, int msglen, i
     3. Visual Basic users must use the alternative function XPRSaddcbmessageVB to define the callback; this is required because of the different way VB handles strings.
 """
 function set_xprs_message_callback!(model::Xpress.Optimizer, func::Function, data::Any = nothing, priority::Integer = 0)
-    callback_ptr = @cfunction(addcbmessage_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint))
+    callback_ptr = @cfunction(xprs_message_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint))
     data_wrapper = CallbackDataWrapper{MessageCallbackData}(model.inner, func, data)
 
     Lib.XPRSaddcbmessage(
@@ -153,8 +177,8 @@ end
 function set_xprs_message_callback!(model::Xpress.Optimizer, show_warning::Bool = true, priority::Integer = 0)
     set_xprs_message_callback!(
         model,
-        (callback_data) -> (nothing), # func::Function
-        show_warning,                 # data::Any
+        default_xprs_message, # func::Function
+        show_warning,         # data::Any
         priority,
     )
 

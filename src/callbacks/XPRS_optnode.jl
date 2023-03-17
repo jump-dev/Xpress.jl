@@ -26,13 +26,13 @@ mutable struct OptNodeCallbackData <: CallbackData
 end
 
 @doc raw"""
-    addcboptnode_wrapper(
+    xprs_optnode_wrapper(
         cbprob::Lib.XPRSprob,
         cbdata::Ptr{Cvoid},
         p_infeasible::Ptr{Cint},
     )
 """
-function addcboptnode_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, p_infeasible::Ptr{Cint}=C_NULL)
+function xprs_optnode_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, p_infeasible::Ptr{Cint}=C_NULL)
     data_wrapper = unsafe_pointer_to_objref(cbdata)::CallbackDataWrapper{OptNodeCallbackData}
 
     # Update callback data
@@ -135,7 +135,7 @@ void XPRS_CC nodeOptimal(XPRSprob prob, void *data, int *p_infeasible)
 See the example depthfirst.c in the `examples/optimizer/c` folder.
 """
 function set_xprs_optnode_callback!(model::Xpress.Optimizer, func::Function, data::Any=nothing, priority::Integer=0)
-    callback_ptr = @cfunction(addcboptnode_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}))
+    callback_ptr = @cfunction(xprs_optnode_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}))
     data_wrapper = CallbackDataWrapper{OptNodeCallbackData}(model.inner, func, data)
 
     Lib.XPRSaddcboptnode(
