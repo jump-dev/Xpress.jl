@@ -856,7 +856,7 @@ function MOI.delete(model::Optimizer, v::MOI.VariableIndex)
     if info.num_soc_constraints > 0
         throw(MOI.DeleteNotAllowed(v))
     end
-    Lib.XPRSdelcols(model.inner, 1, Ref(info.column - 1))
+    Lib.XPRSdelcols(model.inner, 1, Ref{Cint}(info.column - 1))
     delete!(model.variable_info, v)
     for other_info in values(model.variable_info)
         if other_info.column > info.column
@@ -1080,7 +1080,7 @@ function _zero_objective(model::Optimizer)
         Lib.XPRSdelqmatrix(model.inner, -1)
     end
     Lib.XPRSchgobj(model.inner, Cint(num_vars), collect(Cint(0):Cint(num_vars-1)), obj)
-    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(0.0))
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref{Cint}(-1), Ref(0.0))
     return
 end
 
@@ -1150,7 +1150,7 @@ function MOI.set(
         obj[column] += term.coefficient
     end
     Lib.XPRSchgobj(model.inner, Cint(num_vars), collect(Cint(0):Cint(num_vars-1)), obj)
-    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(-f.constant))
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref{Cint}(-1), Ref(-f.constant))
     model.objective_type = SCALAR_AFFINE
     model.is_objective_set = true
     return
@@ -1247,7 +1247,7 @@ function MOI.modify(
     ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
     chg::MOI.ScalarConstantChange{Float64}
 )
-    Lib.XPRSchgobj(model.inner, Cint(1), Ref(Cint(-1)), Ref(-chg.new_constant))
+    Lib.XPRSchgobj(model.inner, Cint(1), Ref{Cint}(-1), Ref(-chg.new_constant))
     return
 end
 
@@ -2029,7 +2029,7 @@ function MOI.add_constraint(
         Ref{UInt8}(sense),#_srowtype,
         Ref(rhs),#_drhs,
         C_NULL,#_drng,
-        Ref(0),#Cint.(_mrstart::Vector{Int}), 
+        Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}), 
         Cint.(indices.-= 1),#Cint.(_mclind::Vector{Int}), 
         coefficients#_dmatval
     )
@@ -2098,7 +2098,7 @@ function MOI.delete(
     MOI.ScalarQuadraticFunction{Float64},
 }}
     row = _info(model, c).row
-    Lib.XPRSdelrows(model.inner, 1, Ref(row-1))
+    Lib.XPRSdelrows(model.inner, 1, Ref{Cint}(row-1))
     for (key, info) in model.affine_constraint_info
         if info.row > row
             info.row -= 1
@@ -2373,15 +2373,15 @@ function MOI.add_constraint(
         Ref{UInt8}(sense),#_srowtype,
         Ref(rhs-cte),#_drhs,
         C_NULL,#_drng,
-        Ref(0),#Cint.(_mrstart::Vector{Int}), 
+        Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}), 
         Cint.(indices.-= 1),#Cint.(_mrwind::Vector{Int}), 
         coefficients#_dmatval
     )
     Lib.XPRSsetindicators(model.inner,
         1,
-        Ref(Xpress.n_constraints(model.inner) - 1),
-        Ref(con_value - 1),
-        Ref(indicator_activation(Val{A})),
+        Ref{Cint}(Xpress.n_constraints(model.inner) - 1),
+        Ref{Cint}(con_value - 1),
+        Ref{Cint}(indicator_activation(Val{A})),
     )
     index = MOI.ConstraintIndex{MOI.VectorAffineFunction{T}, typeof(is)}(model.last_constraint_index)
     return index
@@ -2440,7 +2440,7 @@ function MOI.add_constraint(
         Ref{UInt8}(sense),
         Ref(rhs),
         C_NULL,
-        Ref(0),
+        Ref{Cint}(0),
         Cint.(indices.-= 1),
         coefficients
     )
@@ -3746,7 +3746,7 @@ function MOI.add_constraint(
         Ref{UInt8}(Cchar('L')),
         Ref(0.0),
         C_NULL,
-        Ref(0),
+        {Cint}(0),
         C_NULL,
         C_NULL,
     )
@@ -3828,7 +3828,7 @@ function MOI.add_constraint(
         Ref{UInt8}(Cchar('L')),
         Ref(0.0),
         C_NULL,
-        Ref(0),
+        Ref{Cint}(0),
         C_NULL,
         C_NULL,
     )
@@ -3857,7 +3857,7 @@ function MOI.delete(
 )
     f = MOI.get(model, MOI.ConstraintFunction(), c)
     info = _info(model, c)
-    Lib.XPRSdelrows(model.inner, 1, Ref(info.row - 1))
+    Lib.XPRSdelrows(model.inner, 1, Ref{Cint}(info.row - 1))
     for (key, info_2) in model.affine_constraint_info
         if info_2.row > info.row
             info_2.row -= 1
@@ -3896,7 +3896,7 @@ function MOI.delete(
 )
     f = MOI.get(model, MOI.ConstraintFunction(), c)
     info = _info(model, c)
-    Lib.XPRSdelrows(model.inner, 1, Ref(info.row - 1))
+    Lib.XPRSdelrows(model.inner, 1, Ref{Cint}(info.row - 1))
     for (key, info_2) in model.affine_constraint_info
         if info_2.row > info.row
             info_2.row -= 1
