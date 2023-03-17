@@ -3746,7 +3746,7 @@ function MOI.add_constraint(
         Ref{UInt8}(Cchar('L')),
         Ref(0.0),
         C_NULL,
-        {Cint}(0),
+        Ref{Cint}(0),
         C_NULL,
         C_NULL,
     )
