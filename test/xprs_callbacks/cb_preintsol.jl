@@ -56,13 +56,16 @@ end
 
         data = Matrix(1.0I, 3, 3)
 
-        func_ptr, data_ptr = Xpress.set_callback_preintsol!(model.inner, foo, data)
+        Xpress.set_xprs_preintsol_callback!(model, foo, data)
+
+        data_ptr = model.callback_info[:xprs_preintsol].data_wrapper
+        func_ptr = model.callback_info[:xprs_preintsol].callback_ptr
 
         @test data[1] == 1
         MOI.optimize!(model)
         @test data[1] == 98
 
-        @test typeof(data_ptr) <: Any
+        @test typeof(data_ptr) <: Xpress.CallbackDataWrapper{Xpress.PreIntSolCallbackData}
         @test typeof(func_ptr) <: Ptr{Cvoid}
     end
 end

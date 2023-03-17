@@ -1,21 +1,54 @@
-struct PreIntSol <: XpressCallback end
+struct PreIntSolCallback <: XpressCallback end
 
+mutable struct PreIntSolCallbackData <: CallbackData
+    root_model::XpressProblem
+    node_model::Union{XpressProblem,Nothing}
+
+    data::Any
+
+    cbprob::Union{Xpress.Lib.XPRSprob,Nothing}
+    # cbdata::Union{Ptr{Cvoid},Nothing}
+    soltype::Union{Ptr{Cint},Nothing}
+    p_reject::Union{Ptr{Cint},Nothing}
+    p_cutoff::Union{Ptr{Cdouble},Nothing}
+
+    function PreIntSolCallbackData(root_model::XpressProblem, data::Any = nothing)
+        return new(
+            root_model,
+            nothing, # node_model
+            data,
+            nothing, # cprob
+            # nothing, # cbdata
+            nothing, # soltype
+            nothing, # p_reject
+            nothing, # p_cutoff
+        )
+    end
+end
 
 @doc raw"""
-    addcbpreintsol_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, soltype::Ptr{Cint}, p_reject::Ptr{Cint}, p_cutoff::Ptr{Cdouble})
+    xprs_preintsol_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, soltype::Ptr{Cint}, p_reject::Ptr{Cint}, p_cutoff::Ptr{Cdouble})
 """
-function addcbpreintsol_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, soltype::Ptr{Cint}, p_reject::Ptr{Cint}, p_cutoff::Ptr{Cdouble})
-    node_model = XpressProblem(cbprob; finalize_env=false)
-    user_callback_data = unsafe_pointer_to_objref(cbdata)::UserCallbackData
-    callback_data = CallbackData(node_model, user_callback_data)
+function xprs_preintsol_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, soltype::Ptr{Cint}, p_reject::Ptr{Cint}, p_cutoff::Ptr{Cdouble})
+    data_wrapper = unsafe_pointer_to_objref(cbdata)::CallbackDataWrapper{PreIntSolCallbackData}
 
-    user_callback_data.callback(callback_data)
+    # Update callback data
+    data_wrapper.data.node_model = XpressProblem(cbprob; finalize_env = false)
+
+    # Update function args
+    data_wrapper.data.cbprob = cbprob
+    data_wrapper.data.soltype = soltype
+    data_wrapper.data.p_reject = p_reject
+    data_wrapper.data.p_cutoff = p_cutoff
+
+    # Call user-defined function
+    data_wrapper.func(data_wrapper.data)
 
     return zero(Cint)
 end
 
 @doc raw"""
-    set_callback_preintsol!(
+    set_xprs_preintsol_callback!(
         model::XpressProblem,
         callback::Function,
         data::Any=nothing,
@@ -59,22 +92,26 @@ int XPRS_CC XPRSaddcbpreintsol(
 - `data` A user-defined data to be passed to the callback function, `preintsol`.
 - `priority` An integer that determines the order in which callbacks of this type will be invoked. The callback added with a higher priority will be called before a callback with a lower priority. Set to 0 if not required.
 """
-function set_callback_preintsol!(model::XpressProblem, callback::Function, data::Any=nothing, priority::Integer=0)
-    callback_ptr = @cfunction(addcbpreintsol_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}))
-    user_callback_data = UserCallbackData(callback, model, data)
+function set_xprs_preintsol_callback!(model::Xpress.Optimizer, func::Function, data::Any=nothing, priority::Integer=0)
+    callback_ptr = @cfunction(xprs_preintsol_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}))
+    data_wrapper = CallbackDataWrapper{PreIntSolCallbackData}(model.inner, func, data)
 
     Lib.XPRSaddcbpreintsol(
-        model.ptr,          # XPRSprob prob
-        callback_ptr,       # void (XPRS_CC * preintsol)(XPRSprob cbprob, void *cbdata, int soltype, int *p_reject, double *p_cutoff)
-        user_callback_data, # void *data
-        Cint(priority),     # int priority
+        model.inner.ptr, # XPRSprob prob
+        callback_ptr,    # void (XPRS_CC * preintsol)(XPRSprob cbprob, void *cbdata, int soltype, int *p_reject, double *p_cutoff)
+        data_wrapper,    # void *data
+        Cint(priority),  # int priority
     )
 
-    # we need to keep a reference to the callback function
-    # so that it isn't garbage collected
-    return (callback_ptr, user_callback_data)
+    model.callback_info[:xprs_preintsol] = CallbackInfo{PreIntSolCallbackData}(callback_ptr, data_wrapper)
+
+    return nothing
 end
 
-function remove_callback_preintsol!(model::XpressProblem)
+function remove_callback_preintsol!(model::Xpress.Optimizer)
     Lib.XPRSremovecbpreintsol(model.inner, C_NULL, C_NULL)
+
+    model.callback_info[:xprs_preintsol] = nothing
+
+    return nothing
 end

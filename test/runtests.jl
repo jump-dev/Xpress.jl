@@ -6,7 +6,7 @@ println("Optimizer version: $(Xpress.getversion())")
 
 @testset "$(folder)" for folder in [
     "MathOptInterface",
-    # "xprs_callbacks",
+    "xprs_callbacks",
     "Derivative",
 ]
     @testset "$(file)" for file in readdir(folder)
