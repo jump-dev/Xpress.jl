@@ -171,75 +171,75 @@ end
    end
 end
 
-# @testset "UserCutCallback" begin
-#     @testset "UserCut" begin
-#         model, x, item_weights = callback_knapsack_model()
+@testset "UserCutCallback" begin
+    @testset "UserCut" begin
+        model, x, item_weights = callback_knapsack_model()
         
-#         global user_cut_submitted = false
+        global user_cut_submitted = false
         
-#         MOI.set(
-#             model,
-#             MOI.UserCutCallback(),
-#             (cb_data) -> begin
-#                 terms = MOI.ScalarAffineTerm{Float64}[]
-#                 accumulated = 0.0
+        MOI.set(
+            model,
+            MOI.UserCutCallback(),
+            (cb_data) -> begin
+                terms = MOI.ScalarAffineTerm{Float64}[]
+                accumulated = 0.0
 
-#                 for (i, xi) in enumerate(x)
-#                     if MOI.get(model, MOI.CallbackVariablePrimal(cb_data), xi) > 0.0
-#                         push!(terms, MOI.ScalarAffineTerm(1.0, xi))
-#                         accumulated += item_weights[i]
-#                     end
-#                 end
+                for (i, xi) in enumerate(x)
+                    if MOI.get(model, MOI.CallbackVariablePrimal(cb_data), xi) > 0.0
+                        push!(terms, MOI.ScalarAffineTerm(1.0, xi))
+                        accumulated += item_weights[i]
+                    end
+                end
 
-#                 @test MOI.supports(model, MOI.UserCut(cb_data))
+                @test MOI.supports(model, MOI.UserCut(cb_data))
 
-#                 if accumulated > 10.0
-#                     MOI.submit(
-#                         model,
-#                         MOI.UserCut(cb_data),
-#                         MOI.ScalarAffineFunction{Float64}(terms, 0.0),
-#                         MOI.LessThan{Float64}(length(terms) - 1)
-#                     )
-#                     global user_cut_submitted = true
-#                 end
-#             end
-#         )
+                if accumulated > 10.0
+                    MOI.submit(
+                        model,
+                        MOI.UserCut(cb_data),
+                        MOI.ScalarAffineFunction{Float64}(terms, 0.0),
+                        MOI.LessThan{Float64}(length(terms) - 1)
+                    )
+                    global user_cut_submitted = true
+                end
+            end
+        )
         
-#         @test MOI.supports(model, MOI.UserCutCallback())
+        @test MOI.supports(model, MOI.UserCutCallback())
         
-#         MOI.optimize!(model)
+        MOI.optimize!(model)
         
-#         @test user_cut_submitted
-#     end
+        @test user_cut_submitted
+    end
 
-#     @testset "HeuristicSolution" begin
-#         model, x, item_weights = callback_knapsack_model()
+    @testset "HeuristicSolution" begin
+        model, x, item_weights = callback_knapsack_model()
         
-#         cb = nothing
+        cb = nothing
 
-#         MOI.set(
-#             model,
-#             MOI.UserCutCallback(),
-#             (cb_data) -> begin
-#                 cb = cb_data
-#                 MOI.submit(
-#                     model,
-#                     MOI.HeuristicSolution(cb_data),
-#                     [x[1]],
-#                     [0.0]
-#                 )
-#             end
-#         )
+        MOI.set(
+            model,
+            MOI.UserCutCallback(),
+            (cb_data) -> begin
+                cb = cb_data
+                MOI.submit(
+                    model,
+                    MOI.HeuristicSolution(cb_data),
+                    [x[1]],
+                    [0.0]
+                )
+            end
+        )
         
-#         @test_throws(
-#             MOI.InvalidCallbackUsage(
-#                 MOI.UserCutCallback(),
-#                 MOI.HeuristicSolution(cb)
-#             ),
-#             MOI.optimize!(model)
-#         )
-#     end
-# end
+        @test_throws(
+            MOI.InvalidCallbackUsage(
+                MOI.UserCutCallback(),
+                MOI.HeuristicSolution(cb)
+            ),
+            MOI.optimize!(model)
+        )
+    end
+end
 
 @testset "HeuristicCallback" begin
     @testset "HeuristicSolution" begin
@@ -305,26 +305,26 @@ end
             MOI.optimize!(model)
         )
     end
-    # @testset "UserCut" begin
-    #     model, x, item_weights = callback_knapsack_model()
-    #     cb = nothing
-    #     MOI.set(model, MOI.HeuristicCallback(), cb_data -> begin
-    #         cb = cb_data
-    #         MOI.submit(
-    #             model,
-    #             MOI.UserCut(cb_data),
-    #             MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
-    #             MOI.LessThan(5.0)
-    #         )
-    #     end)
-    #     @test_throws(
-    #         MOI.InvalidCallbackUsage(
-    #             MOI.HeuristicCallback(),
-    #             MOI.UserCut(cb)
-    #         ),
-    #         MOI.optimize!(model)
-    #     )
-    # end
+    @testset "UserCut" begin
+        model, x, item_weights = callback_knapsack_model()
+        cb = nothing
+        MOI.set(model, MOI.HeuristicCallback(), cb_data -> begin
+            cb = cb_data
+            MOI.submit(
+                model,
+                MOI.UserCut(cb_data),
+                MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
+                MOI.LessThan(5.0)
+            )
+        end)
+        @test_throws(
+            MOI.InvalidCallbackUsage(
+                MOI.HeuristicCallback(),
+                MOI.UserCut(cb)
+            ),
+            MOI.optimize!(model)
+        )
+    end
 end
 
 # NOTE: 'Xpress.CallbackFunction' doesn't exist anymore
