@@ -158,7 +158,7 @@ mutable struct IISData
     colbndtype::Vector{UInt8} # sense of the column bounds that participate
 end
 
-include("../callbacks/interface.jl")
+include("callbacks/interface.jl")
 
 mutable struct Optimizer <: MOI.AbstractOptimizer
     # The low-level Xpress model.
@@ -399,9 +399,9 @@ function MOI.is_empty(model::Optimizer)
     return true
 end
 
-include("../callbacks/generic.jl")
-include("../callbacks/XPRS_callbacks.jl")
-include("../callbacks/MOI_callbacks.jl")
+include("callbacks/generic.jl")
+include("callbacks/XPRS_callbacks.jl")
+include("callbacks/MOI_callbacks.jl")
 
 function reset_cached_solution!(model::Optimizer)
     num_variables = length(model.variable_info)
