@@ -288,6 +288,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
             :xprs_preintsol      => nothing,
         )
 
+        # TODO: separate MOI.empty! from initializer
         MOI.empty!(model)  # inner is initialized here
 
         return model
@@ -297,22 +298,25 @@ end
 Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 
 function MOI.empty!(model::Optimizer)
+    # Instantiate new inner problem
     model.inner = XpressProblem()
 
+    # Reset parameters
     for (name, value) in model.params
         MOI.set(model, name, value)
     end
 
     MOI.set(model, MOI.RawOptimizerAttribute("MPSNAMELENGTH"), 64)
     MOI.set(model, MOI.RawOptimizerAttribute("CALLBACKFROMMASTERTHREAD"), 1)
-
     MOI.set(model, MOI.RawOptimizerAttribute("XPRESS_WARNING_WINDOWS"), model.show_warning)
 
     # disable log caching previous state
     log_level = model.log_level
     log_level != 0 && MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
+
     # silently load a empty model - to avoid useless printing
     Xpress.loadlp(model.inner)
+
     # re-enable logging
     log_level != 0 && MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), log_level)
 
@@ -335,6 +339,7 @@ function MOI.empty!(model::Optimizer)
     model.primal_status = MOI.NO_SOLUTION
     model.dual_status = MOI.NO_SOLUTION
 
+    # TODO: store callback info using structs intead of a dictionary
     model.callback_info = Dict{Symbol,Union{CallbackInfo,Nothing}}(
         :moi_heuristic       => nothing,
         :moi_lazy_constraint => nothing,
@@ -355,43 +360,41 @@ function MOI.empty!(model::Optimizer)
     for (name, value) in model.params
         MOI.set(model, name, value)
     end
-    return
+
+    return nothing
 end
 
 function MOI.is_empty(model::Optimizer)
     !isempty(model.name) && return false
     model.objective_type != SCALAR_AFFINE && return false
-    model.is_objective_set == true && return false
-    model.objective_sense !== nothing && return false
+    model.is_objective_set === true && return false
+    !isnothing(model.objective_sense) && return false
     !isempty(model.variable_info) && return false
     length(model.affine_constraint_info) != 0 && return false
     length(model.sos_constraint_info) != 0 && return false
-    model.name_to_variable !== nothing && return false
-    model.name_to_constraint_index !== nothing && return false
+    !isnothing(model.name_to_variable) && return false
+    !isnothing(model.name_to_constraint_index) && return false
 
-    model.cached_solution !== nothing && return false
-    model.basis_status !== nothing && return false
-    model.conflict !== nothing && return false
+    !isnothing(model.cached_solution) && return false
+    !isnothing(model.basis_status) && return false
+    !isnothing(model.conflict) && return false
 
     model.termination_status != MOI.OPTIMIZE_NOT_CALLED && return false
     model.primal_status != MOI.NO_SOLUTION && return false
     model.dual_status != MOI.NO_SOLUTION && return false
+
+    # TODO: get this right. When the model is reset, the message callback
+    #       is set, thus making the callback_info dict not empty. 
+    # any(!isnothing, values(model.callback_info)) && return false
+    !isnothing(model.callback_cached_solution) && return false
+
+    if !isnothing(model.callback_cut_data)
+        !isempty(model.callback_cut_data.cut_ptrs) && return false
+        model.callback_cut_data.submitted === true && return false
+    end
     
-    any(!isnothing, values(model.callback_info)) && return false
-    model.callback_cached_solution !== nothing && return false
-    model.callback_cut_data !== nothing && return false
     model.callback_state != CS_NONE && return false
-    model.callback_exception !== nothing && return false
-
-    model.lazy_callback !== nothing && return false
-    model.user_cut_callback !== nothing && return false
-    model.heuristic_callback !== nothing && return false
-
-    model.has_generic_callback && return false
-    model.callback_data !== nothing && return false
-
-    # model.message_callback !== nothing && return false
-    # otherwise jump complains it is not empty
+    !isnothing(model.callback_exception) && return false
 
     return true
 end

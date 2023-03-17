@@ -132,9 +132,9 @@ void XPRS_CC Message(XPRSprob cbprob, void* data, const char *msg, int msglen, i
     2. This function offers one method of handling the messages which describe any warnings and errors that may occur during execution. Other methods are to check the return values of functions and then get the error code using the ERRORCODE attribute, obtain the last error message directly using XPRSgetlasterror, or send messages direct to a log file using XPRSsetlogfile.
     3. Visual Basic users must use the alternative function XPRSaddcbmessageVB to define the callback; this is required because of the different way VB handles strings.
 """
-function set_xprs_message_callback!(model::Xpress.Optimizer, show_warning::Bool = true, priority::Integer = 0)
+function set_xprs_message_callback!(model::Xpress.Optimizer, func::Function, data::Any = nothing, priority::Integer = 0)
     callback_ptr = @cfunction(addcbmessage_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint))
-    data_wrapper = CallbackDataWrapper{MessageCallbackData}(model.inner, func, show_warning)
+    data_wrapper = CallbackDataWrapper{MessageCallbackData}(model.inner, func, data)
 
     Lib.XPRSaddcbmessage(
         model.inner.ptr, # XPRSprob prob
@@ -150,20 +150,13 @@ function set_xprs_message_callback!(model::Xpress.Optimizer, show_warning::Bool 
     return nothing
 end
 
-function set_xprs_message_callback!(model::Xpress.Optimizer, func::Function, data::Any = nothing, priority::Integer = 0)
-    callback_ptr = @cfunction(addcbmessage_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint))
-    data_wrapper = CallbackDataWrapper{MessageCallbackData}(model.inner, func, data)
-
-    Lib.XPRSaddcbmessage(
-        model.inner.ptr, # XPRSprob prob
-        callback_ptr,    # void (XPRS_CC *message)(XPRSprob cbprob, void *cbdata, const char *msg, int msglen, int msgtype)
-        data_wrapper,    # void *data
-        Cint(priority)   # int priority
+function set_xprs_message_callback!(model::Xpress.Optimizer, show_warning::Bool = true, priority::Integer = 0)
+    set_xprs_message_callback!(
+        model,
+        (callback_data) -> (nothing), # func::Function
+        show_warning,                 # data::Any
+        priority,
     )
-
-    # Keep a reference to the callback function to avoid garbage collection
-    # TODO: Handle reference-tracking properly
-    model.callback_info[:xprs_message] = CallbackInfo{MessageCallbackData}(callback_ptr, data_wrapper)
 
     return nothing
 end
@@ -204,7 +197,7 @@ end
 
 function MOI.set(model::Optimizer, ::MessageCallback, ::Nothing)
     if !isnothing(model.callback_info[:xprs_message])
-        remove_message_callback!(model.inner)
+        remove_message_callback!(model)
     end
 
     return nothing
@@ -214,7 +207,7 @@ function MOI.set(model::Optimizer, attr::MessageCallback, func::Function)
     # remove any existing callback definitions
     MOI.set(model, attr, nothing)
 
-    set_xprs_message_callback!(model.inner, func)
+    set_xprs_message_callback!(model, func)
 
     return nothing
 end
@@ -222,7 +215,7 @@ end
 MOI.supports(::Optimizer, ::MessageCallback) = true
 
 function reset_message_callback!(model::Optimizer)
-    callback_info = model.callback_info[:xprs_message]::Union{CallbackInfo{GenericCallbackData},Nothing}
+    callback_info = model.callback_info[:xprs_message]::Union{CallbackInfo{MessageCallbackData},Nothing}
 
     if !isnothing(callback_info)
         # remove all message callbacks
@@ -231,8 +224,8 @@ function reset_message_callback!(model::Optimizer)
 
     #  no file -> screen            && has log
     if isempty(model.inner.logfile) && !iszero(model.log_level)
-        model.message_callback = set_xprs_message_callback!(
-            model.inner,
+        set_xprs_message_callback!(
+            model,
             model.show_warning,
         )
     end
