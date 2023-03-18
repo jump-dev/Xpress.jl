@@ -698,7 +698,7 @@ function _indices_and_coefficients(
 )
     f_canon = MOI.Utilities.canonical(f)
     nnz = length(f_canon.terms)
-    indices = Vector{Int}(undef, nnz)
+    indices = Vector{Cint}(undef, nnz)
     coefficients = Vector{Float64}(undef, nnz)
     _indices_and_coefficients(indices, coefficients, model, f_canon)
     return indices, coefficients
@@ -708,7 +708,7 @@ function _indices_and_coefficients_indicator(
     model::Optimizer, f::MOI.VectorAffineFunction
 )
     nnz = length(f.terms) - 1
-    indices = Vector{Int}(undef, nnz)
+    indices = Vector{Cint}(undef, nnz)
     coefficients = Vector{Float64}(undef, nnz)
     i = 1
     for fi in f.terms
@@ -722,10 +722,10 @@ function _indices_and_coefficients_indicator(
 end
 
 function _indices_and_coefficients(
-    I::AbstractVector{Int},
-    J::AbstractVector{Int},
+    I::AbstractVector{Cint},
+    J::AbstractVector{Cint},
     V::AbstractVector{Float64},
-    indices::AbstractVector{Int},
+    indices::AbstractVector{Cint},
     coefficients::AbstractVector{Float64},
     model::Optimizer,
     f::MOI.ScalarQuadraticFunction
@@ -771,10 +771,10 @@ function _indices_and_coefficients(
     f_canon = MOI.Utilities.canonical(f)
     nnz_quadratic = length(f_canon.quadratic_terms)
     nnz_affine = length(f_canon.affine_terms)
-    I = Vector{Int}(undef, nnz_quadratic)
-    J = Vector{Int}(undef, nnz_quadratic)
+    I = Vector{Cint}(undef, nnz_quadratic)
+    J = Vector{Cint}(undef, nnz_quadratic)
     V = Vector{Float64}(undef, nnz_quadratic)
-    indices = Vector{Int}(undef, nnz_affine)
+    indices = Vector{Cint}(undef, nnz_affine)
     coefficients = Vector{Float64}(undef, nnz_affine)
     _indices_and_coefficients(I, J, V, indices, coefficients, model, f_canon)
     return indices, coefficients, I, J, V
@@ -943,7 +943,7 @@ function forward(model::Optimizer)
     Lib.XPRSftran(model.inner, aux_vector)
 
     #3 - Create Dict of Basic variable to All variables
-    basic_variables_ordered = Vector{Int32}(undef, rows)
+    basic_variables_ordered = Vector{Cint}(undef, rows)
     Lib.XPRSgetpivotorder(model.inner, basic_variables_ordered)
 
     aux_dict = Dict{Int, Int}()
@@ -1193,7 +1193,7 @@ function MOI.set(
     end
     I .-= 1
     J .-= 1
-    Lib.XPRSchgmqobj(model.inner,Cint(length(I)), I, J, V)
+    Lib.XPRSchgmqobj(model.inner, Cint(length(I)), I, J, V)
     model.objective_type = SCALAR_QUADRATIC
     model.is_objective_set = true
     return
@@ -1206,16 +1206,15 @@ function MOI.get(
     dest = zeros(length(model.variable_info))
     nnz = n_quadratic_elements(model.inner)
     n = n_variables(model.inner)
-    nels = Array{Cint}(undef, 1)
-    nels[1] = nnz
+    nels = Ref{Cint}(nnz)
     mstart = Array{Cint}(undef, n + 1)
     mclind = Array{Cint}(undef, nnz)
     dobjval = Array{Float64}(undef, nnz)
     Lib.XPRSgetmqobj(model.inner, mstart, mclind, dobjval, nnz, nels, Cint(0), Cint(n - 1))
-    triangle_nnz = nels[1]
+    triangle_nnz = nels[]
     mstart[end] = triangle_nnz
-    I = Array{Int}(undef, triangle_nnz)
-    J = Array{Int}(undef, triangle_nnz)
+    I = Array{Cint}(undef, triangle_nnz)
+    J = Array{Cint}(undef, triangle_nnz)
     V = Array{Float64}(undef, triangle_nnz)
     for i in 1:length(mstart)-1
         for j in (mstart[i]+1):mstart[i+1]
@@ -2054,9 +2053,9 @@ function MOI.add_constraints(
     end
     # Initialize storage
     indices = Vector{MOI.ConstraintIndex{eltype(f), eltype(s)}}(undef, length(f))
-    row_starts = Vector{Int}(undef, length(f) + 1)
+    row_starts = Vector{Cint}(undef, length(f) + 1)
     row_starts[1] = 1
-    columns = Vector{Int}(undef, nnz)
+    columns = Vector{Cint}(undef, nnz)
     coefficients = Vector{Float64}(undef, nnz)
     senses = Vector{Cchar}(undef, length(f))
     rhss = Vector{Float64}(undef, length(f))
@@ -2402,14 +2401,13 @@ function MOI.get(
     info = _info(model, c)
     row = info.row
 
-    comps = Array{Cint}(undef, 1)
-    inds = Array{Cint}(undef, 1)
+    comps = Ref{Cint}(0)
+    inds = Ref{Cint}(0)
     Lib.XPRSgetindicators(model.inner, inds, comps, Cint(row-1), Cint(row-1))
-    inds .+= 1
     push!(terms,
             MOI.VectorAffineTerm(1,
                 MOI.ScalarAffineTerm(1.0,
-                    model.variable_info[CleverDicts.LinearIndex(inds[1])].index
+                    model.variable_info[CleverDicts.LinearIndex(inds[]+1)].index
                 )
             )
         )
@@ -2525,7 +2523,7 @@ end
 function MOI.add_constraint(
     model::Optimizer, f::MOI.VectorOfVariables, s::SOS
 )
-    columns = Int[_info(model, v).column - 1 for v in f.variables]
+    columns = Cint[Cint(_info(model, v).column - 1) for v in f.variables]
     idx = Cint[0, 0]
     Lib.XPRSaddsets(
         model.inner, # prob
@@ -2533,7 +2531,7 @@ function MOI.add_constraint(
         length(columns), # newnz
         Ref{UInt8}(_sos_type(s)), # qstype
         idx, # Cint.(msstart)
-        Cint.(columns), # Cint.(mscols)
+        columns, # Cint.(mscols)
         s.weights, # dref
     )
     model.last_constraint_index += 1
@@ -2580,8 +2578,8 @@ function _get_sparse_sos(model)
 
     setstart[end] = nnz
 
-    I = Array{Int}(undef,  nnz)
-    J = Array{Int}(undef,  nnz)
+    I = Array{Cint}(undef,  nnz)
+    J = Array{Cint}(undef,  nnz)
     V = Array{Float64}(undef,  nnz)
     for i in 1:length(setstart) - 1
         for j in (setstart[i]+1):setstart[i+1]
@@ -2590,7 +2588,7 @@ function _get_sparse_sos(model)
             V[j] = setvals[j]
         end
     end
-    return sparse(I, J, V, nsets[1], n)
+    return sparse(I, J, V, nsets[], n)
 end
 
 function MOI.get(
@@ -2765,7 +2763,7 @@ function MOI.optimize!(model::Optimizer)
     status = MOI.get(model, MOI.PrimalStatus())
     if status == MOI.INFEASIBILITY_CERTIFICATE
         has_Ray = Int64[0]
-        Lib.XPRSgetprimalray(model.inner, model.cached_solution.variable_primal , has_Ray)
+        Lib.XPRSgetprimalray(model.inner, model.cached_solution.variable_primal, has_Ray)
         model.cached_solution.has_primal_certificate = _has_primal_ray(model)
     elseif status == MOI.FEASIBLE_POINT 
         model.cached_solution.has_feasible_point = true
@@ -2773,7 +2771,7 @@ function MOI.optimize!(model::Optimizer)
     status = MOI.get(model, MOI.DualStatus())
     if status == MOI.INFEASIBILITY_CERTIFICATE
         has_Ray = Int64[0]
-        Lib.XPRSgetdualray(model.inner, model.cached_solution.linear_dual , has_Ray)
+        Lib.XPRSgetdualray(model.inner, model.cached_solution.linear_dual, has_Ray)
         model.cached_solution.has_dual_certificate = _has_dual_ray(model)
     end
     return
@@ -2918,15 +2916,15 @@ function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
 end
 
 function _has_dual_ray(model::Optimizer)
-    has_Ray = Int64[0]
+    has_Ray = Ref{Cint}(0)
     Lib.XPRSgetdualray(model.inner, C_NULL, has_Ray)
-    return has_Ray[1] != 0
+    return has_Ray[] != 0
 end
 
 function _has_primal_ray(model::Optimizer)
-    has_Ray = Int64[0]
+    has_Ray = Ref{Cint}(0)
     Lib.XPRSgetprimalray(model.inner, C_NULL, has_Ray)
-    return has_Ray[1] != 0
+    return has_Ray[] != 0
 end
 
 function _cache_primal_status(model)
@@ -3481,7 +3479,7 @@ function MOI.modify(
 )
     @assert model.objective_type == SCALAR_AFFINE
     nels = length(chgs)
-    cols = Vector{Int}(undef, nels)
+    cols = Vector{Cint}(undef, nels)
     coefs = Vector{Float64}(undef, nels)
 
     for i in 1:nels
@@ -3489,7 +3487,7 @@ function MOI.modify(
         coefs[i] = chgs[i].new_coefficient
     end
 
-    Lib.XPRSchgobj(model.inner, Cint(length(coefs)), Cint.(cols), coefs)
+    Lib.XPRSchgobj(model.inner, Cint(length(coefs)), cols, coefs)
     model.is_objective_set = true
     return
 end
@@ -3513,7 +3511,7 @@ of this function.
 function _replace_with_matching_sparsity!(
     model::Optimizer,
     previous::MOI.ScalarAffineFunction,
-    replacement::MOI.ScalarAffineFunction, row::Int
+    replacement::MOI.ScalarAffineFunction, row::Integer
 )
     for term in replacement.terms
         col = _info(model, term.variable).column
@@ -3546,7 +3544,7 @@ sparsity patterns match, the zeroing-out step can be skipped.
 function _replace_with_different_sparsity!(
     model::Optimizer,
     previous::MOI.ScalarAffineFunction,
-    replacement::MOI.ScalarAffineFunction, row::Int
+    replacement::MOI.ScalarAffineFunction, row::Integer
 )
     # First, zero out the old constraint function terms.
     for term in previous.terms
@@ -3610,10 +3608,10 @@ function MOI.set(
     else
         _replace_with_different_sparsity!(model, previous, replacement, row)
     end
-    rhs=Vector{Float64}(undef, 1)
-    Lib.XPRSgetrhs(model.inner, rhs, Cint(row-1), Cint(row-1))
-    rhs[1] -= replacement.constant - previous.constant
-    Lib.XPRSchgrhs(model.inner, Cint(1), Ref(Cint(row - 1)), Ref(rhs[]))
+    _rhs = Ref(0.0)
+    Lib.XPRSgetrhs(model.inner, _rhs, Cint(row-1), Cint(row-1))
+    rhs = Ref(_rhs[] - (replacement.constant - previous.constant))
+    Lib.XPRSchgrhs(model.inner, Cint(1), Ref(Cint(row - 1)), rhs)
     return
 end
 
@@ -4077,15 +4075,15 @@ end
 
 function getfirstiis(model::Optimizer)
     iismode = Cint(1)
-    status_code = Array{Cint}(undef, 1)
+    status_code = Ref{Cint}(0)
     Lib.XPRSiisfirst(model.inner, iismode, status_code)
 
-    if status_code[1] == 1
+    if status_code[] == 1
         # The problem is actually feasible.
-        return IISData(status_code[1], true, 0, 0, Vector{Cint}(undef, 0), Vector{Cint}(undef, 0), Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
-    elseif 2 <= status_code[1] <= 3 # 2 = error, 3 = timeout
+        return IISData(status_code[], true, 0, 0, Cint[], Cint[], UInt8[], UInt8[])
+    elseif 2 <= status_code[] <= 3 # 2 = error, 3 = timeout
         ncols, miiscol = getinfeasbounds(model)
-        return IISData(status_code[1], false, 0, ncols, Vector{Cint}(undef, 0), miiscol, Vector{UInt8}(undef, 0), Vector{UInt8}(undef, 0))
+        return IISData(status_code[], false, 0, ncols, Cint[], miiscol, UInt8[], UInt8[])
     end
 
     # XPRESS' API works in two steps: first, retrieve the sizes of the arrays to
@@ -4093,13 +4091,13 @@ function getfirstiis(model::Optimizer)
     # before asking XPRESS to fill it.
 
     num = Cint(1)
-    rownumber = Vector{Cint}(undef, 1)
-    colnumber = Vector{Cint}(undef, 1)
+    rownumber = Ref{Cint}(0)
+    colnumber = Ref{Cint}(0)
     Lib.XPRSgetiisdata(
         model.inner, num, rownumber, colnumber, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
 
-    nrows = rownumber[1]
-    ncols = colnumber[1]
+    nrows = rownumber[]
+    ncols = colnumber[]
     miisrow = Vector{Cint}(undef, nrows)
     miiscol = Vector{Cint}(undef, ncols)
     constrainttype = Vector{UInt8}(undef, nrows)
@@ -4107,7 +4105,7 @@ function getfirstiis(model::Optimizer)
     Lib.XPRSgetiisdata(
         model.inner, num, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, C_NULL, C_NULL, C_NULL, C_NULL)
 
-    return IISData(status_code[1], true, nrows, ncols, miisrow, miiscol, constrainttype, colbndtype)
+    return IISData(status_code[], true, nrows, ncols, miisrow, miiscol, constrainttype, colbndtype)
 end
 
 function MOI.compute_conflict!(model::Optimizer)
