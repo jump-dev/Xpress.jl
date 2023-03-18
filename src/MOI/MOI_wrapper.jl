@@ -2029,7 +2029,7 @@ function MOI.add_constraint(
         Ref(rhs),#_drhs,
         C_NULL,#_drng,
         Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}), 
-        Cint.(indices.-= 1),#Cint.(_mclind::Vector{Int}), 
+        indices.-= 1,#Cint.(_mclind::Vector{Int}), 
         coefficients#_dmatval
     )
     return MOI.ConstraintIndex{typeof(f), typeof(s)}(model.last_constraint_index)
@@ -2081,8 +2081,8 @@ function MOI.add_constraints(
         senses,#_srowtype,
         rhss,#_drhs,
         C_NULL,#_drng,
-        Cint.(row_starts.-= 1),#Cint.(_mrstart::Vector{Int}), 
-        Cint.(columns.-= 1),#Cint.(_mclind::Vector{Int}), 
+        row_starts.-= 1,#Cint.(_mrstart::Vector{Int}), 
+        columns.-= 1,#Cint.(_mclind::Vector{Int}), 
         coefficients#_dmatval
         )
     return indices
@@ -2373,7 +2373,7 @@ function MOI.add_constraint(
         Ref(rhs-cte),#_drhs,
         C_NULL,#_drng,
         Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}), 
-        Cint.(indices.-= 1),#Cint.(_mrwind::Vector{Int}), 
+        indices.-= 1,#Cint.(_mrwind::Vector{Int}), 
         coefficients#_dmatval
     )
     Lib.XPRSsetindicators(model.inner,
@@ -2439,7 +2439,7 @@ function MOI.add_constraint(
         Ref(rhs),
         C_NULL,
         Ref{Cint}(0),
-        Cint.(indices.-= 1),
+        indices.-= 1,
         coefficients
     )
     V .*= 0.5 # only for constraints
@@ -2448,9 +2448,9 @@ function MOI.add_constraint(
     Lib.XPRSaddqmatrix(
         model.inner,
         Xpress.n_constraints(model.inner) - 1,
-        length(I),
-        Cint.(I),
-        Cint.(J),
+        Cint(length(I)),
+        I,
+        J,
         V,
     )
     model.last_constraint_index += 1
@@ -3734,7 +3734,7 @@ function MOI.add_constraint(
 
     # Now add the quadratic constraint.
 
-    I = Cint[vs_info[i].column - 1 for i in 1:N]
+    I = Cint[Cint(vs_info[i].column - 1) for i in 1:N]
     V = fill(1.0, N)
     V[1] = -1.0
     Lib.XPRSaddrows(
@@ -3750,9 +3750,9 @@ function MOI.add_constraint(
     )
     Lib.XPRSaddqmatrix(model.inner,
         Xpress.n_constraints(model.inner) - 1,
-        length(I),
-        Cint.(I),
-        Cint.(I),
+        Cint(length(I)),
+        I,
+        I,
         V,
     )
     model.last_constraint_index += 1
@@ -3815,8 +3815,8 @@ function MOI.add_constraint(
 
     # Now add the quadratic constraint.
 
-    I = Cint[vs_info[i].column - 1 for i in 1:N if i != 2]
-    J = Cint[vs_info[i].column - 1 for i in 1:N if i != 1]
+    I = Cint[Cint(vs_info[i].column - 1) for i in 1:N if i != 2]
+    J = Cint[Cint(vs_info[i].column - 1) for i in 1:N if i != 1]
     V = fill(1.0, N-1)
     V[1] = -1.0 # just the upper triangle
     Lib.XPRSaddrows(
@@ -3834,8 +3834,8 @@ function MOI.add_constraint(
         model.inner,
         Xpress.n_constraints(model.inner) - 1,
         length(I),
-        Cint.(I),
-        Cint.(J),
+        I,
+        J,
         V,
     )
     model.last_constraint_index += 1
