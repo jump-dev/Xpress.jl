@@ -4188,5 +4188,5 @@ function add_names_to_inner_model(model::Xpress.Optimizer)
     const_cnames = join(const_names, "\0")
     Xpress.Lib.XPRSaddnames(model.inner, Cint(1), const_cnames, Cint(0), Cint(number_of_rows(model) - 1))
 
-    return var_names, const_names
+    return nothing
 end
