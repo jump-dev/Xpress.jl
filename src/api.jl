@@ -93,7 +93,7 @@ Returns the banner and copyright message.
 
 """
 function getbanner()
-    banner = @invoke Lib.XPRSgetbanner(_)::String
+    banner = @_invoke Lib.XPRSgetbanner(_)::String
     return banner
 end
 
@@ -104,7 +104,7 @@ Returns the full Optimizer version number in the form 15.10.03, where 15 is the 
 
 """
 function getversion()
-    version = @invoke Lib.XPRSgetversion(_)::String
+    version = @_invoke Lib.XPRSgetversion(_)::String
     return VersionNumber(parse.(Int, split(version, "."))...)
 end
 
@@ -115,7 +115,7 @@ Returns the number of days left until an evaluation license expires.
 
 """
 function getdaysleft()
-    daysleft = @invoke Lib.XPRSgetdaysleft(_)::Int
+    daysleft = @_invoke Lib.XPRSgetdaysleft(_)::Int
 end
 
 """
@@ -247,7 +247,7 @@ Returns the current  problem name.
 
 """
 function getprobname(prob::XpressProblem)
-    @invoke Lib.XPRSgetprobname(prob, _)::String
+    @_invoke Lib.XPRSgetprobname(prob, _)::String
 end
 
 """
@@ -312,12 +312,12 @@ Enables users to recover the values of various integer  control parameters
 """
 function getintcontrol(prob::XpressProblem, _index::Integer)
     _index = Int32(_index)
-    @invoke Lib.XPRSgetintcontrol(prob, _index, _)::Int
+    @_invoke Lib.XPRSgetintcontrol(prob, _index, _)::Int
 end
 
 function getintcontrol64(prob::XpressProblem, _index::Integer)
     _index = Int32(_index)
-    @invoke Lib.XPRSgetintcontrol64(prob, _index, _)::Int
+    @_invoke Lib.XPRSgetintcontrol64(prob, _index, _)::Int
 end
 
 """
@@ -333,7 +333,7 @@ Retrieves the value of a given double  control parameter.
 
 """
 function getdblcontrol(prob::XpressProblem, _index::Integer)
-    @invoke Lib.XPRSgetdblcontrol(prob, _index, _)::Float64
+    @_invoke Lib.XPRSgetdblcontrol(prob, _index, _)::Float64
 end
 
 """
@@ -351,7 +351,7 @@ Returns the value of a given string  control parameters.
 
 """
 function getstrcontrol(prob::XpressProblem, _index::Integer)
-    @invoke Lib.XPRSgetstrcontrol(prob, _index, _)::String
+    @_invoke Lib.XPRSgetstrcontrol(prob, _index, _)::String
 end
 
 function getstringcontrol(prob::XpressProblem, _index::Integer, _svalue, _svaluesize, _controlsize)
@@ -371,11 +371,11 @@ Enables users to recover the values of various integer   problem attributes. Pro
 
 """
 function getintattrib(prob::XpressProblem, _index::Integer)
-    @invoke Lib.XPRSgetintattrib(prob, _index, _)::Int
+    @_invoke Lib.XPRSgetintattrib(prob, _index, _)::Int
 end
 
 function getintattrib64(prob::XpressProblem, _index::Integer)
-    @invoke Lib.XPRSgetintattrib64(prob, _index, _)::Int
+    @_invoke Lib.XPRSgetintattrib64(prob, _index, _)::Int
 end
 
 """
@@ -393,7 +393,7 @@ Enables users to recover the values of various string  problem attributes. Probl
 
 """
 function getstrattrib(prob::XpressProblem, _index::Integer)
-    @invoke Lib.XPRSgetstrattrib(prob, _index, _)::String
+    @_invoke Lib.XPRSgetstrattrib(prob, _index, _)::String
 end
 
 function getstringattrib(prob::XpressProblem, _index::Integer, _cvalue, _cvaluesize, _controlsize)
@@ -413,7 +413,7 @@ Enables users to retrieve the values of various double   problem attributes. Pro
 
 """
 function getdblattrib(prob::XpressProblem, _index::Integer)
-    @invoke Lib.XPRSgetdblattrib(prob, _index, _)::Float64
+    @_invoke Lib.XPRSgetdblattrib(prob, _index, _)::Float64
 end
 
 """
@@ -819,7 +819,7 @@ When a model is loaded, the rows, columns and sets of the model may not have  na
     first -= 1
     last -= 1
 
-   for (idx,str) in enumerate(names)
+    for (idx,str) in enumerate(names)
         if length(str) > NAMELENGTH
             names[idx] = first(str, NAMELENGTH)
         end
@@ -2791,7 +2791,7 @@ Returns the error message corresponding to the last error encountered by a libra
 
 """
 function getlasterror(prob::XpressProblem)
-    @invoke Lib.XPRSgetlasterror(prob, _)::String
+    @_invoke Lib.XPRSgetlasterror(prob, _)::String
     buffer = Array{Cchar}(undef, 512)
     buffer_p = pointer(buffer)
     GC.@preserve buffer begin
