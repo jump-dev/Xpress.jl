@@ -36,7 +36,6 @@ module Xpress
     include("helper.jl")
     include("attributes_controls.jl")
     include("api.jl")
-    # include("xprs_callbacks.jl")
     include("license.jl")
 
     const XPRS_ATTRIBUTES = Dict{String, Any}(
