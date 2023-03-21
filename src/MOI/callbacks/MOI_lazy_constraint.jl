@@ -1,13 +1,13 @@
 function moi_lazy_constraint_wrapper(model::Optimizer, callback_data::CallbackData)
-    callback_info = model.callback_info[:moi_lazy_constraint]
+    info = get(model.callback_info, CT_MOI_LAZY_CONSTRAINT, nothing)
 
-    if !isnothing(callback_info)
+    if !isnothing(info)
         model.callback_state = CS_MOI_LAZY_CONSTRAINT # TODO: push
 
         # Add previous cuts if any to gurantee that the user is dealing with
         # an optimal solution feasibile for existing cuts
         if isempty(model.callback_cut_data.cut_ptrs) || !apply_cuts!(model, callback_data.node_model)
-            callback_info.data_wrapper.func(callback_data)
+            info.data_wrapper.func(callback_data)
         end
 
         model.callback_state = CS_NONE # TODO: pop
@@ -17,18 +17,18 @@ function moi_lazy_constraint_wrapper(model::Optimizer, callback_data::CallbackDa
 end
 
 function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, ::Nothing)
-    model.callback_info[:moi_lazy_constraint] = nothing
+    model.callback_info[CT_MOI_LAZY_CONSTRAINT] = nothing
 
     return nothing
 end
 
 function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, func::Function)
-    model.callback_info[:moi_lazy_constraint] = CallbackInfo{GenericCallbackData}(
+    model.callback_info[CT_MOI_LAZY_CONSTRAINT] = CallbackInfo{GenericCallbackData}(
         C_NULL,
         CallbackDataWrapper(model.inner, func),
     )
 
-    set_moi_generic_callback!(model)
+    model.callback_info[CT_MOI_GENERIC] = set_moi_generic_callback!(model)
 
     return nothing
 end

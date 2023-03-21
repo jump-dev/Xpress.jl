@@ -103,15 +103,38 @@ function set_xprs_preintsol_callback!(model::Xpress.Optimizer, func::Function, d
         Cint(priority),  # int priority
     )
 
-    model.callback_info[:xprs_preintsol] = CallbackInfo{PreIntSolCallbackData}(callback_ptr, data_wrapper)
-
-    return nothing
+    return CallbackInfo{PreIntSolCallbackData}(callback_ptr, data_wrapper)
 end
 
 function remove_callback_preintsol!(model::Xpress.Optimizer)
     Lib.XPRSremovecbpreintsol(model.inner, C_NULL, C_NULL)
 
-    model.callback_info[:xprs_preintsol] = nothing
+    return nothing
+end
+
+function remove_callback_preintsol!(model::Xpress.Optimizer, info::CallbackInfo{CD}) where {CD <: CallbackData}
+    Lib.XPRSremovecbpreintsol(model.inner, info.callback_ptr, C_NULL)
+
+    return nothing
+end
+
+function MOI.set(model::Optimizer, ::PreIntSolCallback, ::Nothing)
+    info = get(model.callback_info, CT_XPRS_PREINTSOL, nothing)
+
+    if !isnothing(info)
+        remove_xprs_preintsol_callback!(model)
+    end
+
+    model.callback_info[CT_XPRS_PREINTSOL] = nothing
+
+    return nothing
+end
+
+function MOI.set(model::Optimizer, attr::PreIntSolCallback, func::Function)
+    # remove any existing callback definitions
+    MOI.set(model, attr, nothing)
+
+    model.callback_info[CT_XPRS_PREINTSOL] = set_xprs_preintsol_callback!(model, func)
 
     return nothing
 end

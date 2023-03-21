@@ -1,33 +1,33 @@
 function moi_heuristic_wrapper(model::Optimizer, callback_data::CallbackData)
-    callback_info = model.callback_info[:moi_heuristic]
+    info = get(model.callback_info, CT_MOI_HEURISTIC, nothing)
 
-    if !isnothing(callback_info)
-        model.callback_state = CS_MOI_HEURISTIC # TODO: push
+    if !isnothing(info)
+        push_callback_state!(model, CS_MOI_HEURISTIC)
 
         # Allow at most one heuristic solution per LP optimal node
         if Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) <= 1
-            callback_info.data_wrapper.func(callback_data)
+            info.data_wrapper.func(callback_data)
         end
 
-        model.callback_state = CS_NONE # TODO: pop
+        pop_callback_state!(model)
     end
 
     return nothing
 end
 
 function MOI.set(model::Optimizer, ::MOI.HeuristicCallback, ::Nothing)
-    model.callback_info[:moi_heuristic] = nothing
+    model.callback_info[CT_MOI_HEURISTIC] = nothing
 
     return nothing
 end
 
 function MOI.set(model::Optimizer, ::MOI.HeuristicCallback, func::Function)
-    model.callback_info[:moi_heuristic] = CallbackInfo{GenericCallbackData}(
+    model.callback_info[CT_MOI_HEURISTIC] = CallbackInfo{GenericCallbackData}(
         C_NULL,
         CallbackDataWrapper(model.inner, func),
     )
 
-    set_moi_generic_callback!(model)
+    model.callback_info[CT_MOI_GENERIC] = set_moi_generic_callback!(model)
 
     return nothing
 end

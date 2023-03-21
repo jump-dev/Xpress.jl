@@ -167,22 +167,16 @@ function set_xprs_message_callback!(model::Xpress.Optimizer, func::Function, dat
         Cint(priority)   # int priority
     )
 
-    # Keep a reference to the callback function to avoid garbage collection
-    # TODO: Handle reference-tracking properly
-    model.callback_info[:xprs_message] = CallbackInfo{MessageCallbackData}(callback_ptr, data_wrapper)
-
-    return nothing
+    return CallbackInfo{MessageCallbackData}(callback_ptr, data_wrapper)
 end
 
 function set_xprs_message_callback!(model::Xpress.Optimizer, show_warning::Bool = true, priority::Integer = 0)
-    set_xprs_message_callback!(
+    return set_xprs_message_callback!(
         model,
         default_xprs_message, # func::Function
         show_warning,         # data::Any
         priority,
     )
-
-    return nothing
 end
 
 @doc raw"""
@@ -214,7 +208,11 @@ int XPRS_CC XPRSremovecbmessage(
 function remove_message_callback!(model::Optimizer)
     Xpress.Lib.XPRSremovecbmessage(model.inner, C_NULL, C_NULL)
 
-    model.callback_info[:xprs_message] = nothing
+    return nothing
+end
+
+function remove_message_callback!(model::Optimizer, info::CallbackInfo{CD}) where {CD <: CallbackData}
+    Xpress.Lib.XPRSremovecbmessage(model.inner, info.callback_ptr, C_NULL)
 
     return nothing
 end
@@ -236,23 +234,45 @@ function MOI.set(model::Optimizer, attr::MessageCallback, func::Function)
     return nothing
 end
 
-MOI.supports(::Optimizer, ::MessageCallback) = true
-
 function reset_message_callback!(model::Optimizer)
-    callback_info = model.callback_info[:xprs_message]::Union{CallbackInfo{MessageCallbackData},Nothing}
+    info = get(model.callback_info, CT_XPRS_MESSAGE, nothing)
 
-    if !isnothing(callback_info)
+    if !isnothing(info)
         # remove all message callbacks
         remove_message_callback!(model)
     end
 
     #  no file -> screen            && has log
     if isempty(model.inner.logfile) && !iszero(model.log_level)
-        set_xprs_message_callback!(
+        model.callback_info[CT_XPRS_MESSAGE] = set_xprs_message_callback!(
             model,
             model.show_warning,
         )
+    else
+        model.callback_info[CT_XPRS_MESSAGE] = nothing
     end
+
+    return nothing
+end
+
+
+function MOI.set(model::Optimizer, ::MessageCallback, ::Nothing)
+    info = get(model.callback_info, CT_XPRS_MESSAGE, nothing)
+
+    if !isnothing(info)
+        remove_xprs_message_callback!(model)
+    end
+
+    model.callback_info[CT_XPRS_MESSAGE] = nothing
+
+    return nothing
+end
+
+function MOI.set(model::Optimizer, attr::MessageCallback, func::Function)
+    # remove any existing callback definitions
+    MOI.set(model, attr, nothing)
+
+    model.callback_info[CT_XPRS_MESSAGE] = set_xprs_message_callback!(model, func)
 
     return nothing
 end

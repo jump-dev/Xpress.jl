@@ -59,11 +59,6 @@ mutable struct CallbackCutData
     cut_ptrs::Vector{Xpress.Lib.XPRScut}
 end
 
-@doc raw"""
-    XpressCallback <: MOI.AbstractCallback
-"""
-abstract type XpressCallback <: MOI.AbstractCallback end
-
 # States
 @enum(
     CallbackState,
@@ -82,3 +77,17 @@ abstract type XpressCallback <: MOI.AbstractCallback end
 function callback_state end
 
 function state_callback end
+
+# Callback Types
+@enum(
+    CallbackType,
+    # MathOptInteface
+    CT_MOI_GENERIC, # temporary
+    CT_MOI_HEURISTIC,
+    CT_MOI_LAZY_CONSTRAINT,
+    CT_MOI_USER_CUT,
+    # Xpress
+    CT_XPRS_OPTNODE,
+    CT_XPRS_PREINTSOL,
+    CT_XPRS_MESSAGE,
+)

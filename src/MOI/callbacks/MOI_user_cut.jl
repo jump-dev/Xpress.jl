@@ -1,7 +1,7 @@
 function moi_user_cut_wrapper(model::Optimizer, callback_data::CallbackData)
-    callback_info = model.callback_info[:moi_user_cut]
+    info = get(model.callback_info, CT_MOI_USER_CUT, nothing)
 
-    if !isnothing(callback_info)
+    if !isnothing(info)
         model.callback_state = CS_MOI_USER_CUT # TODO: push
 
         # Apply stored cuts if any
@@ -10,7 +10,7 @@ function moi_user_cut_wrapper(model::Optimizer, callback_data::CallbackData)
             # two calls to guarantee th user has a chance to add a cut.
             # If the user cut is loose the problem will be resolved anyway.
             if Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) <= 2
-                callback_info.data_wrapper.func(callback_data)
+                info.data_wrapper.func(callback_data)
             end
         end
 
@@ -21,18 +21,18 @@ function moi_user_cut_wrapper(model::Optimizer, callback_data::CallbackData)
 end
 
 function MOI.set(model::Optimizer, ::MOI.UserCutCallback, ::Nothing)
-    model.callback_info[:moi_user_cut] = nothing
+    model.callback_info[CT_MOI_USER_CUT] = nothing
 
     return nothing
 end
 
 function MOI.set(model::Optimizer, ::MOI.UserCutCallback, func::Function)
-    model.callback_info[:moi_user_cut] = CallbackInfo{GenericCallbackData}(
+    model.callback_info[CT_MOI_USER_CUT] = CallbackInfo{GenericCallbackData}(
         C_NULL,
         CallbackDataWrapper(model.inner, func),
     )
 
-    set_moi_generic_callback!(model)
+    model.callback_info[CT_MOI_GENERIC] = set_moi_generic_callback!(model)
 
     return nothing
 end
@@ -85,28 +85,29 @@ function MOI.submit(
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
 
-    mtype = Cint[1] # Cut type
+    mtype = Ref{Cint}(1) # Cut type
     mstart = Cint[0, length(indices)]
     mindex = Array{Xpress.Lib.XPRScut}(undef, 1)
     ncuts = Cint(1)
     nodupl = Cint(2) # Duplicates are excluded from the cut pool, ignoring cut type
-    sensetype = Cchar[Char(sense)]
-    drhs = Cdouble[rhs]
+    qrtype = Cchar[sense]
+    drhs = Ref{Cdouble}(rhs)
     indices .-= 1 # Xpress follows C's 0-index convention
     mcols = Cint.(indices)
     interp = Cint(-1) # Load all cuts
+    dmatval = Cdouble.(coefficients)
 
     Xpress.Lib.XPRSstorecuts(
         node_model,
         ncuts,
         nodupl,
         mtype,
-        sensetype,
+        qrtype,
         drhs,
         mstart,
         mindex,
         mcols,
-        coefficients,
+        dmatval,
     )
 
     Xpress.Lib.XPRSloadcuts(

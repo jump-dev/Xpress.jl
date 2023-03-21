@@ -145,11 +145,7 @@ function set_xprs_optnode_callback!(model::Xpress.Optimizer, func::Function, dat
         Cint(priority),  # int priority
     )
 
-    # Keep a reference to the callback function to avoid garbage collection
-    # TODO: Handle reference-tracking properly
-    model.callback_info[:xprs_optnode] = CallbackInfo{OptNodeCallbackData}(callback_ptr, data_wrapper)
-
-    return nothing
+    return CallbackInfo{OptNodeCallbackData}(callback_ptr, data_wrapper)
 end
 
 @doc raw"""
@@ -179,17 +175,25 @@ int XPRS_CC XPRSremovecboptnode(
 - `data` The data value that the callback was added with. If NULL, then the data value will not be checked and all node-optimal callbacks with the function pointer optnode will be removed.
 """
 function remove_xprs_optnode_callback!(model::Xpress.Optimizer)
-    Lib.XPRSremovecboptnode(model.inner, C_NULL, C_NULL)
+    Xpress.Lib.XPRSremovecboptnode(model.inner, C_NULL, C_NULL)
 
-    model.callback_info[:xprs_optnode] = nothing
+    return nothing
+end
+
+function remove_xprs_optnode_callback!(model::Xpress.Optimizer, info::CallbackInfo{CD}) where {CD <: CallbackData}
+    Xpress.Lib.XPRSremovecboptnode(model.inner, info.callback_ptr, C_NULL)
 
     return nothing
 end
 
 function MOI.set(model::Optimizer, ::OptNodeCallback, ::Nothing)
-    if !isnothing(get(model.callback_info, :xprs_optnode, nothing))
+    info = get(model.callback_info, CT_XPRS_OPTNODE, nothing)
+
+    if !isnothing(info)
         remove_xprs_optnode_callback!(model)
     end
+
+    model.callback_info[CT_XPRS_OPTNODE] = nothing
 
     return nothing
 end
@@ -198,9 +202,7 @@ function MOI.set(model::Optimizer, attr::OptNodeCallback, func::Function)
     # remove any existing callback definitions
     MOI.set(model, attr, nothing)
 
-    set_xprs_optnode_callback!(model, func)
+    model.callback_info[CT_XPRS_OPTNODE] = set_xprs_optnode_callback!(model, func)
 
     return nothing
 end
-
-MOI.supports(::Optimizer, ::OptNodeCallback) = true

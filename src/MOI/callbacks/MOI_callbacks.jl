@@ -13,10 +13,10 @@ function moi_generic_wrapper(model::Optimizer, callback_data::CallbackData)
 end
 
 function set_moi_generic_callback!(model::Optimizer)
-    set_xprs_optnode_callback!(
+    remove_xprs_optnode_callback!(model)
+
+    return set_xprs_optnode_callback!(
         model,
         (callback_data::CallbackData) -> moi_generic_wrapper(model, callback_data),
     )
-
-    return nothing
 end
