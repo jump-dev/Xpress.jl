@@ -239,7 +239,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     backward_sensitivity_cache::Union{Nothing, SensitivityCache}
 
     # Callback fields
-    callback_info::Dict{Symbol,Union{CallbackInfo,Nothing}}
+    callback_info::Dict{CallbackType,Union{CallbackInfo,Nothing}}
 
     callback_cached_solution::Union{Nothing, CachedSolution}
     callback_cut_data::CallbackCutData
@@ -279,13 +279,13 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
 
-        model.callback_info = Dict{Symbol,Union{CallbackInfo,Nothing}}(
-            :moi_heuristic       => nothing,
-            :moi_lazy_constraint => nothing,
-            :moi_user_cut        => nothing,
-            :xprs_message        => nothing,
-            :xprs_optnode        => nothing,
-            :xprs_preintsol      => nothing,
+        model.callback_info = Dict{CallbackType,Union{CallbackInfo,Nothing}}(
+            CT_MOI_HEURISTIC       => nothing,
+            CT_MOI_LAZY_CONSTRAINT => nothing,
+            CT_MOI_USER_CUT        => nothing,
+            CT_XPRS_MESSAGE        => nothing,
+            CT_XPRS_OPTNODE        => nothing,
+            CT_XPRS_PREINTSOL      => nothing,
         )
 
         # TODO: separate MOI.empty! from initializer
@@ -340,13 +340,13 @@ function MOI.empty!(model::Optimizer)
     model.dual_status = MOI.NO_SOLUTION
 
     # TODO: store callback info using structs intead of a dictionary
-    model.callback_info = Dict{Symbol,Union{CallbackInfo,Nothing}}(
-        :moi_heuristic       => nothing,
-        :moi_lazy_constraint => nothing,
-        :moi_user_cut        => nothing,
-        :xprs_message        => nothing,
-        :xprs_optnode        => nothing,
-        :xprs_preintsol      => nothing,
+    model.callback_info = Dict{CallbackType,Union{CallbackInfo,Nothing}}(
+        CT_MOI_HEURISTIC       => nothing,
+        CT_MOI_LAZY_CONSTRAINT => nothing,
+        CT_MOI_USER_CUT        => nothing,
+        CT_XPRS_MESSAGE        => nothing,
+        CT_XPRS_OPTNODE        => nothing,
+        CT_XPRS_PREINTSOL      => nothing,
     )
 
     model.callback_cached_solution = nothing

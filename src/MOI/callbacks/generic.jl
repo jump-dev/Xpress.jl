@@ -70,13 +70,13 @@ function reset_callback_cached_solution!(model::Optimizer)
     return model.callback_cached_solution
 end
 
-const _MOI_CALLBACK_KEYS = Set{Symbol}([
-    :moi_heuristic,
-    :moi_lazy_constraint,
-    :moi_user_cut,
+const _MOI_CALLBACK_KEYS = Set{CallbackType}([
+    CT_MOI_HEURISTIC,
+    CT_MOI_LAZY_CONSTRAINT,
+    CT_MOI_USER_CUT,
 ])
 
-function _has_callback(model::Optimizer, key::Symbol)
+function _has_callback(model::Optimizer, key::CallbackType)
     return !isnothing(get(model.callback_info, key, nothing))
 end
 
@@ -129,8 +129,8 @@ end
 function apply_cuts!(opt::Optimizer, model::XpressProblem)
     itype = Cint(1)
     interp = Cint(-1) # Get all cuts
-    delta = zero(Cdouble) # Xpress.Lib.XPRS_MINUSINFINITY
-    ncuts = Array{Cint}(undef, 1)
+    delta = Ref{Cdouble}(0.0) # Xpress.Lib.XPRS_MINUSINFINITY
+    ncuts = Ref{Cint}(0)
     size = Cint(length(opt.callback_cut_data.cut_ptrs))
     mcutptr = Array{Xpress.Lib.XPRScut}(undef, size)
     dviol = Array{Cdouble}(undef, size)
@@ -139,7 +139,7 @@ function apply_cuts!(opt::Optimizer, model::XpressProblem)
         model,
         itype,
         interp,
-        delta,
+        delta[],
         ncuts,
         size,
         mcutptr,

@@ -87,10 +87,10 @@ function MOI.submit(
 
     mtype = Ref{Cint}(1) # Cut type
     mstart = Cint[0, length(indices)]
-    mindex = Array{Xpress.Lib.XPRScut}(undef, 1)
+    mindex = Ref{Xpress.Lib.XPRScut}(C_NULL)
     ncuts = Cint(1)
     nodupl = Cint(2) # Duplicates are excluded from the cut pool, ignoring cut type
-    qrtype = Cchar[sense]
+    qrtype = Ref{UInt8}(sense)
     drhs = Ref{Cdouble}(rhs)
     indices .-= 1 # Xpress follows C's 0-index convention
     mcols = Cint.(indices)
