@@ -22,7 +22,7 @@ end
     file_extension = ifelse(vXpress_major <= 38, ".mps","")
     
     msg = """
-    Unable to call `Xpress.readprob`:
+    Xpress internal error:
     
     85 Error: File not found: $(file_extension).
     """
