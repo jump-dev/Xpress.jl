@@ -20,10 +20,10 @@ Xpress.jl/scripts/build_param_control_dicts.jl
 
 Last build: $(now())
 
-$("Optimizer version: $(Xpress.getversion())")
+$("Optimizer version: $(get_version())")
 
 Banner from lib:
-$(Xpress.getbanner())
+$(get_banner())
 
 Banner from header (xprs.h):
 $(lines[7])

@@ -1,24 +1,30 @@
-function invoke(f::Function, pos::Int, ::Type{Float64}, args...)
+function _invoke(f::Function, pos::Int, ::Type{Float64}, args...)
     out = Ref{Float64}(0.0) # should we use Cfloat here instead?
 
     args = collect(args)
     insert!(args, pos-1, out)
 
     r = f(args...)
-    r != 0 ? throw(XpressError(r, "Unable to invoke $f")) : out[]
+    if r != 0 
+        throw(XpressError(r, "Unable to invoke $f"))
+    end
+    return out[]
 end
 
-function invoke(f::Function, pos::Int, ::Type{Int}, args...)
+function _invoke(f::Function, pos::Int, ::Type{Int}, args...)
     out = Ref{Cint}(0)
 
     args = collect(args)
     insert!(args, pos-1, out)
 
     r = f(args...)
-    r != 0 ? throw(XpressError(r, "Unable to invoke $f")) : out[]
+    if r != 0
+        throw(XpressError(r, "Unable to invoke $f"))
+    end
+    return out[]
 end
 
-function invoke(f::Function, pos::Int, ::Type{String}, args...)
+function _invoke(f::Function, pos::Int, ::Type{String}, args...)
     buffer = Array{Cchar}(undef, 1024)
     buffer_p = pointer(buffer)
     GC.@preserve buffer begin
@@ -26,12 +32,15 @@ function invoke(f::Function, pos::Int, ::Type{String}, args...)
         args = collect(Any, args)
         insert!(args, pos-1, out)
         r = f(args...)
-        return r != 0 ? throw(XpressError(r, "Unable to invoke $f")) : unsafe_string(out)
+        if r != 0
+            throw(XpressError(r, "Unable to invoke $f"))
+        end
+        return unsafe_string(out)
     end
 end
 
 """
-    @invoke expr
+    @_invoke expr
 
 Lets you invoke a lower level `Lib` function.
 Xpress' library API expects the caller to pre-allocate memory.
@@ -43,19 +52,19 @@ Additionally, the return type declaration must be used.
 
 Examples:
 
-    @invoke Lib.XPRSgetversion(_)::String
-    @invoke Lib.XPRSgetbanner(_)::String
-    @invoke Lib.XPRSgetprobname(prob, _)::String
+    @_invoke Lib.XPRSgetversion(_)::String
+    @_invoke Lib.XPRSgetbanner(_)::String
+    @_invoke Lib.XPRSgetprobname(prob, _)::String
 
-As an example of what @invoke expands to:
+As an example of what @_invoke expands to:
 
 ```
-julia> @macroexpand @invoke Lib.XPRSgetversion(_)::String
-:(invoke(Lib.XPRSgetversion, Xpress.String))
+julia> @macroexpand @_invoke Lib.XPRSgetversion(_)::String
+:(_invoke(Lib.XPRSgetversion, Xpress.String))
 ```
 
 """
-macro invoke(expr)
+macro _invoke(expr)
     @assert expr.head == :(::) "macro argument must have return type declaration"
 
     # macro return type must be a valid type that exists in Xpress or Julia
@@ -72,7 +81,7 @@ macro invoke(expr)
     filter!(x->x≠:_, f.args)
 
     # Call invoke function at macro call site instead
-    pushfirst!(f.args, :(invoke))
+    pushfirst!(f.args, :(_invoke))
 
     f.args = esc.(f.args)
 
@@ -84,7 +93,7 @@ macro invoke(expr)
         insert!(f.args, 3, indices[1])
     else
         # TODO: Implement multiple return types
-        error("Not implemented @invoke macro for multiple `_`")
+        error("Not implemented @_invoke macro for multiple `_`")
     end
 
     return f
@@ -112,14 +121,8 @@ As an example of what @checked expands to:
 ```
 julia> @macroexpand @checked Lib.XPRSsetprobname(prob, name)
 quote
-    r = Lib.XPRSsetprobname(prob, name)
-    if r != 0
-        xprs_ptr = prob
-        e = get_xpress_error_message(xprs_ptr)
-        throw(XpressError(r, "Unable to call `Xpress.setprobname`:\n\n\$(e).\n"))
-    else
-        nothing
-    end
+    r = Lib.XPRSsetprobname(prob, name)::Cint
+    _check(prob, r)
 end
 ```
 
@@ -130,13 +133,15 @@ macro checked(expr)
     @assert length(expr.args) >= 2 "Lib.\$function must be contain atleast one argument and the first argument must be of type XpressProblem"
     f = replace(String(expr.args[1].args[2].value), "XPRS" => "")
     return esc(quote
-        r = $(expr)
-        if r != 0
-            xprs_ptr = $(expr.args[2])
-            e = get_xpress_error_message(xprs_ptr)
-            throw(XpressError(r, "Unable to call `Xpress.$($f)`:\n\n$e.\n"))
-        else
-            nothing
-        end
+        r = $(expr)::Cint
+        _check($(expr.args[2]), r)::Nothing
     end)
+end
+
+function _check(prob, val::Cint)
+    if val != 0
+        e = get_xpress_error_message(prob)
+        throw(XpressError(val, "Xpress internal error:\n\n$e.\n"))
+    end
+    return nothing
 end
