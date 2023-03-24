@@ -736,6 +736,173 @@ function test_multiple_modifications()
     @test MOI.coefficient.(obj.terms) == [4.0, 10.0, 2.0]
 end
 
+function get_col_names(model)
+    ncols = number_of_cols(model)
+    var_names = String[]
+    for i in 1:ncols
+        variable = Array{Cchar}(undef, 8*1024)
+        variable_p = pointer(variable)
+        Xpress.Lib.XPRSgetnames(model.inner, Cint(2), variable_p, Cint(i-1), Cint(i-1))
+        push!(var_names, split(unsafe_string(variable_p))[1])
+    end
+    return var_names
+end
+
+function get_row_names(model)
+    nrows = number_of_rows(model)
+    cons_names = String[]
+    for i in 1:nrows
+        constraint = Array{Cchar}(undef, 8*1024)
+        constraint_p = pointer(constraint)
+        Xpress.Lib.XPRSgetnames(model.inner, Cint(1), constraint_p, Cint(i-1), Cint(i-1))
+        push!(cons_names, split(unsafe_string(constraint_p))[1])
+    end
+    return cons_names
+end
+
+function infeasible_problem()
+    c = [1.0, 1.0]
+
+    optimizer = Xpress.Optimizer();
+    MOI.set(optimizer, MOI.RawOptimizerAttribute("MOI_POST_SOLVE"), false);
+
+    x = MOI.add_variables(optimizer, 2);
+
+    MOI.set(
+        optimizer,
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+    );
+
+    MOI.set(optimizer, MOI.ObjectiveSense(), MOI.MIN_SENSE);
+
+    c1 = MOI.add_constraint(
+        optimizer,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.0], x), 0.0),
+        MOI.GreaterThan(5.0),
+    );
+
+    c2 = MOI.add_constraint(
+        optimizer,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.0], x), 0.0),
+        MOI.LessThan(2.0),
+    );
+
+    c3 = MOI.add_constraint(
+        optimizer,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([0.0, 1.0], x), 0.0),
+        MOI.GreaterThan(10.0),
+    );
+
+    MOI.optimize!(optimizer);
+
+    variables = x
+    constraints = [c1, c2, c3]
+
+    return variables, constraints, optimizer
+
+end
+
+function test_named_constraints()
+
+    # create problem
+    variables, constraints, optimizer = infeasible_problem();
+    
+    # name variables and constraints
+    MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x2"]);
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "constraint1");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[2], "constraint2");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3");
+
+    # name inner model
+    add_names_to_inner_model(optimizer);
+
+    # check names
+    variable_names = get_col_names(optimizer)
+    constraint_names = get_row_names(optimizer)
+    
+    @test variable_names[1] == "x1"
+    @test variable_names[2] == "x2"
+    @test constraint_names[1] == "constraint1"
+    @test constraint_names[2] == "constraint2"
+    @test constraint_names[3] == "constraint3"
+
+end
+
+function test_constraints_with_the_same_name()
+
+    # create problem
+    variables, constraints, optimizer = infeasible_problem();
+    
+    # name variables and constraints
+    MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x2"]);
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "constraint1");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[2], "constraint1");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3");
+
+    # name inner model
+    add_names_to_inner_model(optimizer);
+
+    # check names
+    variable_names = get_col_names(optimizer)
+    constraint_names = get_row_names(optimizer)
+    
+    @test variable_names[1] == "x1"
+    @test variable_names[2] == "x2"
+    @test constraint_names[1] == "R1"
+    @test constraint_names[2] == "R2"
+    @test constraint_names[3] == "R3"
+
+end
+
+function test_variables_with_the_same_name()
+
+    # create problem
+    variables, constraints, optimizer = infeasible_problem();
+    
+    # name variables and constraints
+    MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x1"]);
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "constraint1");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[2], "constraint2");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3");
+
+    # name inner model
+    add_names_to_inner_model(optimizer);
+
+    # check names
+    variable_names = get_col_names(optimizer)
+    constraint_names = get_row_names(optimizer)
+    
+    # return variable_names, constraint_names
+
+    @test variable_names[1] == "C1"
+    @test variable_names[2] == "C2"
+    @test constraint_names[1] == "constraint1"
+    @test constraint_names[2] == "constraint2"
+    @test constraint_names[3] == "constraint3"
+
+end
+
+function test_empty_names()
+
+    # create problem
+    variables, constraints, optimizer = infeasible_problem();
+
+    # name inner model
+    add_names_to_inner_model(optimizer);
+
+    # check names
+    variable_names = get_col_names(optimizer)
+    constraint_names = get_row_names(optimizer)
+    
+    @test variable_names[1] == "C1"
+    @test variable_names[2] == "C2"
+    @test constraint_names[1] == "R1"
+    @test constraint_names[2] == "R2"
+    @test constraint_names[3] == "R3"
+
+end
+
 end
 
 TestMOIWrapper.runtests()
