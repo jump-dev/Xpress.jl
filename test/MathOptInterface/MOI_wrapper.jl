@@ -737,7 +737,7 @@ function test_multiple_modifications()
 end
 
 function get_col_names(model)
-    ncols = number_of_cols(model)
+    ncols = Xpress.number_of_cols(model)
     var_names = String[]
     for i in 1:ncols
         variable = Array{Cchar}(undef, 8*1024)
@@ -749,7 +749,7 @@ function get_col_names(model)
 end
 
 function get_row_names(model)
-    nrows = number_of_rows(model)
+    nrows = Xpress.number_of_rows(model)
     cons_names = String[]
     for i in 1:nrows
         constraint = Array{Cchar}(undef, 8*1024)
@@ -815,7 +815,7 @@ function test_named_constraints()
     MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3");
 
     # name inner model
-    add_names_to_inner_model(optimizer);
+    Xpress.add_names_to_inner_model(optimizer);
 
     # check names
     variable_names = get_col_names(optimizer)
@@ -841,7 +841,7 @@ function test_constraints_with_the_same_name()
     MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3");
 
     # name inner model
-    add_names_to_inner_model(optimizer);
+    Xpress.add_names_to_inner_model(optimizer);
 
     # check names
     variable_names = get_col_names(optimizer)
@@ -867,7 +867,7 @@ function test_variables_with_the_same_name()
     MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3");
 
     # name inner model
-    add_names_to_inner_model(optimizer);
+    Xpress.add_names_to_inner_model(optimizer);
 
     # check names
     variable_names = get_col_names(optimizer)
@@ -889,7 +889,7 @@ function test_empty_names()
     variables, constraints, optimizer = infeasible_problem();
 
     # name inner model
-    add_names_to_inner_model(optimizer);
+    Xpress.add_names_to_inner_model(optimizer);
 
     # check names
     variable_names = get_col_names(optimizer)
