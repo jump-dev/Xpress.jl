@@ -1,5 +1,6 @@
-struct MessageCallback <: XpressCallback end
-
+@doc raw"""
+    MessageCallbackData
+"""
 mutable struct MessageCallbackData <: CallbackData
     # models
     root_model::XpressProblem
@@ -30,37 +31,9 @@ mutable struct MessageCallbackData <: CallbackData
 end
 
 @doc raw"""
-    default_xprs_message(callback_data::MessageCallbackData)
+    xprs_message(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, msg::Ptr{Cchar}, len::Cint, msgtype::Cint)
 """
-function default_xprs_message(callback_data::MessageCallbackData)
-    show_warning = callback_data.data::Bool
-    msg          = callback_data.msg
-    msgtype      = callback_data.msgtype
-
-    if msgtype == 1 # Information
-        println(unsafe_string(msg))
-        return zero(Cint)
-    elseif msgtype == 2 # Not used
-        return zero(Cint)
-    elseif msgtype == 3 # Warning
-        if show_warning
-            println(unsafe_string(msg))
-        end
-        return zero(Cint)
-    elseif msgtype == 4 # Error
-        return zero(Cint)
-    else # Exiting - buffers need flushing
-        flush(stdout)
-        return zero(Cint)
-    end
-
-    return nothing
-end
-
-@doc raw"""
-    xprs_message_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, msg::Ptr{Cchar}, len::Cint, msgtype::Cint)
-"""
-function xprs_message_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, msg::Ptr{Cchar}, msglen::Cint, msgtype::Cint)
+function xprs_message(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, msg::Ptr{Cchar}, msglen::Cint, msgtype::Cint)
     data_wrapper = unsafe_pointer_to_objref(cbdata)::CallbackDataWrapper{MessageCallbackData}    
     
     # Update callback data
@@ -79,7 +52,7 @@ function xprs_message_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, msg::Ptr
 end
 
 @doc raw"""
-    set_callback_message!(model::XpressProblem, show_warning::Bool)
+    add_xprs_message_callback!(model::XpressProblem, show_warning::Bool)
 
 From ...
 
@@ -156,31 +129,31 @@ void XPRS_CC Message(XPRSprob cbprob, void* data, const char *msg, int msglen, i
     2. This function offers one method of handling the messages which describe any warnings and errors that may occur during execution. Other methods are to check the return values of functions and then get the error code using the ERRORCODE attribute, obtain the last error message directly using XPRSgetlasterror, or send messages direct to a log file using XPRSsetlogfile.
     3. Visual Basic users must use the alternative function XPRSaddcbmessageVB to define the callback; this is required because of the different way VB handles strings.
 """
-function set_xprs_message_callback!(model::Xpress.Optimizer, func::Function, data::Any = nothing, priority::Integer = 0)
-    callback_ptr = @cfunction(xprs_message_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint))
-    data_wrapper = CallbackDataWrapper{MessageCallbackData}(model.inner, func, data)
+function add_xprs_message_callback!(model::XpressProblem, func::Function, data::Any = nothing, priority::Integer = 0)
+    callback_ptr = @cfunction(xprs_message, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint))
+    data_wrapper = CallbackDataWrapper{MessageCallbackData}(model, func, data)
 
     Lib.XPRSaddcbmessage(
-        model.inner.ptr, # XPRSprob prob
-        callback_ptr,    # void (XPRS_CC *message)(XPRSprob cbprob, void *cbdata, const char *msg, int msglen, int msgtype)
-        data_wrapper,    # void *data
-        Cint(priority)   # int priority
+        model.ptr,     # XPRSprob prob
+        callback_ptr,  # void (XPRS_CC *message)(XPRSprob cbprob, void *cbdata, const char *msg, int msglen, int msgtype)
+        data_wrapper,  # void *data
+        Cint(priority) # int priority
     )
 
     return CallbackInfo{MessageCallbackData}(callback_ptr, data_wrapper)
 end
 
-function set_xprs_message_callback!(model::Xpress.Optimizer, show_warning::Bool = true, priority::Integer = 0)
-    return set_xprs_message_callback!(
+function add_xprs_message_callback!(model::XpressProblem, show_warning::Bool = true, priority::Integer = 0)
+    return add_xprs_message_callback!(
         model,
-        default_xprs_message, # func::Function
-        show_warning,         # data::Any
+        default_xprs_message_func, # func::Function
+        show_warning,              # data::Any
         priority,
     )
 end
 
 @doc raw"""
-    remove_message_callback!(model::XpressProblem)
+    remove_xprs_message_callback!(model::XpressProblem)
 
 From ...
 
@@ -205,74 +178,14 @@ int XPRS_CC XPRSremovecbmessage(
 - `data` The data value that the callback was added with. If NULL, then the data value will not be checked and all message callbacks with the function pointer message will be removed.
 
 """
-function remove_message_callback!(model::Optimizer)
-    Xpress.Lib.XPRSremovecbmessage(model.inner, C_NULL, C_NULL)
+function remove_xprs_message_callback!(model::XpressProblem)
+    Xpress.Lib.XPRSremovecbmessage(model, C_NULL, C_NULL)
 
     return nothing
 end
 
-function remove_message_callback!(model::Optimizer, info::CallbackInfo{CD}) where {CD <: CallbackData}
-    Xpress.Lib.XPRSremovecbmessage(model.inner, info.callback_ptr, C_NULL)
-
-    return nothing
-end
-
-function MOI.set(model::Optimizer, ::MessageCallback, ::Nothing)
-    if !isnothing(model.callback_info[:xprs_message])
-        remove_message_callback!(model)
-    end
-
-    return nothing
-end
-
-function MOI.set(model::Optimizer, attr::MessageCallback, func::Function)
-    # remove any existing callback definitions
-    MOI.set(model, attr, nothing)
-
-    set_xprs_message_callback!(model, func)
-
-    return nothing
-end
-
-function reset_message_callback!(model::Optimizer)
-    info = get(model.callback_info, CT_XPRS_MESSAGE, nothing)
-
-    if !isnothing(info)
-        # remove all message callbacks
-        remove_message_callback!(model)
-    end
-
-    #  no file -> screen            && has log
-    if isempty(model.inner.logfile) && !iszero(model.log_level)
-        model.callback_info[CT_XPRS_MESSAGE] = set_xprs_message_callback!(
-            model,
-            model.show_warning,
-        )
-    else
-        model.callback_info[CT_XPRS_MESSAGE] = nothing
-    end
-
-    return nothing
-end
-
-
-function MOI.set(model::Optimizer, ::MessageCallback, ::Nothing)
-    info = get(model.callback_info, CT_XPRS_MESSAGE, nothing)
-
-    if !isnothing(info)
-        remove_xprs_message_callback!(model)
-    end
-
-    model.callback_info[CT_XPRS_MESSAGE] = nothing
-
-    return nothing
-end
-
-function MOI.set(model::Optimizer, attr::MessageCallback, func::Function)
-    # remove any existing callback definitions
-    MOI.set(model, attr, nothing)
-
-    model.callback_info[CT_XPRS_MESSAGE] = set_xprs_message_callback!(model, func)
+function remove_xprs_message_callback!(model::XpressProblem, info::CallbackInfo{CD}) where {CD <: CallbackData}
+    Xpress.Lib.XPRSremovecbmessage(model, info.callback_ptr, C_NULL)
 
     return nothing
 end

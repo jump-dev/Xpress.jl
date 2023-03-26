@@ -1,5 +1,9 @@
 function callback_state(model::Optimizer)
-    return model.callback_state
+    if isempty(model.callback_state)
+        return CS_NONE
+    else
+        return model.callback_state[end]
+    end
 end
 
 function state_callback(state::CallbackState)
@@ -13,23 +17,25 @@ function state_callback(state::CallbackState)
         return MessageCallback()
     elseif state === CS_XPRS_OPTNODE
         return OptNodeCallback()
-        # elseif state === CS_XPRS_PREINTSOL
-        #     return PreIntSolCallback()
+    elseif state === CS_XPRS_PREINTSOL
+        return PreIntSolCallback()
     else
         return nothing
     end
 end
 
-function push_callback_state!(model::Optimizer, state)
-    # TODO: proper implementation
-    model.callback_state = state
+function push_callback_state!(model::Optimizer, state::CallbackState)
+    push!(model.callback_state, state)
 
     return nothing
 end
 
 function pop_callback_state!(model::Optimizer)
-    # TODO: proper implementation
-    model.callback_state = CS_NONE
+    if isempty(model.callback_state)
+        error("Can't pop from empty state stack")
+    else
+        pop!(model.callback_state)
+    end
 
     return nothing
 end
@@ -70,47 +76,27 @@ function reset_callback_cached_solution!(model::Optimizer)
     return model.callback_cached_solution
 end
 
-const _MOI_CALLBACK_KEYS = Set{CallbackType}([
-    CT_MOI_HEURISTIC,
-    CT_MOI_LAZY_CONSTRAINT,
-    CT_MOI_USER_CUT,
-])
+function reset_message_callback!(model::Optimizer)
+    info = model.callback_table.xprs_message
 
-function _has_callback(model::Optimizer, key::CallbackType)
-    return !isnothing(get(model.callback_info, key, nothing))
+    # if !isnothing(message_info)
+    #     # remove all message callbacks
+    #     remove_message_callback!(model)
+    # end
+
+    # #  no file -> screen            && has log
+    # if isempty(model.inner.logfile) && !iszero(model.log_level)
+    #     model.callback_info[CT_XPRS_MESSAGE] = add_xprs_message_callback!(
+    #         model,
+    #         model.show_warning,
+    #     )
+    # else
+    #     model.callback_info[CT_XPRS_MESSAGE] = nothing
+    # end
+
+    return nothing
 end
 
-function _has_moi_callback(model::Optimizer)
-    # Check if any MOI callback is registered
-    return any((k) -> _has_callback(model, k), _MOI_CALLBACK_KEYS)
-end
-
-function _has_generic_callback(model::Optimizer)
-    # Look if any registered callback is actually an MOI one
-    return !any(in(_MOI_CALLBACK_KEYS), keys(model.callback_info))
-end
-
-function check_moi_callback_validity(model::Optimizer)
-    if _has_moi_callback(model)
-        if _has_generic_callback(model)
-            error("Cannot use Xpress's and MOI's callbacks simultaneously")
-        else
-            return true
-        end
-    else
-        return false
-    end
-end
-
-function initialize_callback_interface!(model::Xpress.Optimizer)
-    if check_moi_callback_validity(model)
-        if Xpress.getcontrol(model.inner, Xpress.Lib.XPRS_HEURSTRATEGY) != 0
-            if model.moi_warnings
-                @warn "Callbacks in XPRESS might not work correctly with HEURSTRATEGY != 0"
-            end
-        end
-    end
-end
 
 function get_callback_solution!(model::Optimizer, node_model::XpressProblem)
     reset_callback_cached_solution!(model)
@@ -158,7 +144,7 @@ function apply_cuts!(opt::Optimizer, model::XpressProblem)
 end
 
 function default_moi_user_cut_callback!(model::Optimizer, callback_data::CallbackData)
-    model.callback_state = CS_MOI_USER_CUT
+    push_callback_state!(model, CS_MOI_USER_CUT)
 
     # Apply stored cuts if any
     if !isempty(model.callback_cut_data.cut_ptrs)
@@ -177,6 +163,8 @@ function default_moi_user_cut_callback!(model::Optimizer, callback_data::Callbac
     end
 
     model.user_cut_callback(callback_data)
+
+    pop_callback_state!(model)
 
     return nothing
 end
@@ -200,17 +188,15 @@ function default_moi_lazy_callback!(model::Optimizer, callback_data::CallbackDat
 end
 
 function MOI.get(model::Optimizer, attr::MOI.CallbackNodeStatus{CD}) where {CD<:CallbackData}
-    if check_moi_callback_validity(model)
-        mip_infeas = Xpress.getintattrib(attr.callback_data.node_model, Xpress.Lib.XPRS_MIPINFEAS)
+    mip_infeas = Xpress.getintattrib(attr.callback_data.node_model, Xpress.Lib.XPRS_MIPINFEAS)
 
-        if mip_infeas == 0
-            return MOI.CALLBACK_NODE_STATUS_INTEGER
-        elseif mip_infeas > 0
-            return MOI.CALLBACK_NODE_STATUS_FRACTIONAL
-        end
+    if mip_infeas == 0
+        return MOI.CALLBACK_NODE_STATUS_INTEGER
+    elseif mip_infeas > 0
+        return MOI.CALLBACK_NODE_STATUS_FRACTIONAL
+    else
+        return MOI.CALLBACK_NODE_STATUS_UNKNOWN
     end
-
-    return MOI.CALLBACK_NODE_STATUS_UNKNOWN
 end
 
 function MOI.get(

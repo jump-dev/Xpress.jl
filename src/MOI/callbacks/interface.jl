@@ -1,3 +1,36 @@
+# States
+@enum(
+    CallbackState,
+    CS_NONE,
+    CS_GENERIC,
+    # MOI Callbacks
+    CS_MOI_LAZY_CONSTRAINT,
+    CS_MOI_USER_CUT,
+    CS_MOI_HEURISTIC,
+    # Xpress Callbacks
+    CS_XPRS_OPTNODE,
+    CS_XPRS_PREINTSOL,
+    CS_XPRS_MESSAGE,
+)
+
+function callback_state end
+
+function state_callback end
+
+# Callback Types
+@enum(
+    CallbackType,
+    # MathOptInteface
+    CT_MOI_GENERIC, # temporary
+    CT_MOI_HEURISTIC,
+    CT_MOI_LAZY_CONSTRAINT,
+    CT_MOI_USER_CUT,
+    # Xpress
+    CT_XPRS_OPTNODE,
+    CT_XPRS_PREINTSOL,
+    CT_XPRS_MESSAGE,
+)
+
 @doc raw"""
     CallbackData
 
@@ -11,7 +44,7 @@ abstract type CallbackData end
 """
 mutable struct GenericCallbackData <: CallbackData
     root_model::XpressProblem
-    node_model::Union{XpressProblem, Nothing}
+    node_model::Union{XpressProblem,Nothing}
     data::Any
 
     function GenericCallbackData(root_model::XpressProblem, data::Any=nothing)
@@ -57,37 +90,68 @@ end
 mutable struct CallbackCutData
     submitted::Bool
     cut_ptrs::Vector{Xpress.Lib.XPRScut}
+
+    function CallbackCutData(
+        submitted::Bool=false,
+        cut_ptrs::Vector{Xpress.Lib.XPRScut}=Vector{Xpress.Lib.XPRScut}(undef, 0)
+    )
+        return new(submitted, cut_ptrs)
+    end
 end
 
-# States
-@enum(
-    CallbackState,
-    CS_NONE,
-    CS_GENERIC,
-    # MOI Callbacks
-    CS_MOI_LAZY_CONSTRAINT,
-    CS_MOI_USER_CUT,
-    CS_MOI_HEURISTIC,
-    # Xpress Callbacks
-    CS_XPRS_OPTNODE,
-    CS_XPRS_PREINTSOL,
-    CS_XPRS_MESSAGE,
-)
+function Base.empty!(cut_data::CallbackCutData)
+    cut_data.submitted = false
+    empty!(cut_data.cut_ptrs)
+    
+    return cut_data
+end
 
-function callback_state end
+function Base.isempty(cut_data::CallbackCutData)
+    return !cut_data.submitted && isempty(cut_data.cut_ptrs)
+end
 
-function state_callback end
+include("XPRS_callbacks.jl")
 
-# Callback Types
-@enum(
-    CallbackType,
+@doc raw"""
+    CallbackTable
+
+This structure is designed to store information about high-level callbacks,
+that is, the one that are exposed to the user.
+"""
+mutable struct CallbackTable
     # MathOptInteface
-    CT_MOI_GENERIC, # temporary
-    CT_MOI_HEURISTIC,
-    CT_MOI_LAZY_CONSTRAINT,
-    CT_MOI_USER_CUT,
+    moi_heuristic::Union{Tuple{CallbackInfo{OptNodeCallbackData}},Nothing}
+    moi_lazy_constraint::Union{Tuple{CallbackInfo{OptNodeCallbackData}},Nothing}
+    moi_user_cut::Union{Tuple{CallbackInfo{OptNodeCallbackData}},Nothing}
     # Xpress
-    CT_XPRS_OPTNODE,
-    CT_XPRS_PREINTSOL,
-    CT_XPRS_MESSAGE,
-)
+    xprs_message::Union{CallbackInfo{MessageCallbackData},Nothing}
+    xprs_optnode::Union{CallbackInfo{OptNodeCallbackData},Nothing}
+    xprs_preintsol::Union{CallbackInfo{PreIntSolCallbackData},Nothing}
+
+    function CallbackTable()
+        return new(
+            nothing, nothing, nothing,
+            nothing, nothing, nothing,
+        )
+    end
+end
+
+function Base.empty!(table::CallbackTable)
+    table.moi_heuristic = nothing
+    table.moi_lazy_constraint = nothing
+    table.moi_user_cut = nothing
+    table.xprs_message = nothing
+    table.xprs_optnode = nothing
+    table.xprs_preintsol = nothing
+
+    return table
+end
+
+function Base.isempty(table::CallbackTable)
+    return isnothing(table.moi_heuristic) &&
+           isnothing(table.moi_lazy_constraint) &&
+           isnothing(table.moi_user_cut) &&
+           isnothing(table.xprs_message) &&
+           isnothing(table.xprs_optnode) &&
+           isnothing(table.xprs_preintsol)
+end

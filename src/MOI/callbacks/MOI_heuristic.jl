@@ -1,12 +1,14 @@
-function moi_heuristic_wrapper(model::Optimizer, callback_data::CallbackData)
-    info = get(model.callback_info, CT_MOI_HEURISTIC, nothing)
+function moi_heuristic_xprs_optnode_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
+    info = model.callback_table.moi_heuristic::Union{Tuple{CallbackInfo{CD}}, Nothing}
 
     if !isnothing(info)
         push_callback_state!(model, CS_MOI_HEURISTIC)
 
+        get_callback_solution!(model, callback_data.node_model)
+
         # Allow at most one heuristic solution per LP optimal node
         if Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) <= 1
-            info.data_wrapper.func(callback_data)
+            func(callback_data)
         end
 
         pop_callback_state!(model)
@@ -16,18 +18,32 @@ function moi_heuristic_wrapper(model::Optimizer, callback_data::CallbackData)
 end
 
 function MOI.set(model::Optimizer, ::MOI.HeuristicCallback, ::Nothing)
-    model.callback_info[CT_MOI_HEURISTIC] = nothing
+    info = model.callback_table.moi_heuristic::Union{Tuple{CallbackInfo{OptNodeCallbackData}},Nothing}
+
+    if !isnothing(info)
+        xprs_optnode_info, = info
+
+        remove_xprs_optnode_callback!(model.inner, xprs_optnode_info)
+
+        model.callback_table.moi_heuristic = nothing
+    end
 
     return nothing
 end
 
-function MOI.set(model::Optimizer, ::MOI.HeuristicCallback, func::Function)
-    model.callback_info[CT_MOI_HEURISTIC] = CallbackInfo{GenericCallbackData}(
-        C_NULL,
-        CallbackDataWrapper(model.inner, func),
-    )
+function MOI.set(model::Optimizer, attr::MOI.HeuristicCallback, func::Function)
+    MOI.set(model, attr, nothing)
 
-    model.callback_info[CT_MOI_GENERIC] = set_moi_generic_callback!(model)
+    xprs_optnode_info = add_xprs_optnode_callback!(
+        model.inner,
+        (callback_data::OptNodeCallbackData) -> moi_heuristic_xprs_optnode_wrapper(
+            func,
+            model,
+            callback_data,
+        )
+    )::CallbackInfo{OptNodeCallbackData}
+
+    model.callback_table.moi_heuristic = (xprs_optnode_info,)
 
     return nothing
 end

@@ -1,34 +1,50 @@
-function moi_lazy_constraint_wrapper(model::Optimizer, callback_data::CallbackData)
-    info = get(model.callback_info, CT_MOI_LAZY_CONSTRAINT, nothing)
+function moi_lazy_constraint_xprs_optnode_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
+    info = model.callback_table.moi_lazy_constraint::Union{Tuple{CallbackInfo{CD}},Nothing}
 
     if !isnothing(info)
-        model.callback_state = CS_MOI_LAZY_CONSTRAINT # TODO: push
+        push_callback_state!(model, CS_MOI_LAZY_CONSTRAINT)
+
+        get_callback_solution!(model, callback_data.node_model)
 
         # Add previous cuts if any to gurantee that the user is dealing with
         # an optimal solution feasibile for existing cuts
         if isempty(model.callback_cut_data.cut_ptrs) || !apply_cuts!(model, callback_data.node_model)
-            info.data_wrapper.func(callback_data)
+            func(callback_data)
         end
 
-        model.callback_state = CS_NONE # TODO: pop
+        pop_callback_state!(model)
     end
 
     return nothing
 end
 
 function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, ::Nothing)
-    model.callback_info[CT_MOI_LAZY_CONSTRAINT] = nothing
+    info = model.callback_table.moi_lazy_constraint::Union{Tuple{CallbackInfo{OptNodeCallbackData}},Nothing}
+
+    if !isnothing(info)
+        xprs_optnode_info, = info
+
+        remove_xprs_optnode_callback!(model, xprs_optnode_info)
+
+        model.callback_table.moi_lazy_constraint = nothing
+    end
 
     return nothing
 end
 
-function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, func::Function)
-    model.callback_info[CT_MOI_LAZY_CONSTRAINT] = CallbackInfo{GenericCallbackData}(
-        C_NULL,
-        CallbackDataWrapper(model.inner, func),
+function MOI.set(model::Optimizer, attr::MOI.LazyConstraintCallback, func::Function)
+    MOI.set(model, attr, nothing)
+
+    xprs_optnode_info = add_xprs_optnode_callback!(
+        model.inner,
+        (callback_data::OptNodeCallbackData) -> moi_lazy_constraint_xprs_optnode_wrapper(
+            func,
+            model,
+            callback_data,
+        )
     )
 
-    model.callback_info[CT_MOI_GENERIC] = set_moi_generic_callback!(model)
+    model.callback_table.moi_lazy_constraint = (xprs_optnode_info,)
 
     return nothing
 end

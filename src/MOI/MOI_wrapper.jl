@@ -239,11 +239,14 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     backward_sensitivity_cache::Union{Nothing, SensitivityCache}
 
     # Callback fields
-    callback_info::Dict{CallbackType,Union{CallbackInfo,Nothing}}
+    # For each callback type, there is a vector containing the associated
+    # low-level, Xpress-specific callbacks. This allows the construction of
+    # elaborated, high-level, callbacks by composition of Xpress's bindings
+    callback_table::CallbackTable
 
     callback_cached_solution::Union{Nothing, CachedSolution}
     callback_cut_data::CallbackCutData
-    callback_state::CallbackState
+    callback_state::Vector{CallbackState}
     callback_exception::Union{Nothing, Exception}
 
     params::Dict{Any, Any}
@@ -279,14 +282,9 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
 
-        model.callback_info = Dict{CallbackType,Union{CallbackInfo,Nothing}}(
-            CT_MOI_HEURISTIC       => nothing,
-            CT_MOI_LAZY_CONSTRAINT => nothing,
-            CT_MOI_USER_CUT        => nothing,
-            CT_XPRS_MESSAGE        => nothing,
-            CT_XPRS_OPTNODE        => nothing,
-            CT_XPRS_PREINTSOL      => nothing,
-        )
+        model.callback_table = CallbackTable()
+        model.callback_state = CallbackState[]
+        model.callback_cut_data = CallbackCutData()
 
         # TODO: separate MOI.empty! from initializer
         MOI.empty!(model)  # inner is initialized here
@@ -338,19 +336,11 @@ function MOI.empty!(model::Optimizer)
     model.primal_status = MOI.NO_SOLUTION
     model.dual_status = MOI.NO_SOLUTION
 
-    # TODO: store callback info using structs intead of a dictionary
-    model.callback_info = Dict{CallbackType,Union{CallbackInfo,Nothing}}(
-        CT_MOI_HEURISTIC       => nothing,
-        CT_MOI_LAZY_CONSTRAINT => nothing,
-        CT_MOI_USER_CUT        => nothing,
-        CT_XPRS_MESSAGE        => nothing,
-        CT_XPRS_OPTNODE        => nothing,
-        CT_XPRS_PREINTSOL      => nothing,
-    )
+    empty!(model.callback_table)
 
     model.callback_cached_solution = nothing
-    model.callback_cut_data = CallbackCutData(false, Array{Xpress.Lib.XPRScut}(undef,0))
-    model.callback_state = CS_NONE
+    empty!(model.callback_cut_data)
+    empty!(model.callback_state)
     model.callback_exception = nothing
 
     model.forward_sensitivity_cache = nothing
@@ -382,9 +372,9 @@ function MOI.is_empty(model::Optimizer)
     model.primal_status != MOI.NO_SOLUTION && return false
     model.dual_status != MOI.NO_SOLUTION && return false
 
-    # TODO: get this right. When the model is reset, the message callback
-    #       is set, thus making the callback_info dict not empty. 
-    # any(!isnothing, values(model.callback_info)) && return false
+    # TODO: Get this right.
+    # The message callback is automatically defined when the model is created.
+    # !isempty(model.callback_table) && return false
     !isnothing(model.callback_cached_solution) && return false
 
     if !isnothing(model.callback_cut_data)
@@ -392,14 +382,13 @@ function MOI.is_empty(model::Optimizer)
         model.callback_cut_data.submitted === true && return false
     end
     
-    model.callback_state != CS_NONE && return false
+    !isempty(model.callback_state) && return false
     !isnothing(model.callback_exception) && return false
 
     return true
 end
 
 include("callbacks/generic.jl")
-include("callbacks/XPRS_callbacks.jl")
 include("callbacks/MOI_callbacks.jl")
 
 function reset_cached_solution!(model::Optimizer)
@@ -2663,9 +2652,6 @@ function _update_MIP_start!(model)
 end
 
 function MOI.optimize!(model::Optimizer)
-    # Initialize callbacks if necessary.
-    initialize_callback_interface!(model)
-
     pre_solve_reset(model)
     
     # cache rhs: must be done before hand because it cant be
@@ -2733,7 +2719,7 @@ function MOI.optimize!(model::Optimizer)
 end
 
 function _throw_if_optimize_in_progress(model, attr)
-    if model.callback_state != CS_NONE
+    if callback_state(model) != CS_NONE
         throw(MOI.OptimizeInProgress(attr))
     end
 end

@@ -1,3 +1,14 @@
+@doc raw"""
+    XpressCallback <: MOI.AbstractCallback
+"""
+abstract type XpressCallback <: MOI.AbstractCallback end
+
+MOI.supports(::Xpress.Optimizer, ::XpressCallback) = true
+
+include("MOI_message.jl")
+include("MOI_optnode.jl")
+include("MOI_preintsol.jl")
+
 include("MOI_heuristic.jl")
 include("MOI_lazy_constraint.jl")
 include("MOI_user_cut.jl")
@@ -15,7 +26,7 @@ end
 function set_moi_generic_callback!(model::Optimizer)
     remove_xprs_optnode_callback!(model)
 
-    return set_xprs_optnode_callback!(
+    return add_xprs_optnode_callback!(
         model,
         (callback_data::CallbackData) -> moi_generic_wrapper(model, callback_data),
     )

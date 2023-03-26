@@ -29,7 +29,7 @@ function callback_simple_model()
 end
 
 function foo(callback_data::Xpress.CallbackData)
-    callback_data.data[1] = 98
+    callback_data.data[1] += 1
 
     cols = Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_COLS)
     rows = Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_ROWS)
@@ -50,67 +50,165 @@ function foo(callback_data::Xpress.CallbackData)
     return nothing
 end
 
+@testset "Low-level Xpress Callback API" verbose = true begin
+
 @testset "message" begin
-    @testset "set_xprs_message_callback!" begin
+    @testset "add_xprs_message_callback! + remove_xprs_message_callback!" begin
         let 
             model, x, y = callback_simple_model()
 
             data = Matrix(1.0I, 3, 3)
-            info = Xpress.set_xprs_message_callback!(model, foo, data)
+            info = Xpress.add_xprs_message_callback!(model.inner, foo, data)
 
-            data_ptr = info.data_wrapper
-            func_ptr = info.callback_ptr
+            @test info.callback_ptr isa Ptr{Cvoid}
+            @test info.data_wrapper isa Xpress.CallbackDataWrapper{Xpress.MessageCallbackData}
 
             @test data[1] == 1
+            MOI.optimize!(model)
+            @test data[1] == 2 broken = true # callback registered but not getting called
+
+            Xpress.remove_xprs_message_callback!(model.inner, info)
 
             MOI.optimize!(model)
-            
-            @test data[1] == 98 broken = true # callback registered but not getting called
+            @test data[1] == 2 broken = true # callback registered but not getting called
+        end
+    end
 
-            @test typeof(data_ptr) <: Xpress.CallbackDataWrapper{Xpress.MessageCallbackData}
-            @test typeof(func_ptr) <: Ptr{Cvoid}
+    @testset "multiple entries" begin
+        let 
+            model, x, y = callback_simple_model()
+
+            N = 3
+
+            data = Matrix(1.0I, 3, 3)
+            info = [
+                Xpress.add_xprs_message_callback!(model.inner, foo, data)
+                for _ = 1:N
+            ]
+
+            for i = 1:N
+                @test info[i].callback_ptr isa Ptr{Cvoid}
+                @test info[i].data_wrapper isa Xpress.CallbackDataWrapper{Xpress.MessageCallbackData}
+            end
+
+            @test data[1] == 1
+            MOI.optimize!(model)
+            @test data[1] == N + 1 broken = true # callback registered but not getting called
+
+            for i = 1:N
+                Xpress.remove_xprs_message_callback!(model.inner, info[i])
+            end
+
+            MOI.optimize!(model)
+            @test data[1] == N + 1 broken = true # callback registered but not getting called
         end
     end
 end
 
 @testset "optnode" begin
-    @testset "set_xprs_optnode_callback!" begin
+    @testset "add_xprs_optnode_callback! + remove_xprs_optnode_callback!" begin
         let 
             model, x, y = callback_simple_model()
 
             data = Matrix(1.0I, 3, 3)
-            info = Xpress.set_xprs_optnode_callback!(model, foo, data)
+            info = Xpress.add_xprs_optnode_callback!(model.inner, foo, data)
 
-            data_ptr = info.data_wrapper
-            func_ptr = info.callback_ptr
+            @test info.callback_ptr isa Ptr{Cvoid}
+            @test info.data_wrapper isa Xpress.CallbackDataWrapper{Xpress.OptNodeCallbackData}
 
             @test data[1] == 1
             MOI.optimize!(model)
-            @test data[1] == 98
+            @test data[1] == 2
 
-            @test typeof(data_ptr) <: Xpress.CallbackDataWrapper{Xpress.OptNodeCallbackData}
-            @test typeof(func_ptr) <: Ptr{Cvoid}
+            Xpress.remove_xprs_optnode_callback!(model.inner, info)
+
+            MOI.optimize!(model)
+            @test data[1] == 2
+        end
+    end
+
+    @testset "multiple entries" begin
+        let 
+            model, x, y = callback_simple_model()
+
+            N = 3
+
+            data = Matrix(1.0I, 3, 3)
+            info = [
+                Xpress.add_xprs_optnode_callback!(model.inner, foo, data)
+                for _ = 1:N
+            ]
+
+            for i = 1:N
+                @test info[i].callback_ptr isa Ptr{Cvoid}
+                @test info[i].data_wrapper isa Xpress.CallbackDataWrapper{Xpress.OptNodeCallbackData}
+            end
+
+            @test data[1] == 1
+            MOI.optimize!(model)
+            @test data[1] == N + 1
+
+            for i = 1:N
+                Xpress.remove_xprs_optnode_callback!(model.inner, info[i])
+            end
+
+            MOI.optimize!(model)
+            @test data[1] == N + 1
         end
     end
 end
 
 @testset "preintsol" begin
-    @testset "set_xprs_preintsol_callback!" begin
+    @testset "add_xprs_preintsol_callback! + remove_xprs_preintsol_callback!" begin
         let 
             model, x, y = callback_simple_model()
 
             data = Matrix(1.0I, 3, 3)
-            info = Xpress.set_xprs_preintsol_callback!(model, foo, data)
+            info = Xpress.add_xprs_preintsol_callback!(model.inner, foo, data)
 
-            data_ptr = info.data_wrapper
-            func_ptr = info.callback_ptr
+            @test info.callback_ptr isa Ptr{Cvoid}
+            @test info.data_wrapper isa Xpress.CallbackDataWrapper{Xpress.PreIntSolCallbackData}
 
             @test data[1] == 1
             MOI.optimize!(model)
-            @test data[1] == 98
+            @test data[1] == 2
 
-            @test typeof(data_ptr) <: Xpress.CallbackDataWrapper{Xpress.PreIntSolCallbackData}
-            @test typeof(func_ptr) <: Ptr{Cvoid}
+            Xpress.remove_xprs_preintsol_callback!(model.inner, info)
+
+            MOI.optimize!(model)
+            @test data[1] == 2
         end
     end
+
+    @testset "multiple entries" begin
+        let 
+            model, x, y = callback_simple_model()
+
+            N = 3
+
+            data = Matrix(1.0I, 3, 3)
+            info = [
+                Xpress.add_xprs_preintsol_callback!(model.inner, foo, data)
+                for _ = 1:N
+            ]
+
+            for i = 1:N
+                @test info[i].callback_ptr isa Ptr{Cvoid}
+                @test info[i].data_wrapper isa Xpress.CallbackDataWrapper{Xpress.PreIntSolCallbackData}
+            end
+
+            @test data[1] == 1
+            MOI.optimize!(model)
+            @test data[1] == N + 1
+
+            for i = 1:N
+                Xpress.remove_xprs_preintsol_callback!(model.inner, info[i])
+            end
+
+            MOI.optimize!(model)
+            @test data[1] == N + 1
+        end
+    end
+end
+
 end

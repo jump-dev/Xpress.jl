@@ -256,90 +256,99 @@ end
 
 @testset "HeuristicCallback" begin
     @testset "HeuristicSolution" begin
-        model, x, item_weights = callback_knapsack_model()
+        let
+            model, x, item_weights = callback_knapsack_model()
 
-        global callback_called = false
+            callback_called = false
 
-        MOI.set(
-            model,
-            MOI.HeuristicCallback(),
-            (cb_data) -> begin
-                x_vals = MOI.get.(model, MOI.CallbackVariablePrimal(cb_data), x)
-                status = MOI.get(model, MOI.CallbackNodeStatus(cb_data))::MOI.CallbackNodeStatusCode
+            MOI.set(
+                model,
+                MOI.HeuristicCallback(),
+                (cb_data) -> begin
+                    x_vals = MOI.get.(model, MOI.CallbackVariablePrimal(cb_data), x)
+                    status = MOI.get(model, MOI.CallbackNodeStatus(cb_data))::MOI.CallbackNodeStatusCode
 
-                if round.(Int, x_vals) ≈ x_vals
-                    atol = 1e-6
-                    @test status == MOI.CALLBACK_NODE_STATUS_INTEGER
-                else
-                    @test status == MOI.CALLBACK_NODE_STATUS_FRACTIONAL
-                end
+                    if round.(Int, x_vals) ≈ x_vals
+                        atol = 1e-6
+                        @test status == MOI.CALLBACK_NODE_STATUS_INTEGER
+                    else
+                        @test status == MOI.CALLBACK_NODE_STATUS_FRACTIONAL
+                    end
 
-                @test MOI.supports(model, MOI.HeuristicSolution(cb_data))
-                @test MOI.submit(
-                    model,
-                    MOI.HeuristicSolution(cb_data),
-                    x,
-                    floor.(x_vals)
-                ) == MOI.HEURISTIC_SOLUTION_UNKNOWN
+                    @test MOI.supports(model, MOI.HeuristicSolution(cb_data))
+                    @test MOI.submit(
+                        model,
+                        MOI.HeuristicSolution(cb_data),
+                        x,
+                        floor.(x_vals)
+                    ) == MOI.HEURISTIC_SOLUTION_UNKNOWN
 
-                global callback_called = true
-            end,
-        )
-        @test MOI.supports(model, MOI.HeuristicCallback())
+                    callback_called = true
+                end,
+            )
 
-        MOI.optimize!(model)
+            @test MOI.supports(model, MOI.HeuristicCallback())
 
-        @test callback_called
+            MOI.optimize!(model)
+
+            @test callback_called
+        end
     end
 
     @testset "LazyConstraint" begin
-        model, x, item_weights = callback_knapsack_model()
+        let
+            model, x, item_weights = callback_knapsack_model()
 
-        cb = nothing
+            cb = nothing
 
-        MOI.set(
-            model,
-            MOI.HeuristicCallback(),
-            (cb_data) -> begin
-                cb = cb_data
-
-                MOI.submit(
-                    model,
-                    MOI.LazyConstraint(cb_data),
-                    MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
-                    MOI.LessThan(5.0)
-                )
-            end,
-        )
-
-        @test_throws(
-            MOI.InvalidCallbackUsage(
+            MOI.set(
+                model,
                 MOI.HeuristicCallback(),
-                MOI.LazyConstraint(cb)
-            ),
-            MOI.optimize!(model)
-        )
+                (cb_data) -> begin
+                    cb = cb_data
+
+                    MOI.submit(
+                        model,
+                        MOI.LazyConstraint(cb_data),
+                        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
+                        MOI.LessThan(5.0)
+                    )
+                end,
+            )
+
+            @test_throws(
+                MOI.InvalidCallbackUsage(
+                    MOI.HeuristicCallback(),
+                    MOI.LazyConstraint(cb)
+                ),
+                MOI.optimize!(model)
+            )
+        end
     end
 
     @testset "UserCut" begin
-        model, x, item_weights = callback_knapsack_model()
-        cb = nothing
-        MOI.set(model, MOI.HeuristicCallback(), cb_data -> begin
-            cb = cb_data
-            MOI.submit(
-                model,
-                MOI.UserCut(cb_data),
-                MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
-                MOI.LessThan(5.0)
-            )
-        end)
+        let
+            model, x, item_weights = callback_knapsack_model()
 
-        @test_throws(
-            MOI.InvalidCallbackUsage(
-                MOI.HeuristicCallback(),
-                MOI.UserCut(cb)
-            ),
-            MOI.optimize!(model)
-        )
+            cb = nothing
+            
+            MOI.set(model, MOI.HeuristicCallback(), cb_data -> begin
+                cb = cb_data
+                MOI.submit(
+                    model,
+                    MOI.UserCut(cb_data),
+                    MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
+                    MOI.LessThan(5.0)
+                )
+            end)
+
+            @test_throws(
+                MOI.InvalidCallbackUsage(
+                    MOI.HeuristicCallback(),
+                    MOI.UserCut(cb)
+                ),
+                MOI.optimize!(model)
+            )
+        end
     end
 end

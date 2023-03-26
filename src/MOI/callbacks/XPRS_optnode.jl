@@ -1,5 +1,6 @@
-struct OptNodeCallback <: XpressCallback end
-
+@doc raw"""
+    OptNodeCallbackData
+"""
 mutable struct OptNodeCallbackData <: CallbackData
     # models
     root_model::XpressProblem
@@ -26,13 +27,13 @@ mutable struct OptNodeCallbackData <: CallbackData
 end
 
 @doc raw"""
-    xprs_optnode_wrapper(
+    xprs_optnode_func(
         cbprob::Lib.XPRSprob,
         cbdata::Ptr{Cvoid},
         p_infeasible::Ptr{Cint},
     )
 """
-function xprs_optnode_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, p_infeasible::Ptr{Cint}=C_NULL)
+function xprs_optnode_func(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, p_infeasible::Ptr{Cint}=C_NULL)
     data_wrapper = unsafe_pointer_to_objref(cbdata)::CallbackDataWrapper{OptNodeCallbackData}
 
     # Update callback data
@@ -49,7 +50,7 @@ function xprs_optnode_wrapper(cbprob::Lib.XPRSprob, cbdata::Ptr{Cvoid}, p_infeas
 end
 
 @doc raw"""
-    set_xprs_optnode_callback!(
+    add_xprs_optnode_callback!(
         model::XpressProblem,
         callback::Function,
         data::Any = nothing,
@@ -134,15 +135,15 @@ void XPRS_CC nodeOptimal(XPRSprob prob, void *data, int *p_infeasible)
 
 See the example depthfirst.c in the `examples/optimizer/c` folder.
 """
-function set_xprs_optnode_callback!(model::Xpress.Optimizer, func::Function, data::Any=nothing, priority::Integer=0)
-    callback_ptr = @cfunction(xprs_optnode_wrapper, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}))
-    data_wrapper = CallbackDataWrapper{OptNodeCallbackData}(model.inner, func, data)
+function add_xprs_optnode_callback!(model::XpressProblem, func::Function, data::Any=nothing, priority::Integer=0)
+    callback_ptr = @cfunction(xprs_optnode_func, Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}))
+    data_wrapper = CallbackDataWrapper{OptNodeCallbackData}(model, func, data)
 
     Lib.XPRSaddcboptnode(
-        model.inner.ptr, # XPRSprob prob
-        callback_ptr,    # void (XPRS_CC *optnode)(XPRSprob cbprob, void *cbdata, int *p_infeasible)
-        data_wrapper,    # void *data
-        Cint(priority),  # int priority
+        model.ptr,      # XPRSprob prob
+        callback_ptr,   # void (XPRS_CC *optnode)(XPRSprob cbprob, void *cbdata, int *p_infeasible)
+        data_wrapper,   # void *data
+        Cint(priority), # int priority
     )
 
     return CallbackInfo{OptNodeCallbackData}(callback_ptr, data_wrapper)
@@ -174,35 +175,14 @@ int XPRS_CC XPRSremovecboptnode(
 - `optnode` The callback function to remove. If NULL then all node-optimal callback functions added with the given user-defined data value will be removed.
 - `data` The data value that the callback was added with. If NULL, then the data value will not be checked and all node-optimal callbacks with the function pointer optnode will be removed.
 """
-function remove_xprs_optnode_callback!(model::Xpress.Optimizer)
-    Xpress.Lib.XPRSremovecboptnode(model.inner, C_NULL, C_NULL)
+function remove_xprs_optnode_callback!(model::XpressProblem)
+    Xpress.Lib.XPRSremovecboptnode(model, C_NULL, C_NULL)
 
     return nothing
 end
 
-function remove_xprs_optnode_callback!(model::Xpress.Optimizer, info::CallbackInfo{CD}) where {CD <: CallbackData}
-    Xpress.Lib.XPRSremovecboptnode(model.inner, info.callback_ptr, C_NULL)
-
-    return nothing
-end
-
-function MOI.set(model::Optimizer, ::OptNodeCallback, ::Nothing)
-    info = get(model.callback_info, CT_XPRS_OPTNODE, nothing)
-
-    if !isnothing(info)
-        remove_xprs_optnode_callback!(model)
-    end
-
-    model.callback_info[CT_XPRS_OPTNODE] = nothing
-
-    return nothing
-end
-
-function MOI.set(model::Optimizer, attr::OptNodeCallback, func::Function)
-    # remove any existing callback definitions
-    MOI.set(model, attr, nothing)
-
-    model.callback_info[CT_XPRS_OPTNODE] = set_xprs_optnode_callback!(model, func)
+function remove_xprs_optnode_callback!(model::XpressProblem, info::CallbackInfo{CD}) where {CD <: CallbackData}
+    Xpress.Lib.XPRSremovecboptnode(model, info.callback_ptr, C_NULL)
 
     return nothing
 end

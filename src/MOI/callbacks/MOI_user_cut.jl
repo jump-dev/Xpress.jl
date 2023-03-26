@@ -1,8 +1,10 @@
-function moi_user_cut_wrapper(model::Optimizer, callback_data::CallbackData)
-    info = get(model.callback_info, CT_MOI_USER_CUT, nothing)
+function moi_user_cut_xprs_optnode_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
+    info = model.callback_table.moi_user_cut::Union{Tuple{CallbackInfo{CD}},Nothing}
 
     if !isnothing(info)
-        model.callback_state = CS_MOI_USER_CUT # TODO: push
+        push_callback_state!(model, CS_MOI_USER_CUT)
+
+        get_callback_solution!(model, callback_data.node_model)
 
         # Apply stored cuts if any
         if isempty(model.callback_cut_data.cut_ptrs) || !apply_cuts!(model, callback_data.node_model)
@@ -10,29 +12,43 @@ function moi_user_cut_wrapper(model::Optimizer, callback_data::CallbackData)
             # two calls to guarantee th user has a chance to add a cut.
             # If the user cut is loose the problem will be resolved anyway.
             if Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) <= 2
-                info.data_wrapper.func(callback_data)
+                func(callback_data)
             end
         end
 
-        model.callback_state = CS_NONE # TODO: pop
+        pop_callback_state!(model)
     end
 
     return nothing
 end
 
 function MOI.set(model::Optimizer, ::MOI.UserCutCallback, ::Nothing)
-    model.callback_info[CT_MOI_USER_CUT] = nothing
+    info = model.callback_table.moi_user_cut::Union{Tuple{CallbackInfo{OptNodeCallbackData}},Nothing}
+
+    if !isnothing(info)
+        xprs_optnode_info, info
+
+        remove_xprs_optnode_callback!(model.inner, xprs_optnode_func)
+
+        model.callback_table.moi_user_cut = nothing
+    end
 
     return nothing
 end
 
-function MOI.set(model::Optimizer, ::MOI.UserCutCallback, func::Function)
-    model.callback_info[CT_MOI_USER_CUT] = CallbackInfo{GenericCallbackData}(
-        C_NULL,
-        CallbackDataWrapper(model.inner, func),
+function MOI.set(model::Optimizer, attr::MOI.UserCutCallback, func::Function)
+    MOI.set(model, attr, nothing)
+
+    xprs_optnode_info = add_xprs_optnode_callback!(
+        model.inner,
+        (callback_data::OptNodeCallbackData) -> moi_user_cut_xprs_optnode_wrapper(
+            func,
+            model,
+            callback_data,
+        )
     )
 
-    model.callback_info[CT_MOI_GENERIC] = set_moi_generic_callback!(model)
+    model.callback_table.moi_user_cut = (xprs_optnode_info,)
 
     return nothing
 end
