@@ -352,3 +352,75 @@ end
         end
     end
 end
+
+@testset "Message" begin
+    let 
+        model, x, y = callback_simple_model()
+
+        called_flag = false
+
+        MOI.set(
+            model,
+            Xpress.MessageCallback(),
+            (cb_data) -> begin
+                called_flag = true
+
+                return nothing
+            end
+        )
+
+        @test model.callback_table.xprs_message isa Xpress.CallbackInfo{Xpress.MessageCallback}
+
+        @test called_flag === true
+
+        return nothing
+    end
+end
+
+@testset "OptNode" begin
+    let 
+        model, x, y = callback_simple_model()
+
+        called_flag = false
+
+        MOI.set(
+            model,
+            Xpress.OptNodeCallback(),
+            (cb_data) -> begin
+                called_flag = true
+
+                return nothing
+            end
+        )
+
+        @test model.callback_table.xprs_optnode isa Xpress.CallbackInfo{Xpress.OptNodeCallback}
+
+        @test called_flag === true
+
+        return nothing
+    end
+end
+
+@testset "PreIntSol" begin
+    let 
+        model, x, y = callback_simple_model()
+
+        called_flag = false
+
+        MOI.set(
+            model,
+            Xpress.PreIntSolCallback(),
+            (cb_data) -> begin
+                called_flag = true
+
+                return nothing
+            end
+        )
+
+        @test model.callback_table.xprs_preintsol isa Xpress.CallbackInfo{Xpress.PreIntSolCallback}
+
+        @test called_flag === true
+
+        return nothing
+    end
+end
