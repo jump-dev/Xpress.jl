@@ -61,6 +61,8 @@ function callback_knapsack_model()
     return (model, x, item_weights)
 end
 
+@testset "MOI Callbacks" verbose = true begin
+
 @testset "LazyConstraintCallback" begin
     @testset "LazyConstraint" begin
         let
@@ -331,7 +333,7 @@ end
             model, x, item_weights = callback_knapsack_model()
 
             cb = nothing
-            
+
             MOI.set(model, MOI.HeuristicCallback(), cb_data -> begin
                 cb = cb_data
                 MOI.submit(
@@ -353,74 +355,82 @@ end
     end
 end
 
-@testset "Message" begin
-    let 
-        model, x, y = callback_simple_model()
-
-        called_flag = false
-
-        MOI.set(
-            model,
-            Xpress.MessageCallback(),
-            (cb_data) -> begin
-                called_flag = true
-
-                return nothing
-            end
-        )
-
-        @test model.callback_table.xprs_message isa Xpress.CallbackInfo{Xpress.MessageCallback}
-
-        @test called_flag === true
-
-        return nothing
-    end
 end
 
-@testset "OptNode" begin
-    let 
-        model, x, y = callback_simple_model()
+@testset "Xpress Callbacks" verbose = true begin
 
-        called_flag = false
+    @testset "Message" begin
+        let
+            model, x, y = callback_simple_model()
 
-        MOI.set(
-            model,
-            Xpress.OptNodeCallback(),
-            (cb_data) -> begin
-                called_flag = true
+            called_flag = false
 
-                return nothing
-            end
-        )
+            MOI.set(
+                model,
+                Xpress.MessageCallback(),
+                (cb_data) -> begin
+                    called_flag = true
 
-        @test model.callback_table.xprs_optnode isa Xpress.CallbackInfo{Xpress.OptNodeCallback}
+                    return nothing
+                end
+            )
 
-        @test called_flag === true
+            @test model.callback_table.xprs_message isa Xpress.CallbackInfo{Xpress.MessageCallbackData}
 
-        return nothing
+            MOI.optimize!(model)
+
+            @test called_flag === true broken = true
+        end
     end
-end
 
-@testset "PreIntSol" begin
-    let 
-        model, x, y = callback_simple_model()
+    @testset "OptNode" begin
+        let
+            model, x, y = callback_simple_model()
 
-        called_flag = false
+            called_flag = false
 
-        MOI.set(
-            model,
-            Xpress.PreIntSolCallback(),
-            (cb_data) -> begin
-                called_flag = true
+            MOI.set(
+                model,
+                Xpress.OptNodeCallback(),
+                (cb_data) -> begin
+                    called_flag = true
 
-                return nothing
-            end
-        )
+                    return nothing
+                end
+            )
 
-        @test model.callback_table.xprs_preintsol isa Xpress.CallbackInfo{Xpress.PreIntSolCallback}
+            @test model.callback_table.xprs_optnode isa Xpress.CallbackInfo{Xpress.OptNodeCallbackData}
 
-        @test called_flag === true
+            MOI.optimize!(model)
 
-        return nothing
+            @test called_flag === true
+        end
     end
+
+    @testset "PreIntSol" begin
+        let
+            model, x, y = callback_simple_model()
+
+            called_flag = false
+
+            MOI.set(
+                model,
+                Xpress.PreIntSolCallback(),
+                (cb_data) -> begin
+                    called_flag = true
+
+                    return nothing
+                end
+            )
+
+            @test model.callback_table.xprs_preintsol isa Xpress.CallbackInfo{Xpress.PreIntSolCallbackData}
+
+            MOI.optimize!(model)
+
+            @test called_flag === true
+
+            return nothing
+        end
+    end
+
 end

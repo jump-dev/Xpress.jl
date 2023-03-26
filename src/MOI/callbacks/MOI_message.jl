@@ -2,11 +2,26 @@
     MessageCallback
 """ struct MessageCallback <: XpressCallback end
 
-function MOI.set(model::Optimizer, ::MessageCallback, ::Nothing)
-    info = model.callback_table.xprs_message
+function xprs_message_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
+    xprs_message_info = model.callback_table.xprs_message::Union{CallbackInfo{CD},Nothing}
 
-    if !isnothing(info)
-        remove_xprs_message_callback!(model, info)
+    if !isnothing(xprs_message_info)
+        push_callback_state!(model, CS_XPRS_MESSAGE)
+
+        func(callback_data)
+
+        pop_callback_state!
+    end
+
+
+    return nothing
+end
+
+function MOI.set(model::Optimizer, ::MessageCallback, ::Nothing)
+    xprs_message_info = model.callback_table.xprs_message::Union{CallbackInfo{MessageCallbackData},Nothing}
+
+    if !isnothing(xprs_message_info)
+        remove_xprs_message_callback!(model.inner, xprs_message_info)
     end
 
     model.callback_table.xprs_message = nothing
@@ -19,7 +34,7 @@ function MOI.set(model::Optimizer, attr::MessageCallback, func::Function)
     MOI.set(model, attr, nothing)
 
     model.callback_table.xprs_message = add_xprs_message_callback!(
-        model,
+        model.inner,
         (callback_data::MessageCallbackData) -> xprs_message_wrapper(func, model, callback_data)
     )
 

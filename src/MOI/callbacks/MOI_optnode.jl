@@ -2,13 +2,13 @@
     OptNodeCallback
 """ struct OptNodeCallback <: XpressCallback end
 
-function xprs_optnode_wrapper(func::Function, model::Xpress.Optimizer, callback_data::OptNodeCallbackData)
-    info = model.callback_table.xprs_optnode::Union{CallbackInfo{OptNodeCallbackData},Nothing}
+function xprs_optnode_wrapper(func::Function, model::Xpress.Optimizer, callback_data::CD) where {CD<:CallbackData}
+    info = model.callback_table.xprs_optnode::Union{CallbackInfo{CD},Nothing}
 
     if !isnothing(info)
-        push_callback_state!(model, CS_MOI_HEURISTIC)
+        push_callback_state!(model, CS_XPRS_OPTNODE)
 
-        get_callback_solution!(model, info.data_wrapper.data)
+        get_callback_solution!(model, callback_data.node_model)
 
         # Allow at most one heuristic solution per LP optimal node
         if Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) <= 1
@@ -38,7 +38,7 @@ function MOI.set(model::Optimizer, attr::OptNodeCallback, func::Function)
     MOI.set(model, attr, nothing)
 
     model.callback_table.xprs_optnode = add_xprs_optnode_callback!(
-        model,
+        model.inner,
         (callback_data::OptNodeCallbackData) -> xprs_optnode_wrapper(func, model, callback_data),
     )
 
