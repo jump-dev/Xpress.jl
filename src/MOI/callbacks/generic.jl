@@ -77,22 +77,11 @@ function reset_callback_cached_solution!(model::Optimizer)
 end
 
 function reset_message_callback!(model::Optimizer)
-    info = model.callback_table.xprs_message
-
-    # if !isnothing(message_info)
-    #     # remove all message callbacks
-    #     remove_message_callback!(model)
-    # end
-
-    # #  no file -> screen            && has log
-    # if isempty(model.inner.logfile) && !iszero(model.log_level)
-    #     model.callback_info[CT_XPRS_MESSAGE] = add_xprs_message_callback!(
-    #         model,
-    #         model.show_warning,
-    #     )
-    # else
-    #     model.callback_info[CT_XPRS_MESSAGE] = nothing
-    # end
+    if isempty(model.inner.logfile) && !iszero(model.log_level)
+        MOI.set(model, MessageCallback(), default_xprs_message_func)
+    else
+        MOI.set(model, MessageCallback(), nothing)
+    end
 
     return nothing
 end
@@ -141,50 +130,6 @@ function apply_cuts!(opt::Optimizer, model::XpressProblem)
     )
 
     return (ncuts[] > 0)
-end
-
-function default_moi_user_cut_callback!(model::Optimizer, callback_data::CallbackData)
-    push_callback_state!(model, CS_MOI_USER_CUT)
-
-    # Apply stored cuts if any
-    if !isempty(model.callback_cut_data.cut_ptrs)
-        added = apply_cuts!(model, callback_data.node_model)
-
-        if added
-            return nothing
-        end
-    end
-
-    # Allow only one user cut solution per LP optimal node limiting
-    # two calls to guarantee th user has a chance to add a cut.
-    # If the user cut is loose the problem will be resolved anyway.
-    if Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 2
-        return nothing
-    end
-
-    model.user_cut_callback(callback_data)
-
-    pop_callback_state!(model)
-
-    return nothing
-end
-
-function default_moi_lazy_callback!(model::Optimizer, callback_data::CallbackData)
-    model.callback_state = CS_MOI_LAZY_CONSTRAINT
-
-    # Add previous cuts if any to gurantee that the user is dealing with
-    # an optimal solution feasibile for exisitng cuts
-    if !isempty(model.callback_cut_data.cut_ptrs)
-        added = apply_cuts!(model, callback_data.node_model)
-
-        if added
-            return nothing
-        end
-    end
-
-    model.lazy_callback(callback_data)
-
-    return nothing
 end
 
 function MOI.get(model::Optimizer, attr::MOI.CallbackNodeStatus{CD}) where {CD<:CallbackData}
