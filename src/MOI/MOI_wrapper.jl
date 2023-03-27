@@ -2657,17 +2657,23 @@ function MOI.optimize!(model::Optimizer)
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
     rhs = Vector{Float64}(undef, n_constraints(model.inner))
+    
     @checked Lib.XPRSgetrhs(model.inner, rhs, Cint(0), Cint(n_constraints(model.inner)-1))
+
     if !model.ignore_start && is_mip(model)
         _update_MIP_start!(model)
     end
+
     start_time = time()
+
     if is_mip(model)
         @checked Lib.XPRSmipoptimize(model.inner, model.solve_method)
     else
         @checked Lib.XPRSlpoptimize(model.inner, model.solve_method)
     end
+
     model.cached_solution.solve_time = time() - start_time
+    
     check_callback_exception(model)
 
     # should be almost a no-op if not needed
