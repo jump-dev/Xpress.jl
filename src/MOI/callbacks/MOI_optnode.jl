@@ -40,7 +40,7 @@ function MOI.set(model::Optimizer, attr::OptNodeCallback, func::Function)
     model.callback_table.xprs_optnode = add_xprs_optnode_callback!(
         model.inner,
         (callback_data::OptNodeCallbackData) -> xprs_optnode_wrapper(func, model, callback_data),
-    )
+    )::CallbackInfo{OptNodeCallbackData}
 
     return nothing
 end

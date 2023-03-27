@@ -46,7 +46,7 @@ function MOI.set(model::Optimizer, attr::MOI.UserCutCallback, func::Function)
             model,
             callback_data,
         )
-    )
+    )::CallbackInfo{OptNodeCallbackData}
 
     model.callback_table.moi_user_cut = (xprs_optnode_info,)
 

@@ -42,7 +42,7 @@ function MOI.set(model::Optimizer, attr::MOI.LazyConstraintCallback, func::Funct
             model,
             callback_data,
         )
-    )
+    )::CallbackInfo{OptNodeCallbackData}
 
     model.callback_table.moi_lazy_constraint = (xprs_optnode_info,)
 

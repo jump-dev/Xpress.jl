@@ -40,7 +40,7 @@ function MOI.set(model::Optimizer, attr::PreIntSolCallback, func::Function)
     model.callback_table.xprs_preintsol = add_xprs_preintsol_callback!(
         model.inner,
         (callback_data::PreIntSolCallbackData) -> xprs_preintsol_wrapper(func, model, callback_data)
-    )
+    )::CallbackInfo{PreIntSolCallbackData}
 
     return nothing
 end

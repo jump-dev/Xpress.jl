@@ -36,7 +36,7 @@ function MOI.set(model::Optimizer, attr::MessageCallback, func::Function)
     model.callback_table.xprs_message = add_xprs_message_callback!(
         model.inner,
         (callback_data::MessageCallbackData) -> xprs_message_wrapper(func, model, callback_data)
-    )
+    )::CallbackInfo{MessageCallbackData}
 
     return nothing
 end
