@@ -10,7 +10,7 @@ function xprs_message_wrapper(func::Function, model::Optimizer, callback_data::C
 
         func(callback_data)
 
-        pop_callback_state!
+        pop_callback_state!(model)
     end
 
 
