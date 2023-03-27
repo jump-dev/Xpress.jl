@@ -83,8 +83,10 @@ function reset_message_callback!(model::Optimizer)
             MessageCallback(),
             (cb_data) -> begin
                 cb_data.data = model.show_warning
-                
-                return default_xprs_message_func(cb_data)
+
+                default_xprs_message_func(cb_data)
+
+                return nothing
             end
         )
     else

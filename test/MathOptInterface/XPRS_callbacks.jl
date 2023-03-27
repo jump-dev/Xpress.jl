@@ -4,13 +4,13 @@ using MathOptInterface
 
 const MOI = MathOptInterface
 
-function callback_simple_model()
+function callback_simple_model(; OUTPUTLOG::Integer = 0)
     model = Xpress.Optimizer(
         PRESOLVE = 0,
         CUTSTRATEGY = 0,
         HEURSTRATEGY = 0,
         SYMMETRY = 0,
-        OUTPUTLOG = 0,
+        OUTPUTLOG = OUTPUTLOG,
     )
 
     MOI.Utilities.loadfromstring!(model, """
@@ -50,27 +50,37 @@ function foo(callback_data::Xpress.CallbackData)
     return nothing
 end
 
+function message_func(callback_data::Xpress.CallbackData)
+    callback_data.data[5] = 2
+
+    return nothing
+end
+
 @testset "Low-level Xpress Callback API" verbose = true begin
 
 @testset "message" begin
     @testset "add_xprs_message_callback! + remove_xprs_message_callback!" begin
         let 
-            model, x, y = callback_simple_model()
+            model, x, y = callback_simple_model(; OUTPUTLOG = 1)
+
+            MOI.set(model, Xpress.MessageCallback(), nothing)
 
             data = Matrix(1.0I, 3, 3)
-            info = Xpress.add_xprs_message_callback!(model.inner, foo, data)
+            info = Xpress.add_xprs_message_callback!(model.inner, message_func, data)
 
             @test info.callback_ptr isa Ptr{Cvoid}
             @test info.data_wrapper isa Xpress.CallbackDataWrapper{Xpress.MessageCallbackData}
 
-            @test data[1] == 1
+            @test data[5] == 1
             MOI.optimize!(model)
-            @test data[1] == 2 broken = true # callback registered but not getting called
+            @test data[5] == 2
 
             Xpress.remove_xprs_message_callback!(model.inner, info)
 
+            data[5] = 1
+
             MOI.optimize!(model)
-            @test data[1] == 2 broken = true # callback registered but not getting called
+            @test data[5] == 1
         end
     end
 
