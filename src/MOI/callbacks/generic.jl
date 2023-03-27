@@ -78,7 +78,15 @@ end
 
 function reset_message_callback!(model::Optimizer)
     if isempty(model.inner.logfile) && !iszero(model.log_level)
-        MOI.set(model, MessageCallback(), default_xprs_message_func)
+        MOI.set(
+            model,
+            MessageCallback(),
+            (cb_data) -> begin
+                cb_data.data = model.show_warning
+                
+                return default_xprs_message_func(cb_data)
+            end
+        )
     else
         MOI.set(model, MessageCallback(), nothing)
     end
