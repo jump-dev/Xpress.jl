@@ -849,9 +849,9 @@ function test_constraints_with_the_same_name()
     
     @test variable_names[1] == "x1"
     @test variable_names[2] == "x2"
-    @test constraint_names[1] == "R1"
+    @test constraint_names[1] == "constraint1"
     @test constraint_names[2] == "R2"
-    @test constraint_names[3] == "R3"
+    @test constraint_names[3] == "constraint3"
 
 end
 
@@ -875,7 +875,7 @@ function test_variables_with_the_same_name()
     
     # return variable_names, constraint_names
 
-    @test variable_names[1] == "C1"
+    @test variable_names[1] == "x1"
     @test variable_names[2] == "C2"
     @test constraint_names[1] == "constraint1"
     @test constraint_names[2] == "constraint2"

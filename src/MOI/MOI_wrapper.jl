@@ -4156,8 +4156,14 @@ function add_names_to_inner_model(model::Xpress.Optimizer)
         push!(variables, [get_column(variable), get_name(variable)])
     end
     variables = sort(variables)
-    var_names = String[]; for i in 1:length(variables)
-       push!(var_names, variables[i][2])
+    var_names = String[]
+    for i in 1:length(variables)
+        new_variable = variables[i][2]
+        if new_variable == "" || new_variable in var_names
+            push!(var_names, string("C", variables[i][1]))
+        else
+            push!(var_names, new_variable)
+        end
     end
     NAMELENGTH = 64
     for (idx,str) in enumerate(var_names)
@@ -4176,8 +4182,14 @@ function add_names_to_inner_model(model::Xpress.Optimizer)
         push!(constraints, [get_row(constraint), get_name(constraint)])
     end
     constraints = sort(constraints)
-    const_names = String[]; for i in 1:length(constraints)
-       push!(const_names, constraints[i][2])
+    const_names = String[]
+    for i in 1:length(constraints)
+        new_constraint = constraints[i][2]
+        if new_constraint == "" || new_constraint in const_names
+            push!(const_names, string("R", constraints[i][1]))
+        else
+            push!(const_names, new_constraint)
+        end
     end
     for (idx,str) in enumerate(const_names)
         if length(str) > NAMELENGTH
