@@ -1,10 +1,4 @@
-import MathOptInterface
-import MathOptInterface: Utilities
-
-@show 123
-
 const MOI = MathOptInterface
-const MOIU = MOI.Utilities
 
 # indices
 const VI = MOI.VariableIndex
@@ -104,22 +98,7 @@ MOI.supports(::Optimizer, ::MOI.ObjectiveSense) = true
      return
  end
 
-function add_variable_NLP(model::Optimizer)
-    push!(model.nlp_variable_info, NLPVariableInfo())
-    return VI(length(model.nlp_variable_info))
-end
-
-function add_variables_NLP(model::Optimizer, nvars::Integer)
-    return [add_variable_NLP(model) for i in 1:nvars]
-end
-
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{<:Bounds{Float64}}) = true
-
-function MOI.add_constraint(model::Optimizer, f::MOI.VariableIndex, set::S) where {S <: Bounds{Float64}}
-    variable_info = find_variable_info(model, f)
-    set_bounds(variable_info, set)
-    return CI{MOI.VariableIndex, S}(f.value)
-end
 
 MOI.supports_constraint(::Optimizer, ::Type{<:Union{SAF, SQF}}, ::Type{<:Bounds{Float64}}) = true
 
@@ -300,7 +279,7 @@ function to_expr(f::SQF)
     return expr
 end
 
-function set_lower_bound(info::Union{NLPVariableInfo, ConstraintInfo}, value::Union{Number, Nothing})
+function set_lower_bound(info::ConstraintInfo, value::Union{Number, Nothing})
     if value !== nothing
         info.lower_bound !== nothing && throw(ArgumentError("Lower bound has already been set"))
         info.lower_bound = value
@@ -308,7 +287,7 @@ function set_lower_bound(info::Union{NLPVariableInfo, ConstraintInfo}, value::Un
     return
 end
 
-function set_upper_bound(info::Union{NLPVariableInfo, ConstraintInfo}, value::Union{Number, Nothing})
+function set_upper_bound(info::ConstraintInfo, value::Union{Number, Nothing})
     if value !== nothing
         info.upper_bound !== nothing && throw(ArgumentError("Upper bound has already been set"))
         info.upper_bound = value
@@ -316,26 +295,26 @@ function set_upper_bound(info::Union{NLPVariableInfo, ConstraintInfo}, value::Un
     return
 end
 
-function set_bounds(info::Union{NLPVariableInfo, ConstraintInfo}, set::MOI.EqualTo)
+function set_bounds(info::ConstraintInfo, set::MOI.EqualTo)
     set_lower_bound(info, set.value)
     set_upper_bound(info, set.value)
 end
 
-function set_bounds(info::Union{NLPVariableInfo, ConstraintInfo}, set::MOI.GreaterThan)
+function set_bounds(info::ConstraintInfo, set::MOI.GreaterThan)
     set_lower_bound(info, set.lower)
 end
 
-function set_bounds(info::Union{NLPVariableInfo, ConstraintInfo}, set::MOI.LessThan)
+function set_bounds(info::ConstraintInfo, set::MOI.LessThan)
     set_upper_bound(info, set.upper)
 end
 
-function set_bounds(info::Union{NLPVariableInfo, ConstraintInfo}, set::MOI.Interval)
+function set_bounds(info::ConstraintInfo, set::MOI.Interval)
     set_lower_bound(info, set.lower)
     set_upper_bound(info, set.upper)
 end
 
 function check_variable_indices(model::Optimizer, index::VI)
-    @assert 1 <= index.value <= length(model.nlp_variable_info)
+    @assert 1 <= index.value <= length(model.variable_info)
 end
 
 function check_variable_indices(model::Optimizer, f::SAF)
@@ -356,13 +335,13 @@ end
 
 function find_variable_info(model::Optimizer, vi::VI)
     check_variable_indices(model, vi)
-    model.nlp_variable_info[vi.value]
+    model.variable_info[vi]
 end
 
 MOI.supports(::Optimizer, ::MOI.VariablePrimalStart, ::Type{VI}) = true
 
 function MOI.set(model::Optimizer, ::MOI.VariablePrimalStart, vi::VI, value::Union{Real, Nothing})
     check_variable_indices(model, vi)
-    model.nlp_variable_info[vi.value].start = value
+    model.variable_info[vi].start = value
     return
 end

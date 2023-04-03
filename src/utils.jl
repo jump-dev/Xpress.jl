@@ -1,17 +1,3 @@
-import MathOptInterface
-import MathOptInterface: Utilities
-
-const MOI = MathOptInterface
-const MOIU = MOI.Utilities
-
-# indices
-const VI = MOI.VariableIndex
-const CI = MOI.ConstraintIndex
-
-# function aliases
-const SAF = MOI.ScalarAffineFunction{Float64}
-const SQF = MOI.ScalarQuadraticFunction{Float64}
-
 function invoke(f::Function, pos::Int, ::Type{Float64}, args...)
     out = Ref{Float64}(0.0) # should we use Cfloat here instead?
 

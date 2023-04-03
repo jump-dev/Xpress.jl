@@ -132,15 +132,6 @@ mutable struct ConstraintInfo
     ConstraintInfo(row::Int, set::MOI.AbstractSet, type::ConstraintType) = new(row, set, "", type)
 end
 
-mutable struct NLPVariableInfo
-    lower_bound::Union{Float64, Nothing}
-    upper_bound::Union{Float64, Nothing}
-    category::Symbol
-    start::Union{Float64, Nothing}
-    name::Union{String, Nothing}
-end
-NLPVariableInfo() = NLPVariableInfo(nothing, nothing, :Cont, nothing, nothing)
-
 mutable struct NLPConstraintInfo
     expression::Expr
     lower_bound::Union{Float64, Nothing}
@@ -232,7 +223,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         typeof(CleverDicts.key_to_index),
         typeof(CleverDicts.index_to_key),
         }
-    nlp_variable_info::Vector{NLPVariableInfo}
     # An index that is incremented for each new constraint (regardless of type).
     # We can check if a constraint is valid by checking if it is in the correct
     # xxx_constraint_info. We should _not_ reset this to zero, since then new
@@ -307,8 +297,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.solve_method = ""
         model.solve_relaxation = false
 
-        model.objective_expr = nothing
-
         model.message_callback = nothing
 
         model.termination_status = MOI.OPTIMIZE_NOT_CALLED
@@ -321,7 +309,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         end
 
         model.variable_info = CleverDicts.CleverDict{MOI.VariableIndex, VariableInfo}()
-        model.nlp_variable_info = VariableInfo[]
         model.affine_constraint_info = Dict{Int, ConstraintInfo}()
         model.sos_constraint_info = Dict{Int, ConstraintInfo}()
         model.nlp_constraint_info = NLPConstraintInfo[]
@@ -849,13 +836,10 @@ function MOI.add_variable(model::Optimizer)
         [-Inf],#_dbdl::Vector{Float64},
         [Inf],#_dbdu::Vector{Float64}
     )
-
-    push!(model.nlp_variable_info, NLPVariableInfo())
     return index
 end
 
 function MOI.add_variables(model::Optimizer, N::Int)
-    
     Lib.XPRSaddcols(
         model.inner,
         N,#length(_dbdl)::Int,
@@ -879,8 +863,6 @@ function MOI.add_variables(model::Optimizer, N::Int)
         info.index = index
         info.column = num_variables + i
         indices[i] = index
-
-        push!(model.nlp_variable_info, NLPVariableInfo())
     end
     return indices
 end
@@ -944,19 +926,18 @@ end
 function MOI.set(
     model::Optimizer, ::MOI.VariableName, v::MOI.VariableIndex, name::String
 )
-    if !haskey(model.variable_info, v)
-        check_variable_indices(model, v)
-        model.nlp_variable_info[v.value].name = name
-    else
-        info = _info(model, v)
-        info.name = name
-        # Note: don't set the string names in the Xpress C API because it complains
-        # on duplicate variables.
-        # That is, don't call `Lib.XPRSaddnames`.
-        model.name_to_variable = nothing
-    end
+    info = _info(model, v)
+    info.name = name
+    # Note: don't set the string names in the Xpress C API because it complains
+    # on duplicate variables.
+    # That is, don't call `Lib.XPRSaddnames`.
+    model.name_to_variable = nothing
     return
 end
+
+###
+### Sensitivities
+###
 
 struct ForwardSensitivityInputConstraint <: MOI.AbstractConstraintAttribute end
 
@@ -1127,7 +1108,6 @@ function MOI.set(
     model::Optimizer, ::MOI.ObjectiveSense, sense::MOI.OptimizationSense
 )
     # TODO: should this propagate across a `MOI.empty!(optimizer)` call
-    
     if sense == MOI.MIN_SENSE
         objsense=:Min
     elseif sense == MOI.MAX_SENSE
@@ -3299,14 +3279,8 @@ function MOI.set(
     x::MOI.VariableIndex,
     value::Union{Nothing, Float64}
 )
-
-    if !haskey(model.variable_info, x)
-        check_variable_indices(model,x)
-        model.nlp_variable_info[x.value].start = value
-    else
-        info = _info(model, x)
-        info.start = value
-    end
+    info = _info(model, x)
+    info.start = value
     return
 end
 
