@@ -29,7 +29,7 @@ The underlying solver is a closed-source commercial product for which you must
 ## Install:
 
 First, obtain a license of Xpress and install Xpress solver, following the
-[instructions on FICO's website](https://www.fico.com/products/fico-xpress-solver).
+[instructions on the FICO website](https://www.fico.com/products/fico-xpress-solver).
 
 Then, install this package using:
 ```julia
@@ -39,7 +39,7 @@ Pkg.add("Xpress")
 
 If you encounter an error, make sure that the `XPRESSDIR` environmental variable
 is set to the path of the Xpress directory. This should be part of a standard
-installation. The Xpress library will be searched for in `XPRESSDIR/lib` on unix
+installation. The Xpress library will be searched for in `XPRESSDIR/lib` on Unix
 platforms and `XPRESSDIR/bin` on Windows.
 
 For example, on macOS, you may need:
@@ -69,10 +69,10 @@ set_optimizer(model, "PRESOLVE", 0)
 For other parameters use [Xpress Optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/)
 or type `julia -e "using Xpress; println(keys(Xpress.XPRS_ATTRIBUTES))"`.
 
-If logfile is set to `""`, log file is disabled and output is printed to the
-console ([there might be issues with console output on windows (it is manually implemented with callbacks)](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html)).
-If logfile is set to a filepath, output is printed to the file.
-By default, logfile is set to `""` (console).
+If `logfile` is set to `""`, the log file is disabled and output is printed
+to the console ([there might be issues with console output on windows (it is manually implemented with callbacks)](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html)).
+If `logfile` is set to a file's path, output is printed to that file.
+By default, `logfile = ""` (console).
 
 ## Callbacks
 
@@ -83,13 +83,10 @@ current implementation should be considered experimental.
 
 ## Environment variables
 
- - `XPRESS_JL_SKIP_LIB_CHECK` - Used to skip build lib check as previsouly described.
-
- - `XPRESS_JL_NO_INFO` - Disable license info log.
-
- - `XPRESS_JL_NO_DEPS_ERROR` - Disable error when do deps.jl file is found.
-
- - `XPRESS_JL_NO_AUTO_INIT` - Disable automatic run of `Xpress.initialize()`.
+ - `XPRESS_JL_SKIP_LIB_CHECK`: Used to skip build lib check as previously described.
+ - `XPRESS_JL_NO_INFO`: Disable license info log.
+ - `XPRESS_JL_NO_DEPS_ERROR`: Disable error when do deps.jl file is found.
+ - `XPRESS_JL_NO_AUTO_INIT`: Disable automatic run of `Xpress.initialize()`.
  Specially useful for explicitly loading the dynamic library.
 
 ## Skipping Xpress.postsolve
