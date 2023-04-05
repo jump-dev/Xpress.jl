@@ -137,7 +137,7 @@ const STRING_ATTRIBUTES_VALUES = values(STRING_ATTRIBUTES)
 
 const DOUBLE_ATTRIBUTES_VALUES = values(DOUBLE_ATTRIBUTES)
 
-const INTEGER_ATTIRBUTES_VALUES = values(INTEGER_ATTRIBUTES)
+const INTEGER_ATTRIBUTES_VALUES = values(INTEGER_ATTRIBUTES)
 """
 
 open(joinpath(@__DIR__, "..", "src", "attributes_controls.jl"), "w") do f
