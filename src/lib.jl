@@ -1753,3 +1753,16 @@ end
 function XPRS_bo_validate(obranch, p_status)
     ccall((:XPRS_bo_validate, libxprs), Cint, (XPRSbranchobject, Ptr{Cint}), obranch, p_status)
 end
+
+function XSLPchgformulastring(prob, row, formula)
+    ccall((:XSLPchgformulastring, libxprs), Cint, (XPRSprob, Cint, Cstring), prob, row, formula)
+end
+
+function XSLPcreateprob(prob, _probholder)
+    ccall((:XSLPcreateprob, libxprs), Cint, (XPRSprob, Ptr{XPRSprob},), prob, _probholder)
+end
+
+function XSLPinit()
+    ccall((:XSLPinit, libxprs), Cint, ())
+end
+

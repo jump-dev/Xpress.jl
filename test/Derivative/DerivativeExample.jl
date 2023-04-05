@@ -26,7 +26,7 @@ function GenerateModel_VariableIndex()
     # Creation of the Optimizer
     optimizer = Xpress.Optimizer(PRESOLVE=0, logfile = "outputXpress_SV.log")
     # Variables
-    g = MOI.add_variables(optimizer, I)[1] # Generation for each generator
+    g = MOI.add_variables(optimizer, I) # Generation for each generator
     Df = MOI.add_variable(optimizer)    # Deficit
 
     # Constraints

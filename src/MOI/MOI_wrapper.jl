@@ -2713,6 +2713,11 @@ function MOI.optimize!(model::Optimizer)
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
         model.has_generic_callback = false # because it is set as true in the above
     end
+
+    Lib.XSLPinit()
+    ref = Ref{Lib.XPRSprob}()
+    Lib.XSLPcreateprob(model.inner, ref)
+    Lib.XSLPchgformulastring(model.inner, 1, "test")
     pre_solve_reset(model)
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
