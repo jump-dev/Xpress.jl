@@ -6,12 +6,9 @@
 [Xpress.jl](https://github.com/jump-dev/Xpress.jl) is a wrapper for the [FICO Xpress Solver](https://www.fico.com/products/fico-xpress-solver).
 
 It has two components:
+
  - a thin wrapper around the complete C API
  - an interface to [MathOptInterface](https://github.com/jump-dev/MathOptInterface.jl)
-
-The C API can be accessed via `Xpress.Lib.XPRSxx` functions, where the names and
-arguments are identical to the C API. See the [Xpress documentation](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML)
-for details.
 
 ## Affiliation
 
@@ -26,7 +23,7 @@ for Julia from FICO Xpress, let them know.
 The underlying solver is a closed-source commercial product for which you must
 [purchase a license](https://www.fico.com/products/fico-xpress-solver).
 
-## Install:
+## Installation
 
 First, obtain a license of Xpress and install Xpress solver, following the
 [instructions on the FICO website](https://www.fico.com/products/fico-xpress-solver).
@@ -57,6 +54,8 @@ installed on a CI server running the test suite. To support this use case, the
 make Xpress.jl installable (but not usable).
 
 ## Use with JuMP
+
+To use Xpress with JuMP, use:
 
 ```julia
 using JuMP, Xpress
@@ -96,6 +95,16 @@ infeasible models. In these older versions the post solve should not be
 executed. To do this, one can use the `MOI.RawOptimizerAttribute("MOI_POST_SOLVE")`
 to skip this routine.
 
-## Reference:
+## C API
 
-[FICO optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML)
+The C API can be accessed via `Xpress.Lib.XPRSxx` functions, where the names and
+arguments are identical to the C API. 
+
+See the [Xpress documentation](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML)
+for details.
+
+## Documentation
+
+For more information, consult the
+[FICO optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML).
+
