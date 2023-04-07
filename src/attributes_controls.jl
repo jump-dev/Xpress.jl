@@ -3,17 +3,16 @@
 File automatically generated with script:
 Xpress.jl/scripts/build_param_control_dicts.jl
 
-Last build: 2022-05-12T16:11:57.623
+Last build: 2023-04-05T15:30:42.197
 
-Optimizer version: 40.1.1
+Optimizer version: 41.1.3
 
 Banner from lib:
-FICO Xpress Solver 64bit v8.14.0 Apr 22 2022
-(c) Copyright Fair Isaac Corporation 1983-2022. All rights reserved
+###
 
 Banner from header (xprs.h):
- * (c) Copyright Fair Isaac Corporation 1983-2022. All rights reserved     *
- * For FICO Xpress Optimizer v40.01.01                                     *
+ * (c) Copyright Fair Isaac Corporation 1983-2023. All rights reserved     *
+ * For FICO Xpress Optimizer v41.01.03                                     *
 
 =#
 
@@ -30,6 +29,9 @@ const STRING_CONTROLS = Dict{String, Int32}(
 )
 
 const DOUBLE_CONTROLS = Dict{String, Int32}(
+    "MAXCUTTIME" => 8149,
+    "MAXSTALLTIME" => 8443,
+    "TUNERMAXTIME" => 8364,
     "MATRIXTOL" => 7001,
     "PIVOTTOL" => 7002,
     "FEASTOL" => 7003,
@@ -60,7 +62,7 @@ const DOUBLE_CONTROLS = Dict{String, Int32}(
     "BARPRIMALSTOP" => 7035,
     "BARSTEPSTOP" => 7036,
     "ELIMTOL" => 7042,
-    "PERTURB" => 7044,
+    "PERTURB" => 7044, # kept for compatibility
     "MARKOWITZTOL" => 7047,
     "MIPABSGAPNOTIFY" => 7064,
     "MIPRELGAPNOTIFY" => 7065,
@@ -68,6 +70,7 @@ const DOUBLE_CONTROLS = Dict{String, Int32}(
     "PPFACTOR" => 7069,
     "REPAIRINDEFINITEQMAX" => 7071,
     "BARGAPTARGET" => 7073,
+    "DUMMYCONTROL" => 7075,
     "BARSTARTWEIGHT" => 7076,
     "BARFREESCALE" => 7077,
     "SBEFFORT" => 7086,
@@ -77,7 +80,7 @@ const DOUBLE_CONTROLS = Dict{String, Int32}(
     "EIGENVALUETOL" => 7097,
     "INDLINBIGM" => 7099,
     "TREEMEMORYSAVINGTARGET" => 7100,
-    "GLOBALFILEBIAS" => 7101,
+    "GLOBALFILEBIAS" => 7101, # kept for compatibility
     "INDPRELINBIGM" => 7102,
     "RELAXTREEMEMORYLIMIT" => 7105,
     "MIPABSGAPNOTIFYOBJ" => 7108,
@@ -103,6 +106,10 @@ const DOUBLE_CONTROLS = Dict{String, Int32}(
     "MIPRESTARTFACTOR" => 7145,
     "BAROBJPERTURB" => 7146,
     "CPIALPHA" => 7149,
+    "GLOBALBOUNDINGBOX" => 7154,
+    "TIMELIMIT" => 7158,
+    "SOLTIMELIMIT" => 7159,
+    "REPAIRINFEASTIMELIMIT" => 7160,
 )
 
 const INTEGER_CONTROLS = Dict{String, Int32}(
@@ -117,7 +124,7 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "INVERTFREQ" => 8014,
     "INVERTMIN" => 8015,
     "MAXNODE" => 8018,
-    "MAXTIME" => 8020,
+    "MAXTIME" => 8020, # kept for compatibility
     "MAXMIPSOL" => 8021,
     "SIFTPASSES" => 8022,
     "DEFAULTALG" => 8023,
@@ -130,12 +137,12 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "MAXPAGELINES" => 8034,
     "OUTPUTLOG" => 8035,
     "BARSOLUTION" => 8038,
-    "CACHESIZE" => 8043,
+    "CACHESIZE" => 8043, # kept for compatibility
     "CROSSOVER" => 8044,
     "BARITERLIMIT" => 8045,
     "CHOLESKYALG" => 8046,
     "BAROUTPUT" => 8047,
-    "CSTYLE" => 8050,
+    "CSTYLE" => 8050, # kept for compatibility
     "EXTRAMIPENTS" => 8051,
     "REFACTOR" => 8052,
     "BARTHREADS" => 8053,
@@ -169,7 +176,7 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "SYMSELECT" => 8117,
     "SYMMETRY" => 8118,
     "MAXMEMORYHARD" => 8119,
-    "LPTHREADS" => 8124,
+    "LPTHREADS" => 8124, # kept for compatibility
     "MIQCPALG" => 8125,
     "QCCUTS" => 8126,
     "QCROOTALG" => 8127,
@@ -192,10 +199,10 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "DUALGRADIENT" => 8145,
     "SBITERLIMIT" => 8146,
     "SBBEST" => 8147,
-    "MAXCUTTIME" => 8149,
-    "ACTIVESET" => 8152,
+    "MAXCUTTIME" => 8149, # kept for compatibility
+    "ACTIVESET" => 8152, # kept for compatibility
     "BARINDEFLIMIT" => 8153,
-    "HEURSTRATEGY" => 8154,
+    "HEURSTRATEGY" => 8154, # kept for compatibility
     "HEURFREQ" => 8155,
     "HEURDEPTH" => 8156,
     "HEURMAXSOL" => 8157,
@@ -208,7 +215,7 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "LOCALCHOICE" => 8170,
     "LOCALBACKTRACK" => 8171,
     "DUALSTRATEGY" => 8174,
-    "L1CACHE" => 8175,
+    "L1CACHE" => 8175, # kept for compatibility
     "HEURDIVESTRATEGY" => 8177,
     "HEURSELECT" => 8178,
     "BARSTART" => 8180,
@@ -227,7 +234,7 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "MAXCHECKSONMAXCUTTIME" => 8204,
     "HISTORYCOSTS" => 8206,
     "ALGAFTERCROSSOVER" => 8208,
-    "LINELENGTH" => 8209,
+    "LINELENGTH" => 8209, # kept for compatibility
     "MUTEXCALLBACKS" => 8210,
     "BARCRASH" => 8211,
     "HEURDIVESOFTROUNDING" => 8215,
@@ -237,16 +244,18 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "ROOTPRESOLVE" => 8224,
     "CROSSOVERDRP" => 8227,
     "FORCEOUTPUT" => 8229,
+    "PRIMALOPS" => 8231,
     "DETERMINISTIC" => 8232,
     "PREPROBING" => 8238,
-    "EXTRAQCELEMENTS" => 8240,
-    "EXTRAQCROWS" => 8241,
+    "EXTRAQCELEMENTS" => 8240, # kept for compatibility
+    "EXTRAQCROWS" => 8241, # kept for compatibility
     "TREEMEMORYLIMIT" => 8242,
     "TREECOMPRESSION" => 8243,
     "TREEDIAGNOSTICS" => 8244,
-    "MAXGLOBALFILESIZE" => 8245,
+    "MAXTREEFILESIZE" => 8245,
+    "MAXGLOBALFILESIZE" => 8245, # kept for compatibility
     "PRECLIQUESTRATEGY" => 8247,
-    "REPAIRINFEASMAXTIME" => 8250,
+    "REPAIRINFEASMAXTIME" => 8250, # kept for compatibility
     "IFCHECKCONVEXITY" => 8251,
     "PRIMALUNSHIFT" => 8252,
     "REPAIRINDEFINITEQ" => 8254,
@@ -301,10 +310,10 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "TUNERMETHOD" => 8360,
     "TUNERTARGET" => 8362,
     "TUNERTHREADS" => 8363,
-    "TUNERMAXTIME" => 8364,
+    "TUNERMAXTIME" => 8364, # kept for compatibility
     "TUNERHISTORY" => 8365,
     "TUNERPERMUTE" => 8366,
-    "TUNERROOTALG" => 8367,
+    "TUNERROOTALG" => 8367, # kept for compatibility
     "TUNERVERBOSE" => 8370,
     "TUNEROUTPUT" => 8372,
     "PREANALYTICCENTER" => 8374,
@@ -312,7 +321,8 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "LPFLAGS" => 8385,
     "MIPKAPPAFREQ" => 8386,
     "OBJSCALEFACTOR" => 8387,
-    "GLOBALFILELOGINTERVAL" => 8389,
+    "TREEFILELOGINTERVAL" => 8389,
+    "GLOBALFILELOGINTERVAL" => 8389, # kept for compatibility
     "IGNORECONTAINERCPULIMIT" => 8390,
     "IGNORECONTAINERMEMORYLIMIT" => 8391,
     "MIPDUALREDUCTIONS" => 8392,
@@ -340,19 +350,26 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "BARREFITER" => 8431,
     "COMPUTELOG" => 8434,
     "SIFTPRESOLVEOPS" => 8435,
+    "CHECKINPUTDATA" => 8436,
     "ESCAPENAMES" => 8440,
     "IOTIMEOUT" => 8442,
-    "MAXSTALLTIME" => 8443,
+    "MAXSTALLTIME" => 8443, # kept for compatibility
     "AUTOCUTTING" => 8446,
+    "CALLBACKCHECKTIMEDELAY" => 8451,
+    "MULTIOBJOPS" => 8457,
+    "MULTIOBJLOG" => 8458,
+    "GLOBALSPATIALBRANCHIFPREFERORIG" => 8465,
+    "PRECONFIGURATION" => 8470,
+    "FEASIBILITYJUMP" => 8471,
     "EXTRAELEMS" => 8006,
-    "EXTRAPRESOLVE" => 8037,
+    "EXTRAPRESOLVE" => 8037, # kept for compatibility
     "EXTRASETELEMS" => 8191,
 )
 
 const STRING_ATTRIBUTES = Dict{String, Int32}(
     "MATRIXNAME" => 3001,
     "BOUNDNAME" => 3002,
-    "OBJNAME" => 3003,
+    "OBJNAME" => 3003, # kept for compatibility
     "RHSNAME" => 3004,
     "RANGENAME" => 3005,
     "XPRESSVERSION" => 3010,
@@ -360,6 +377,8 @@ const STRING_ATTRIBUTES = Dict{String, Int32}(
 )
 
 const DOUBLE_ATTRIBUTES = Dict{String, Int32}(
+    "MIPSOLTIME" => 1371,
+    "TIME" => 1122,
     "LPOBJVAL" => 2001,
     "SUMPRIMALINF" => 2002,
     "MIPOBJVAL" => 2003,
@@ -384,6 +403,7 @@ const DOUBLE_ATTRIBUTES = Dict{String, Int32}(
     "PREDICTEDATTLEVEL" => 2105,
     "OBSERVEDPRIMALINTEGRAL" => 2106,
     "CPISCALEFACTOR" => 2117,
+    "OBJVAL" => 2118,
     "BARPRIMALOBJ" => 4001,
     "BARDUALOBJ" => 4002,
     "BARPRIMALINF" => 4003,
@@ -420,7 +440,8 @@ const INTEGER_ATTRIBUTES = Dict{String, Int32}(
     "BRANCHVAR" => 1036,
     "MIPTHREADID" => 1037,
     "ALGORITHM" => 1049,
-    "TIME" => 1122,
+    "SOLSTATUS" => 1053,
+    "TIME" => 1122, # kept for compatibility
     "ORIGINALROWS" => 1124,
     "CALLBACKCOUNT_OPTNODE" => 1136,
     "CALLBACKCOUNT_CUTMGR" => 1137,
@@ -440,8 +461,10 @@ const INTEGER_ATTRIBUTES = Dict{String, Int32}(
     "PEAKTOTALTREEMEMORYUSAGE" => 1240,
     "CURRENTNODE" => 1248,
     "TREEMEMORYUSAGE" => 1251,
-    "GLOBALFILESIZE" => 1252,
-    "GLOBALFILEUSAGE" => 1253,
+    "TREEFILESIZE" => 1252,
+    "TREEFILEUSAGE" => 1253,
+    "GLOBALFILESIZE" => 1252, # kept for compatibility
+    "GLOBALFILEUSAGE" => 1253, # kept for compatibility
     "INDICATORS" => 1254,
     "ORIGINALINDICATORS" => 1255,
     "CORESPERCPUDETECTED" => 1258,
@@ -460,8 +483,14 @@ const INTEGER_ATTRIBUTES = Dict{String, Int32}(
     "ORIGINALPWLS" => 1336,
     "ORIGINALGENCONS" => 1338,
     "COMPUTEEXECUTIONS" => 1356,
-    "MIPSOLTIME" => 1371,
+    "MIPSOLTIME" => 1371, # kept for compatibility
     "RESTARTS" => 1381,
+    "SOLVESTATUS" => 1394,
+    "GLOBALBOUNDINGBOXAPPLIED" => 1396,
+    "OBJECTIVES" => 1397,
+    "SOLVEDOBJS" => 1399,
+    "OBJSTOSOLVE" => 1400,
+    "GLOBALNLPINFEAS" => 1403,
     "BARITER" => 5001,
     "BARDENSECOL" => 5004,
     "BARCROSSOVER" => 5005,

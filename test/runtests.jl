@@ -23,5 +23,5 @@ end
     vXpress_major = Int(Xpress.get_version().major)
     file_extension = ifelse(vXpress_major <= 38, ".mps","")
     msg = "Xpress internal error:\n\n85 Error: File not found: $(file_extension).\n"
-    @test_throws Xpress.XpressError(32, msg) Xpress.readprob(prob,"","")
+    @test_throws Xpress.XpressError(85, msg) Xpress.readprob(prob,"","")
 end
