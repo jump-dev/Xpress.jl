@@ -665,7 +665,7 @@ function test_MIP_Start()
     # global search, except in callbacks.").
     # Xpress.Lib.XPRSpostsolve(model.inner)
 
-    MOI.set(model, MOI.RawOptimizerAttribute("MAXNODE"), 2)
+    MOI.set(model, MOI.RawOptimizerAttribute("MAXNODE"), 1)
 
     MOI.optimize!(model)
 
