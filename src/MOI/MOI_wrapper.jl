@@ -2711,8 +2711,8 @@ function _update_MIP_start!(model)
         # columns.
         # ignoring the colind parameter was making the solver reject the input solution
         # permute!(solval, sortperm(colind))
-        # @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, C_NULL, "C_NULL1")
-        @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, colind, C_NULL)
+        @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, C_NULL, "C_NULL1")
+        # @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, colind, C_NULL)
     else
         @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, colind, C_NULL)
     end
