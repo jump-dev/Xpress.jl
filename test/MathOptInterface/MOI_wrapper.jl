@@ -592,10 +592,12 @@ function test_MIP_Start()
     model = Xpress.Optimizer(
         OUTPUTLOG    = 0,
         HEURSTRATEGY = 0,
+        HEUREMPHASIS = 0,
         CUTSTRATEGY  = 0,
         PRESOLVE     = 0,
         MIPPRESOLVE  = 0,
         PRESOLVEOPS  = 0,
+        # USERSOLHEURISTIC = 1,
     )
     # The variables: x[1:100], Bin
     x, _ = MOI.add_constrained_variables(model, fill(MOI.ZeroOne(), 100))
@@ -653,7 +655,7 @@ function test_MIP_Start()
 
     # THIRD RUN: run with MIP-start and searching only the root node.
     # Should find the optimal solution impossible to get in one node.
-    MOI.set(model, MOI.VariablePrimalStart(), x, solution)
+    MOI.set.(model, MOI.VariablePrimalStart(), x, solution)
 
     # This postsolve is necessary because of an unrelated bug. Apparently,
     # if Xpress is stopped because MAXNODE and has no feasible solution,
@@ -661,9 +663,15 @@ function test_MIP_Start()
     # postsolve is necessary otherwise a new call to MOI.optimize will
     # trigger error 707 ("707 Error: Function cannot be called during the
     # global search, except in callbacks.").
-    Xpress.Lib.XPRSpostsolve(model.inner)
+    # Xpress.Lib.XPRSpostsolve(model.inner)
+
+    MOI.set(model, MOI.RawOptimizerAttribute("MAXNODE"), 1)
 
     MOI.optimize!(model)
+
+    # @show MOI.get(model, MOI.TerminationStatus())
+    # @show MOI.get(model, MOI.PrimalStatus())
+    # @show MOI.get(model, MOI.RawStatusString())
 
     solution3 = MOI.get(model, MOI.VariablePrimal(), x)
     computed_obj_value3 = profit' * solution3

@@ -2709,10 +2709,12 @@ function _update_MIP_start!(model)
         # For the corner case in which `colind` is NOT already sorted we need
         # to be sure that `solval` is in the same order as the model.inner
         # columns.
-        permute!(solval, sortperm(colind))
-        @checked Lib.XPRSaddmipsol(model.inner, number_mip_started_var, solval, C_NULL, C_NULL)
+        # ignoring the colind parameter was making the solver reject the input solution
+        # permute!(solval, sortperm(colind))
+        # @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, C_NULL, "C_NULL1")
+        @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, colind, C_NULL)
     else
-        @checked Lib.XPRSaddmipsol(model.inner, number_mip_started_var, solval, colind, C_NULL)
+        @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, colind, C_NULL)
     end
 
     return
