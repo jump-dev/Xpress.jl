@@ -4265,3 +4265,84 @@ function MOI.write_to_file(model::Optimizer, name::String)
         @checked Lib.XPRSwriteprob(model.inner, name, "l")
     end
 end
+
+function get_name(v::Xpress.VariableInfo)
+    return v.name
+end
+
+function get_name(c::Xpress.ConstraintInfo)
+    return c.name
+end
+
+function get_column(c::Xpress.VariableInfo)
+    return c.column
+end
+
+function get_row(v::Xpress.ConstraintInfo)
+    return v.row
+end
+
+function number_of_rows(model::Xpress.Optimizer)
+    constraint_infos = model.affine_constraint_info |> values |> collect
+    return length(constraint_infos)
+end
+
+function number_of_cols(model::Xpress.Optimizer)
+    variable_infos = model.variable_info |> values |> collect
+    return length(variable_infos)
+end
+
+function add_names_to_inner_model(model::Xpress.Optimizer)
+    # variables
+    variable_infos = model.variable_info |> values |> collect
+    variables = Vector[]
+    for variable in variable_infos
+        push!(variables, [get_column(variable), get_name(variable)])
+    end
+    variables = sort(variables)
+    var_names = String[]
+    for i in 1:length(variables)
+        new_variable = variables[i][2]
+        if new_variable == "" || new_variable in var_names
+            push!(var_names, string("C", variables[i][1]))
+        else
+            push!(var_names, new_variable)
+        end
+    end
+    NAMELENGTH = 64
+    for (idx,str) in enumerate(var_names)
+        if length(str) > NAMELENGTH
+            var_names[idx] = first(str, NAMELENGTH)
+        end
+    end
+
+    var_cnames = join(var_names, "\0")
+    Xpress.Lib.XPRSaddnames(model.inner, Cint(2), var_cnames, Cint(0), Cint(number_of_cols(model) - 1))
+
+    # constraints
+    constraint_infos = model.affine_constraint_info |> values |> collect
+    constraints = Vector[]
+    for constraint in constraint_infos
+        push!(constraints, [get_row(constraint), get_name(constraint)])
+    end
+    constraints = sort(constraints)
+    const_names = String[]
+    for i in 1:length(constraints)
+        new_constraint = constraints[i][2]
+        if new_constraint == "" || new_constraint in const_names
+            push!(const_names, string("R", constraints[i][1]))
+        else
+            push!(const_names, new_constraint)
+        end
+    end
+    for (idx,str) in enumerate(const_names)
+        if length(str) > NAMELENGTH
+            const_names[idx] = first(str, NAMELENGTH)
+        end
+    end
+
+    const_cnames = join(const_names, "\0")
+    Xpress.Lib.XPRSaddnames(model.inner, Cint(1), const_cnames, Cint(0), Cint(number_of_rows(model) - 1))
+
+    return nothing
+end
