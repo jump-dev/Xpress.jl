@@ -2359,7 +2359,7 @@ function XPRSfixglobals(prob, options)
 end
 
 function _getversion()
-    buffer = Array{Cchar}(undef, 24)
+    buffer = Array{Cchar}(undef, 8 * 24)
     buffer_p = pointer(buffer)
     GC.@preserve buffer begin
         out = Cstring(buffer_p)

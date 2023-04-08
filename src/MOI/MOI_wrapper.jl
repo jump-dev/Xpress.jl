@@ -4266,83 +4266,116 @@ function MOI.write_to_file(model::Optimizer, name::String)
     end
 end
 
-function get_name(v::Xpress.VariableInfo)
-    return v.name
-end
-
-function get_name(c::Xpress.ConstraintInfo)
-    return c.name
-end
-
-function get_column(c::Xpress.VariableInfo)
-    return c.column
-end
-
-function get_row(v::Xpress.ConstraintInfo)
-    return v.row
-end
-
-function number_of_rows(model::Xpress.Optimizer)
-    constraint_infos = model.affine_constraint_info |> values |> collect
-    return length(constraint_infos)
-end
-
-function number_of_cols(model::Xpress.Optimizer)
-    variable_infos = model.variable_info |> values |> collect
-    return length(variable_infos)
-end
-
-function add_names_to_inner_model(model::Xpress.Optimizer)
-    # variables
-    variable_infos = model.variable_info |> values |> collect
-    variables = Vector[]
-    for variable in variable_infos
-        push!(variables, [get_column(variable), get_name(variable)])
-    end
-    variables = sort(variables)
-    var_names = String[]
-    for i in 1:length(variables)
-        new_variable = variables[i][2]
-        if new_variable == "" || new_variable in var_names
-            push!(var_names, string("C", variables[i][1]))
-        else
-            push!(var_names, new_variable)
-        end
-    end
-    NAMELENGTH = 64
-    for (idx,str) in enumerate(var_names)
-        if length(str) > NAMELENGTH
-            var_names[idx] = first(str, NAMELENGTH)
-        end
-    end
-
-    var_cnames = join(var_names, "\0")
-    Xpress.Lib.XPRSaddnames(model.inner, Cint(2), var_cnames, Cint(0), Cint(number_of_cols(model) - 1))
-
-    # constraints
-    constraint_infos = model.affine_constraint_info |> values |> collect
-    constraints = Vector[]
-    for constraint in constraint_infos
-        push!(constraints, [get_row(constraint), get_name(constraint)])
-    end
-    constraints = sort(constraints)
-    const_names = String[]
-    for i in 1:length(constraints)
-        new_constraint = constraints[i][2]
-        if new_constraint == "" || new_constraint in const_names
-            push!(const_names, string("R", constraints[i][1]))
-        else
-            push!(const_names, new_constraint)
-        end
-    end
-    for (idx,str) in enumerate(const_names)
-        if length(str) > NAMELENGTH
-            const_names[idx] = first(str, NAMELENGTH)
-        end
-    end
-
-    const_cnames = join(const_names, "\0")
-    Xpress.Lib.XPRSaddnames(model.inner, Cint(1), const_cnames, Cint(0), Cint(number_of_rows(model) - 1))
-
+function _pass_names_to_solver(model::Xpress.Optimizer; warn = true)
+    _pass_variable_names_to_solver(model, warn = warn)
+    _pass_constraint_names_to_solver(model, warn = warn)
     return nothing
+end
+
+function _pass_variable_names_to_solver(model::Xpress.Optimizer; warn = true)
+    NAMELENGTH = 64
+    n_variables = length(model.variable_info)
+    var_names = String[string('C', i) for i in 1:n_variables]
+    duplicate_check = Set{String}()
+    for variable in values(model.variable_info)
+        if !isempty(variable.name)
+            if length(variable.name) > NAMELENGTH
+                if warn
+                    @warn "Variable $(variable.name) has name large than limit of $NAMELENGTH"
+                end
+                # var_names[variable.column] = first(variable.name, NAMELENGTH)
+            elseif variable.name in duplicate_check
+                if warn
+                    @warn "Variable name $(variable.name)  is a duplicate"
+                end
+            else
+                var_names[variable.column] = variable.name
+                push!(duplicate_check, variable.name)
+            end
+        end
+    end
+    var_cnames = join(var_names, "\0")
+    @checked Lib.XPRSaddnames(
+        model.inner,
+        Cint(2),
+        var_cnames,
+        Cint(0),
+        Cint(n_variables - 1)
+    )
+    return nothing
+end
+
+function _pass_constraint_names_to_solver(model::Xpress.Optimizer; warn = true)
+    NAMELENGTH = 64
+    n_constraints = length(model.affine_constraint_info)
+    con_names = String[string('R', i) for i in 1:n_constraints]
+    duplicate_check = Set{String}()
+    for constraint in values(model.affine_constraint_info)
+        if !isempty(constraint.name)
+            if length(constraint.name) > NAMELENGTH
+                if warn
+                    @warn "Constraint $(constraint.name) has name large than limit of $NAMELENGTH"
+                end
+                # con_names[constraint.row] = first(constraint.name, NAMELENGTH)
+            elseif constraint.name in duplicate_check
+                if warn
+                    @warn "Constraint name $(constraint.name) is a duplicate"
+                end
+            else
+                con_names[constraint.row] = constraint.name
+                push!(duplicate_check, constraint.name)
+            end
+        end
+    end
+    const_cnames = join(con_names, "\0")
+    @checked Lib.XPRSaddnames(
+        model.inner,
+        Cint(1),
+        const_cnames,
+        Cint(0),
+        Cint(n_constraints - 1)
+    )
+    return nothing
+end
+
+function _get_variable_names(model)
+    NAMELENGTH = 64
+    num_variables = length(model.variable_info)
+    buffer = Cchar[' ' for i in 1:num_variables * 8 * (NAMELENGTH + 1)]
+    # buffer = Array{Cchar}(undef, num_variables * 8 * (NAMELENGTH + 1))
+    buffer_p = pointer(buffer)
+    GC.@preserve buffer begin
+        out = Cstring(buffer_p)
+        @checked Lib.XPRSgetnames(
+            model.inner,
+            Cint(2),
+            buffer_p,
+            Cint(0),
+            Cint(num_variables-1)
+        )
+        all_names = String(UInt8.(abs.(buffer)))
+    end
+    var_names = split(all_names, '\0')
+    return strip.(var_names)
+end
+
+function _get_constraint_names(model)
+    NAMELENGTH = 64
+    num_constraints = length(model.affine_constraint_info)
+    buffer = Cchar[' ' for i in 1:num_constraints * 8 * (NAMELENGTH + 1)]
+    # buffer = Array{Cchar}(undef, num_constraints * 8 * (NAMELENGTH + 1))
+    buffer_p = pointer(buffer)
+    GC.@preserve buffer begin
+        out = Cstring(buffer_p)
+        @checked Lib.XPRSgetnames(
+            model.inner,
+            Cint(1),
+            buffer_p,
+            Cint(0),
+            Cint(num_constraints-1)
+        )
+        all_names = String(UInt8.(buffer))
+    end
+    con_names = split(all_names, '\0')
+    return strip.(con_names)
 end
