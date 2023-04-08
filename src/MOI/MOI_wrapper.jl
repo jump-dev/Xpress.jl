@@ -4265,3 +4265,117 @@ function MOI.write_to_file(model::Optimizer, name::String)
         @checked Lib.XPRSwriteprob(model.inner, name, "l")
     end
 end
+
+function _pass_names_to_solver(model::Xpress.Optimizer; warn = true)
+    _pass_variable_names_to_solver(model, warn = warn)
+    _pass_constraint_names_to_solver(model, warn = warn)
+    return nothing
+end
+
+function _pass_variable_names_to_solver(model::Xpress.Optimizer; warn = true)
+    NAMELENGTH = 64
+    n_variables = length(model.variable_info)
+    var_names = String[string('C', i) for i in 1:n_variables]
+    duplicate_check = Set{String}()
+    for variable in values(model.variable_info)
+        if !isempty(variable.name)
+            if length(variable.name) > NAMELENGTH
+                if warn
+                    @warn "Variable $(variable.name) has name large than limit of $NAMELENGTH"
+                end
+                # var_names[variable.column] = first(variable.name, NAMELENGTH)
+            elseif variable.name in duplicate_check
+                if warn
+                    @warn "Variable name $(variable.name)  is a duplicate"
+                end
+            else
+                var_names[variable.column] = variable.name
+                push!(duplicate_check, variable.name)
+            end
+        end
+    end
+    var_cnames = join(var_names, "\0")
+    @checked Lib.XPRSaddnames(
+        model.inner,
+        Cint(2),
+        var_cnames,
+        Cint(0),
+        Cint(n_variables - 1)
+    )
+    return nothing
+end
+
+function _pass_constraint_names_to_solver(model::Xpress.Optimizer; warn = true)
+    NAMELENGTH = 64
+    n_constraints = length(model.affine_constraint_info)
+    con_names = String[string('R', i) for i in 1:n_constraints]
+    duplicate_check = Set{String}()
+    for constraint in values(model.affine_constraint_info)
+        if !isempty(constraint.name)
+            if length(constraint.name) > NAMELENGTH
+                if warn
+                    @warn "Constraint $(constraint.name) has name large than limit of $NAMELENGTH"
+                end
+                # con_names[constraint.row] = first(constraint.name, NAMELENGTH)
+            elseif constraint.name in duplicate_check
+                if warn
+                    @warn "Constraint name $(constraint.name) is a duplicate"
+                end
+            else
+                con_names[constraint.row] = constraint.name
+                push!(duplicate_check, constraint.name)
+            end
+        end
+    end
+    const_cnames = join(con_names, "\0")
+    @checked Lib.XPRSaddnames(
+        model.inner,
+        Cint(1),
+        const_cnames,
+        Cint(0),
+        Cint(n_constraints - 1)
+    )
+    return nothing
+end
+
+function _get_variable_names(model)
+    NAMELENGTH = 64
+    num_variables = length(model.variable_info)
+    buffer = Cchar[' ' for i in 1:num_variables * 8 * (NAMELENGTH + 1)]
+    # buffer = Array{Cchar}(undef, num_variables * 8 * (NAMELENGTH + 1))
+    buffer_p = pointer(buffer)
+    GC.@preserve buffer begin
+        out = Cstring(buffer_p)
+        @checked Lib.XPRSgetnames(
+            model.inner,
+            Cint(2),
+            buffer_p,
+            Cint(0),
+            Cint(num_variables-1)
+        )
+        all_names = String(UInt8.(abs.(buffer)))
+    end
+    var_names = split(all_names, '\0')
+    return strip.(var_names)
+end
+
+function _get_constraint_names(model)
+    NAMELENGTH = 64
+    num_constraints = length(model.affine_constraint_info)
+    buffer = Cchar[' ' for i in 1:num_constraints * 8 * (NAMELENGTH + 1)]
+    # buffer = Array{Cchar}(undef, num_constraints * 8 * (NAMELENGTH + 1))
+    buffer_p = pointer(buffer)
+    GC.@preserve buffer begin
+        out = Cstring(buffer_p)
+        @checked Lib.XPRSgetnames(
+            model.inner,
+            Cint(1),
+            buffer_p,
+            Cint(0),
+            Cint(num_constraints-1)
+        )
+        all_names = String(UInt8.(buffer))
+    end
+    con_names = split(all_names, '\0')
+    return strip.(con_names)
+end
