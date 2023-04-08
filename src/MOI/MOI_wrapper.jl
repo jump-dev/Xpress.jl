@@ -4355,7 +4355,7 @@ function _get_variable_names(model)
         )
         all_names = String(UInt8.(abs.(buffer)))
     end
-    var_names = split(all_names, '\0')
+    var_names = split(all_names, '\0')[1:num_variables]
     return strip.(var_names)
 end
 
@@ -4376,6 +4376,6 @@ function _get_constraint_names(model)
         )
         all_names = String(UInt8.(buffer))
     end
-    con_names = split(all_names, '\0')
+    con_names = split(all_names, '\0')[1:num_constraints]
     return strip.(con_names)
 end
