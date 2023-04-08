@@ -804,6 +804,9 @@ function test_name_constraints()
     variable_names = Xpress._get_variable_names(optimizer)
     constraint_names = Xpress._get_constraint_names(optimizer)
 
+    @test length(variable_names) == 2
+    @test length(constraint_names) == 3
+
     @test variable_names[1] == "x1"
     @test variable_names[2] == "x2"
     @test constraint_names[1] == "constraint1"
