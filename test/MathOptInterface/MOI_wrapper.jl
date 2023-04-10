@@ -892,7 +892,7 @@ function test_name_empty_names()
 end
 
 function test_dummy_nlp()
-    model = Xpress.Optimizer(OUTPUTLOG = 1);
+    model = Xpress.Optimizer(OUTPUTLOG = 0);
     x = MOI.add_variables(model, 2);
     c = [1.0, 2.0]
     MOI.set(
@@ -932,7 +932,7 @@ function test_dummy_nlp()
 
     MOI.optimize!(model)
 
-    @show x_sol = MOI.get.(model, MOI.VariablePrimal(), x)
+    x_sol = MOI.get.(model, MOI.VariablePrimal(), x)
     @test x_sol == [0.0, 10.0]
 
     ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 5 * x1 - 3")
