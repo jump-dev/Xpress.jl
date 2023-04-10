@@ -7,8 +7,9 @@ const MOI = MathOptInterface
 
 function callback_simple_model()
     model = Xpress.Optimizer(
-        HEURSTRATEGY = 0,
-        OUTPUTLOG = 0
+        HEURSTRATEGY = 0, # before v41
+        HEUREMPHASIS = 0,
+        OUTPUTLOG = 0,
     )
 
     MOI.Utilities.loadfromstring!(model, """
@@ -26,8 +27,9 @@ end
 
 function callback_knapsack_model()
     model = Xpress.Optimizer(
-        HEURSTRATEGY = 0,
-        OUTPUTLOG = 0
+        HEURSTRATEGY = 0, # before v41
+        HEUREMPHASIS = 0,
+        OUTPUTLOG = 0,
     )
     MOI.set(model, MOI.NumberOfThreads(), 2)
 
