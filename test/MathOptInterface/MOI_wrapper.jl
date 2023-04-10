@@ -901,7 +901,11 @@ function test_dummy_nlp()
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
     );
 
-    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE);
+    MOI.set(model, MOI.VariableName(), x, ["x1", "x2"])
+
+    Xpress._pass_variable_names_to_solver(model)
+
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
 
     b1 = MOI.add_constraint.(
         model,
@@ -918,22 +922,25 @@ function test_dummy_nlp()
         model,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.0], x), 0.0),
         MOI.EqualTo(0.0),
-    );
+    )
 
     c3 = MOI.add_constraint(
         model,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([0.0, 1.0], x), 0.0),
         MOI.GreaterThan(10.0),
-    );
+    )
 
-    MOI.optimize!(model);
+    MOI.optimize!(model)
 
     @show x_sol = MOI.get.(model, MOI.VariablePrimal(), x)
     @test x_sol == [0.0, 10.0]
 
+    ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 5 * x1 - 3")
+    @test ret == 0
     ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 3.14")
     @test ret == 0
-    # ret = Xpress.Lib.XPRSwriteprob(model.inner, "testmat.mat", "");
+    # @show Xpress.get_xpress_error_message(model.inner)
+    # ret = Xpress.Lib.XPRSwriteprob(model.inner, "testmat.mat", "")
     # @test ret == 0
 
     solvestatus = Ref{Cint}(0)
@@ -960,7 +967,7 @@ function test_dummy_nlp()
     # so that the first variable is C1
     # however we must be careful because the user might have passed the names
     # so, in a second step, we need to use them or empty them 
-    ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 0.5 * C1 - 3")
+    ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 0.5 * x1 - 3")
     @test ret == 0
     # ret = Xpress.Lib.XPRSwriteprob(model.inner, "testmat.mat", "");
     # @test ret == 0
