@@ -592,10 +592,12 @@ function test_MIP_Start()
     model = Xpress.Optimizer(
         OUTPUTLOG    = 0,
         HEURSTRATEGY = 0,
+        HEUREMPHASIS = 0,
         CUTSTRATEGY  = 0,
         PRESOLVE     = 0,
         MIPPRESOLVE  = 0,
         PRESOLVEOPS  = 0,
+        # USERSOLHEURISTIC = 1,
     )
     # The variables: x[1:100], Bin
     x, _ = MOI.add_constrained_variables(model, fill(MOI.ZeroOne(), 100))
@@ -653,7 +655,7 @@ function test_MIP_Start()
 
     # THIRD RUN: run with MIP-start and searching only the root node.
     # Should find the optimal solution impossible to get in one node.
-    MOI.set(model, MOI.VariablePrimalStart(), x, solution)
+    MOI.set.(model, MOI.VariablePrimalStart(), x, solution)
 
     # This postsolve is necessary because of an unrelated bug. Apparently,
     # if Xpress is stopped because MAXNODE and has no feasible solution,
@@ -661,9 +663,15 @@ function test_MIP_Start()
     # postsolve is necessary otherwise a new call to MOI.optimize will
     # trigger error 707 ("707 Error: Function cannot be called during the
     # global search, except in callbacks.").
-    Xpress.Lib.XPRSpostsolve(model.inner)
+    # Xpress.Lib.XPRSpostsolve(model.inner)
+
+    MOI.set(model, MOI.RawOptimizerAttribute("MAXNODE"), 1)
 
     MOI.optimize!(model)
+
+    # @show MOI.get(model, MOI.TerminationStatus())
+    # @show MOI.get(model, MOI.PrimalStatus())
+    # @show MOI.get(model, MOI.RawStatusString())
 
     solution3 = MOI.get(model, MOI.VariablePrimal(), x)
     computed_obj_value3 = profit' * solution3
@@ -734,6 +742,153 @@ function test_multiple_modifications()
         MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
     )
     @test MOI.coefficient.(obj.terms) == [4.0, 10.0, 2.0]
+end
+
+function infeasible_problem()
+    c = [1.0, 1.0]
+
+    optimizer = Xpress.Optimizer(OUTPUTLOG = 0);
+    MOI.set(optimizer, MOI.RawOptimizerAttribute("MOI_POST_SOLVE"), false);
+
+    x = MOI.add_variables(optimizer, 2);
+
+    MOI.set(
+        optimizer,
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+    );
+
+    MOI.set(optimizer, MOI.ObjectiveSense(), MOI.MIN_SENSE);
+
+    c1 = MOI.add_constraint(
+        optimizer,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.0], x), 0.0),
+        MOI.GreaterThan(5.0),
+    );
+
+    c2 = MOI.add_constraint(
+        optimizer,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.0], x), 0.0),
+        MOI.LessThan(2.0),
+    );
+
+    c3 = MOI.add_constraint(
+        optimizer,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([0.0, 1.0], x), 0.0),
+        MOI.GreaterThan(10.0),
+    );
+
+    MOI.optimize!(optimizer);
+
+    variables = x
+    constraints = [c1, c2, c3]
+
+    return variables, constraints, optimizer
+end
+
+function test_name_constraints()
+
+    # create problem
+    variables, constraints, optimizer = infeasible_problem();
+    
+    # name variables and constraints
+    MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x2"]);
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "constraint1");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[2], "constraint2");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3");
+
+    # name inner model
+    Xpress._pass_names_to_solver(optimizer);
+
+    # check names
+    variable_names = Xpress._get_variable_names(optimizer)
+    constraint_names = Xpress._get_constraint_names(optimizer)
+
+    @test length(variable_names) == 2
+    @test length(constraint_names) == 3
+
+    @test variable_names[1] == "x1"
+    @test variable_names[2] == "x2"
+    @test constraint_names[1] == "constraint1"
+    @test constraint_names[2] == "constraint2"
+    @test constraint_names[3] == "constraint3"
+
+    return nothing
+end
+
+function test_name_constraints_with_the_same_name()
+
+    # create problem
+    variables, constraints, optimizer = infeasible_problem();
+    
+    # name variables and constraints
+    MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x2"]);
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "same");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[2], "same");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3");
+
+    # name inner model
+    Xpress._pass_names_to_solver(optimizer);
+
+    # check names
+    variable_names = Xpress._get_variable_names(optimizer)
+    constraint_names = Xpress._get_constraint_names(optimizer)
+
+    @test variable_names[1] == "x1"
+    @test variable_names[2] == "x2"
+    @test ((constraint_names[1] == "same" && constraint_names[2] == "R2") ||
+        (constraint_names[2] == "same" && constraint_names[1] == "R1"))
+    @test constraint_names[3] == "constraint3"
+
+    return nothing
+end
+
+function test_name_variables_with_the_same_name()
+
+    # create problem
+    variables, constraints, optimizer = infeasible_problem();
+    
+    # name variables and constraints
+    MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x1"]);
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "constraint1");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[2], "constraint2");
+    MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3");
+
+    # name inner model
+    Xpress._pass_names_to_solver(optimizer);
+
+    # check names
+    variable_names = Xpress._get_variable_names(optimizer)
+    constraint_names = Xpress._get_constraint_names(optimizer)
+
+    @test variable_names[1] == "x1"
+    @test variable_names[2] == "C2"
+    @test constraint_names[1] == "constraint1"
+    @test constraint_names[2] == "constraint2"
+    @test constraint_names[3] == "constraint3"
+
+    return nothing
+end
+
+function test_name_empty_names()
+
+    # create problem
+    variables, constraints, optimizer = infeasible_problem();
+
+    # name inner model
+    Xpress._pass_names_to_solver(optimizer);
+
+    # check names
+    variable_names = Xpress._get_variable_names(optimizer)
+    constraint_names = Xpress._get_constraint_names(optimizer)
+
+    @test variable_names[1] == "C1"
+    @test variable_names[2] == "C2"
+    @test constraint_names[1] == "R1"
+    @test constraint_names[2] == "R2"
+    @test constraint_names[3] == "R3"
+
+    return nothing
 end
 
 end

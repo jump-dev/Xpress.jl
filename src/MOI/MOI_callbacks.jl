@@ -64,7 +64,7 @@ function default_moi_callback(model::Optimizer)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             # only allow one heuristic solution per LP optimal node
-            cb_count=@invoke Lib.XPRSgetintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE,_)::Int
+            cb_count=@_invoke Lib.XPRSgetintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE,_)::Int
             if cb_count > 1
                 return
             end
@@ -82,7 +82,7 @@ function default_moi_callback(model::Optimizer)
             # only allow one user cut solution per LP optimal node
             # limiting two calls to guarantee th user has a chance to add
             # a cut. if the user cut is loose the problem will be resolved anyway.
-            cb_count=@invoke Lib.XPRSgetintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE,_)::Int
+            cb_count=@_invoke Lib.XPRSgetintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE,_)::Int
             if cb_count> 2
                 return
             end
@@ -107,7 +107,7 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.CallbackNodeStatus{CallbackData})
     if check_moi_callback_validity(model)
-        mip_infeas = @invoke Lib.XPRSgetintattrib(attr.callback_data.model, Lib.XPRS_MIPINFEAS,_)::Int
+        mip_infeas = @_invoke Lib.XPRSgetintattrib(attr.callback_data.model, Lib.XPRS_MIPINFEAS,_)::Int
         if mip_infeas == 0
             return MOI.CALLBACK_NODE_STATUS_INTEGER
         elseif mip_infeas > 0

@@ -20,10 +20,10 @@ Xpress.jl/scripts/build_param_control_dicts.jl
 
 Last build: $(now())
 
-$("Optimizer version: $(VersionNumber(parse.(Int, split(Xpress.invoke(Xpress.Lib.XPRSgetversion, 2, String), "."))...))")
+$("Optimizer version: $(Xpress.get_version())")
 
 Banner from lib:
-$(Xpress.invoke(Xpress.Lib.XPRSgetbanner, 2, String))
+$(Xpress.get_banner())
 
 Banner from header (xprs.h):
 $(lines[7])
@@ -133,11 +133,11 @@ const DOUBLE_CONTROLS_VALUES = values(DOUBLE_CONTROLS)
 
 const INTEGER_CONTROLS_VALUES = values(INTEGER_CONTROLS)
 
-const STRING_ATTRBUTES_VALUES = values(STRING_ATTRIBUTES)
+const STRING_ATTRIBUTES_VALUES = values(STRING_ATTRIBUTES)
 
-const DOUBLE_ATTRBUTES_VALUES = values(DOUBLE_ATTRIBUTES)
+const DOUBLE_ATTRIBUTES_VALUES = values(DOUBLE_ATTRIBUTES)
 
-const INTEGER_ATTRBUTES_VALUES = values(INTEGER_ATTRIBUTES)
+const INTEGER_ATTRIBUTES_VALUES = values(INTEGER_ATTRIBUTES)
 """
 
 open(joinpath(@__DIR__, "..", "src", "attributes_controls.jl"), "w") do f
