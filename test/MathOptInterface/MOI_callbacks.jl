@@ -34,6 +34,8 @@ function callback_knapsack_model()
         PRESOLVE     = 0,
         MIPPRESOLVE  = 0,
         PRESOLVEOPS  = 0,
+        MIPTHREADS = 1,
+        THREADS = 1,
     )
     MOI.set(model, MOI.NumberOfThreads(), 2)
 
