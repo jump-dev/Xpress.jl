@@ -1754,8 +1754,12 @@ function XPRS_bo_validate(obranch, p_status)
     ccall((:XPRS_bo_validate, libxprs), Cint, (XPRSbranchobject, Ptr{Cint}), obranch, p_status)
 end
 
-function XSLPchgformulastring(prob, row, formula)
-    ccall((:XSLPchgformulastring, libxprs), Cint, (XPRSprob, Cint, Cstring), prob, row, formula)
+function XPRSnlpchgformulastring(prob, row, formula)
+    ccall((:XPRSnlpchgformulastring, libxprs), Cint, (XPRSprob, Cint, Cstring), prob, row, formula)
+end
+
+function XPRSnlpgetformulastring(prob, row, formula, fLen)
+    ccall((:XPRSnlpgetformulastring, libxprs), Cint, (XPRSprob, Cint, Cstring, Cint), prob, row, formula, fLen)
 end
 
 function XSLPcreateprob(prob, _probholder)

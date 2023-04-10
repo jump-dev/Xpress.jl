@@ -143,7 +143,7 @@ function constraint_to_expr(c::NLPConstraintInfo)
     end
 end
 
-wrap_with_parens(x::String) = string("( ", x, ")")
+wrap_with_parens(x::String) = string("( ", x, " )")
 
 to_str(x) = string(x)
 
