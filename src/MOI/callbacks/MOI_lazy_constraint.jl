@@ -97,13 +97,13 @@ function MOI.submit(
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
 
-    mtype = Cint[1] # Cut type
+    mtype = Ref{Cint}(1) # Cut type
     mstart = Cint[0, length(indices)]
     mindex = Array{Xpress.Lib.XPRScut}(undef, 1)
     ncuts = Cint(1)
     nodupl = Cint(2) # Duplicates are excluded from the cut pool, ignoring cut type
-    sensetype = Cchar[Char(sense)]
-    drhs = Cdouble[rhs]
+    sensetype = Ref{UInt8}(sense) # Julia assumes Cchar to be signed, but Xpress likes it unsigned
+    drhs = Ref{Cdouble}(rhs)
     indices .-= 1 # Xpress follows C's 0-index convention
     mcols = Cint.(indices)
     interp = Cint(-1) # Load all cuts
