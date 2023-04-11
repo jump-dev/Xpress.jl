@@ -13,7 +13,6 @@ function xprs_message_wrapper(func::Function, model::Optimizer, callback_data::C
         pop_callback_state!(model)
     end
 
-
     return nothing
 end
 
