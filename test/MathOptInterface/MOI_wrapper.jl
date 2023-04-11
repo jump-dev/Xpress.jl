@@ -891,6 +891,91 @@ function test_name_empty_names()
     return nothing
 end
 
+function test_dummy_nlp()
+    model = Xpress.Optimizer(OUTPUTLOG = 0);
+    x = MOI.add_variables(model, 2);
+    c = [1.0, 2.0]
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+    );
+
+    MOI.set(model, MOI.VariableName(), x, ["x1", "x2"])
+
+    Xpress._pass_variable_names_to_solver(model)
+
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+
+    b1 = MOI.add_constraint.(
+        model,
+        x,
+        MOI.GreaterThan(0.0),
+    )
+    b1 = MOI.add_constraint.(
+        model,
+        x,
+        MOI.LessThan(10.0),
+    )
+
+    c1 = MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.0], x), 0.0),
+        MOI.EqualTo(0.0),
+    )
+
+    c3 = MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([0.0, 1.0], x), 0.0),
+        MOI.GreaterThan(10.0),
+    )
+
+    MOI.optimize!(model)
+
+    x_sol = MOI.get.(model, MOI.VariablePrimal(), x)
+    @test x_sol == [0.0, 10.0]
+
+    ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 5 * x1 - 3")
+    @test ret == 0
+    ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 3.14")
+    @test ret == 0
+
+    solvestatus = Ref{Cint}(0)
+    solstatus = Ref{Cint}(0)
+    ret = Xpress.Lib.XPRSoptimize(model.inner, "", solvestatus, solstatus)
+    @test ret == 0
+
+    xx = Array{Float64}(undef, 2)
+    slack = Array{Float64}(undef, 2)
+    duals = Array{Float64}(undef, 2)
+    djs = Array{Float64}(undef, 2)
+    ret = Xpress.Lib.XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
+    @test ret == 0
+    @test xx == [3.14, 10] 
+    @test slack == [0, 0]
+
+    ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 0.5 * x1 - 3")
+    @test ret == 0
+
+    # to optimize NLPs we need: XPRSoptimize 
+    solvestatus = Ref{Cint}(0)
+    solstatus = Ref{Cint}(0)
+    ret = Xpress.Lib.XPRSoptimize(model.inner, "", solvestatus, solstatus)
+    @test ret == 0
+
+    # to get solution values from NLP we need: XPRSgetnlpsol
+    xx = Array{Float64}(undef, 2)
+    slack = Array{Float64}(undef, 2)
+    duals = Array{Float64}(undef, 2)
+    djs = Array{Float64}(undef, 2)
+    ret = Xpress.Lib.XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
+    @test ret == 0
+    @test xx == [6, 10] 
+    @test slack == [0, 0]
+
+    return nothing
+end
+
 end
 
 TestMOIWrapper.runtests()

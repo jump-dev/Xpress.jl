@@ -66,9 +66,9 @@ end
 function ci_installation()
     files = if Sys.iswindows()
     [
-        (ENV["SECRET_XPRS_WIN_8110"], "xprs.dll")
-        (ENV["SECRET_XPRL_WIN_8110"], "xprl.dll")
-        (ENV["SECRET_XPRA_WIN_8130"], "xpauth.xpr")
+        (ENV["SECRET_XPRS_WIN"], "xprs.dll")
+        (ENV["SECRET_XPRL_WIN"], "xprl.dll")
+        (ENV["SECRET_XPRA_WIN"], "xpauth.xpr")
     ]
     end
     for (url, file) in files
@@ -84,12 +84,11 @@ function ci_installation()
     end
 end
 
-
 if haskey(ENV, "XPRESS_JL_SKIP_LIB_CHECK")
     # Skip!
 elseif get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") == "true"
     write_depsfile("julia_registryci_automerge")
-elseif get(ENV, "SECRET_XPRS_WIN_8110", "") != ""
+elseif get(ENV, "SECRET_XPRS_WIN", "") != ""
     ci_installation()
 else
     local_installation()

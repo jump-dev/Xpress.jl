@@ -236,7 +236,7 @@ function MOI.submit(
         count += 1
     end
     mipsolcol = Cint.(mipsolcol)
-    mipsolval = Cfloat.(mipsolval)
+    mipsolval = Cdouble.(mipsolval)
     if ilength == MOI.get(model, MOI.NumberOfVariables())
         mipsolcol = C_NULL
     end
