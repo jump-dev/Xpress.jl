@@ -55,9 +55,9 @@ MOI.supports(::Optimizer, ::MOI.LazyConstraint{CD}) where {CD<:CallbackData} = t
 function MOI.submit(
     model::Optimizer,
     submittable::MOI.LazyConstraint{CD},
-    f::MOI.ScalarAffineFunction{T},
-    s::Union{MOI.LessThan{T},MOI.GreaterThan{T},MOI.EqualTo{T}}
-) where {T,CD<:CallbackData}
+    f::F,
+    s::S
+) where {CD<:CallbackData,T,F<:MOI.ScalarAffineFunction{T},S<:Union{MOI.LessThan{T},MOI.GreaterThan{T},MOI.EqualTo{T}}}
     # It is assumed that every '<:CallbackData' has a 'node_model' field
     node_model = submittable.callback_data.node_model::Xpress.XpressProblem
 
@@ -87,7 +87,7 @@ function MOI.submit(
     if !iszero(f.constant)
         cache_exception(
             model,
-            MOI.ScalarFunctionConstantNotZero{T,typeof(f),typeof(s)}(f.constant)
+            MOI.ScalarFunctionConstantNotZero{T,F,S}(f.constant)
         )
         Xpress.interrupt(node_model, Xpress.Lib.XPRS_STOP_USER)
 
