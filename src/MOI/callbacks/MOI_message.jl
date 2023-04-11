@@ -18,7 +18,7 @@ function xprs_message_wrapper(func::Function, model::Optimizer, callback_data::C
 end
 
 function MOI.set(model::Optimizer, ::MessageCallback, ::Nothing)
-    xprs_message_info = model.callback_table.xprs_message::Union{CallbackInfo{MessageCallbackData},Nothing}
+    xprs_message_info = model.callback_table.xprs_message
 
     if !isnothing(xprs_message_info)
         remove_xprs_message_callback!(model.inner, xprs_message_info)

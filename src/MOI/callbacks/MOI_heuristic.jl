@@ -18,7 +18,7 @@ function moi_heuristic_xprs_optnode_wrapper(func::Function, model::Optimizer, ca
 end
 
 function MOI.set(model::Optimizer, ::MOI.HeuristicCallback, ::Nothing)
-    info = model.callback_table.moi_heuristic::Union{Tuple{CallbackInfo{OptNodeCallbackData}},Nothing}
+    info = model.callback_table.moi_heuristic
 
     if !isnothing(info)
         xprs_optnode_info, = info

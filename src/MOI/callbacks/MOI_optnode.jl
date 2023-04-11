@@ -22,7 +22,7 @@ function xprs_optnode_wrapper(func::Function, model::Xpress.Optimizer, callback_
 end
 
 function MOI.set(model::Xpress.Optimizer, ::OptNodeCallback, ::Nothing)
-    xprs_optnode_info = model.callback_table.xprs_optnode::Union{CallbackInfo{OptNodeCallbackData},Nothing}
+    xprs_optnode_info = model.callback_table.xprs_optnode
 
     if !isnothing(xprs_optnode_info)
         remove_xprs_optnode_callback!(model.inner, xprs_optnode_info)

@@ -23,12 +23,12 @@ function moi_user_cut_xprs_optnode_wrapper(func::Function, model::Optimizer, cal
 end
 
 function MOI.set(model::Optimizer, ::MOI.UserCutCallback, ::Nothing)
-    info = model.callback_table.moi_user_cut::Union{Tuple{CallbackInfo{OptNodeCallbackData}},Nothing}
+    info = model.callback_table.moi_user_cut
 
     if !isnothing(info)
-        xprs_optnode_info, info
+        xprs_optnode_info, = info
 
-        remove_xprs_optnode_callback!(model.inner, xprs_optnode_func)
+        remove_xprs_optnode_callback!(model.inner, xprs_optnode_info)
 
         model.callback_table.moi_user_cut = nothing
     end

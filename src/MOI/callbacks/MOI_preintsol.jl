@@ -3,7 +3,7 @@
 """ struct PreIntSolCallback <: XpressCallback end
 
 function xprs_preintsol_wrapper(func::Function, model::Xpress.Optimizer, callback_data::PreIntSolCallbackData)
-    info = model.callback_table.xprs_preintsol::Union{CallbackInfo{PreIntSolCallbackData},Nothing}
+    info = model.callback_table.xprs_preintsol
 
     if !isnothing(info)
         push_callback_state!(model, CS_XPRS_PREINTSOL)
@@ -22,7 +22,7 @@ function xprs_preintsol_wrapper(func::Function, model::Xpress.Optimizer, callbac
 end
 
 function MOI.set(model::Optimizer, ::PreIntSolCallback, ::Nothing)
-    xprs_preintsol_info = model.callback_table.xprs_preintsol::Union{CallbackInfo{PreIntSolCallbackData},Nothing}
+    xprs_preintsol_info = model.callback_table.xprs_preintsol
 
     if !isnothing(xprs_preintsol_info)
         remove_xprs_preintsol_callback!(model.inner, xprs_preintsol_info)

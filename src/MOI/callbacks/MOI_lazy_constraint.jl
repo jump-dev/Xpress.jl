@@ -19,7 +19,7 @@ function moi_lazy_constraint_xprs_optnode_wrapper(func::Function, model::Optimiz
 end
 
 function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, ::Nothing)
-    info = model.callback_table.moi_lazy_constraint::Union{Tuple{CallbackInfo{OptNodeCallbackData}},Nothing}
+    info = model.callback_table.moi_lazy_constraint
 
     if !isnothing(info)
         xprs_optnode_info, = info
