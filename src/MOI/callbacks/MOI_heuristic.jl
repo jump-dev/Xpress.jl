@@ -78,24 +78,24 @@ function MOI.submit(
     end
 
     # Specific submit tasks
-    ilength   = length(variables)
-    mipsolval = Vector{Cint}(undef, ilength)
-    mipsolcol = fill!(Vector{Cfloat}(undef, ilength), NaN)
+    ilength = length(variables)
+    solval = fill!(Vector{Cdouble}(undef, ilength), NaN)
+    colind = Vector{Cint}(undef, ilength)
 
     for (count, (var, value)) in enumerate(zip(variables, values))
-        mipsolcol[count] = _info(model, var).column - 1 # 0-indexing
-        mipsolval[count] = value
+        solval[count] = value
+        colind[count] = _info(model, var).column - 1 # 0-indexing
     end
 
     if ilength == MOI.get(model, MOI.NumberOfVariables())
-        mipsolcol = C_NULL
+        colind = C_NULL
     end
 
     Lib.XPRSaddmipsol(
         node_model,
         Cint(ilength),
-        mipsolval,
-        mipsolcol,
+        solval,
+        colind,
         C_NULL,
     )
 
