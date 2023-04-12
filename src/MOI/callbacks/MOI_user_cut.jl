@@ -68,22 +68,7 @@ function MOI.submit(
     # TODO: Should we mark as submitted in the beginning of the function?
     model.callback_cut_data.submitted = true
 
-    # Check callback state
-    let state = callback_state(model)
-        if state !== CS_MOI_USER_CUT
-            cache_callback_exception!(
-                model,
-                MOI.InvalidCallbackUsage(
-                    state_callback(state),
-                    submittable,
-                )
-            )
-
-            Xpress.interrupt(node_model, Xpress.Lib.XPRS_STOP_USER)
-
-            return nothing
-        end
-    end
+    check_callback_state(model, node_model, submittable, CS_MOI_USER_CUT)
 
     # Check if b is 0 in a'x + b <= c?
     # f(x) = a'x + b

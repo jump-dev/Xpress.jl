@@ -60,22 +60,7 @@ function MOI.submit(
     # It is assumed that every '<:CallbackData' has a 'node_model' field
     node_model = submittable.callback_data.node_model::Xpress.XpressProblem
 
-    # Check callback state
-    let state = callback_state(model)
-        if state !== CS_MOI_HEURISTIC
-            cache_callback_exception!(
-                model,
-                MOI.InvalidCallbackUsage(
-                    state_callback(state),
-                    submittable,
-                )
-            )
-
-            Xpress.interrupt(node_model, Xpress.Lib.XPRS_STOP_USER)
-
-            return nothing
-        end
-    end
+    check_callback_state(model, node_model, submittable, CS_MOI_HEURISTIC)
 
     # Specific submit tasks
     ilength = length(variables)

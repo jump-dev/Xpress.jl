@@ -20,7 +20,7 @@ function state_callback(state::CallbackState)
     elseif state === CS_XPRS_PREINTSOL
         return PreIntSolCallback()
     else
-        return nothing
+        error("Unknown callback state '$state'")
     end
 end
 
@@ -35,6 +35,24 @@ function pop_callback_state!(model::Optimizer)
         error("Can't pop from empty state stack")
     else
         pop!(model.callback_state)
+    end
+
+    return nothing
+end
+
+function check_callback_state(model::Optimizer, node_model::Xpress.XpressProblem, submittable::MOI.AbstractSubmittable, expected_state::CallbackState)
+    state = callback_state(model)
+    
+    if state !== expected_state
+        cache_callback_exception!(
+            model,
+            MOI.InvalidCallbackUsage(
+                state_callback(state),
+                submittable,
+            )
+        )
+
+        Xpress.interrupt(node_model, Xpress.Lib.XPRS_STOP_USER)
     end
 
     return nothing
