@@ -299,6 +299,24 @@ function Base.show(io::IO, prob::XpressProblem)
     println(io, "    number of integer entities             = $(n_entities(prob))")
 end
 
+const NLPSTATUS_STRING = Dict{Int,String}(
+    Lib.XPRS_NLPSTATUS_UNSTARTED => "0 Unstarted ( XPRS_NLPSTATUS_UNSTARTED).",
+    Lib.XPRS_NLPSTATUS_SOLUTION => "1 Global search incomplete - an integer solution has been found ( XPRS_NLPSTATUS_SOLUTION).",
+    Lib.XPRS_NLPSTATUS_OPTIMAL => "2 Optimal ( XPRS_NLPSTATUS_OPTIMAL).",
+    Lib.XPRS_NLPSTATUS_NOSOLUTION => "3 Global search complete - No solution found ( XPRS_NLPSTATUS_NOSOLUTION).",
+    Lib.XPRS_NLPSTATUS_INFEASIBLE => "4 Infeasible ( XPRS_NLPSTATUS_INFEASIBLE).",
+    Lib.XPRS_NLPSTATUS_UNBOUNDED => "5 Unbounded ( XPRS_NLPSTATUS_UNBOUNDED).",
+    Lib.XPRS_NLPSTATUS_UNFINISHED => "6 Unfinished ( XPRS_NLPSTATUS_UNFINISHED).",
+    Lib.XPRS_NLPSTATUS_UNSOLVED => "7 Problem could not be solved due to numerical issues. ( XPRS_NLPSTATUS_UNSOLVED).",
+)
+
+function nlp_solve_complete(stat)
+    stat in [Lib.XPRS_NLPSTATUS_INFEASIBLE, Lib.XPRS_NLPSTATUS_OPTIMAL]
+end
+function nlp_solve_stopped(stat)
+    stat in [Lib.XPRS_NLPSTATUS_INFEASIBLE, Lib.XPRS_NLPSTATUS_OPTIMAL]
+end
+
 const MIPSTATUS_STRING = Dict{Int,String}(
     Lib.XPRS_MIP_NOT_LOADED => "0 Problem has not been loaded ( XPRS_MIP_NOT_LOADED).",
     Lib.XPRS_MIP_LP_NOT_OPTIMAL => "1 Global search incomplete - the initial continuous relaxation has not been solved and no integer solution has been found ( XPRS_MIP_LP_NOT_OPTIMAL).",

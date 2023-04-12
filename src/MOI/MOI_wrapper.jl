@@ -2879,7 +2879,10 @@ function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
     _throw_if_optimize_in_progress(model, attr)
     stop = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
     stop_str = STOPSTATUS_STRING[stop]
-    if is_mip(model)
+    if is_nlp(model)
+        stat = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_NLPSTATUS, _)::Int
+        return Xpress.NLPSTATUS_STRING[stat] * " - " * stop_str
+    elseif is_mip(model)
         stat = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSTATUS, _)::Int
         return Xpress.MIPSTATUS_STRING[stat] * " - " * stop_str
     else
@@ -2901,7 +2904,14 @@ function _cache_termination_status(model::Optimizer)
             return MOI.ITERATION_LIMIT
         elseif stop == Lib.XPRS_STOP_MIPGAP
             stat = Lib.XPRS_MIP_NOT_LOADED
-            if is_mip(model)
+            if is_nlp(model)
+                stat = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_NLPSTATUS, _)::Int
+                if stat == Lib.XPRS_NLPSTATUS_OPTIMAL
+                    return MOI.OPTIMAL
+                else
+                    return MOI.OTHER_ERROR
+                end
+            elseif is_mip(model)
                 stat = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSTATUS, _)::Int
                 if stat == Lib.XPRS_MIP_OPTIMAL
                     return MOI.OPTIMAL
@@ -2928,7 +2938,37 @@ function _cache_termination_status(model::Optimizer)
         XPRS_STOP_USER user interrupt
         =#
     end # else:
-    if is_mip(model)
+    if is_nlp(model)
+        stat = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_NLPSTATUS, _)::Int
+        if stat == Lib.XPRS_NLPSTATUS_UNSTARTED
+            return MOI.OPTIMIZE_NOT_CALLED
+        elseif stat == Lib.XPRS_NLPSTATUS_SOLUTION # is a STOP
+            return MOI.LOCALLY_SOLVED
+        elseif stat == Lib.XPRS_NLPSTATUS_OPTIMAL 
+            return MOI.OPTIMAL
+        elseif stat == Lib.XPRS_NLPSTATUS_NOSOLUTION # is a STOP
+            return MOI.OTHER_ERROR
+        elseif stat == Lib.XPRS_NLPSTATUS_INFEASIBLE
+            return MOI.INFEASIBLE
+        elseif stat == Lib.XPRS_NLPSTATUS_UNBOUNDED
+            return MOI.DUAL_INFEASIBLE
+        elseif stat == Lib.XPRS_NLPSTATUS_UNFINISHED # is a STOP
+            return MOI.OTHER_ERROR
+        else
+            @assert stat == Lib.XPRS_NLPSTATUS_UNSOLVED
+            return MOI.NUMERICAL_ERROR
+        end
+        #=
+        0 Unstarted ( XPRS_NLPSTATUS_UNSTARTED).
+        1 Global search incomplete - an integer solution has been found ( XPRS_NLPSTATUS_SOLUTION).
+        2 Optimal ( XPRS_NLPSTATUS_OPTIMAL).
+        3 Global search complete - No solution found ( XPRS_NLPSTATUS_NOSOLUTION)..
+        4 Infeasible ( XPRS_NLPSTATUS_INFEASIBLE).
+        5 Unbounded ( XPRS_NLPSTATUS_UNBOUNDED).
+        6 Unfinished ( XPRS_NLPSTATUS_UNFINISHED)..
+        7 Problem could not be solved due to numerical issues. ( XPRS_NLPSTATUS_UNSOLVED).
+        =#
+    elseif is_mip(model)
         stat = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSTATUS, _)::Int
         if stat == Lib.XPRS_MIP_NOT_LOADED
             return MOI.OPTIMIZE_NOT_CALLED
@@ -3029,6 +3069,26 @@ function _cache_primal_status(model)
         if _has_primal_ray(model)
             return MOI.INFEASIBILITY_CERTIFICATE
         end
+    elseif is_nlp(model)
+        stat = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_NLPSTATUS, _)::Int
+        if stat == Lib.XPRS_NLPSTATUS_UNSTARTED
+            return MOI.OPTIMIZE_NOT_CALLED
+        elseif stat == Lib.XPRS_NLPSTATUS_SOLUTION # is a STOP
+            return MOI.LOCALLY_SOLVED
+        elseif stat == Lib.XPRS_NLPSTATUS_OPTIMAL 
+            return MOI.OPTIMAL
+        elseif stat == Lib.XPRS_NLPSTATUS_NOSOLUTION # is a STOP
+            return MOI.OTHER_ERROR
+        elseif stat == Lib.XPRS_NLPSTATUS_INFEASIBLE
+            return MOI.INFEASIBLE
+        elseif stat == Lib.XPRS_NLPSTATUS_UNBOUNDED
+            return MOI.DUAL_INFEASIBLE
+        elseif stat == Lib.XPRS_NLPSTATUS_UNFINISHED # is a STOP
+            return MOI.OTHER_ERROR
+        else
+            @assert stat == Lib.XPRS_NLPSTATUS_UNSOLVED
+            return MOI.NUMERICAL_ERROR
+        end
     elseif is_mip(model)
         stat = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSTATUS, _)::Int
         if stat == Lib.XPRS_MIP_NOT_LOADED
@@ -3047,6 +3107,12 @@ function _cache_primal_status(model)
             return MOI.FEASIBLE_POINT
         elseif stat == Lib.XPRS_MIP_UNBOUNDED
             return MOI.NO_SOLUTION #? DUAL_INFEASIBLE?
+        end
+    end
+    if is_nlp(model)
+        nlp_sols = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_SLPMIPSOLS, _)::Int
+        if nlp_sols > 0
+            return MOI.FEASIBLE_POINT
         end
     end
     if is_mip(model)
