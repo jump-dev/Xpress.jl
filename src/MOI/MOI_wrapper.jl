@@ -2825,13 +2825,11 @@ function MOI.optimize!(model::Optimizer)
 
     # TODO: add @checked here - must review statuses
     if is_nlp(model)
-        Lib.XPRSgetnlpsol(
-            model.inner,
-        model.cached_solution.variable_primal,
-        model.cached_solution.linear_primal,
-        model.cached_solution.linear_dual,
-        model.cached_solution.variable_dual,
-        )
+        xx = Array{Float64}(undef, 2)
+        slack = Array{Float64}(undef, 2)
+        duals = Array{Float64}(undef, 2)
+        djs = Array{Float64}(undef, 2)
+        ret = Xpress.Lib.XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
 
     elseif is_mip(model)
         # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
