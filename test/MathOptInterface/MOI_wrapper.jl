@@ -926,7 +926,7 @@ function test_dummy_nlp()
     c3 = MOI.add_constraint(
         model,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([0.0, 1.0], x), 0.0),
-        MOI.GreaterThan(10.0),
+        c,
     );
 
     MOI.optimize!(model);
