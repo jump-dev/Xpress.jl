@@ -2743,7 +2743,6 @@ end
 
 function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
-    @show 456
     if check_moi_callback_validity(model)
         if model.moi_warnings && Xpress.getcontrol(model.inner,Lib.XPRS_HEURSTRATEGY) != 0
             @warn "Callbacks in XPRESS might not work correctly with HEURSTRATEGY != 0"
@@ -2761,8 +2760,7 @@ function MOI.optimize!(model::Optimizer)
         _update_MIP_start!(model)vari
     end
     start_time = time()
-    if model.nlp_block_data != nothing
-        @show 123
+    if is_nlp(model)
         ncols=n_variables(model.inner)
         x=collect(keys(model.variable_info))
         c=[0.0 for i = 1:ncols]
@@ -2788,7 +2786,7 @@ function MOI.optimize!(model::Optimizer)
                 MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
                 c_set[2],
                 );
-            elseif c_set != nothing
+            elseif c_set !== nothing
                 MOI.add_constraint(
                 model,
                 MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
@@ -2826,7 +2824,7 @@ function MOI.optimize!(model::Optimizer)
     model.dual_status = _cache_dual_status(model)
 
     # TODO: add @checked here - must review statuses
-    if model.nlp_block_data != nothing
+    if is_nlp(model)
         ncols=n_variables(model.inner)
         xx = Array{Float64}(undef, ncols)
         slack = Array{Float64}(undef, ncols)
@@ -3273,7 +3271,9 @@ end
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
-    if is_mip(model)
+    if is_nlp(model)
+        return @_invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_NLPOBJVAL, _)::Float64
+    elseif is_mip(model)
         return @_invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_MIPOBJVAL, _)::Float64
     else
         return @_invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_LPOBJVAL, _)::Float64
@@ -3282,7 +3282,9 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveBound)
     _throw_if_optimize_in_progress(model, attr)
-    if is_mip(model)
+    if is_nlp(model)
+        return @_invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_NLPOBJVAL, _)::Float64
+    elseif is_mip(model)
         return @_invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_BESTBOUND, _)::Float64
     else
         return @_invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_LPOBJVAL, _)::Float64
