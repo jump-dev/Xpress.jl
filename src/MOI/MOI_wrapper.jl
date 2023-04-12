@@ -424,7 +424,7 @@ end
 
 function reset_cached_solution(model::Optimizer)
     num_variables = length(model.variable_info)
-    num_affine = length(model.affine_constraint_info)
+    num_affine = length(model.affine_constraint_info)+length(model.nlp_constraint_info)
     if model.cached_solution === nothing
         model.cached_solution = CachedSolution(
             fill(NaN, num_variables),
@@ -2825,11 +2825,10 @@ function MOI.optimize!(model::Optimizer)
 
     # TODO: add @checked here - must review statuses
     if is_nlp(model)
-        xx = Array{Float64}(undef, 2)
         slack = Array{Float64}(undef, 2)
         duals = Array{Float64}(undef, 2)
         djs = Array{Float64}(undef, 2)
-        ret = Xpress.Lib.XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
+        ret = Xpress.Lib.XPRSgetnlpsol(model.inner, model.cached_solution.variable_primal, slack, duals, djs)
 
     elseif is_mip(model)
         # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
