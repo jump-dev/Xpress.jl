@@ -901,6 +901,9 @@ function test_dummy_nlp()
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
     );
 
+    MOI.set(model, MOI.VariableName(), x, ["x1", "x2"])
+    Xpress._pass_variable_names_to_solver(model)
+
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE);
 
     b1 = MOI.add_constraint.(
@@ -936,6 +939,8 @@ function test_dummy_nlp()
     # ret = Xpress.Lib.XPRSwriteprob(model.inner, "testmat.mat", "");
     # @test ret == 0
 
+
+
     solvestatus = Ref{Cint}(0)
     solstatus = Ref{Cint}(0)
     ret = Xpress.Lib.XPRSoptimize(model.inner, "", solvestatus, solstatus)
@@ -953,7 +958,6 @@ function test_dummy_nlp()
     @test slack == [0, 0]
     # @show duals
     # @show djs
-
 
     # note that we do not need to pass names to the solver
     # we can simply use the default name: C<one based index>
@@ -984,7 +988,6 @@ function test_dummy_nlp()
     @test slack == [0, 0]
     # @show duals
     # @show djs
-
 
     # we will also need these:
     # XPRSnlpchgobjformulastring - to consider NL objectives

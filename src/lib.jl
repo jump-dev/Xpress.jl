@@ -2424,8 +2424,16 @@ function XPRSnlpchgformulastring(prob, row, formula)
     ccall((:XPRSnlpchgformulastring, libxprs), Cint, (XPRSprob, Cint, Cstring), prob, row, formula)
 end
 
+function XPRSnlpchgobjformulastring(prob, formula)
+    ccall((:XPRSnlpchgobjformulastring, libxprs), Cint, (XPRSprob, Cstring), prob, formula)
+end
+
 function XPRSnlpgetformulastring(prob, row, formula, fLen)
     ccall((:XPRSnlpgetformulastring, libxprs), Cint, (XPRSprob, Cint, Cstring, Cint), prob, row, formula, fLen)
+end
+
+function XPRSnlpgetobjformulastring(prob, formula, fLen)
+    ccall((:XPRSnlpgetobjformulastring, libxprs), Cint, (XPRSprob, Cstring, Cint), prob, formula, fLen)
 end
 
 function XSLPcreateprob(prob, _probholder)

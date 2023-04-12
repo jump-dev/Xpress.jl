@@ -33,7 +33,6 @@ walk_and_strip_variable_index!(not_expr) = nothing
 function MOI.set(model::Optimizer, ::MOI.NLPBlock, nlp_data::MOI.NLPBlockData)
     if model.nlp_block_data !== nothing
         model.nlp_block_data = nothing
-        1+2
         # error("Nonlinear block already set; cannot overwrite. Create a new model instead.")
     end
     model.nlp_block_data = nlp_data
@@ -52,6 +51,7 @@ function MOI.set(model::Optimizer, ::MOI.NLPBlock, nlp_data::MOI.NLPBlockData)
         walk_and_strip_variable_index!(obj)
 
         model.objective_expr = obj
+        model.objective_type = NLP_OBJECTIVE
         # if obj == :NaN
         #     model.inner.objective_expr = 0.0
         # else
@@ -194,7 +194,11 @@ function to_str(c::Expr)
         end
     elseif c.head == :ref
         if c.args[1] == :x
-            return string(c)
+            idx = c.args[2]
+            @assert isa(idx, Int)
+            # TODO decide is use use defined names
+            # might be messy becaus a use can call his variable "sin"
+            return "x$idx"
         else
             throw(UnrecognizedExpressionException("reference", c))
         end
@@ -343,4 +347,18 @@ function MOI.set(model::Optimizer, ::MOI.VariablePrimalStart, vi::VI, value::Uni
     check_variable_indices(model, vi)
     model.variable_info[vi].start = value
     return
+end
+
+function to_constraint_set(c::Xpress.NLPConstraintInfo)
+    if c.lower_bound != nothing || c.upper_bound != nothing
+        if c.upper_bound == nothing
+            return [MOI.GreaterThan(c.lower_bound)]
+        elseif c.lower_bound == nothing
+            return [MOI.LessThan(c.upper_bound)]
+        elseif c.lower_bound==c.upper_bound
+            return [MOI.EqualTo(c.lower_bound)]
+        else
+            return MOI.GreaterThan(c.lower_bound), MOI.LessThan(c.upper_bound)
+        end
+    end
 end

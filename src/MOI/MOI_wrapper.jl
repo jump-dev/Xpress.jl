@@ -43,6 +43,7 @@ const CleverDicts = MOI.Utilities.CleverDicts
     SINGLE_VARIABLE,
     SCALAR_AFFINE,
     SCALAR_QUADRATIC,
+    NLP_OBJECTIVE,
 )
 
 @enum(
@@ -2742,6 +2743,7 @@ end
 
 function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
+    @show 456
     if check_moi_callback_validity(model)
         if model.moi_warnings && Xpress.getcontrol(model.inner,Lib.XPRS_HEURSTRATEGY) != 0
             @warn "Callbacks in XPRESS might not work correctly with HEURSTRATEGY != 0"
@@ -2749,17 +2751,63 @@ function MOI.optimize!(model::Optimizer)
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
         model.has_generic_callback = false # because it is set as true in the above
     end
-    obj=to_str(model.objective_expr)
+
     pre_solve_reset(model)
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
     rhs = Vector{Float64}(undef, n_constraints(model.inner))
     @checked Lib.XPRSgetrhs(model.inner, rhs, Cint(0), Cint(n_constraints(model.inner)-1))
     if !model.ignore_start && is_mip(model)
-        _update_MIP_start!(model)
+        _update_MIP_start!(model)vari
     end
     start_time = time()
-    if is_mip(model)
+    if model.nlp_block_data != nothing
+        @show 123
+        ncols=n_variables(model.inner)
+        x=collect(keys(model.variable_info))
+        c=[0.0 for i = 1:ncols]
+        MOI.set(model,
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+        );
+        names=["x$idx" for idx = 1:ncols]
+        MOI.set(model, MOI.VariableName(), x, names)  
+        Xpress._pass_variable_names_to_solver(model)  
+
+        for cons in model.nlp_constraint_info
+            c_set=to_constraint_set(cons)
+            if length(c_set)==2
+                MOI.add_constraint(
+                model,
+                MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+                c_set[1],
+                );
+
+                MOI.add_constraint(
+                model,
+                MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+                c_set[2],
+                );
+            elseif c_set != nothing
+                MOI.add_constraint(
+                model,
+                MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+                c_set[1],
+                );
+            end
+        end
+
+        for i in 0:length(model.nlp_constraint_info)-1
+            Lib.XPRSnlpchgformulastring(model.inner, Cint(i), join(["+"," ",to_str(model.nlp_constraint_info[i+1].expression)]))
+        end
+
+        Lib.XPRSnlpchgobjformulastring(model.inner, join(["+"," ",to_str(model.objective_expr)]))
+
+        solvestatus = Ref{Cint}(0)
+        solstatus = Ref{Cint}(0)
+        Lib.XPRSoptimize(model.inner, "", solvestatus, solstatus)
+
+    elseif is_mip(model)
         @checked Lib.XPRSmipoptimize(model.inner, model.solve_method)
     else
         @checked Lib.XPRSlpoptimize(model.inner, model.solve_method)
@@ -2778,7 +2826,15 @@ function MOI.optimize!(model::Optimizer)
     model.dual_status = _cache_dual_status(model)
 
     # TODO: add @checked here - must review statuses
-    if is_mip(model)
+    if model.nlp_block_data != nothing
+        ncols=n_variables(model.inner)
+        xx = Array{Float64}(undef, ncols)
+        slack = Array{Float64}(undef, ncols)
+        duals = Array{Float64}(undef, ncols)
+        djs = Array{Float64}(undef, ncols)
+        Lib.XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
+
+    elseif is_mip(model)
         # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
         Lib.XPRSgetmipsol(
             model.inner,
