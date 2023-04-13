@@ -18,7 +18,7 @@ const Bounds{T} = Union{
 
 
 const NonlinearConstraintRef =
-    ConstraintRef{Model,MOI.Nonlinear.ConstraintIndex}
+    JuMP.ConstraintRef{Model,MOI.Nonlinear.ConstraintIndex}
 
 MOI.supports(::Optimizer, ::MOI.NLPBlock) = true
 
