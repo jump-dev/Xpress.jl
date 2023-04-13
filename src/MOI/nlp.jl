@@ -361,8 +361,15 @@ function to_constraint_set(c::Xpress.NLPConstraintInfo)
             return MOI.GreaterThan(c.lower_bound), MOI.LessThan(c.upper_bound)
         end
     end
-end
+endstruct ConstraintRef
 
 function is_nlp(model)
     return model.nlp_block_data !== nothing
+end
+
+_dual_multiplier(model::Optimizer) = model.objective_sense == MOI.MIN_SENSE ? 1.0 : -1.0
+
+function MOI.get(model::Optimizer, attr::MOI.NLPBlockDual)
+    MOI.check_result_index_bounds(model, attr)
+    return model.cached_solution.linear_dual[(1:length(model.nlp_constraint_info))]
 end
