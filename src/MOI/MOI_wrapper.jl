@@ -2757,7 +2757,7 @@ function MOI.optimize!(model::Optimizer)
     rhs = Vector{Float64}(undef, n_constraints(model.inner))
     @checked Lib.XPRSgetrhs(model.inner, rhs, Cint(0), Cint(n_constraints(model.inner)-1))
     if !model.ignore_start && is_mip(model)
-        _update_MIP_start!(model)vari
+        _update_MIP_start!(model)
     end
     start_time = time()
     if is_nlp(model)
@@ -2832,41 +2832,40 @@ function MOI.optimize!(model::Optimizer)
         model.cached_solution.linear_dual,
         model.cached_solution.variable_dual,
         )
+    
+    elseif is_mip(model)
+        # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
+        Lib.XPRSgetmipsol(
+            model.inner,
+            model.cached_solution.variable_primal,
+            model.cached_solution.linear_primal,
+        )
+        fill!(model.cached_solution.linear_dual, NaN)
+        fill!(model.cached_solution.variable_dual, NaN)
     else
-        if is_mip(model)
-            # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
-            Lib.XPRSgetmipsol(
-                model.inner,
-                model.cached_solution.variable_primal,
-                model.cached_solution.linear_primal,
-            )
-            fill!(model.cached_solution.linear_dual, NaN)
-            fill!(model.cached_solution.variable_dual, NaN)
-        else
-            Lib.XPRSgetlpsol(
-                model.inner,
-                model.cached_solution.variable_primal,
-                model.cached_solution.linear_primal,
-                model.cached_solution.linear_dual,
-                model.cached_solution.variable_dual,
-            )
-        end
-        model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
+        Lib.XPRSgetlpsol(
+            model.inner,
+            model.cached_solution.variable_primal,
+            model.cached_solution.linear_primal,
+            model.cached_solution.linear_dual,
+            model.cached_solution.variable_dual,
+        )
+    end
+    model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
 
-        status = MOI.get(model, MOI.PrimalStatus())
-        if status == MOI.INFEASIBILITY_CERTIFICATE
-            has_Ray = Int64[0]
-            @checked Lib.XPRSgetprimalray(model.inner, model.cached_solution.variable_primal, has_Ray)
-            model.cached_solution.has_primal_certificate = _has_primal_ray(model)
-        elseif status == MOI.FEASIBLE_POINT 
-            model.cached_solution.has_feasible_point = true
-        end
-        status = MOI.get(model, MOI.DualStatus())
-        if status == MOI.INFEASIBILITY_CERTIFICATE
-            has_Ray = Int64[0]
-            @checked Lib.XPRSgetdualray(model.inner, model.cached_solution.linear_dual, has_Ray)
-            model.cached_solution.has_dual_certificate = _has_dual_ray(model)
-        end
+    status = MOI.get(model, MOI.PrimalStatus())
+    if status == MOI.INFEASIBILITY_CERTIFICATE
+        has_Ray = Int64[0]
+        @checked Lib.XPRSgetprimalray(model.inner, model.cached_solution.variable_primal, has_Ray)
+        model.cached_solution.has_primal_certificate = _has_primal_ray(model)
+    elseif status == MOI.FEASIBLE_POINT 
+        model.cached_solution.has_feasible_point = true
+    end
+    status = MOI.get(model, MOI.DualStatus())
+    if status == MOI.INFEASIBILITY_CERTIFICATE
+        has_Ray = Int64[0]
+        @checked Lib.XPRSgetdualray(model.inner, model.cached_solution.linear_dual, has_Ray)
+        model.cached_solution.has_dual_certificate = _has_dual_ray(model)
     end
     return
 end
