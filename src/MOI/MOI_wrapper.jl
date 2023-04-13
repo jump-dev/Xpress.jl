@@ -2832,27 +2832,27 @@ function MOI.optimize!(model::Optimizer)
         model.cached_solution.linear_dual,
         model.cached_solution.variable_dual,
         )
-    
-    elseif is_mip(model)
-        # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
-        Lib.XPRSgetmipsol(
-            model.inner,
-            model.cached_solution.variable_primal,
-            model.cached_solution.linear_primal,
-        )
-        fill!(model.cached_solution.linear_dual, NaN)
-        fill!(model.cached_solution.variable_dual, NaN)
     else
-        Lib.XPRSgetlpsol(
-            model.inner,
-            model.cached_solution.variable_primal,
-            model.cached_solution.linear_primal,
-            model.cached_solution.linear_dual,
-            model.cached_solution.variable_dual,
-        )
+        if is_mip(model)
+            # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
+            Lib.XPRSgetmipsol(
+                model.inner,
+                model.cached_solution.variable_primal,
+                model.cached_solution.linear_primal,
+            )
+            fill!(model.cached_solution.linear_dual, NaN)
+            fill!(model.cached_solution.variable_dual, NaN)
+        else
+            Lib.XPRSgetlpsol(
+                model.inner,
+                model.cached_solution.variable_primal,
+                model.cached_solution.linear_primal,
+                model.cached_solution.linear_dual,
+                model.cached_solution.variable_dual,
+            )
+        end
+        model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
     end
-    model.cached_solution.linear_primal .= rhs .- model.cached_solution.linear_primal
-
     status = MOI.get(model, MOI.PrimalStatus())
     if status == MOI.INFEASIBILITY_CERTIFICATE
         has_Ray = Int64[0]
