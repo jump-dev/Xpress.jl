@@ -361,7 +361,7 @@ function to_constraint_set(c::Xpress.NLPConstraintInfo)
             return MOI.GreaterThan(c.lower_bound), MOI.LessThan(c.upper_bound)
         end
     end
-endstruct ConstraintRef
+end
 
 function is_nlp(model)
     return model.nlp_block_data !== nothing
