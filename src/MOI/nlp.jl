@@ -1,3 +1,4 @@
+using Pkg
 Pkg.add("JuMP")
 using JuMP
 
