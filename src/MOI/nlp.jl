@@ -1,4 +1,5 @@
-import JuMP
+Pkg.add("JuMP")
+using JuMP
 
 const MOI = MathOptInterface
 
