@@ -1,3 +1,5 @@
+import JuMP
+
 const MOI = MathOptInterface
 
 # indices
