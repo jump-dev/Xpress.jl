@@ -16,10 +16,6 @@ const Bounds{T} = Union{
     MOI.Interval{T}
 }
 
-
-const NonlinearConstraintRef =
-    JuMP.ConstraintRef{Model,MOI.Nonlinear.ConstraintIndex}
-
 MOI.supports(::Optimizer, ::MOI.NLPBlock) = true
 
 function walk_and_strip_variable_index!(expr::Expr)
