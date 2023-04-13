@@ -350,10 +350,10 @@ function MOI.set(model::Optimizer, ::MOI.VariablePrimalStart, vi::VI, value::Uni
 end
 
 function to_constraint_set(c::Xpress.NLPConstraintInfo)
-    if c.lower_bound != nothing || c.upper_bound != nothing
-        if c.upper_bound == nothing
+    if c.lower_bound !== nothing || c.upper_bound !== nothing
+        if c.upper_bound === nothing
             return [MOI.GreaterThan(c.lower_bound)]
-        elseif c.lower_bound == nothing
+        elseif c.lower_bound === nothing
             return [MOI.LessThan(c.upper_bound)]
         elseif c.lower_bound==c.upper_bound
             return [MOI.EqualTo(c.lower_bound)]
@@ -363,26 +363,8 @@ function to_constraint_set(c::Xpress.NLPConstraintInfo)
     end
 end
 
-function to_set_type(c::NonlinearConstraintRef{ScalarShape})
-    str=to_str(c)
-    if occursin(">=", str)
-        return MathOptInterface.GreaterThan{Float64}
-    elseif occursin("<=", str)
-        return MathOptInterface.LessThan{Float64}
-    elseif occursin("==", str)
-        return MathOptInterface.EqualTo{Float64}
-    end
-end
-
 function is_nlp(model)
     return model.nlp_block_data !== nothing
-end
-
-function to_constraint_ref(c::NonlinearConstraintRef{ScalarShape})
-    func_type = MathOptInterface.ScalarAffineFunction{Float64}
-    set_type = to_set_type(c)
-    index = MathOptInterface.ConstraintIndex{func_type, set_type}(c.index.value)
-    return ConstraintRef(c.model, index, c.shape)
 end
 
 function dual(c::NonlinearConstraintRef)
