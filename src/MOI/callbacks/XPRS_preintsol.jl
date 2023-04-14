@@ -8,7 +8,7 @@ mutable struct PreIntSolCallbackData <: CallbackData
     data::Any
 
     cbprob::Union{Xpress.Lib.XPRSprob,Nothing}
-    # cbdata::Union{Ptr{Cvoid},Nothing}
+    cbdata::Union{Ptr{Cvoid},Nothing}
     soltype::Union{Ptr{Cint},Nothing}
     p_reject::Union{Ptr{Cint},Nothing}
     p_cutoff::Union{Ptr{Cdouble},Nothing}
@@ -19,7 +19,7 @@ mutable struct PreIntSolCallbackData <: CallbackData
             nothing, # node_model
             data,
             nothing, # cprob
-            # nothing, # cbdata
+            nothing, # cbdata
             nothing, # soltype
             nothing, # p_reject
             nothing, # p_cutoff
@@ -98,10 +98,10 @@ function add_xprs_preintsol_callback!(model::XpressProblem, func::Function, data
     data_wrapper = CallbackDataWrapper{PreIntSolCallbackData}(model, func, data)
 
     Lib.XPRSaddcbpreintsol(
-        model.ptr, # XPRSprob prob
-        callback_ptr,    # void (XPRS_CC * preintsol)(XPRSprob cbprob, void *cbdata, int soltype, int *p_reject, double *p_cutoff)
-        data_wrapper,    # void *data
-        Cint(priority),  # int priority
+        model.ptr,
+        callback_ptr,
+        data_wrapper,
+        Cint(priority),
     )
 
     return CallbackInfo{PreIntSolCallbackData}(callback_ptr, data_wrapper)

@@ -11,7 +11,7 @@ mutable struct OptNodeCallbackData <: CallbackData
     
     # args
     cbprob::Union{Lib.XPRSprob, Nothing}
-    # cbdata::Union{Ptr{Cvoid}, Nothing}
+    cbdata::Union{Ptr{Cvoid}, Nothing}
     p_infeasible::Union{Ptr{Cint}, Nothing}
 
     function OptNodeCallbackData(root_model::XpressProblem, data::Any = nothing)
@@ -20,7 +20,7 @@ mutable struct OptNodeCallbackData <: CallbackData
             nothing, # node_model
             data,
             nothing, # cbprob
-            # nothing, # cbdata
+            nothing, # cbdata
             nothing, # p_infeasible
         )
     end
@@ -140,10 +140,10 @@ function add_xprs_optnode_callback!(model::XpressProblem, func::Function, data::
     data_wrapper = CallbackDataWrapper{OptNodeCallbackData}(model, func, data)
 
     Lib.XPRSaddcboptnode(
-        model.ptr,      # XPRSprob prob
-        callback_ptr,   # void (XPRS_CC *optnode)(XPRSprob cbprob, void *cbdata, int *p_infeasible)
-        data_wrapper,   # void *data
-        Cint(priority), # int priority
+        model.ptr,
+        callback_ptr,
+        data_wrapper,
+        Cint(priority),
     )
 
     return CallbackInfo{OptNodeCallbackData}(callback_ptr, data_wrapper)

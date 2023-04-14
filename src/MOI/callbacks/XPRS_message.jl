@@ -134,10 +134,10 @@ function add_xprs_message_callback!(model::XpressProblem, func::Function, data::
     data_wrapper = CallbackDataWrapper{MessageCallbackData}(model, func, data)
 
     Lib.XPRSaddcbmessage(
-        model.ptr,     # XPRSprob prob
-        callback_ptr,  # void (XPRS_CC *message)(XPRSprob cbprob, void *cbdata, const char *msg, int msglen, int msgtype)
-        data_wrapper,  # void *data
-        Cint(priority) # int priority
+        model.ptr,
+        callback_ptr,
+        data_wrapper,
+        Cint(priority)
     )
 
     return CallbackInfo{MessageCallbackData}(callback_ptr, data_wrapper)
@@ -146,8 +146,8 @@ end
 function add_xprs_message_callback!(model::XpressProblem, show_warning::Bool = true, priority::Integer = 0)
     return add_xprs_message_callback!(
         model,
-        default_xprs_message_func, # func::Function
-        show_warning,              # data::Any
+        default_xprs_message_func,
+        show_warning,
         priority,
     )
 end
