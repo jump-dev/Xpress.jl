@@ -4,15 +4,11 @@
 struct MessageCallback <: XpressCallback end
 
 function xprs_message_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
-    xprs_message_info = model.callback_table.xprs_message::Union{CallbackInfo{CD},Nothing}
+    push_callback_state!(model, CS_XPRS_MESSAGE)
 
-    if !isnothing(xprs_message_info)
-        push_callback_state!(model, CS_XPRS_MESSAGE)
+    func(callback_data)
 
-        func(callback_data)
-
-        pop_callback_state!(model)
-    end
+    pop_callback_state!(model)
 
     return nothing
 end

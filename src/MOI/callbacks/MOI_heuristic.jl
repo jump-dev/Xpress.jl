@@ -1,18 +1,14 @@
 function moi_heuristic_xprs_optnode_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
-    info = model.callback_table.moi_heuristic::Union{Tuple{CallbackInfo{CD}}, Nothing}
+    push_callback_state!(model, CS_MOI_HEURISTIC)
 
-    if !isnothing(info)
-        push_callback_state!(model, CS_MOI_HEURISTIC)
+    get_callback_solution!(model, callback_data.node_model)
 
-        get_callback_solution!(model, callback_data.node_model)
-
-        # Allow at most one heuristic solution per LP optimal node
-        if Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) <= 1
-            func(callback_data)
-        end
-
-        pop_callback_state!(model)
+    # Allow at most one heuristic solution per LP optimal node
+    if Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) <= 1
+        func(callback_data)
     end
+
+    pop_callback_state!(model)
 
     return nothing
 end

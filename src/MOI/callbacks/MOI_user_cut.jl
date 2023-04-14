@@ -1,23 +1,19 @@
 function moi_user_cut_xprs_optnode_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
-    info = model.callback_table.moi_user_cut::Union{Tuple{CallbackInfo{CD}},Nothing}
+    push_callback_state!(model, CS_MOI_USER_CUT)
 
-    if !isnothing(info)
-        push_callback_state!(model, CS_MOI_USER_CUT)
+    get_callback_solution!(model, callback_data.node_model)
 
-        get_callback_solution!(model, callback_data.node_model)
-
-        # Apply stored cuts if any
-        if isempty(model.callback_cut_data.cut_ptrs) || !apply_cuts!(model, callback_data.node_model)
-            # Allow only one user cut solution per LP optimal node limiting
-            # two calls to guarantee th user has a chance to add a cut.
-            # If the user cut is loose the problem will be resolved anyway.
-            if Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) <= 2
-                func(callback_data)
-            end
+    # Apply stored cuts if any
+    if isempty(model.callback_cut_data.cut_ptrs) || !apply_cuts!(model, callback_data.node_model)
+        # Allow only one user cut solution per LP optimal node limiting
+        # two calls to guarantee th user has a chance to add a cut.
+        # If the user cut is loose the problem will be resolved anyway.
+        if Xpress.getintattrib(callback_data.node_model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) <= 2
+            func(callback_data)
         end
-
-        pop_callback_state!(model)
     end
+
+    pop_callback_state!(model)
 
     return nothing
 end

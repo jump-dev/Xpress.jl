@@ -1,19 +1,16 @@
 function moi_lazy_constraint_xprs_optnode_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
-    info = model.callback_table.moi_lazy_constraint::Union{Tuple{CallbackInfo{CD}},Nothing}
+    push_callback_state!(model, CS_MOI_LAZY_CONSTRAINT)
 
-    if !isnothing(info)
-        push_callback_state!(model, CS_MOI_LAZY_CONSTRAINT)
+    get_callback_solution!(model, callback_data.node_model)
 
-        get_callback_solution!(model, callback_data.node_model)
-
-        # Add previous cuts if any to gurantee that the user is dealing with
-        # an optimal solution feasibile for existing cuts
-        if isempty(model.callback_cut_data.cut_ptrs) || !apply_cuts!(model, callback_data.node_model)
-            func(callback_data)
-        end
-
-        pop_callback_state!(model)
+    # Add previous cuts if any to gurantee that the user is dealing with
+    # an optimal solution feasibile for existing cuts
+    if isempty(model.callback_cut_data.cut_ptrs) || !apply_cuts!(model, callback_data.node_model)
+        func(callback_data)
     end
+
+    pop_callback_state!(model)
+
 
     return nothing
 end
