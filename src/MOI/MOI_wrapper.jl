@@ -286,8 +286,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.callback_state = CallbackState[]
         model.callback_cut_data = CallbackCutData()
 
-        # TODO: separate MOI.empty! from initializer
-        MOI.empty!(model)  # inner is initialized here
+        MOI.empty!(model) # inner is initialized here
 
         return model
     end
