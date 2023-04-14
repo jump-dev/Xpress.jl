@@ -369,7 +369,10 @@ end
 
 _dual_multiplier(model::Optimizer) = model.objective_sense == MOI.MIN_SENSE ? 1.0 : -1.0
 
+MOI.supports(::Optimizer, ::MOI.NLPBlockDual) = true
+
 function MOI.get(model::Optimizer, attr::MOI.NLPBlockDual)
     MOI.check_result_index_bounds(model, attr)
-    return model.cached_solution.linear_dual[(1:length(model.nlp_constraint_info))]
+    s = _dual_multiplier(model)
+    return s .*model.cached_solution.linear_dual[(1:length(model.nlp_constraint_info))]
 end
