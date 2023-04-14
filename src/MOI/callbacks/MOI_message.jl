@@ -45,7 +45,6 @@ end
     default_xprs_message_func(callback_data::MessageCallbackData)
 """
 function default_xprs_message_func(callback_data::MessageCallbackData)
-    show_warning = callback_data.data::Bool
     msg = callback_data.msg
     msgtype = callback_data.msgtype
 
@@ -55,6 +54,7 @@ function default_xprs_message_func(callback_data::MessageCallbackData)
     elseif msgtype == 2 # Not used
         return zero(Cint)
     elseif msgtype == 3 # Warning
+        show_warning = callback_data.data::Bool
         if show_warning
             println(unsafe_string(msg))
         end
