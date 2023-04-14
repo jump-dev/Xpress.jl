@@ -376,7 +376,7 @@ function MOI.is_empty(model::Optimizer)
     # !isempty(model.callback_table) && return false
     model.callback_cached_solution !== nothing && return false
 
-     !(model.callback_cut_data !== nothin)
+    if model.callback_cut_data !== nothing
         !isempty(model.callback_cut_data.cut_ptrs) && return false
         model.callback_cut_data.submitted === true && return false
     end
