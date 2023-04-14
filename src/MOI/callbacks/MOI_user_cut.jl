@@ -65,9 +65,6 @@ function MOI.submit(
     # It is assumed that every '<:CallbackData' has a 'node_model' field
     node_model = submittable.callback_data.node_model::Xpress.XpressProblem
 
-    # TODO: Should we mark as submitted in the beginning of the function?
-    model.callback_cut_data.submitted = true
-
     check_callback_state(model, node_model, submittable, CS_MOI_USER_CUT)
 
     # Check if b is 0 in a'x + b <= c?
@@ -120,6 +117,8 @@ function MOI.submit(
     )
 
     push!(model.callback_cut_data.cut_ptrs, mindex[])
+
+    model.callback_cut_data.submitted = true
 
     return nothing
 end
