@@ -337,10 +337,10 @@ function MOI.empty!(model::Optimizer)
     model.dual_status = MOI.NO_SOLUTION
 
     empty!(model.callback_table)
+    empty!(model.callback_state)
+    empty!(model.callback_cut_data)
 
     model.callback_cached_solution = nothing
-    empty!(model.callback_cut_data)
-    empty!(model.callback_state)
     model.callback_exception = nothing
 
     model.forward_sensitivity_cache = nothing
@@ -357,16 +357,16 @@ function MOI.is_empty(model::Optimizer)
     !isempty(model.name) && return false
     model.objective_type != SCALAR_AFFINE && return false
     model.is_objective_set === true && return false
-    !isnothing(model.objective_sense) && return false
+    model.objective_sense !== nothing && return false
     !isempty(model.variable_info) && return false
     length(model.affine_constraint_info) != 0 && return false
     length(model.sos_constraint_info) != 0 && return false
-    !isnothing(model.name_to_variable) && return false
-    !isnothing(model.name_to_constraint_index) && return false
+    model.name_to_variable !== nothing && return false
+    model.name_to_constraint_index !== nothing && return false
 
-    !isnothing(model.cached_solution) && return false
-    !isnothing(model.basis_status) && return false
-    !isnothing(model.conflict) && return false
+    model.cached_solution !== nothing && return false
+    model.basis_status !== nothing && return false
+    model.conflict !== nothing && return false
 
     model.termination_status != MOI.OPTIMIZE_NOT_CALLED && return false
     model.primal_status != MOI.NO_SOLUTION && return false
@@ -375,15 +375,15 @@ function MOI.is_empty(model::Optimizer)
     # TODO: Get this right.
     # The message callback is automatically defined when the model is created.
     # !isempty(model.callback_table) && return false
-    !isnothing(model.callback_cached_solution) && return false
+    model.callback_cached_solution !== nothing && return false
 
-    if !isnothing(model.callback_cut_data)
+     !(model.callback_cut_data !== nothin)
         !isempty(model.callback_cut_data.cut_ptrs) && return false
         model.callback_cut_data.submitted === true && return false
     end
     
     !isempty(model.callback_state) && return false
-    !isnothing(model.callback_exception) && return false
+    model.callback_exception !== nothing && return false
 
     return true
 end
