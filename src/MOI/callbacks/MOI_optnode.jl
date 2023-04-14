@@ -3,7 +3,7 @@
 """
 struct OptNodeCallback <: XpressCallback end
 
-function xprs_optnode_wrapper(func::Function, model::Xpress.Optimizer, callback_data::CD) where {CD<:CallbackData}
+function xprs_optnode_wrapper(func, model::Xpress.Optimizer, callback_data::CD) where {CD<:CallbackData}
     push_callback_state!(model, CS_XPRS_OPTNODE)
 
     get_callback_solution!(model, callback_data.node_model)

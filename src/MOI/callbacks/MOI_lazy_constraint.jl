@@ -1,4 +1,4 @@
-function moi_lazy_constraint_xprs_optnode_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
+function moi_lazy_constraint_xprs_optnode_wrapper(func, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
     push_callback_state!(model, CS_MOI_LAZY_CONSTRAINT)
 
     get_callback_solution!(model, callback_data.node_model)

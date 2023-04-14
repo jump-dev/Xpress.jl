@@ -3,7 +3,7 @@
 """
 struct MessageCallback <: XpressCallback end
 
-function xprs_message_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
+function xprs_message_wrapper(func, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
     push_callback_state!(model, CS_XPRS_MESSAGE)
 
     func(callback_data)

@@ -1,4 +1,4 @@
-function moi_heuristic_xprs_optnode_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
+function moi_heuristic_xprs_optnode_wrapper(func, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
     push_callback_state!(model, CS_MOI_HEURISTIC)
 
     get_callback_solution!(model, callback_data.node_model)

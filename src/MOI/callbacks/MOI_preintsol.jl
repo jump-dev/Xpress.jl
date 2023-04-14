@@ -3,7 +3,7 @@
 """
 struct PreIntSolCallback <: XpressCallback end
 
-function xprs_preintsol_wrapper(func::Function, model::Xpress.Optimizer, callback_data::PreIntSolCallbackData)
+function xprs_preintsol_wrapper(func, model::Xpress.Optimizer, callback_data::PreIntSolCallbackData)
     push_callback_state!(model, CS_XPRS_PREINTSOL)
 
     get_callback_solution!(model, callback_data.node_model)
