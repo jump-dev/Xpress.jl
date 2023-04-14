@@ -2772,7 +2772,15 @@ function MOI.optimize!(model::Optimizer)
         MOI.set(model, MOI.VariableName(), x, names)  
         Xpress._pass_variable_names_to_solver(model)  
 
-        count=0
+        count=length(model.affine_constraint_info)
+        if count>0
+            for i in 1:count
+                popfirst!(model.nlp_constraint_info)
+                pop!(model.affine_constraint_info,i)
+                
+            end
+        end
+
         for cons in model.nlp_constraint_info
             c_set=to_constraint_set(cons)
             if length(c_set)==2
@@ -2797,15 +2805,7 @@ function MOI.optimize!(model::Optimizer)
                 count+=1
             end
         end
-        
-        dif=length(model.affine_constraint_info)-count
-        if dif>0
-            for i in 1:dif
-                popfirst!(model.affine_constraint_info)
-                popfirst!(model.nlp_constraint_info)
-            end
-        end
-
+       
         for i in 0:length(model.nlp_constraint_info)-1
             Lib.XPRSnlpchgformulastring(model.inner, Cint(i), join(["+"," ",to_str(model.nlp_constraint_info[i+1].expression)]))
         end
