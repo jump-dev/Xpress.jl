@@ -2742,6 +2742,8 @@ function _update_MIP_start!(model)
 end
 
 function MOI.optimize!(model::Optimizer)
+    empty!(model.affine_constraint_info)
+    empty!(model.nlp_constraint_info)
     # Initialize callbacks if necessary.
     if check_moi_callback_validity(model)
         if model.moi_warnings && Xpress.getcontrol(model.inner,Lib.XPRS_HEURSTRATEGY) != 0
@@ -2761,8 +2763,6 @@ function MOI.optimize!(model::Optimizer)
     end
     start_time = time()
     if is_nlp(model)
-        empty!(model.affine_constraint_info)
-        empty!(model.nlp_constraint_info)
         ncols=n_variables(model.inner)
         x=collect(keys(model.variable_info))
         c=[0.0 for i = 1:ncols]
