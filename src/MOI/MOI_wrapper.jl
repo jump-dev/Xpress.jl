@@ -2742,8 +2742,6 @@ function _update_MIP_start!(model)
 end
 
 function MOI.optimize!(model::Optimizer)
-    empty!(model.affine_constraint_info)
-    empty!(model.nlp_constraint_info)
     # Initialize callbacks if necessary.
     if check_moi_callback_validity(model)
         if model.moi_warnings && Xpress.getcontrol(model.inner,Lib.XPRS_HEURSTRATEGY) != 0
@@ -2774,6 +2772,7 @@ function MOI.optimize!(model::Optimizer)
         MOI.set(model, MOI.VariableName(), x, names)  
         Xpress._pass_variable_names_to_solver(model)  
 
+        count=0
         for cons in model.nlp_constraint_info
             c_set=to_constraint_set(cons)
             if length(c_set)==2
@@ -2788,12 +2787,22 @@ function MOI.optimize!(model::Optimizer)
                 MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
                 c_set[2],
                 );
+            count+=2
             elseif c_set !== nothing
                 MOI.add_constraint(
                 model,
                 MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
                 c_set[1],
                 );
+                count+=1
+            end
+        end
+        
+        dif=length(model.affine_constraint_info)-count
+        if dif>0
+            for i in 1:dif
+                popfirst!(model.affine_constraint_info)
+                popfirst!(model.nlp_constraint_info)
             end
         end
 
