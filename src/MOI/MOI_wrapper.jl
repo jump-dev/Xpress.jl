@@ -2776,7 +2776,7 @@ function MOI.optimize!(model::Optimizer)
         if count>0
             for i in 1:count
                 popfirst!(model.nlp_constraint_info)
-                pop!(model.affine_constraint_info,i)
+                pop!(model.affine_constraint_info,1)
                 
             end
         end
