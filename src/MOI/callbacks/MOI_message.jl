@@ -1,6 +1,7 @@
 @doc raw"""
     MessageCallback
-""" struct MessageCallback <: XpressCallback end
+"""
+struct MessageCallback <: XpressCallback end
 
 function xprs_message_wrapper(func::Function, model::Optimizer, callback_data::CD) where {CD<:CallbackData}
     xprs_message_info = model.callback_table.xprs_message::Union{CallbackInfo{CD},Nothing}

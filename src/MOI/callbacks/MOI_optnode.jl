@@ -1,6 +1,7 @@
 @doc raw"""
     OptNodeCallback
-""" struct OptNodeCallback <: XpressCallback end
+"""
+struct OptNodeCallback <: XpressCallback end
 
 function xprs_optnode_wrapper(func::Function, model::Xpress.Optimizer, callback_data::CD) where {CD<:CallbackData}
     info = model.callback_table.xprs_optnode::Union{CallbackInfo{CD},Nothing}

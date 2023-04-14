@@ -1,6 +1,7 @@
 @doc raw"""
     PreIntSolCallback
-""" struct PreIntSolCallback <: XpressCallback end
+"""
+struct PreIntSolCallback <: XpressCallback end
 
 function xprs_preintsol_wrapper(func::Function, model::Xpress.Optimizer, callback_data::PreIntSolCallbackData)
     info = model.callback_table.xprs_preintsol
