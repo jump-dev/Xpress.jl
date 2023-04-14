@@ -2761,6 +2761,8 @@ function MOI.optimize!(model::Optimizer)
     end
     start_time = time()
     if is_nlp(model)
+        empty!(model.moi_backend.optimizer.model.affine_constraint_info)
+        empty!(model.moi_backend.optimizer.model.nlp_constraint_info)
         ncols=n_variables(model.inner)
         x=collect(keys(model.variable_info))
         c=[0.0 for i = 1:ncols]
