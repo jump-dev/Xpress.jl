@@ -2,7 +2,6 @@
 @enum(
     CallbackState,
     CS_NONE,
-    CS_GENERIC,
     # MOI Callbacks
     CS_MOI_LAZY_CONSTRAINT,
     CS_MOI_USER_CUT,
@@ -16,20 +15,6 @@
 function callback_state end
 
 function state_callback end
-
-# Callback Types
-@enum(
-    CallbackType,
-    # MathOptInteface
-    CT_MOI_GENERIC, # temporary
-    CT_MOI_HEURISTIC,
-    CT_MOI_LAZY_CONSTRAINT,
-    CT_MOI_USER_CUT,
-    # Xpress
-    CT_XPRS_OPTNODE,
-    CT_XPRS_PREINTSOL,
-    CT_XPRS_MESSAGE,
-)
 
 @doc raw"""
     CallbackData
