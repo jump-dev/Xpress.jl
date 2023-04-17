@@ -83,21 +83,6 @@ function MOI.set(model::Optimizer, ::MOI.NLPBlock, nlp_data::MOI.NLPBlockData)
     return
 end
 
-MOI.supports(::Optimizer, ::MOI.ObjectiveSense) = true
-
- function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense::MOI.OptimizationSense)
-     if sense == MOI.MIN_SENSE
-         model.objective_sense = :Min
-     elseif sense == MOI.MAX_SENSE
-         model.objective_sense = :Max
-     elseif sense == MOI.FEASIBILITY_SENSE
-         model.objective_sense = :Feasibility
-     else
-         error("Unsupported objective sense: $sense")
-     end
-     return
- end
-
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{<:Bounds{Float64}}) = true
 
 MOI.supports_constraint(::Optimizer, ::Type{<:Union{SAF, SQF}}, ::Type{<:Bounds{Float64}}) = true
@@ -324,8 +309,6 @@ function find_variable_info(model::Optimizer, vi::VI)
     model.variable_info[vi]
 end
 
-MOI.supports(::Optimizer, ::MOI.VariablePrimalStart, ::Type{VI}) = true
-
 function MOI.set(model::Optimizer, ::MOI.VariablePrimalStart, vi::VI, value::Union{Real, Nothing})
     check_variable_indices(model, vi)
     model.variable_info[vi].start = value
@@ -349,8 +332,6 @@ end
 function is_nlp(model)
     return model.nlp_block_data !== nothing
 end
-
-_dual_multiplier(model::Optimizer) = model.objective_sense == MOI.MIN_SENSE ? 1.0 : -1.0
 
 MOI.supports(::Optimizer, ::MOI.NLPBlockDual) = true
 
