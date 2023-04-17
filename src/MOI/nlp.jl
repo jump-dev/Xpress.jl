@@ -126,23 +126,6 @@ function MOI.add_constraint(model::Optimizer, f::MOI.VariableIndex, set::S
     return CI{MOI.VariableIndex, S}(f.value)
 end
 
-function constraint_to_expr(c::NLPConstraintInfo)
-    str = to_str(c.expression)
-    if c.lower_bound == c.upper_bound
-        return join([str, " == ", c.upper_bound])
-    else
-        if c.lower_bound !== nothing && c.upper_bound !== nothing
-            return join([c.lower_bound, " <= ", str, " <= ", c.upper_bound])
-        elseif c.lower_bound !== nothing
-            return join([str, " >= ", c.lower_bound])
-        elseif c.upper_bound !== nothing
-            return join([str, " <= ", c.upper_bound])
-        else
-            error("Unexpected case writing constraint $c.expression.")
-        end
-    end
-end
-
 wrap_with_parens(x::String) = string("( ", x, " )")
 
 to_str(x) = string(x)
