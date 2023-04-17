@@ -2762,16 +2762,20 @@ function MOI.optimize!(model::Optimizer)
     start_time = time()
     if is_nlp(model)
         ncols=n_variables(model.inner)
+        # Getting problem's variables
         x=collect(keys(model.variable_info))
+        # Creating a NULL Objective function to allow its modification by XPRSnlp
         c=[0.0 for i = 1:ncols]
         MOI.set(model,
         MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
         );
+        # Changing names to the right format adapted to XPRSnlp
         names=["x$idx" for idx = 1:ncols]
         MOI.set(model, MOI.VariableName(), x, names)  
         Xpress._pass_variable_names_to_solver(model)  
-
+        
+        # Delete existing constraints when optimize! is called again
         count=length(model.affine_constraint_info)
         if count>0
             for i in 1:count
@@ -2780,7 +2784,8 @@ function MOI.optimize!(model::Optimizer)
                 
             end
         end
-
+        
+        # Creating NULL constraints to allow their modification by XPRSnlp
         for cons in model.nlp_constraint_info
             c_set=to_constraint_set(cons)
             if length(c_set)==2
@@ -2805,11 +2810,13 @@ function MOI.optimize!(model::Optimizer)
                 count+=1
             end
         end
-       
+        
+        # Passing constraints to the solver
         for i in 0:length(model.nlp_constraint_info)-1
             Lib.XPRSnlpchgformulastring(model.inner, Cint(i), join(["+"," ",to_str(model.nlp_constraint_info[i+1].expression)]))
         end
-
+        
+        # Passing objective to the solver
         Lib.XPRSnlpchgobjformulastring(model.inner, join(["+"," ",to_str(model.objective_expr)]))
 
         solvestatus = Ref{Cint}(0)

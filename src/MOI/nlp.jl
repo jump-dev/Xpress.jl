@@ -111,6 +111,7 @@ function MOI.add_constraint(model::Optimizer, f::MOI.VariableIndex, set::S
     return CI{MOI.VariableIndex, S}(f.value)
 end
 
+# Converting expressions in strings adapted to chgformulastring and chgobjformulastring
 wrap_with_parens(x::String) = string("( ", x, " )")
 
 to_str(x) = string(x)
@@ -210,6 +211,7 @@ function verify_support(c::Expr)
     return c
 end
 
+# Converting affine and quadratic functions to expressions
 to_expr(vi::MOI.VariableIndex) = :(x[$(vi.value)])
 
 function to_expr(f::SAF)
@@ -315,6 +317,7 @@ function MOI.set(model::Optimizer, ::MOI.VariablePrimalStart, vi::VI, value::Uni
     return
 end
 
+# Transforming NLconstraints in constraint sets used for affine functions creation in optimize!
 function to_constraint_set(c::Xpress.NLPConstraintInfo)
     if c.lower_bound !== nothing || c.upper_bound !== nothing
         if c.upper_bound === nothing
@@ -329,6 +332,7 @@ function to_constraint_set(c::Xpress.NLPConstraintInfo)
     end
 end
 
+# The problem is Nonlinear if a NLPBlockData has been defined
 function is_nlp(model)
     return model.nlp_block_data !== nothing
 end
@@ -337,6 +341,6 @@ MOI.supports(::Optimizer, ::MOI.NLPBlockDual) = true
 
 function MOI.get(model::Optimizer, attr::MOI.NLPBlockDual)
     MOI.check_result_index_bounds(model, attr)
-    s = -_dual_multiplier(model)
+    s = -_dual_multiplier(model) 
     return s .*model.cached_solution.linear_dual[(1:length(model.nlp_constraint_info))]
 end
