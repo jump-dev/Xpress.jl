@@ -1161,4 +1161,6 @@ function test_optimize_nlp()
 
 end
 
+end
+
 TestMOIWrapper.runtests()
