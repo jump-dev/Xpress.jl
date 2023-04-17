@@ -2,6 +2,7 @@ module TestMOIWrapper
 
 using Xpress
 using MathOptInterface
+using JuMP
 using Test
 
 const MOI = MathOptInterface
@@ -1018,7 +1019,7 @@ function test_optimize_lp()
 
     model = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
 
-    JuMP.@variable(model,x[i=1:2])
+    @variable(model,x[i=1:2])
     set_lower_bound(x[1],0.0)
     set_lower_bound(x[2],0.0)
     set_upper_bound(x[2],3.0)
