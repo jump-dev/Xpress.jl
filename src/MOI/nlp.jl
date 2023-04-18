@@ -248,7 +248,7 @@ function to_expr(f::SQF)
     return expr
 end
 
-function set_lower_bound(info::ConstraintInfo, value::Union{Number, Nothing})
+function set_lower_bound(info::NLPConstraintInfo, value::Union{Number, Nothing})
     if value !== nothing
         info.lower_bound !== nothing && throw(ArgumentError("Lower bound has already been set"))
         info.lower_bound = value
@@ -256,7 +256,7 @@ function set_lower_bound(info::ConstraintInfo, value::Union{Number, Nothing})
     return
 end
 
-function set_upper_bound(info::ConstraintInfo, value::Union{Number, Nothing})
+function set_upper_bound(info::NLPConstraintInfo, value::Union{Number, Nothing})
     if value !== nothing
         info.upper_bound !== nothing && throw(ArgumentError("Upper bound has already been set"))
         info.upper_bound = value
@@ -264,20 +264,20 @@ function set_upper_bound(info::ConstraintInfo, value::Union{Number, Nothing})
     return
 end
 
-function set_bounds(info::ConstraintInfo, set::MOI.EqualTo)
+function set_bounds(info::NLPConstraintInfo, set::MOI.EqualTo)
     set_lower_bound(info, set.value)
     set_upper_bound(info, set.value)
 end
 
-function set_bounds(info::ConstraintInfo, set::MOI.GreaterThan)
+function set_bounds(info::NLPConstraintInfo, set::MOI.GreaterThan)
     set_lower_bound(info, set.lower)
 end
 
-function set_bounds(info::ConstraintInfo, set::MOI.LessThan)
+function set_bounds(info::NLPConstraintInfo, set::MOI.LessThan)
     set_upper_bound(info, set.upper)
 end
 
-function set_bounds(info::ConstraintInfo, set::MOI.Interval)
+function set_bounds(info::NLPConstraintInfo, set::MOI.Interval)
     set_lower_bound(info, set.lower)
     set_upper_bound(info, set.upper)
 end
