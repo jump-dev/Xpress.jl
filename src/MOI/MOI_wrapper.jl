@@ -803,6 +803,7 @@ end
 _sense_and_rhs(s::MOI.LessThan{Float64}) = (Cchar('L'), s.upper)
 _sense_and_rhs(s::MOI.GreaterThan{Float64}) = (Cchar('G'), s.lower)
 _sense_and_rhs(s::MOI.EqualTo{Float64}) = (Cchar('E'), s.value)
+_sense_and_rhs(s::MOI.Interval{Float64}) = (Cchar('T'), [s.lower, s.upper])
 
 ###
 ### Variables
@@ -4340,7 +4341,7 @@ end
 col_type_char(::Type{MOI.LessThan{Float64}}) = 'U'
 col_type_char(::Type{MOI.GreaterThan{Float64}}) = 'L'
 col_type_char(::Type{MOI.EqualTo{Float64}}) = 'F'
-# col_type_char(::Type{MOI.Interval{Float64}}) = 'T'
+col_type_char(::Type{MOI.Interval{Float64}}) = 'T'
 col_type_char(::Type{MOI.ZeroOne}) = 'B'
 col_type_char(::Type{MOI.Integer}) = 'I'
 col_type_char(::Type{MOI.Semicontinuous{Float64}}) = 'S'
