@@ -2775,45 +2775,56 @@ function MOI.optimize!(model::Optimizer)
         MOI.set(model, MOI.VariableName(), x, names)  
         Xpress._pass_variable_names_to_solver(model)  
         
-        # Delete existing constraints when optimize! is called again
-        count=length(model.nlp_constraint_info)
-        if count>0
-            for i in 1:count
-                popfirst!(model.nlp_constraint_info)
-                pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
-                
+        #Case with NL Objective and no NL Constraints
+        if length(model.nlp_constraint_info)==0
+            # Delete existing constraints when optimize! is called again
+            count=length(model.affine_constraint_info)
+            if count>0 and 
+                for i in 1:count
+                    pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
+                end
             end
-        end
-        
-        # Creating NULL constraints to allow their modification by XPRSnlp
-        for cons in model.nlp_constraint_info
-            c_set=to_constraint_set(cons)
-            if length(c_set)==2
-                MOI.add_constraint(
-                model,
-                MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
-                c_set[1],
-                );
+        #Case with NL Constraints
+        else
+            # Delete existing constraints when optimize! is called again
+            count=length(model.affine_constraint_info)
+            if count>0 and 
+                for i in 1:count
+                    popfirst!(model.nlp_constraint_info)
+                    pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
+                end
+            end
+            
+            # Creating NULL constraints to allow their modification by XPRSnlp
+            for cons in model.nlp_constraint_info
+                c_set=to_constraint_set(cons)
+                if length(c_set)==2
+                    MOI.add_constraint(
+                    model,
+                    MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+                    c_set[1],
+                    );
 
-                MOI.add_constraint(
-                model,
-                MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
-                c_set[2],
-                );
-            count+=2
-            elseif c_set !== nothing
-                MOI.add_constraint(
-                model,
-                MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
-                c_set[1],
-                );
-                count+=1
+                    MOI.add_constraint(
+                    model,
+                    MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+                    c_set[2],
+                    );
+                count+=2
+                elseif c_set !== nothing
+                    MOI.add_constraint(
+                    model,
+                    MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+                    c_set[1],
+                    );
+                    count+=1
+                end
             end
-        end
-        
-        # Passing constraints to the solver
-        for i in 0:length(model.nlp_constraint_info)-1
-            Lib.XPRSnlpchgformulastring(model.inner, Cint(i), join(["+"," ",to_str(model.nlp_constraint_info[i+1].expression)]))
+            
+            # Passing constraints to the solver
+            for i in 0:length(model.nlp_constraint_info)-1
+                Lib.XPRSnlpchgformulastring(model.inner, Cint(i), join(["+"," ",to_str(model.nlp_constraint_info[i+1].expression)]))
+            end
         end
         
         # Passing objective to the solver
