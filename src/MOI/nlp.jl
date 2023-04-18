@@ -1,3 +1,5 @@
+using MathOptInterface
+
 MOI.supports(::Optimizer, ::MOI.NLPBlock) = true
 
 function walk_and_strip_variable_index!(expr::Expr)
