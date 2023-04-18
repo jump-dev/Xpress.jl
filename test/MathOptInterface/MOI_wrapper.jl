@@ -965,7 +965,7 @@ function test_dummy_nlp()
     # so that the first variable is C1
     # however we must be careful because the user might have passed the names
     # so, in a second step, we need to use them or empty them 
-    ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 0.5 * C1 - 3")
+    ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 0.5 * x1 - 3")
     @test ret == 0
     # ret = Xpress.Lib.XPRSwriteprob(model.inner, "testmat.mat", "");
     # @test ret == 0
@@ -1102,7 +1102,7 @@ function test_formula_string()
     buffer = Array{Cchar}(undef, 80)
     buffer_p = pointer(buffer)
     out = Cstring(buffer_p)
-    ret=XPRSnlpgetformulastring(model.moi_backend.optimizer.model.inner, Cint(0), out , 80)
+    ret=Xpress.Lib.XPRSnlpgetformulastring(model.moi_backend.optimizer.model.inner, Cint(0), out , 80)
     @test ret == 0
     version = unsafe_string(out)::String
     @test version == "6 * x1 + 8 * x2 - 100"
@@ -1110,7 +1110,7 @@ function test_formula_string()
     buffer = Array{Cchar}(undef, 80)
     buffer_p = pointer(buffer)
     out = Cstring(buffer_p)
-    ret=XPRSnlpgetformulastring(model.moi_backend.optimizer.model.inner, Cint(1), out , 80)
+    ret=Xpress.Lib.XPRSnlpgetformulastring(model.moi_backend.optimizer.model.inner, Cint(1), out , 80)
     @test ret == 0
     version = unsafe_string(out)::String
     @test version == "7 * x1 + 12 * x2 - 120"
@@ -1118,7 +1118,7 @@ function test_formula_string()
     buffer = Array{Cchar}(undef, 80)
     buffer_p = pointer(buffer)
     out = Cstring(buffer_p)
-    ret=XPRSnlpgetobjformulastring(model.moi_backend.optimizer.model.inner, out , 80)
+    ret=Xpress.Lib.XPRSnlpgetobjformulastring(model.moi_backend.optimizer.model.inner, out , 80)
     @test ret == 0
     version = unsafe_string(out)::String
     @test version == "12 * x1 + 20 * x2"
