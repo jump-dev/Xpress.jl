@@ -2776,7 +2776,7 @@ function MOI.optimize!(model::Optimizer)
         Xpress._pass_variable_names_to_solver(model)  
         
         # Delete existing constraints when optimize! is called again
-        count=length(model.affine_constraint_info)
+        count=length(model.nlp_constraint_info)
         if count>0
             for i in 1:count
                 popfirst!(model.nlp_constraint_info)
