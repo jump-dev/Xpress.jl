@@ -1,21 +1,3 @@
-const MOI = MathOptInterface
-
-# indices
-const VI = MOI.VariableIndex
-const CI = MOI.ConstraintIndex
-
-# function aliases
-const SAF = MOI.ScalarAffineFunction{Float64}
-const SQF = MOI.ScalarQuadraticFunction{Float64}
-
-# set aliases
-const Bounds{T} = Union{
-    MOI.EqualTo{T},
-    MOI.GreaterThan{T},
-    MOI.LessThan{T},
-    MOI.Interval{T}
-}
-
 MOI.supports(::Optimizer, ::MOI.NLPBlock) = true
 
 function walk_and_strip_variable_index!(expr::Expr)
@@ -88,7 +70,7 @@ MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{<:Bounds{
 MOI.supports_constraint(::Optimizer, ::Type{<:Union{SAF, SQF}}, ::Type{<:Bounds{Float64}}) = true
 
 function MOI.add_constraint(model::Optimizer, f::F, set::S) where {F <: Union{SAF, SQF}, S <: Bounds{Float64}}
-    ci = ConstraintInfo()
+    ci = NLPConstraintInfo()
     ci.expression = to_expr(f)
     set_bounds(ci, set)
     push!(model.nlp_constraint_info, ci)
@@ -115,11 +97,6 @@ end
 wrap_with_parens(x::String) = string("( ", x, " )")
 
 to_str(x) = string(x)
-
-struct UnrecognizedExpressionException <: Exception
-    exprtype::String
-    expr
-end
 
 function to_str(c::Expr)
     if c.head == :comparison

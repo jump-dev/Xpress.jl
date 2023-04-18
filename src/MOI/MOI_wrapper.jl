@@ -3825,7 +3825,7 @@ function MOI.get(
 ) where {S <: SCALAR_SETS}
     row = _info(model, c).row
     basis_status = model.basis_status
-    if basis_status == nothing
+    if basis_status === nothing
         _generate_basis_status(model::Optimizer)
         basis_status = model.basis_status
     end
@@ -3850,7 +3850,7 @@ function MOI.get(
 )
     column = _info(model, x).column
     basis_status = model.basis_status
-    if basis_status == nothing
+    if basis_status === nothing
         _generate_basis_status(model::Optimizer)
         basis_status = model.basis_status
     end
