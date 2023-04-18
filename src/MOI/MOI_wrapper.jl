@@ -3102,22 +3102,22 @@ function _cache_primal_status(model)
     elseif is_nlp(model)
         stat = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_NLPSTATUS, _)::Int
         if stat == Lib.XPRS_NLPSTATUS_UNSTARTED
-            return MOI.OPTIMIZE_NOT_CALLED
+            return MOI.NO_SOLUTION
         elseif stat == Lib.XPRS_NLPSTATUS_SOLUTION # is a STOP
-            return MOI.LOCALLY_SOLVED
+            return MOI.FEASIBLE_POINT
         elseif stat == Lib.XPRS_NLPSTATUS_OPTIMAL 
-            return MOI.OPTIMAL
+            return MOI.FEASIBLE_POINT
         elseif stat == Lib.XPRS_NLPSTATUS_NOSOLUTION # is a STOP
-            return MOI.OTHER_ERROR
+            return MOI.NO_SOLUTION
         elseif stat == Lib.XPRS_NLPSTATUS_INFEASIBLE
-            return MOI.INFEASIBLE
+            return MOI.INFEASIBLE_POINT
         elseif stat == Lib.XPRS_NLPSTATUS_UNBOUNDED
-            return MOI.DUAL_INFEASIBLE
+            return MOI.NO_SOLUTION 
         elseif stat == Lib.XPRS_NLPSTATUS_UNFINISHED # is a STOP
-            return MOI.OTHER_ERROR
+            return MOI.NO_SOLUTION 
         else
             @assert stat == Lib.XPRS_NLPSTATUS_UNSOLVED
-            return MOI.NUMERICAL_ERROR
+            return MOI.NO_SOLUTION 
         end
     elseif is_mip(model)
         stat = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSTATUS, _)::Int
