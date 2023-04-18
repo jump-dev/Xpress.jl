@@ -1,4 +1,20 @@
-using MathOptInterface
+const MOI=MathOptInterface
+
+# indices
+const VI = MOI.VariableIndex
+const CI = MOI.ConstraintIndex
+
+# function aliases
+const SAF = MOI.ScalarAffineFunction{Float64}
+const SQF = MOI.ScalarQuadraticFunction{Float64}
+
+# set aliases
+const Bounds{T} = Union{
+    MOI.EqualTo{T},
+    MOI.GreaterThan{T},
+    MOI.LessThan{T},
+    MOI.Interval{T}
+}
 
 MOI.supports(::Optimizer, ::MOI.NLPBlock) = true
 
