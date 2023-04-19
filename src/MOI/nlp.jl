@@ -88,29 +88,8 @@ MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{<:Bounds{
 
 MOI.supports_constraint(::Optimizer, ::Type{<:Union{SAF, SQF}}, ::Type{<:Bounds{Float64}}) = true
 
-function MOI.add_constraint(model::Optimizer, f::F, set::S) where {F <: Union{SAF, SQF}, S <: Bounds{Float64}}
-    ci = NLPConstraintInfo()
-    ci.expression = to_expr(f)
-    set_bounds(ci, set)
-    push!(model.nlp_constraint_info, ci)
-    return CI{F, S}(length(model.nlp_constraint_info))
-end
-
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{MOI.ZeroOne}) = true
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{MOI.Integer}) = true
-
-function MOI.add_constraint(model::Optimizer, f::MOI.VariableIndex, set::S
-) where {S <: Union{MOI.ZeroOne, MOI.Integer}}
-    variable_info = find_variable_info(model, f)
-    if set isa MOI.ZeroOne
-        variable_info.category = :Bin
-    elseif set isa MOI.Integer
-        variable_info.category = :Int
-    else
-        error("Unsupported variable type $set.")
-    end
-    return CI{MOI.VariableIndex, S}(f.value)
-end
 
 # Converting expressions in strings adapted to chgformulastring and chgobjformulastring
 wrap_with_parens(x::String) = string("( ", x, " )")
