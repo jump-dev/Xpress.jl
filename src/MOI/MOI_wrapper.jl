@@ -2775,10 +2775,10 @@ function MOI.optimize!(model::Optimizer)
         MOI.set(model, MOI.VariableName(), x, names)  
         Xpress._pass_variable_names_to_solver(model)  
         
+        count=length(model.affine_constraint_info)
         #Case with NL Objective and no NL Constraints
         if length(model.nlp_constraint_info)==0
             # Delete existing constraints when optimize! is called again
-            count=length(model.affine_constraint_info)
             if count>0 
                 for i in 1:count
                     pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
@@ -2786,14 +2786,11 @@ function MOI.optimize!(model::Optimizer)
             end
         #Case with NL Constraints
         else
-            if length(model.affine_constraint_info)>length(model.nlp_constraint_info)
+            if count>length(model.nlp_constraint_info)
             # Delete existing constraints when optimize! is called again
-                count=length(model.affine_constraint_info)
-                if count>0
-                    for i in 1:count
-                        popfirst!(model.nlp_constraint_info)
-                        pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
-                    end
+                for i in 1:count
+                    popfirst!(model.nlp_constraint_info)
+                    pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
                 end
             end
             
@@ -2812,14 +2809,12 @@ function MOI.optimize!(model::Optimizer)
                     MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
                     c_set[2],
                     );
-                count+=2
                 elseif c_set !== nothing
                     MOI.add_constraint(
                     model,
                     MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
                     c_set[1],
                     );
-                    count+=1
                 end
             end
             
