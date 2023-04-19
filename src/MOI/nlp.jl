@@ -1,5 +1,4 @@
 const MOI=MathOptInterface
-const MOIU = MathOptInterface.Utilities 
 
 MOI.supports(::Optimizer, ::MOI.NLPBlock) = true
 
