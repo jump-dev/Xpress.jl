@@ -1045,8 +1045,8 @@ function test_optimize_lp()
     @test objective_value(model) == 205.00000000000003
     @test value(x[1]) == 14.999999999999993
     @test value(x[2]) == 1.2500000000000053
-    @test dual(c1) == -0.25000000000000167
-    @test dual(c2) == -1.4999999999999987
+    @test dual(c1) == 0.25000000000000167
+    @test dual(c2) == 1.4999999999999987
 
 end
 
@@ -1165,7 +1165,7 @@ function test_optimize_nlp()
     @test value(x[3]) == 3.128897603451363
     @test value(x[4]) == 1.4
     @test dual(c1) == 0.0
-    @test dual(c2) == -0.40583391082953174
+    @test dual(c2) == 0.40583391082953174
 
 end
 
