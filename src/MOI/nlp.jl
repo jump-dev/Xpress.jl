@@ -218,6 +218,6 @@ MOI.supports(::Optimizer, ::MOI.NLPBlockDual) = true
 
 function MOI.get(model::Optimizer, attr::MOI.NLPBlockDual)
     MOI.check_result_index_bounds(model, attr)
-    s = -_dual_multiplier(model) 
+    s = _dual_multiplier(model) 
     return s .*model.cached_solution.linear_dual[(1:length(model.nlp_constraint_info))]
 end
