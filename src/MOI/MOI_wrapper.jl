@@ -2777,7 +2777,7 @@ function MOI.optimize!(model::Optimizer)
         
         count=length(model.affine_constraint_info)
         #Case with NL Objective and no NL Constraints
-        if length(model.nlp_constraint_info)==0
+        if length(model.nlp_constraint_info)==0 || count==length(model.nlp_constraint_info)
             # Delete existing constraints when optimize! is called again
             if count>0 
                 for i in 1:count
