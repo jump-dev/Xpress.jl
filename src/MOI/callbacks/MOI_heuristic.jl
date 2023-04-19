@@ -63,7 +63,7 @@ function MOI.submit(
 
     for (count, (var, value)) in enumerate(zip(variables, values))
         solval[count] = value
-        colind[count] = _info(model, var).column - 1 # 0-indexing
+        colind[count] = _info(model, var).column - 1
     end
 
     if ilength == MOI.get(model, MOI.NumberOfVariables())
