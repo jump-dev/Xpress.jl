@@ -803,7 +803,6 @@ end
 _sense_and_rhs(s::MOI.LessThan{Float64}) = (Cchar('L'), s.upper)
 _sense_and_rhs(s::MOI.GreaterThan{Float64}) = (Cchar('G'), s.lower)
 _sense_and_rhs(s::MOI.EqualTo{Float64}) = (Cchar('E'), s.value)
-_sense_and_rhs(s::MOI.Interval{Float64}) = (Cchar('T'), [s.lower, s.upper])
 
 ###
 ### Variables
