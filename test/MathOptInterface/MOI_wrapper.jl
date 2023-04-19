@@ -44,6 +44,13 @@ function test_Basic_Parameters()
     @test MOI.get(optimizer, MOI.SolverName()) == "Xpress"
 end
 
+function test_temp()
+    optimizer = Xpress.Optimizer(OUTPUTLOG = 0)
+    model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
+    MOI.set(model, MOI.Silent(), true)
+    _test_HS071(model,MOI.Test.Config(atol = 1e-3, rtol = 1e-3),HS071(true))
+end
+
 function test_runtests()
 
     optimizer = Xpress.Optimizer(OUTPUTLOG = 0)

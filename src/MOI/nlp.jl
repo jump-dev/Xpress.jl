@@ -1,22 +1,6 @@
 const MOI=MathOptInterface
 const MOIU = MathOptInterface.Utilities 
 
-# indices
-const VI = MOI.VariableIndex
-const CI = MOI.ConstraintIndex
-
-# function aliases
-const SAF = MOI.ScalarAffineFunction{Float64}
-const SQF = MOI.ScalarQuadraticFunction{Float64}
-
-# set aliases
-const Bounds{T} = Union{
-    MOI.EqualTo{T},
-    MOI.GreaterThan{T},
-    MOI.LessThan{T},
-    MOI.Interval{T}
-}
-
 MOI.supports(::Optimizer, ::MOI.NLPBlock) = true
 
 function walk_and_strip_variable_index!(expr::Expr)
@@ -179,47 +163,6 @@ function verify_support(c::Expr)
     return c
 end
 
-# Converting affine and quadratic functions to expressions
-to_expr(vi::MOI.VariableIndex) = :(x[$(vi.value)])
-
-function to_expr(f::SAF)
-    f = MOIU.canonical(f)
-    if isempty(f.terms)
-        return f.constant
-    else
-        linear_term_exprs = map(f.terms) do term
-            :($(term.coefficient) * x[$(term.variable.value)])
-        end
-        expr = :(+($(linear_term_exprs...)))
-        if !iszero(f.constant)
-            push!(expr.args, f.constant)
-        end
-        return expr
-    end
-end
-
-function to_expr(f::SQF)
-    f = MOIU.canonical(f)
-    linear_term_exprs = map(f.affine_terms) do term
-        i = term.variable.value
-        :($(term.coefficient) * x[$i])
-    end
-    quadratic_term_exprs = map(f.quadratic_terms) do term
-        i = term.variable_1.value
-        j = term.variable_2.value
-        if i == j
-            :($(term.coefficient / 2) * x[$i] * x[$j])
-        else
-            :($(term.coefficient) * x[$i] * x[$j])
-        end
-    end
-    expr = :(+($(linear_term_exprs...), $(quadratic_term_exprs...)))
-    if !iszero(f.constant)
-        push!(expr.args, f.constant)
-    end
-    return expr
-end
-
 function set_lower_bound(info::NLPConstraintInfo, value::Union{Number, Nothing})
     if value !== nothing
         info.lower_bound !== nothing && throw(ArgumentError("Lower bound has already been set"))
@@ -252,37 +195,6 @@ end
 function set_bounds(info::NLPConstraintInfo, set::MOI.Interval)
     set_lower_bound(info, set.lower)
     set_upper_bound(info, set.upper)
-end
-
-function check_variable_indices(model::Optimizer, index::VI)
-    @assert 1 <= index.value <= length(model.variable_info)
-end
-
-function check_variable_indices(model::Optimizer, f::SAF)
-    for term in f.terms
-        check_variable_indices(model, term.variable)
-    end
-end
-
-function check_variable_indices(model::Optimizer, f::SQF)
-    for term in f.affine_terms
-        check_variable_indices(model, term.variable)
-    end
-    for term in f.quadratic_terms
-        check_variable_indices(model, term.variable_1)
-        check_variable_indices(model, term.variable_2)
-    end
-end
-
-function find_variable_info(model::Optimizer, vi::VI)
-    check_variable_indices(model, vi)
-    model.variable_info[vi]
-end
-
-function MOI.set(model::Optimizer, ::MOI.VariablePrimalStart, vi::VI, value::Union{Real, Nothing})
-    check_variable_indices(model, vi)
-    model.variable_info[vi].start = value
-    return
 end
 
 # Transforming NLconstraints in constraint sets used for affine functions creation in optimize!
