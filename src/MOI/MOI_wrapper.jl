@@ -2777,23 +2777,25 @@ function MOI.optimize!(model::Optimizer)
         
         count=length(model.affine_constraint_info)
         #Case with NL Objective and no NL Constraints
-        if length(model.nlp_constraint_info)==0 || count==length(model.nlp_constraint_info)
+        if length(model.nlp_constraint_info)==0 
             # Delete existing constraints when optimize! is called again
             if count>0 
                 for i in 1:count
                     pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
                 end
             end
+
         #Case with NL Constraints
-        else
-            if count>length(model.nlp_constraint_info)
-            # Delete existing constraints when optimize! is called again
-                for i in 1:count
-                    popfirst!(model.nlp_constraint_info)
-                    pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
-                end
+        
+            #New NL Constraints
+        elseif count != length(model.nlp_constraint_info)
+        # Delete existing constraints when optimize! is called again
+            for i in 1:count
+                popfirst!(model.nlp_constraint_info)
+                pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
             end
-            
+        
+        
             # Creating NULL constraints to allow their modification by XPRSnlp
             for cons in model.nlp_constraint_info
                 c_set=to_constraint_set(cons)
@@ -2817,12 +2819,14 @@ function MOI.optimize!(model::Optimizer)
                     );
                 end
             end
-            
+        
+
             # Passing constraints to the solver
             for i in 0:length(model.nlp_constraint_info)-1
                 Lib.XPRSnlpchgformulastring(model.inner, Cint(i), join(["+"," ",to_str(model.nlp_constraint_info[i+1].expression)]))
             end
-        end
+        end   
+        
         
         # Passing objective to the solver
         Lib.XPRSnlpchgobjformulastring(model.inner, join(["+"," ",to_str(model.objective_expr)]))
