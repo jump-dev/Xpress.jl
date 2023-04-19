@@ -58,7 +58,6 @@ module Xpress
     end
 
     include("MOI/MOI_wrapper.jl")
-    include("MOI/nlp.jl")
 
     function __init__()
         if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT") && get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") != "true"
