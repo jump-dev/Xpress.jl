@@ -16,10 +16,8 @@ function moi_lazy_constraint_xprs_optnode_wrapper(func, model::Optimizer, callba
 end
 
 function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, ::Nothing)
-    info = model.callback_table.moi_lazy_constraint
-
-    if !isnothing(info)
-        xprs_optnode_info, = info
+    if !isnothing(model.callback_table.moi_lazy_constraint)
+        xprs_optnode_info, = model.callback_table.moi_lazy_constraint
 
         remove_xprs_optnode_callback!(model, xprs_optnode_info)
 
