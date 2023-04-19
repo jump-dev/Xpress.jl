@@ -84,13 +84,6 @@ function MOI.set(model::Optimizer, ::MOI.NLPBlock, nlp_data::MOI.NLPBlockData)
     return
 end
 
-MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{<:Bounds{Float64}}) = true
-
-MOI.supports_constraint(::Optimizer, ::Type{<:Union{SAF, SQF}}, ::Type{<:Bounds{Float64}}) = true
-
-MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{MOI.ZeroOne}) = true
-MOI.supports_constraint(::Optimizer, ::Type{MOI.VariableIndex}, ::Type{MOI.Integer}) = true
-
 # Converting expressions in strings adapted to chgformulastring and chgobjformulastring
 wrap_with_parens(x::String) = string("( ", x, " )")
 
