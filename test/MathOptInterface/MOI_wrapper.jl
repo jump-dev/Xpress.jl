@@ -58,6 +58,10 @@ function test_runtests()
             "test_constraint_PrimalStart_DualStart_SecondOrderCone",
             "_RotatedSecondOrderCone_",
             "_GeometricMeanCone_",
+            "_nonlinear_hs071_NLPBlockDual",
+            "_nonlinear_objective",
+            "_nonlinear_objective_and_moi_objective_test",
+            "_nonlinear_without_objective",
             # Xpress cannot handle nonconvex quadratic constraint
             "test_quadratic_nonconvex_",
         ],
@@ -82,6 +86,26 @@ function test_runtests()
     )
     return
 end
+
+
+function test_runtests_nlp()
+    optimizer = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
+    model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
+    MOI.set(model, MOI.Silent(), true)
+    MOI.Test.runtests(
+        model,
+        MOI.Test.Config(atol = 0.2, rtol = 0.2, optimal_status = MOI.LOCALLY_SOLVED),
+        include = String[
+            # tested with PRESOLVE=0 below
+            "_nonlinear_hs071_NLPBlockDual",
+            "_nonlinear_objective",
+            "_nonlinear_objective_and_moi_objective_test",
+            "_nonlinear_without_objective",
+        ],
+    )
+    return
+End
+
 
 function test_Binaryfixing()
     @testset "Binary Equal to 1" begin
