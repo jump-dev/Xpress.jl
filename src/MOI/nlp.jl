@@ -31,13 +31,12 @@ function MOI.set(model::Optimizer, ::MOI.NLPBlock, nlp_data::MOI.NLPBlockData)
         # end
         obj = verify_support(MOI.objective_expr(nlp_eval))
         walk_and_strip_variable_index!(obj)
-
-        model.objective_expr = obj
+        if obj == :NaN
+            model.inner.objective_expr = 0.0
+        else
+            model.objective_expr = obj
+        end
         model.objective_type = NLP_OBJECTIVE
-        # if obj == :NaN
-        #     model.inner.objective_expr = 0.0
-        # else
-        # end
     end
 
     for i in 1:length(nlp_data.constraint_bounds)
@@ -124,13 +123,6 @@ function to_str(c::Expr)
 end
 
 verify_support(c) = c
-
-function verify_support(c::Symbol)
-    if c !== :NaN # blocks NaN and +/-Inf
-        return c
-    end
-    error("Got NaN in a constraint or objective.")
-end
 
 function verify_support(c::Real)
     if isfinite(c) # blocks NaN and +/-Inf
