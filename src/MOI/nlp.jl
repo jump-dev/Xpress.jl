@@ -38,6 +38,8 @@ function MOI.set(model::Optimizer, ::MOI.NLPBlock, nlp_data::MOI.NLPBlockData)
             model.objective_expr = obj
         end
         model.objective_type = NLP_OBJECTIVE
+    else
+        model.objective_expr = 0.0
     end
 
     for i in 1:length(nlp_data.constraint_bounds)
