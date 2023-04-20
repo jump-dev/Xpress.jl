@@ -346,12 +346,14 @@ function MOI.empty!(model::Optimizer)
 
     model.name = ""
     model.objective_type = SCALAR_AFFINE
+    model.objective_expr = nothing
     model.is_objective_set = false
     model.objective_sense = nothing
     empty!(model.variable_info)
     model.last_constraint_index = 0
     empty!(model.affine_constraint_info)
     empty!(model.sos_constraint_info)
+    empty!(model.nlp_constraint_info)
     model.name_to_variable = nothing
     model.name_to_constraint_index = nothing
 
@@ -379,6 +381,8 @@ function MOI.empty!(model::Optimizer)
     model.callback_data = nothing
     # model.message_callback = nothing
 
+    model.nlp_block_data = nothing
+
     for (name, value) in model.params
         MOI.set(model, name, value)
     end
@@ -388,11 +392,13 @@ end
 function MOI.is_empty(model::Optimizer)
     !isempty(model.name) && return false
     model.objective_type != SCALAR_AFFINE && return false
+    model.objective_expr !== nothing && return false
     model.is_objective_set == true && return false
     model.objective_sense !== nothing && return false
     !isempty(model.variable_info) && return false
     length(model.affine_constraint_info) != 0 && return false
     length(model.sos_constraint_info) != 0 && return false
+    length(model.nlp_constraint_info) != 0 && return false
     model.name_to_variable !== nothing && return false
     model.name_to_constraint_index !== nothing && return false
 
@@ -418,6 +424,8 @@ function MOI.is_empty(model::Optimizer)
 
     # model.message_callback !== nothing && return false
     # otherwise jump complains it is not empty
+
+    model.nlp_block_data !== nothing && return false
 
     return true
 end
@@ -2830,8 +2838,10 @@ function MOI.optimize!(model::Optimizer)
         
         # Passing objective to the solver
         Lib.XPRSnlpchgobjformulastring(model.inner, join(["+"," ",to_str(model.objective_expr)]))
-
-        Lib.XPRSnlpoptimize(model.inner, "")
+        
+        solvestatus = Ref{Cint}(0)
+        solstatus = Ref{Cint}(0)
+        Lib.XPRSoptimize(model.inner, "", solvestatus, solstatus)
 
     elseif is_mip(model)
         @checked Lib.XPRSmipoptimize(model.inner, model.solve_method)
