@@ -27,7 +27,6 @@ end
 function callback_knapsack_model()
     model = Xpress.Optimizer(
         OUTPUTLOG    = 0,
-        HEURSTRATEGY = 0, # before v41
         HEUREMPHASIS = 0,
         CUTSTRATEGY  = 0,
         PRESOLVE     = 0,
