@@ -87,8 +87,8 @@ function test_runtests()
     return
 end
 
-
 function test_runtests_nlp()
+
     optimizer = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
     MOI.set(model, MOI.Silent(), true)
@@ -104,7 +104,7 @@ function test_runtests_nlp()
         ],
     )
     return
-End
+end
 
 
 function test_Binaryfixing()
