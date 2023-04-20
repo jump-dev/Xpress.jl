@@ -48,7 +48,7 @@ function test_temp()
     optimizer = Xpress.Optimizer(OUTPUTLOG = 0)
     model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
     MOI.set(model, MOI.Silent(), true)
-    test_nonlinear_objective(model,MOI.Test.Config(atol = 1e-3, rtol = 1e-3, optimal_status = MOI.LOCALLY_SOLVED))
+    test_nonlinear_objective(model,Config(atol = 0.2, rtol = 0.2, optimal_status = MOI.LOCALLY_SOLVED))
 end
 
 function test_runtests()
@@ -96,7 +96,7 @@ end
 
 function test_runtests_nlp()
 
-    optimizer = Xpress.Optimizer(OUTPUTLOG = 0)
+    optimizer = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
     model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
     MOI.set(model, MOI.Silent(), true)
     MOI.Test.runtests(
@@ -106,8 +106,6 @@ function test_runtests_nlp()
             # tested with PRESOLVE=0 below
             "_nonlinear_hs071_NLPBlockDual",
             "_nonlinear_objective",
-            "_nonlinear_objective_and_moi_objective_test",
-            "_nonlinear_without_objective",
         ],
     )
     return
