@@ -48,7 +48,7 @@ function test_temp()
     optimizer = Xpress.Optimizer(OUTPUTLOG = 0)
     model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
     MOI.set(model, MOI.Silent(), true)
-    _test_HS071(model,MOI.Test.Config(atol = 1e-3, rtol = 1e-3),HS071(true))
+    test_nonlinear_objective(model,MOI.Test.Config(atol = 1e-3, rtol = 1e-3, optimal_status = MOI.LOCALLY_SOLVED))
 end
 
 function test_runtests()
@@ -65,6 +65,10 @@ function test_runtests()
             "test_constraint_PrimalStart_DualStart_SecondOrderCone",
             "_RotatedSecondOrderCone_",
             "_GeometricMeanCone_",
+            "_nonlinear_hs071_NLPBlockDual",
+            "_nonlinear_objective",
+            "_nonlinear_objective_and_moi_objective_test",
+            "_nonlinear_without_objective"
             # Xpress cannot handle nonconvex quadratic constraint
             "test_quadratic_nonconvex_",
         ],
