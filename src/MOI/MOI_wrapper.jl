@@ -2831,7 +2831,7 @@ function MOI.optimize!(model::Optimizer)
         # Passing objective to the solver
         Lib.XPRSnlpchgobjformulastring(model.inner, join(["+"," ",to_str(model.objective_expr)]))
 
-        Lib.XPRSnlpoptimize(model.inner, "", solvestatus, solstatus)
+        Lib.XPRSnlpoptimize(model.inner, "")
 
     elseif is_mip(model)
         @checked Lib.XPRSmipoptimize(model.inner, model.solve_method)
