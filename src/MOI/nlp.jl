@@ -32,7 +32,7 @@ function MOI.set(model::Optimizer, ::MOI.NLPBlock, nlp_data::MOI.NLPBlockData)
         obj = verify_support(MOI.objective_expr(nlp_eval))
         walk_and_strip_variable_index!(obj)
         if obj == :NaN
-            model.inner.objective_expr = 0.0
+            model.objective_expr = 0.0
         else
             model.objective_expr = obj
         end
