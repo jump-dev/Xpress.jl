@@ -2848,8 +2848,10 @@ function MOI.optimize!(model::Optimizer)
     if model.post_solve
         @checked Lib.XPRSpostsolve(model.inner)
     end
-
-    model.termination_status = _cache_termination_status(model)
+    
+    if model.termination_status != MOI.INVALID_MODEL
+        model.termination_status = _cache_termination_status(model)
+    end
     model.primal_status = _cache_primal_status(model)
     model.dual_status = _cache_dual_status(model)
 

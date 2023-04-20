@@ -33,6 +33,7 @@ function MOI.set(model::Optimizer, ::MOI.NLPBlock, nlp_data::MOI.NLPBlockData)
         walk_and_strip_variable_index!(obj)
         if obj == :NaN
             model.objective_expr = 0.0
+            model.termination_status = MOI.INVALID_MODEL
         else
             model.objective_expr = obj
         end
