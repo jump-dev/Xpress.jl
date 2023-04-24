@@ -297,7 +297,6 @@ Return a symbol enconding the type of the problem.]
 Options are: `:LP`, `:QP` and `:QCP`
 """
 function problem_type(prob::XpressProblem)
-    is_nonlinear(prob) ? (:NLP) :
     is_quadratic_constraints(prob) ? (:QCP) :
     is_quadratic_objective(prob)  ? (:QP)  : (:LP)
 end
