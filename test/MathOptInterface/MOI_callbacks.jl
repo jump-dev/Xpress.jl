@@ -8,6 +8,7 @@ const MOI = MathOptInterface
 function callback_simple_model()
     model = Xpress.Optimizer(
         HEURSTRATEGY = 0,
+        HEUREMPHASIS = 0,
         OUTPUTLOG = 0
     )
 
@@ -27,6 +28,7 @@ end
 function callback_knapsack_model()
     model = Xpress.Optimizer(
         OUTPUTLOG    = 0,
+        HEURSTRATEGY = 0,
         HEUREMPHASIS = 0,
         CUTSTRATEGY  = 0,
         PRESOLVE     = 0,
