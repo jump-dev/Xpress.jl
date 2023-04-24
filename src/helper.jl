@@ -253,7 +253,7 @@ n_nlp_constraints(prob::XpressProblem) = is_nonlinear(prob) ? n_constraints(prob
     n_linear_constraints(prob::XpressProblem)
 Return the number of purely linear contraints in the XpressProblem
 """
-n_linear_constraints(prob::XpressProblem) = n_constraints(prob) - n_quadratic_constraints(prob) - n_nlp_constraints(prob)
+n_linear_constraints(prob::XpressProblem) = n_constraints(prob) - n_quadratic_constraints(prob) 
 
 """
     is_qcp(prob::XpressProblem)
@@ -303,7 +303,6 @@ Return a symbol enconding the type of the problem.]
 Options are: `:LP`, `:QP` and `:QCP`
 """
 function problem_type(prob::XpressProblem)
-    is_nonlinear(prob) ? (:NLP) :
     is_quadratic_constraints(prob) ? (:QCP) :
     is_quadratic_objective(prob)  ? (:QP)  : (:LP)
 end
@@ -324,7 +323,6 @@ function Base.show(io::IO, prob::XpressProblem)
     println(io, "    number of linear constraints           = $(n_linear_constraints(prob))")
     println(io, "    number of quadratic constraints        = $(n_quadratic_constraints(prob))")
     println(io, "    number of sos constraints              = $(n_special_ordered_sets(prob))")
-    println(io, "    number of nonlinear constraints        = $(n_nlp_constraints(prob))")
     println(io, "    number of non-zero coeffs              = $(n_non_zero_elements(prob))")
     println(io, "    number of non-zero qp objective terms  = $(n_quadratic_elements(prob))")
     println(io, "    number of non-zero qp constraint terms = $(n_quadratic_row_coefficients(prob))")
