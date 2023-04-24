@@ -234,6 +234,7 @@ n_quadratic_elements(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, 
 n_quadratic_row_coefficients(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQCELEMS, _)::Int
 n_entities(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALMIPENTS, _)::Int
 n_setmembers(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETMEMBERS, _)::Int
+n_nonlinear_coefs(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_SLPCOEFFICIENTS, _)::Int
 
 n_original_variables(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int
 n_original_constraints(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALROWS, _)::Int
@@ -242,9 +243,6 @@ obj_sense(prob::XpressProblem) = @_invoke Lib.XPRSgetdblattrib(prob, Lib.XPRS_OB
 objective_sense(prob::XpressProblem) = obj_sense(prob)  == Lib.XPRS_OBJ_MINIMIZE ? :minimize : :maximize
 
 # derived attribute functions
-
-
-1+1
 
 """
     n_linear_constraints(prob::XpressProblem)
@@ -268,6 +266,7 @@ is_mixedinteger(prob::XpressProblem) = (n_entities(prob) + n_special_ordered_set
     is_nonlinear(prob::XpressProblem)
 Return `true` if there are nonlinear strings in the XpressProblem
 """
+is_nonlinear(prob::XpressProblem) = n_nonlinear_coefs(prob) > 0
 
 """
     is_quadratic_objective(prob::XpressProblem)
