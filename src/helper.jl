@@ -244,12 +244,6 @@ objective_sense(prob::XpressProblem) = obj_sense(prob)  == Lib.XPRS_OBJ_MINIMIZE
 # derived attribute functions
 
 """
-    n_nlp_constraints(prob::XpressProblem)
-Return the number of nlp contraints in the XpressProblem
-"""
-n_nlp_constraints(prob::XpressProblem) = is_nonlinear(prob) ? n_constraints(prob) : 0
-
-"""
     n_linear_constraints(prob::XpressProblem)
 Return the number of purely linear contraints in the XpressProblem
 """
@@ -271,25 +265,6 @@ is_mixedinteger(prob::XpressProblem) = (n_entities(prob) + n_special_ordered_set
     is_nonlinear(prob::XpressProblem)
 Return `true` if there are nonlinear strings in the XpressProblem
 """
-
-function is_nonlinear(prob::XpressProblem)
-    buffer = Array{Cchar}(undef, 80)
-    buffer_p = pointer(buffer)
-    out = Cstring(buffer_p)
-    ret=Lib.XPRSnlpgetformulastring(prob, Cint(0), out , 80)
-    version = unsafe_string(out)::String
-
-    buffer= Array{Cchar}(undef, 80)
-    buffer_p = pointer(buffer)
-    out = Cstring(buffer_p)
-    ret=Lib.XPRSnlpgetobjformulastring(prob, out , 80)
-    version_obj = unsafe_string(out)::String
-
-    if version == "" && version_obj == ""
-        return false
-    end
-    return true
-end
 
 """
     is_quadratic_objective(prob::XpressProblem)
