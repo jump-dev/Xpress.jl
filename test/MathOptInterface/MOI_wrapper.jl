@@ -62,6 +62,8 @@ function test_runtests()
             "_nonlinear_objective",
             "_nonlinear_objective_and_moi_objective_test",
             "_nonlinear_without_objective",
+            "_nlp1",
+            "_nlp2",
             # Xpress cannot handle nonconvex quadratic constraint
             "test_quadratic_nonconvex_",
         ],
@@ -1186,6 +1188,45 @@ function test_optimize_nlp()
     @test dual(c2) == 0.40583391082953174
 
 end
+
+function test_nlp1()
+    m = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
+    ub = [6,4]
+    @variable(m, 0 ≤ x[i=1:2] ≤ ub[i])
+
+    @NLconstraint(m, x[1]*x[2] ≤ 4)
+
+    @NLobjective(m, Min, -x[1] - x[2])
+
+    optimize!(m)
+
+    @test_broken isapprox(value(x[1]), 6, rtol=1e-6)
+    @test_broken isapprox(value(x[2]), 2/3, rtol=2e-6)
+    @test_broken isapprox(objective_value(m), -20/3, rtol=1e-6)
+
+end
+
+function test_nlp2()
+    m = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
+    ub = [9.422, 5.9023, 267.417085245]
+    @variable(m, 0 ≤ x[i=1:3] ≤ ub[i])
+
+    @constraints(m, begin
+        250 + 30x[1] -  6x[1]^2 == x[3]
+        300 + 20x[2] - 12x[2]^2 == x[3]
+        150 + 0.5*(x[1]+x[2])^2 == x[3]
+    end)
+
+    @objective(m, Min, -x[3])
+
+    optimize!(m)
+
+    @test_broken isapprox(value(x[1]), 6.2934300, rtol=1e-6)
+    @test_broken isapprox(value(x[2]), 3.8218391, rtol=1e-6)
+    @test_broken isapprox(value(x[3]), 201.1593341, rtol=1e-5)
+    @test_broken isapprox(objective_value(m), -201.1593341, rtol=1e-6)
+
+end 
 
 end
 
