@@ -245,10 +245,16 @@ objective_sense(prob::XpressProblem) = obj_sense(prob)  == Lib.XPRS_OBJ_MINIMIZE
 # derived attribute functions
 
 """
+    n_nonlinear_constraints(prob::XpressProblem)
+Return the number of nonlinear contraints in the XpressProblem
+"""
+n_nonlinear_constraints(prob::XpressProblem) = n_nonlinear_coefs(prob) - 1
+
+"""
     n_linear_constraints(prob::XpressProblem)
 Return the number of purely linear contraints in the XpressProblem
 """
-n_linear_constraints(prob::XpressProblem) =n_constraints(prob) - n_quadratic_constraints(prob)
+n_linear_constraints(prob::XpressProblem) =n_constraints(prob) - n_quadratic_constraints(prob)-n_nonlinear_constraints(prob)
 
 """
     is_qcp(prob::XpressProblem)
