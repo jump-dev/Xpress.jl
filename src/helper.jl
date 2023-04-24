@@ -276,13 +276,13 @@ function is_nonlinear(prob::XpressProblem)
     buffer = Array{Cchar}(undef, 80)
     buffer_p = pointer(buffer)
     out = Cstring(buffer_p)
-    ret=XPRSnlpgetformulastring(prob, Cint(0), out , 80)
+    ret=Lib.XPRSnlpgetformulastring(prob, Cint(0), out , 80)
     version = unsafe_string(out)::String
 
     buffer= Array{Cchar}(undef, 80)
     buffer_p = pointer(buffer)
     out = Cstring(buffer_p)
-    ret=XPRSnlpgetobjformulastring(prob, out , 80)
+    ret=Lib.XPRSnlpgetobjformulastring(prob, out , 80)
     version_obj = unsafe_string(out)::String
 
     if version == "" && version_obj == ""
