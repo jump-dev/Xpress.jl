@@ -234,6 +234,7 @@ n_quadratic_elements(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, 
 n_quadratic_row_coefficients(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQCELEMS, _)::Int
 n_entities(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALMIPENTS, _)::Int
 n_setmembers(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETMEMBERS, _)::Int
+n_nonlinear_coefs(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_SLPCOEFFICIENTS, _)::Int
 
 n_original_variables(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int
 n_original_constraints(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALROWS, _)::Int
@@ -244,10 +245,16 @@ objective_sense(prob::XpressProblem) = obj_sense(prob)  == Lib.XPRS_OBJ_MINIMIZE
 # derived attribute functions
 
 """
+    n_nonlinear_constraints(prob::XpressProblem)
+Return the number of nonlinear contraints in the XpressProblem
+"""
+n_nonlinear_constraints(prob::XpressProblem) = max(n_nonlinear_coefs(prob) - 1,0)
+
+"""
     n_linear_constraints(prob::XpressProblem)
 Return the number of purely linear contraints in the XpressProblem
 """
-n_linear_constraints(prob::XpressProblem) = n_constraints(prob) - n_quadratic_constraints(prob)
+n_linear_constraints(prob::XpressProblem) =n_constraints(prob) - n_quadratic_constraints(prob)-n_nonlinear_constraints(prob)
 
 """
     is_qcp(prob::XpressProblem)
@@ -262,6 +269,12 @@ Return `true` if there are integer entities in the XpressProblem
 is_mixedinteger(prob::XpressProblem) = (n_entities(prob) + n_special_ordered_sets(prob)) > 0
 
 """
+    is_nonlinear(prob::XpressProblem)
+Return `true` if there are nonlinear strings in the XpressProblem
+"""
+is_nonlinear(prob::XpressProblem) = n_nonlinear_coefs(prob) > 0
+
+"""
     is_quadratic_objective(prob::XpressProblem)
 Return `true` if there are quadratic terms in the objective in the XpressProblem
 """
@@ -273,6 +286,7 @@ Return a symbol enconding the type of the problem.]
 Options are: `:LP`, `:QP` and `:QCP`
 """
 function problem_type(prob::XpressProblem)
+    is_nonlinear(prob) ? (:NLP) :
     is_quadratic_constraints(prob) ? (:QCP) :
     is_quadratic_objective(prob)  ? (:QP)  : (:LP)
 end
@@ -293,10 +307,29 @@ function Base.show(io::IO, prob::XpressProblem)
     println(io, "    number of linear constraints           = $(n_linear_constraints(prob))")
     println(io, "    number of quadratic constraints        = $(n_quadratic_constraints(prob))")
     println(io, "    number of sos constraints              = $(n_special_ordered_sets(prob))")
+    println(io, "    number of nonlinear constraints        = $(n_nonlinear_constraints(prob))")
     println(io, "    number of non-zero coeffs              = $(n_non_zero_elements(prob))")
     println(io, "    number of non-zero qp objective terms  = $(n_quadratic_elements(prob))")
     println(io, "    number of non-zero qp constraint terms = $(n_quadratic_row_coefficients(prob))")
     println(io, "    number of integer entities             = $(n_entities(prob))")
+end
+
+const NLPSTATUS_STRING = Dict{Int,String}(
+    Lib.XPRS_NLPSTATUS_UNSTARTED => "0 Unstarted ( XPRS_NLPSTATUS_UNSTARTED).",
+    Lib.XPRS_NLPSTATUS_SOLUTION => "1 Global search incomplete - an integer solution has been found ( XPRS_NLPSTATUS_SOLUTION).",
+    Lib.XPRS_NLPSTATUS_OPTIMAL => "2 Optimal ( XPRS_NLPSTATUS_OPTIMAL).",
+    Lib.XPRS_NLPSTATUS_NOSOLUTION => "3 Global search complete - No solution found ( XPRS_NLPSTATUS_NOSOLUTION).",
+    Lib.XPRS_NLPSTATUS_INFEASIBLE => "4 Infeasible ( XPRS_NLPSTATUS_INFEASIBLE).",
+    Lib.XPRS_NLPSTATUS_UNBOUNDED => "5 Unbounded ( XPRS_NLPSTATUS_UNBOUNDED).",
+    Lib.XPRS_NLPSTATUS_UNFINISHED => "6 Unfinished ( XPRS_NLPSTATUS_UNFINISHED).",
+    Lib.XPRS_NLPSTATUS_UNSOLVED => "7 Problem could not be solved due to numerical issues. ( XPRS_NLPSTATUS_UNSOLVED).",
+)
+
+function nlp_solve_complete(stat)
+    stat in [Lib.XPRS_NLPSTATUS_INFEASIBLE, Lib.XPRS_NLPSTATUS_OPTIMAL]
+end
+function nlp_solve_stopped(stat)
+    stat in [Lib.XPRS_NLPSTATUS_INFEASIBLE, Lib.XPRS_NLPSTATUS_OPTIMAL]
 end
 
 const MIPSTATUS_STRING = Dict{Int,String}(

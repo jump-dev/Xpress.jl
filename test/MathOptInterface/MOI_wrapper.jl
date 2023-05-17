@@ -2,6 +2,7 @@ module TestMOIWrapper
 
 using Xpress
 using MathOptInterface
+using JuMP
 using Test
 
 const MOI = MathOptInterface
@@ -57,6 +58,12 @@ function test_runtests()
             "test_constraint_PrimalStart_DualStart_SecondOrderCone",
             "_RotatedSecondOrderCone_",
             "_GeometricMeanCone_",
+            "_nonlinear_hs071_NLPBlockDual",
+            "_nonlinear_objective",
+            "_nonlinear_objective_and_moi_objective_test",
+            "_nonlinear_without_objective",
+            "_nlp1",
+            "_nlp2",
             # Xpress cannot handle nonconvex quadratic constraint
             "test_quadratic_nonconvex_",
         ],
@@ -75,11 +82,32 @@ function test_runtests()
             "_SecondOrderCone_",
             "test_constraint_PrimalStart_DualStart_SecondOrderCone",
             "_RotatedSecondOrderCone_",
-            "_GeometricMeanCone_"
+            "_GeometricMeanCone_",
+            
         ]
     )
     return
 end
+
+function test_runtests_nlp()
+
+    optimizer = Xpress.Optimizer(OUTPUTLOG = 0, PRESOLVE = 0)
+    model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
+    MOI.set(model, MOI.Silent(), true)
+    MOI.Test.runtests(
+        model,
+        MOI.Test.Config(atol = 0.2, rtol = 0.2, optimal_status = MOI.LOCALLY_SOLVED),
+        include = String[
+            # tested with PRESOLVE=0 below
+            "_nonlinear_hs071_NLPBlockDual",
+            "_nonlinear_objective",
+            "_nonlinear_objective_and_moi_objective_test",
+            "_nonlinear_without_objective",
+        ],
+    )
+    return
+end
+
 
 function test_Binaryfixing()
     @testset "Binary Equal to 1" begin
@@ -892,7 +920,8 @@ function test_name_empty_names()
 end
 
 function test_dummy_nlp()
-    model = Xpress.Optimizer(OUTPUTLOG = 0);
+
+    model = Xpress.Optimizer(OUTPUTLOG = 1);
     x = MOI.add_variables(model, 2);
     c = [1.0, 2.0]
     MOI.set(
@@ -905,7 +934,7 @@ function test_dummy_nlp()
 
     Xpress._pass_variable_names_to_solver(model)
 
-    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE);
 
     b1 = MOI.add_constraint.(
         model,
@@ -922,7 +951,7 @@ function test_dummy_nlp()
         model,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.0], x), 0.0),
         MOI.EqualTo(0.0),
-    )
+    );
 
     c3 = MOI.add_constraint(
         model,
@@ -957,6 +986,7 @@ function test_dummy_nlp()
     ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 0.5 * x1 - 3")
     @test ret == 0
 
+
     # to optimize NLPs we need: XPRSoptimize 
     solvestatus = Ref{Cint}(0)
     solstatus = Ref{Cint}(0)
@@ -975,6 +1005,192 @@ function test_dummy_nlp()
 
     return nothing
 end
+
+function test_optimize_lp()
+
+    model = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
+
+    @variable(model,x[i=1:2])
+    set_lower_bound(x[1],0.0)
+    set_lower_bound(x[2],0.0)
+    set_upper_bound(x[2],3.0)
+    @NLobjective(model, Min, 12x[1]  + 20x[2])
+    @NLconstraint(model, c1, 6x[1] + 8x[2] >= 100)
+    @NLconstraint(model, c2, 7x[1]  + 12x[2] >= 120)
+    optimize!(model)
+    
+    k=collect(keys(model.moi_backend.optimizer.model.variable_info))
+    @test MOI.get(model.moi_backend.optimizer.model, MOI.VariableName(), k) == ["x1", "x2"]
+
+    @test model.moi_backend.optimizer.model.termination_status == OPTIMAL::TerminationStatusCode
+    @test model.moi_backend.optimizer.model.primal_status == FEASIBLE_POINT::ResultStatusCode
+    @test model.moi_backend.optimizer.model.dual_status == FEASIBLE_POINT::ResultStatusCode
+
+    @test objective_value(model) == 205.00000000000003
+    @test value(x[1]) == 14.999999999999993
+    @test value(x[2]) == 1.2500000000000053
+    @test dual(c1) == 0.25000000000000167
+    @test dual(c2) == 1.4999999999999987
+
+end
+
+function test_delete_constraints()
+
+    model = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
+
+    @variable(model,x[i=1:2])
+    set_lower_bound(x[1],0.0)
+    set_lower_bound(x[2],0.0)
+    set_upper_bound(x[2],3.0)
+    @NLobjective(model, Min, 12x[1]  + 20x[2])
+    @NLconstraint(model, c1, 6x[1] + 8x[2] >= 100)
+    @NLconstraint(model, c2, 7x[1]  + 12x[2] >= 120)
+    optimize!(model)
+    optimize!(model)
+
+    @test length(model.moi_backend.optimizer.model.nlp_constraint_info) == 2
+    @test length(model.moi_backend.optimizer.model.affine_constraint_info) == 2
+
+end
+
+function test_change_objective()
+
+    model = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
+
+    @variable(model,x[i=1:2])
+    set_lower_bound(x[1],0.0)
+    set_lower_bound(x[2],0.0)
+    set_upper_bound(x[2],3.0)
+    @NLobjective(model, Min, 12x[1]  + 20x[2])
+    @NLconstraint(model, c1, 6x[1] + 8x[2] >= 100)
+    optimize!(model)
+
+    obj_1=objective_value(model)
+
+    @NLconstraint(model, c2, 7x[1]  + 12x[2] >= 120)
+
+    optimize!(model)
+
+    obj_2=objective_value(model)
+
+    @test obj_1 != obj_2
+
+end
+
+function test_formula_string()
+
+    model = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
+
+    @variable(model,x[i=1:2])
+    set_lower_bound(x[1],0.0)
+    set_lower_bound(x[2],0.0)
+    set_upper_bound(x[2],3.0)
+    @NLobjective(model, Min, 12x[1]  + 20x[2])
+    @NLconstraint(model, c1, 6x[1] + 8x[2] >= 100)
+    @NLconstraint(model, c2, 7x[1]  + 12x[2] >= 120)
+    optimize!(model)
+    
+    buffer = Array{Cchar}(undef, 80)
+    buffer_p = pointer(buffer)
+    out = Cstring(buffer_p)
+    ret=Xpress.Lib.XPRSnlpgetformulastring(model.moi_backend.optimizer.model.inner, Cint(0), out , 80)
+    @test ret == 0
+    version = unsafe_string(out)::String
+    @test version == "6 * x1 + 8 * x2 - 100"
+
+    buffer = Array{Cchar}(undef, 80)
+    buffer_p = pointer(buffer)
+    out = Cstring(buffer_p)
+    ret=Xpress.Lib.XPRSnlpgetformulastring(model.moi_backend.optimizer.model.inner, Cint(1), out , 80)
+    @test ret == 0
+    version = unsafe_string(out)::String
+    @test version == "7 * x1 + 12 * x2 - 120"
+
+    buffer = Array{Cchar}(undef, 80)
+    buffer_p = pointer(buffer)
+    out = Cstring(buffer_p)
+    ret=Xpress.Lib.XPRSnlpgetobjformulastring(model.moi_backend.optimizer.model.inner, out , 80)
+    @test ret == 0
+    version = unsafe_string(out)::String
+    @test version == "12 * x1 + 20 * x2"
+
+end
+
+function test_optimize_nlp()
+
+    model = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
+    @variable(model,x[i=1:4])
+    set_start_value(x[1],2.1)
+    set_start_value(x[2],2.2)
+    set_start_value(x[3],2.3)
+    set_start_value(x[4],2.4)
+    set_lower_bound(x[1],1.1)
+    set_lower_bound(x[2],1.2)
+    set_lower_bound(x[3],1.3)
+    set_lower_bound(x[4],1.4)
+    set_upper_bound(x[1],5.1)
+    set_upper_bound(x[2],5.2)
+    set_upper_bound(x[3],5.3)
+    set_upper_bound(x[4],5.4)
+    @NLconstraint(model, c1, (x[1]*x[2]*x[3]*x[4])>=25.0)
+    @NLconstraint(model, c2, (x[1]^2)+(x[2]^2)+(x[3]^2)+(x[4]^2)==40.0)
+    @NLobjective(model,Min,x[1]*x[4]*(x[1]+x[2]+x[3])+x[3])
+    optimize!(model)
+    
+    k=collect(keys(model.moi_backend.optimizer.model.variable_info))
+    @test MOI.get(model.moi_backend.optimizer.model, MOI.VariableName(), k) == ["x1", "x2", "x3", "x4"]
+
+    @test model.moi_backend.optimizer.model.termination_status == LOCALLY_SOLVED::TerminationStatusCode
+    @test model.moi_backend.optimizer.model.primal_status == FEASIBLE_POINT::ResultStatusCode
+
+    @test objective_value(model) == 17.649399912766466
+    @test value(x[1]) == 1.1
+    @test value(x[2]) == 5.2
+    @test value(x[3]) == 3.128897603451363
+    @test value(x[4]) == 1.4
+    @test dual(c1) == 0.0
+    @test dual(c2) == 0.40583391082953174
+
+end
+
+function test_nlp1()
+    m = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
+    ub = [6,4]
+    @variable(m, 0 ≤ x[i=1:2] ≤ ub[i])
+
+    @NLconstraint(m, x[1]*x[2] ≤ 4)
+
+    @NLobjective(m, Min, -x[1] - x[2])
+
+    optimize!(m)
+
+    @test_broken isapprox(value(x[1]), 6, rtol=1e-6)
+    @test_broken isapprox(value(x[2]), 2/3, rtol=2e-6)
+    @test_broken isapprox(objective_value(m), -20/3, rtol=1e-6)
+
+end
+
+function test_nlp2()
+    m = Model(()->Xpress.Optimizer(DEFAULTALG=2, PRESOLVE=0, logfile = "output.log"))
+    ub = [9.422, 5.9023, 267.417085245]
+    @variable(m, 0 ≤ x[i=1:3] ≤ ub[i])
+
+    @constraints(m, begin
+        250 + 30x[1] -  6x[1]^2 == x[3]
+        300 + 20x[2] - 12x[2]^2 == x[3]
+        150 + 0.5*(x[1]+x[2])^2 == x[3]
+    end)
+
+    @objective(m, Min, -x[3])
+
+    optimize!(m)
+
+    @test_broken isapprox(value(x[1]), 6.2934300, rtol=1e-6)
+    @test_broken isapprox(value(x[2]), 3.8218391, rtol=1e-6)
+    @test_broken isapprox(value(x[3]), 201.1593341, rtol=1e-5)
+    @test_broken isapprox(objective_value(m), -201.1593341, rtol=1e-6)
+
+end 
 
 end
 

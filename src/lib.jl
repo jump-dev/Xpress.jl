@@ -2419,3 +2419,12 @@ end
 function XPRSremovecbgloballog(prob, globallog, data)
     ccall((:XPRSremovecbgloballog, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, globallog, data)
 end
+
+function XSLPcreateprob(prob, _probholder)
+    ccall((:XSLPcreateprob, libxprs), Cint, (XPRSprob, Ptr{XPRSprob},), prob, _probholder)
+end
+
+function XSLPinit()
+    ccall((:XSLPinit, libxprs), Cint, ())
+end
+
