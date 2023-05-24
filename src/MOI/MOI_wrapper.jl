@@ -1375,6 +1375,7 @@ function _throw_if_existing_lower(
     if existing_set !== nothing
         throw(MOI.LowerBoundAlreadySet{existing_set, new_set}(variable))
     end
+    return
 end
 
 function _throw_if_existing_upper(
@@ -1399,6 +1400,7 @@ function _throw_if_existing_upper(
     if existing_set !== nothing
         throw(MOI.UpperBoundAlreadySet{existing_set, new_set}(variable))
     end
+    return
 end
 
 function MOI.add_constraint(
@@ -1483,6 +1485,7 @@ function MOI.delete(
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
     _set_variable_upper_bound(model, info, Inf)
+    info.previous_upper_bound = Inf
     if info.bound == LESS_AND_GREATER_THAN
         info.bound = GREATER_THAN
     else
@@ -1491,8 +1494,6 @@ function MOI.delete(
     info.lessthan_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
-        info.previous_lower_bound = _get_variable_lower_bound(model, info)
-        info.previous_upper_bound = _get_variable_upper_bound(model, info)
         @checked Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')))
     end
     return
@@ -1513,11 +1514,13 @@ function _set_variable_fixed_bound(model, info, value)
         # No SOC constraints, set directly.
         @assert isnan(info.lower_bound_if_soc)
         @checked Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')), Ref(value))
+        return
     elseif value >= 0.0
         # Regardless of whether there are SOC constraints, this is a valid bound
         # for the SOC constraint and should over-ride any previous bounds.
         info.lower_bound_if_soc = NaN
         @checked Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')), Ref(value))
+        return
     elseif isnan(info.lower_bound_if_soc)
         # Previously, we had a non-negative lower bound (i.e., it was set in the
         # case above). Now we're setting this with a negative one, but there are
@@ -1528,6 +1531,7 @@ function _set_variable_fixed_bound(model, info, value)
         @checked Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('L')), Ref(0.0))
         @checked Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('U')), Ref(value))
         info.lower_bound_if_soc = value
+        return
     else
         # Previously, we had a negative lower bound. We're setting this with
         # another negative one, but there are still some SOC constraints.
@@ -1536,6 +1540,7 @@ function _set_variable_fixed_bound(model, info, value)
         @assert info.lower_bound_if_soc < 0.0
         info.lower_bound_if_soc = value
         @checked Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('U')), Ref(value))
+        return
     end
 end
 
@@ -1554,11 +1559,13 @@ function _set_variable_lower_bound(model, info, value)
         # No SOC constraints, set directly.
         @assert isnan(info.lower_bound_if_soc)
         @checked Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('L')), Ref(value))
+        return
     elseif value >= 0.0
         # Regardless of whether there are SOC constraints, this is a valid bound
         # for the SOC constraint and should over-ride any previous bounds.
         info.lower_bound_if_soc = NaN
         @checked Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('L')), Ref(value))
+        return
     elseif isnan(info.lower_bound_if_soc)
         # Previously, we had a non-negative lower bound (i.e., it was set in the
         # case above). Now we're setting this with a negative one, but there are
@@ -1567,11 +1574,13 @@ function _set_variable_lower_bound(model, info, value)
         @assert value < 0.0
         @checked Lib.XPRSchgbounds(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('L')), Ref(0.0))
         info.lower_bound_if_soc = value
+        return
     else
         # Previously, we had a negative lower bound. We're setting this with
         # another negative one, but there are still some SOC constraints.
         @assert info.lower_bound_if_soc < 0.0
         info.lower_bound_if_soc = value
+        return
     end
 end
 
@@ -1635,6 +1644,7 @@ function MOI.delete(
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
     _set_variable_lower_bound(model, info, -Inf)
+    info.previous_lower_bound = -Inf
     if info.bound == LESS_AND_GREATER_THAN
         info.bound = LESS_THAN
     else
@@ -1643,8 +1653,6 @@ function MOI.delete(
     info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
-        info.previous_lower_bound = _get_variable_lower_bound(model, info)
-        info.previous_upper_bound = _get_variable_upper_bound(model, info)
         @checked Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')))
     end
     return
@@ -1657,13 +1665,13 @@ function MOI.delete(
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
     _set_variable_lower_bound(model, info, -Inf)
+    info.previous_lower_bound = -Inf
     _set_variable_upper_bound(model, info, Inf)
+    info.previous_upper_bound = Inf
     info.bound = NONE
     info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
-        info.previous_lower_bound = _get_variable_lower_bound(model, info)
-        info.previous_upper_bound = _get_variable_upper_bound(model, info)
         @checked Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')))
     end
     return
@@ -1676,13 +1684,13 @@ function MOI.delete(
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
     _set_variable_lower_bound(model, info, -Inf)
+    info.previous_lower_bound = -Inf
     _set_variable_upper_bound(model, info, Inf)
+    info.previous_upper_bound = Inf
     info.bound = NONE
     info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
-        info.previous_lower_bound = _get_variable_lower_bound(model, info)
-        info.previous_upper_bound = _get_variable_upper_bound(model, info)
         @checked Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('B')))
     end
     return
@@ -1739,17 +1747,19 @@ function MOI.set(
     if lower == upper
         if lower !== nothing
             _set_variable_fixed_bound(model, info, lower)
+            info.previous_lower_bound = lower
+            info.previous_upper_bound = upper
         end
     else
         if lower !== nothing
             _set_variable_lower_bound(model, info, lower)
+            info.previous_lower_bound = lower
         end
         if upper !== nothing
             _set_variable_upper_bound(model, info, upper)
+            info.previous_upper_bound = upper
         end
     end
-    info.previous_lower_bound = _get_variable_lower_bound(model, info)
-    info.previous_upper_bound = _get_variable_upper_bound(model, info)
     return
 end
 
@@ -1757,8 +1767,6 @@ function MOI.add_constraint(
     model::Optimizer, f::MOI.VariableIndex, ::MOI.ZeroOne
 )
     info = _info(model, f)
-    info.previous_lower_bound = _get_variable_lower_bound(model, info)
-    info.previous_upper_bound = _get_variable_upper_bound(model, info)
     lower, upper = info.previous_lower_bound, info.previous_upper_bound
     if info.type == CONTINUOUS
         if lower !== nothing
@@ -1802,8 +1810,12 @@ function MOI.delete(
     MOI.throw_if_not_valid(model, c)
     info = _info(model, c)
     @checked Lib.XPRSchgcoltype(model.inner, Cint(1), Ref(Cint(info.column-1)), Ref(UInt8('C')))
-    _set_variable_lower_bound(model, info, info.previous_lower_bound)
-    _set_variable_upper_bound(model, info, info.previous_upper_bound)
+    if !isnan(info.previous_lower_bound)
+        _set_variable_lower_bound(model, info, info.previous_lower_bound)
+    end
+    if !isnan(info.previous_upper_bound)
+        _set_variable_upper_bound(model, info, info.previous_upper_bound)
+    end
     info.type = CONTINUOUS
     info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
