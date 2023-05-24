@@ -976,6 +976,35 @@ function test_dummy_nlp()
     return nothing
 end
 
+function test_multiple_modifications()
+    model = Xpress.Optimizer(OUTPUTLOG = 0)
+
+    x = MOI.add_variable(model)
+
+    c = MOI.add_constraint(model, x, MOI.GreaterThan(1.0))
+
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        2.0 * x,
+    )
+
+    MOI.set(
+        model,
+        MOI.ObjectiveSense(),
+        MOI.MIN_SENSE,
+    )
+
+    MOI.optimize!(model)
+
+    @test MOI.get(model, MOI.VariablePrimal(), x) == 1.0
+
+    @test MOI.get(model, MOI.ConstraintDual(), c) == 2.0
+    @test MOI.get(model, Xpress.ReducedCost(), x) == 2.0
+
+    return
+end
+
 end
 
 TestMOIWrapper.runtests()

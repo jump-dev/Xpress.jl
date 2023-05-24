@@ -3092,6 +3092,10 @@ function _farkas_variable_dual(model::Optimizer, col::Int64)
     return sum(v * model.cached_solution.linear_dual[i + 1] for (i, v) in zip(mrwind, dmatval))
 end
 
+#=
+    Duals
+=#
+
 function MOI.get(
     model::Optimizer, attr::MOI.ConstraintDual,
     c::MOI.ConstraintIndex{MOI.VariableIndex, MOI.LessThan{Float64}}
@@ -4396,4 +4400,31 @@ function _get_constraint_names(model)
     end
     con_names = split(all_names, '\0')[1:num_constraints]
     return strip.(con_names)
+end
+
+#=
+    Reduced costs
+=#
+
+struct ReducedCost <: MOI.AbstractVariableAttribute
+    result_index::Int
+    ReducedCost(result_index::Int = 1) = new(result_index)
+end
+
+function MOI.supports(
+    ::Optimizer, ::ReducedCost, ::Type{MOI.VariableIndex})
+    return true
+end
+
+MOI.is_set_by_optimize(::ReducedCost) = true
+
+MOI.attribute_value_type(::ReducedCost) = Float64
+
+function MOI.get(
+    model::Optimizer, attr::ReducedCost, vi::MOI.VariableIndex
+)
+    _throw_if_optimize_in_progress(model, attr)
+    MOI.check_result_index_bounds(model, attr)
+    column = _info(model, vi).column
+    return model.cached_solution.variable_dual[column]
 end
