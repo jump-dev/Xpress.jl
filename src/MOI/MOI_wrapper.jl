@@ -2774,33 +2774,44 @@ function MOI.optimize!(model::Optimizer)
         x=collect(keys(model.variable_info))
         # Creating a NULL Objective function to allow its modification by XPRSnlp
         c=[0.0 for i = 1:ncols]
-        MOI.set(model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
-        );
+        if model.objective_expr === nothing
+            MOI.set(model,
+            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+            );
+        end
         # Changing names to the right format adapted to XPRSnlp
         names=["x$idx" for idx = 1:ncols]
         MOI.set(model, MOI.VariableName(), x, names)  
         Xpress._pass_variable_names_to_solver(model)  
         
-        count=length(model.affine_constraint_info)
+        keys_index=collect(keys(model.affine_constraint_info))
+        count_nl_affine=0
+        for i=1:length(model.affine_constraint_info)
+            if model.affine_constraint_info[keys_index[i]].name== "nl_constraint_to_remove"
+                count_nl_affine += 1
+            end
+        end
+
+
+
         #Case with NL Objective and no NL Constraints
         if length(model.nlp_constraint_info)==0 
             # Delete existing constraints when optimize! is called again
-            if count>0 
-                for i in 1:count
-                    pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
+            if count_nl_affine>0 
+                for i in 1:count_nl_affine
+                    pop!(model.affine_constraint_info,keys_index[filter(i->collect(values(model.affine_constraint_info))[i].name=="nl_constraint_to_remove",reverse([j for j=1:length(model.affine_constraint_info)]))[1]])
                 end
             end
 
         #Case with NL Constraints
         
             #New NL Constraints
-        elseif count != length(model.nlp_constraint_info)
+        elseif count_nl_affine != length(model.nlp_constraint_info)
         # Delete existing constraints when optimize! is called again
-            for i in 1:count
+            for i in 1:count_nl_affine
                 popfirst!(model.nlp_constraint_info)
-                pop!(model.affine_constraint_info,collect(keys(model.affine_constraint_info))[1])
+                pop!(model.affine_constraint_info,keys_index[filter(i->collect(values(model.affine_constraint_info))[i].name=="nl_constraint_to_remove",reverse([j for j=1:length(model.affine_constraint_info)]))[1]])
             end
         
         
@@ -2808,23 +2819,26 @@ function MOI.optimize!(model::Optimizer)
             for cons in model.nlp_constraint_info
                 c_set=to_constraint_set(cons)
                 if length(c_set)==2
-                    MOI.add_constraint(
+                    added_1=MOI.add_constraint(
                     model,
                     MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
                     c_set[1],
                     );
+                    MOI.set(model, MOI.ConstraintName(), added_1, "nl_constraint_to_remove")
 
-                    MOI.add_constraint(
+                    added_2=MOI.add_constraint(
                     model,
                     MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
                     c_set[2],
                     );
+                    MOI.set(model, MOI.ConstraintName(), added_2, "nl_constraint_to_remove")
                 elseif c_set !== nothing
-                    MOI.add_constraint(
+                    added=MOI.add_constraint(
                     model,
                     MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
                     c_set[1],
                     );
+                    MOI.set(model, MOI.ConstraintName(), added, "nl_constraint_to_remove")
                 end
             end
         

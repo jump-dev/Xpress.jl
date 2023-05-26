@@ -44,6 +44,9 @@ function MOI.set(model::Optimizer, ::MOI.NLPBlock, nlp_data::MOI.NLPBlockData)
 
     for i in 1:length(nlp_data.constraint_bounds)
         expr = verify_support(MOI.constraint_expr(nlp_eval, i))
+        println(i)
+        
+        @assert expr.head == :call
         lb = nlp_data.constraint_bounds[i].lower
         ub = nlp_data.constraint_bounds[i].upper
         @assert expr.head == :call
@@ -216,3 +219,5 @@ function MOI.get(model::Optimizer, attr::MOI.NLPBlockDual)
     s = _dual_multiplier(model) 
     return s .*model.cached_solution.linear_dual[(1:length(model.nlp_constraint_info))]
 end
+
+

@@ -1211,7 +1211,7 @@ function test_nlp2()
     ub = [9.422, 5.9023, 267.417085245]
     @variable(m, 0 ≤ x[i=1:3] ≤ ub[i])
 
-    @constraints(m, begin
+    @NLconstraints(m, begin
         250 + 30x[1] -  6x[1]^2 == x[3]
         300 + 20x[2] - 12x[2]^2 == x[3]
         150 + 0.5*(x[1]+x[2])^2 == x[3]
