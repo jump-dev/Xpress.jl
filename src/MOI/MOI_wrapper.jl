@@ -4476,6 +4476,9 @@ end
 function _pass_variable_names_to_solver(model::Xpress.Optimizer; warn = true)
     NAMELENGTH = 64
     n_variables = length(model.variable_info)
+    if n_variables == 0
+        return nothing
+    end
     var_names = String[string('C', i) for i in 1:n_variables]
     duplicate_check = Set{String}()
     for variable in values(model.variable_info)
@@ -4509,6 +4512,9 @@ end
 function _pass_constraint_names_to_solver(model::Xpress.Optimizer; warn = true)
     NAMELENGTH = 64
     n_constraints = length(model.affine_constraint_info)
+    if n_constraints == 0
+        return nothing
+    end
     con_names = String[string('R', i) for i in 1:n_constraints]
     duplicate_check = Set{String}()
     for constraint in values(model.affine_constraint_info)

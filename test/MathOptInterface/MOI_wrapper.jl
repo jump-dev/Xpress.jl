@@ -920,6 +920,7 @@ function test_name_empty_names()
 end
 
 function test_dummy_nlp()
+
     model = Xpress.Optimizer(OUTPUTLOG = 1);
     x = MOI.add_variables(model, 2);
     c = [1.0, 2.0]
@@ -930,6 +931,7 @@ function test_dummy_nlp()
     );
 
     MOI.set(model, MOI.VariableName(), x, ["x1", "x2"])
+
     Xpress._pass_variable_names_to_solver(model)
 
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE);
@@ -955,26 +957,22 @@ function test_dummy_nlp()
         model,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([0.0, 1.0], x), 0.0),
         MOI.GreaterThan(10.0),
-    );
+    )
 
-    MOI.optimize!(model);
+    MOI.optimize!(model)
 
-    @show x_sol = MOI.get.(model, MOI.VariablePrimal(), x)
+    x_sol = MOI.get.(model, MOI.VariablePrimal(), x)
     @test x_sol == [0.0, 10.0]
 
+    ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 5 * x1 - 3")
+    @test ret == 0
     ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 3.14")
     @test ret == 0
-    # ret = Xpress.Lib.XPRSwriteprob(model.inner, "testmat.mat", "");
-    # @test ret == 0
-
-
 
     solvestatus = Ref{Cint}(0)
     solstatus = Ref{Cint}(0)
     ret = Xpress.Lib.XPRSoptimize(model.inner, "", solvestatus, solstatus)
     @test ret == 0
-    # @show solvestatus
-    # @show solstatus
 
     xx = Array{Float64}(undef, 2)
     slack = Array{Float64}(undef, 2)
@@ -984,26 +982,16 @@ function test_dummy_nlp()
     @test ret == 0
     @test xx == [3.14, 10] 
     @test slack == [0, 0]
-    # @show duals
-    # @show djs
 
-    # note that we do not need to pass names to the solver
-    # we can simply use the default name: C<one based index>
-    # so that the first variable is C1
-    # however we must be careful because the user might have passed the names
-    # so, in a second step, we need to use them or empty them 
     ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 0.5 * x1 - 3")
     @test ret == 0
-    # ret = Xpress.Lib.XPRSwriteprob(model.inner, "testmat.mat", "");
-    # @test ret == 0
+
 
     # to optimize NLPs we need: XPRSoptimize 
     solvestatus = Ref{Cint}(0)
     solstatus = Ref{Cint}(0)
     ret = Xpress.Lib.XPRSoptimize(model.inner, "", solvestatus, solstatus)
     @test ret == 0
-    # @show solvestatus
-    # @show solstatus
 
     # to get solution values from NLP we need: XPRSgetnlpsol
     xx = Array{Float64}(undef, 2)
@@ -1014,30 +1002,6 @@ function test_dummy_nlp()
     @test ret == 0
     @test xx == [6, 10] 
     @test slack == [0, 0]
-    # @show duals
-    # @show djs
-
-    # we will also need these:
-    # XPRSnlpchgobjformulastring - to consider NL objectives
-    # XPRSnlpsetinitval - to pass initial values IF the problem is NLP
-    # XPRSnlpgetformularows - to check if there are previous formulas from a]
-    #    previous solve.
-    #    This wil be used in 2 ways:
-    #        1 - to check if the current problem is NLP
-    #        2 - to get indices from previous formulas to delete them
-    # XPRSnlpdelformulas - to delete formulas from constraints
-    # XPRSnlpdelobjformula - to delete formulas from objective
-    # XPRSnlpgetobjformulastring - just to debug, possible not necessay since
-    #    we can use the file write
-    # XPRSnlpgetformulastring - same as above
-
-    # We alredy read statuses from MIP and LP separately
-    # we will use some of the following to read the NLP statuses
-    # so that we can fill MOI´s data: PrimalStatus, DualStatus and TerminationStatus
-    # and RawStatusString
-    # NLPSOLSTATUS
-    # NLPSTOPSTATUS
-    # NLPSTATUS
 
     return nothing
 end
