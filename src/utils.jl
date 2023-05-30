@@ -132,10 +132,10 @@ macro checked(expr)
     @assert ( expr.args[1].head == :(.) ) && ( expr.args[1].args[1] == :Lib) "Can only use @checked on Lib.\$function"
     @assert length(expr.args) >= 2 "Lib.\$function must be contain atleast one argument and the first argument must be of type XpressProblem"
     f = replace(String(expr.args[1].args[2].value), "XPRS" => "")
-    return esc(quote
-        r = $(expr)::Cint
-        _check($(expr.args[2]), r)::Nothing
-    end)
+    return quote
+        r = $(esc(expr))::Cint
+        _check($(esc(expr.args[2])), r)::Nothing
+    end
 end
 
 function _check(prob, val::Cint)
