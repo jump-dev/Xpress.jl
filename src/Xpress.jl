@@ -7,6 +7,8 @@ module Xpress
 
 import LazyArtifacts
 import Libdl
+import MathOptInterface as MOI
+import SparseArrays
 
 # Load in `deps.jl`, complaining if it does not exist
 const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
@@ -42,8 +44,6 @@ elseif haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
 else
     error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
 end
-
-import Base.show, Base.copy
 
 module Lib
     import ..Xpress

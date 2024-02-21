@@ -492,7 +492,7 @@ function test_Delete_equality_constraint_in_binary_variable()
     @test MOI.get(model, MOI.ObjectiveBound()) >= 19.4 - atol
 
     z_value = MOI.get(model, MOI.VariablePrimal(), v)[3]
-    
+
     # Relax binary bounds of z variable
     MOI.delete(model, vc4)
 
@@ -795,7 +795,7 @@ function test_name_constraints()
 
     # create problem
     variables, constraints, optimizer = infeasible_problem();
-    
+
     # name variables and constraints
     MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x2"]);
     MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "constraint1");
@@ -825,7 +825,7 @@ function test_name_constraints_with_the_same_name()
 
     # create problem
     variables, constraints, optimizer = infeasible_problem();
-    
+
     # name variables and constraints
     MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x2"]);
     MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "same");
@@ -852,7 +852,7 @@ function test_name_variables_with_the_same_name()
 
     # create problem
     variables, constraints, optimizer = infeasible_problem();
-    
+
     # name variables and constraints
     MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x1"]);
     MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "constraint1");
@@ -956,13 +956,13 @@ function test_dummy_nlp()
     djs = Array{Float64}(undef, 2)
     ret = Xpress.Lib.XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
     @test ret == 0
-    @test xx == [3.14, 10] 
+    @test xx == [3.14, 10]
     @test slack == [0, 0]
 
     ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 0.5 * x1 - 3")
     @test ret == 0
 
-    # to optimize NLPs we need: XPRSoptimize 
+    # to optimize NLPs we need: XPRSoptimize
     solvestatus = Ref{Cint}(0)
     solstatus = Ref{Cint}(0)
     ret = Xpress.Lib.XPRSoptimize(model.inner, "", solvestatus, solstatus)
@@ -975,13 +975,13 @@ function test_dummy_nlp()
     djs = Array{Float64}(undef, 2)
     ret = Xpress.Lib.XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
     @test ret == 0
-    @test xx == [6, 10] 
+    @test xx == [6, 10]
     @test slack == [0, 0]
 
     return nothing
 end
 
-function test_multiple_modifications()
+function test_multiple_modifications2()
     model = Xpress.Optimizer(OUTPUTLOG = 0)
 
     x = MOI.add_variable(model)
