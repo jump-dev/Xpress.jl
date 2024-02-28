@@ -1,0 +1,7 @@
+[xpresspy]
+git-tree-sha1 = "75e700f837add542a01f8b00fa20efb25a16c4f7"
+lazy = true
+
+    [[xpresspy.download]]
+    url = "https://anaconda.org/fico-xpress/xpress/9.3.0/download/osx-64/xpress-9.3.0-py310h9b76c6a_0.tar.bz2"
+    sha256 = "e8734d813d3872fe6a6c907ea4767e4b93af55f495e33b8726eb338392a16dc3"
