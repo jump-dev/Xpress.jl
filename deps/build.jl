@@ -93,8 +93,8 @@ if haskey(ENV, "XPRESS_JL_SKIP_LIB_CHECK")
     # Skip!
 elseif get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") == "true"
     write_depsfile("julia_registryci_automerge")
-elseif get(ENV, "SECRET_XPRS_WIN", "") != ""
-    ci_installation()
+# elseif get(ENV, "SECRET_XPRS_WIN", "") != ""
+#     ci_installation()
 else
     local_installation()
 end
