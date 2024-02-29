@@ -59,7 +59,7 @@ function local_installation()
         end
     end
 
-    if !found && !(Sys.isapple() || Sys.islinux())
+    if !found && !(Sys.isapple() || Sys.islinux() || Sys.iswindows())
         error("""
         Unable to locate Xpress installation.
         Please check your enviroment variable XPRESSDIR.

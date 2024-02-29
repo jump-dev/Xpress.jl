@@ -30,12 +30,14 @@ elseif Sys.islinux()  # Use the artifact instead.
     )
     # Annoyingly, Xpress has the version after extension
     const libxprs = joinpath(xpressdlpath, "libxprs.so.42")
-# elseif Sys.iswindows()  # Use the artifact instead.
-#     const xpressdlpath = joinpath(
-#         LazyArtifacts.artifact"xpresspy",
-#         joinpath("Lib", "site-packages", "xpress", "lib"),
-#     )
-#     const libxprs = joinpath(xpressdlpath, "xprs.dll")
+elseif Sys.iswindows()  # Use the artifact instead.
+    const xpressdlpath = joinpath(
+        LazyArtifacts.artifact"xpresspy",
+        joinpath("Lib", "site-packages", "xpress", "lib"),
+    )
+    # There is a permission issue with the Windows artifact.
+    chmod(dirname(xpressdlpath), 0o755; recursive = true)
+    const libxprs = joinpath(xpressdlpath, "xprs.dll")
 elseif haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
     const xpressdlpath = ""
     const libxprs = (Sys.iswindows() ? "" : "lib") * "xprs.$(Libdl.dlext)"
