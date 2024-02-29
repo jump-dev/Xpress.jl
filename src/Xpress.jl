@@ -30,11 +30,17 @@ elseif Sys.islinux()  # Use the artifact instead.
     )
     # Annoyingly, Xpress has the version after extension
     const libxprs = joinpath(xpressdlpath, "libxprs.so.42")
-elseif !haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
-    error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
-else
+elseif Sys.iswindows()  # Use the artifact instead.
+    const xpressdlpath = joinpath(
+        LazyArtifacts.artifact"xpresspy",
+        "lib/python3.10/site-packages/xpress/lib",
+    )
+    const libxprs = joinpath(xpressdlpath, "xprs.dll")
+elseif haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
     const xpressdlpath = ""
     const libxprs = (Sys.iswindows() ? "" : "lib") * "xprs.$(Libdl.dlext)"
+else
+    error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
 end
 
 import Base.show, Base.copy

@@ -1,3 +1,16 @@
+# FICO's Conda builds are available at:
+# https://anaconda.org/fico-xpress/xpress/files
+#
+# git-tree-sha1 and sha256 can be updated as follows:
+# ```julia
+# arch = "win-64"
+# filename = "xpress-9.3.0-py310hadc54f4_0.tar.bz2"
+# run(`wget https://anaconda.org/fico-xpress/xpress/9.3.0/download/$arch/$filename`)
+# using Tar, Inflate, SHA
+# println("sha256: ", bytes2hex(open(sha256, filename)))
+# println("git-tree-sha1: ", Tar.tree_hash(`gzcat $filename`))
+# ```
+
 [[xpresspy]]
 git-tree-sha1 = "401f814491e641f375c84ea3bb3051a38bc2fd55"
 os = "linux"
@@ -17,3 +30,13 @@ lazy = true
     [[xpresspy.download]]
     url = "https://anaconda.org/fico-xpress/xpress/9.3.0/download/osx-64/xpress-9.3.0-py310h9b76c6a_0.tar.bz2"
     sha256 = "e8734d813d3872fe6a6c907ea4767e4b93af55f495e33b8726eb338392a16dc3"
+
+[[xpresspy]]
+git-tree-sha1 = "554491bde6b59b4c1a1994ce39ba46cb9342510b"
+os = "windows"
+arch = "x86_64"
+lazy = true
+
+    [[xpresspy.download]]
+    url = "https://anaconda.org/fico-xpress/xpress/9.3.0/download/win-64/xpress-9.3.0-py310hadc54f4_0.tar.bz2"
+    sha256 = "d44f7db6de16461c428c628217e56cdc51a40a6d662d7db66b7d8a4a414df68f"
