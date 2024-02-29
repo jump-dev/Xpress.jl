@@ -1,3 +1,8 @@
+# Copyright (c) 2016: Joaquim Garcia, and contributors
+#
+# Use of this source code is governed by an MIT-style license that can be found
+# in the LICENSE.md file or at https://opensource.org/licenses/MIT.
+
 function _invoke(f::Function, pos::Int, ::Type{Float64}, args...)
     out = Ref{Float64}(0.0) # should we use Cfloat here instead?
 
