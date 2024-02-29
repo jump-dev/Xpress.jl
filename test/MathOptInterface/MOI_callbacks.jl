@@ -4,11 +4,10 @@
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
 using Xpress
-using MathOptInterface
-using Random
 using Test
 
-const MOI = MathOptInterface
+import MathOptInterface as MOI
+import Random
 
 function callback_simple_model()
     model = Xpress.Optimizer(
@@ -323,7 +322,7 @@ end
         cb_calls = Int32[]
         MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
             push!(cb_calls)
-            
+
             if Xpress.get_control_or_attribute(cb_data.model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
                 return
             end

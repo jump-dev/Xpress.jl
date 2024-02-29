@@ -3,11 +3,10 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-using MathOptInterface
 using Xpress
 using Test
 
-const MOI = MathOptInterface
+import MathOptInterface as MOI
 
 #Example of simple Thermal Generation Dispatch and the derivatives of the generation by the demand (dg/dd)
 mutable struct DispachModel
@@ -27,7 +26,7 @@ function GenerateModel_VariableIndex()
     g_sup = [10.0, 20.0, 30.0] # Upper limit of generation for each generator
     c_g = [1.0, 3.0, 5.0]      # Cost of generation for each generator
     c_Df = 10.0                # Cost of deficit
-    
+
     # Creation of the Optimizer
     optimizer = Xpress.Optimizer(PRESOLVE=0, logfile = "outputXpress_SV.log")
     # Variables
@@ -43,7 +42,7 @@ function GenerateModel_VariableIndex()
     end
     c_limit_inf[I+1] = MOI.add_constraint(optimizer, Df, MOI.GreaterThan(0.0))
 
-    c_demand = MOI.add_constraint(optimizer, 
+    c_demand = MOI.add_constraint(optimizer,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(I+1),[g;Df]), 0.0),
         MOI.EqualTo(d)
     ) # Constraint of the Demand
@@ -68,7 +67,7 @@ function GenerateModel_ScalarAffineFunction()
     g_sup = [10.0, 20.0, 30.0] # Upper limit of generation for each generator
     c_g = [1.0, 3.0, 5.0]      # Cost of generation for each generator
     c_Df = 10.0                # Cost of deficit
-    
+
     # Creation of the Optimizer
     optimizer = Xpress.Optimizer(PRESOLVE=0, logfile = "outputXpress_SAF.log")
     # Variables
@@ -95,7 +94,7 @@ function GenerateModel_ScalarAffineFunction()
     c_limit_inf[I+1] = MOI.add_constraint(optimizer, MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(vectAux,[g;Df]),0.0), MOI.GreaterThan(0.0))
     vectAux[I+1] = 0.0
 
-    c_demand = MOI.add_constraint(optimizer, 
+    c_demand = MOI.add_constraint(optimizer,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(I+1),[g;Df]), 0.0),
         MOI.EqualTo(d)
     ) # Constraint of the Demand
@@ -121,10 +120,10 @@ function Forward(model::DispachModel, ϵ::Float64 = 1.0)
 
     #Get the primal solution of the model
     vect =  MOI.get.(optimizer, MOI.VariablePrimal(), vectRef)
-     
+
     #Pass the perturbation to the Xpress Framework and set the context to Forward
     MOI.set(optimizer, Xpress.ForwardSensitivityInputConstraint(), model.c_demand, ϵ)
-    
+
     #Get the derivative of the model
     dvect = MOI.get.(optimizer, Xpress.ForwardSensitivityOutputVariable(), vectRef)
 

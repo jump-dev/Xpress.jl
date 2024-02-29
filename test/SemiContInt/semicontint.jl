@@ -10,7 +10,7 @@ function semiconttest(model::MOI.ModelLike, config::MOIT.Config{T}) where T
     @test MOIU.supports_default_copy_to(model, #=copy_names=# false)
     @test MOI.supports(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}())
     @test MOI.supports(model, MOI.ObjectiveSense())
-    @test MOI.supports_constraint(model, MOI.VariableIndex, MOI.MathOptInterface.Semicontinuous{T})
+    @test MOI.supports_constraint(model, MOI.VariableIndex, MOI.Semicontinuous{T})
 
     # 2 variables
     # min  x
@@ -160,7 +160,7 @@ function semiinttest(model::MOI.ModelLike, config::MOIT.Config{T}) where T
     @test MOIU.supports_default_copy_to(model, #=copy_names=# false)
     @test MOI.supports(model, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}())
     @test MOI.supports(model, MOI.ObjectiveSense())
-    @test MOI.supports_constraint(model, MOI.VariableIndex, MOI.MathOptInterface.Semiinteger{T})
+    @test MOI.supports_constraint(model, MOI.VariableIndex, MOI.Semiinteger{T})
 
     # 2 variables
     # min  x

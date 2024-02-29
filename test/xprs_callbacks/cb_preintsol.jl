@@ -4,10 +4,7 @@
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
 using Xpress
-using LinearAlgebra
-using MathOptInterface
-
-const MOI = MathOptInterface
+import MathOptInterface as MOI
 
 function callback_simple_model()
     model = Xpress.Optimizer(
@@ -33,7 +30,7 @@ end
 
 model, x, y = callback_simple_model()
 
-data = Matrix(1.0I, 3, 3)
+data = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
 
 function foo(cb::Xpress.CallbackData)
 
