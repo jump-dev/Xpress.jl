@@ -1,6 +1,7 @@
 [[xpresspy]]
 git-tree-sha1 = "401f814491e641f375c84ea3bb3051a38bc2fd55"
 os = "linux"
+arch = "x86_64"
 lazy = true
 
     [[xpresspy.download]]
@@ -10,6 +11,7 @@ lazy = true
 [[xpresspy]]
 git-tree-sha1 = "75e700f837add542a01f8b00fa20efb25a16c4f7"
 os = "macos"
+arch = "x86_64"
 lazy = true
 
     [[xpresspy.download]]
