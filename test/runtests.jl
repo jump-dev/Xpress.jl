@@ -14,8 +14,8 @@ println("Optimizer version: $(Xpress.get_version())")
     "xprs_callbacks",
     "Derivative",
 ]
-    @testset "$(file)" for file in readdir(folder)
-        include(joinpath(folder, file))
+    @testset "$(file)" for file in readdir(joinpath(@__DIR__, folder))
+        include(joinpath(@__DIR__, folder, file))
     end
 end
 
