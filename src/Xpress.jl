@@ -22,14 +22,14 @@ elseif Sys.isapple()  # Use the artifact instead.
         LazyArtifacts.artifact"xpresspy",
         "lib/python3.10/site-packages/xpress/lib",
     )
-    const libxprs = joinpath(xpressdlpath, "xprs.dylib")
+    const libxprs = joinpath(xpressdlpath, "libxprs.dylib")
 elseif Sys.islinux()  # Use the artifact instead.
     const xpressdlpath = joinpath(
         LazyArtifacts.artifact"xpresspy",
         "lib/python3.10/site-packages/xpress/lib",
     )
     # Annoyingly, Xpress has the version after extension
-    const libxprs = joinpath(xpressdlpath, "xprs.so.42")
+    const libxprs = joinpath(xpressdlpath, "libxprs.so.42")
 elseif !haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
     error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
 else
