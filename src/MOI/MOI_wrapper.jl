@@ -1,3 +1,8 @@
+# Copyright (c) 2016: Joaquim Garcia, and contributors
+#
+# Use of this source code is governed by an MIT-style license that can be found
+# in the LICENSE.md file or at https://opensource.org/licenses/MIT.
+
 @static if v"1.2" > VERSION >= v"1.1"
     # see: https://github.com/jump-dev/Xpress.jl/pull/44#issuecomment-585882858
     error("Versions 1.1.x of julia are not supported. The current verions is $(VERSION)")
