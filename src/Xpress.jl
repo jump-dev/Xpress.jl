@@ -33,7 +33,7 @@ elseif Sys.islinux()  # Use the artifact instead.
 elseif Sys.iswindows()  # Use the artifact instead.
     const xpressdlpath = joinpath(
         LazyArtifacts.artifact"xpresspy",
-        joinpath("lib", "site-packages", "xpress", "lib"),
+        joinpath("Lib", "site-packages", "xpress", "lib"),
     )
     const libxprs = joinpath(xpressdlpath, "xprs.dll")
 elseif haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
