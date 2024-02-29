@@ -13,7 +13,7 @@ const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
 
 if isfile(depsjl_path)
     include(depsjl_path)
-elseif Sys.isapple()
+elseif Sys.isapple() || Sys.islinux()
     # Let's use the artifact instead.
     const xpressdlpath = joinpath(
         LazyArtifacts.artifact"xpresspy",

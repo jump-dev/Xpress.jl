@@ -1,5 +1,15 @@
-[xpresspy]
+[[xpresspy]]
+git-tree-sha1 = "401f814491e641f375c84ea3bb3051a38bc2fd55"
+os = "linux"
+lazy = true
+
+    [[xpresspy.download]]
+    url = "https://anaconda.org/fico-xpress/xpress/9.3.0/download/linux-64/xpress-9.3.0-py310ha14b774_0.tar.bz2"
+    sha256 = "48fed11b039d260f0ed90bfa1e41f23561f76c71796dc926a000d17151b9f801"
+
+[[xpresspy]]
 git-tree-sha1 = "75e700f837add542a01f8b00fa20efb25a16c4f7"
+os = "macos"
 lazy = true
 
     [[xpresspy.download]]

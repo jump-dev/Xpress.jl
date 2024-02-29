@@ -59,33 +59,12 @@ function local_installation()
         end
     end
 
-    if !found && !Sys.isapple()
+    if !found && !(Sys.isapple() || Sys.islinux())
         error("""
         Unable to locate Xpress installation.
         Please check your enviroment variable XPRESSDIR.
         Note that Xpress must be obtained separately from fico.com.
         """)
-    end
-end
-
-function ci_installation()
-    files = if Sys.iswindows()
-    [
-        (ENV["SECRET_XPRS_WIN"], "xprs.dll")
-        (ENV["SECRET_XPRL_WIN"], "xprl.dll")
-        (ENV["SECRET_XPRA_WIN"], "xpauth.xpr")
-    ]
-    end
-    for (url, file) in files
-        local_filename = joinpath(@__DIR__, file)
-        my_download(url, local_filename)
-    end
-    path = joinpath(@__DIR__, files[1][2])
-    d = Libdl.dlopen_e(path)
-    if d != C_NULL
-        write_depsfile(@__DIR__)
-    else
-        error("Could not open xprs.dll")
     end
 end
 
