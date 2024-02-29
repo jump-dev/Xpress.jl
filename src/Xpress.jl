@@ -13,22 +13,29 @@ const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
 
 if isfile(depsjl_path)
     include(depsjl_path)
-elseif Sys.isapple() || Sys.islinux()
-    # Let's use the artifact instead.
+    const libxprs = joinpath(
+        xpressdlpath,
+        (Sys.iswindows() ? "" : "lib") * "xprs.$(Libdl.dlext)",
+    )
+elseif Sys.isapple()  # Use the artifact instead.
     const xpressdlpath = joinpath(
         LazyArtifacts.artifact"xpresspy",
         "lib/python3.10/site-packages/xpress/lib",
     )
+    const libxprs = joinpath(xpressdlpath, "xprs.dylib")
+elseif Sys.islinux()  # Use the artifact instead.
+    const xpressdlpath = joinpath(
+        LazyArtifacts.artifact"xpresspy",
+        "lib/python3.10/site-packages/xpress/lib",
+    )
+    # Annoyingly, Xpress has the version after extension
+    const libxprs = joinpath(xpressdlpath, "xprs.so.42")
 elseif !haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
     error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
 else
     const xpressdlpath = ""
+    const libxprs = (Sys.iswindows() ? "" : "lib") * "xprs.$(Libdl.dlext)"
 end
-
-const libxprs = joinpath(
-    xpressdlpath,
-    (Sys.iswindows() ? "" : "lib") * "xprs.$(Libdl.dlext)",
-)
 
 import Base.show, Base.copy
 
