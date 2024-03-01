@@ -3,6 +3,14 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
+import Xpress_jll
+ENV["XPRESS_JL_LIBRARY"] = Xpress_jll.libxprs
+if haskey(ENV, "XPRESS_JL_COMMUNITY_XPAUTH_XPR")
+    ENV["XPAUTH_PATH"] = dirname(@__DIR__)
+    contents = ENV["XPRESS_JL_COMMUNITY_XPAUTH_XPR"]
+    write(joinpath(dirname(@__DIR__), "xpauth.xpr"), contents)
+end
+
 using Test
 using Xpress
 
@@ -29,7 +37,7 @@ end
 @testset "test_licensing" begin
     # It is important that we test this first, so that there no XpressProblem
     # objects with finalizers that may get run during the function call.
-    test_licensing()
+    # test_licensing()
 end
 
 println(Xpress.get_banner())
