@@ -42,7 +42,12 @@ function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
 
     # user´s lib dir
     push!(candidates, joinpath(dirname(dirname(libxprs)), "bin", XPAUTH))
-
+    # Add the license location of Xpress_jll. Make sure this is last, so that we
+    # find the user's license if one exists.
+    push!(
+        candidates,
+        joinpath(dirname(dirname(libxprs)), "license", "community-xpauth.xpr"),
+    )
     for i in candidates
         if isfile(i)
             if verbose && !haskey(ENV, "XPRESS_JL_NO_INFO")

@@ -6,7 +6,9 @@
 module Lib
 
 import ..Xpress
-const libxprs = Xpress.libxprs
+global libxprs = Xpress.libxprs
+
+set_libxprs(libxprs_) = (global libxprs = libxprs_)
 
 include("common.jl")
 include("xprs.jl")
