@@ -5,6 +5,7 @@
 
 module Xpress
 
+import LazyArtifacts
 import Libdl
 
 # Load in `deps.jl`, complaining if it does not exist
@@ -17,14 +18,12 @@ const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
         (Sys.iswindows() ? "" : "lib") * "xprs.$(Libdl.dlext)",
     )
 elseif get(ENV, "CI", "") == "true" && Sys.isapple()  # Use the artifact instead.
-    import LazyArtifacts
     const xpressdlpath = joinpath(
         LazyArtifacts.artifact"xpresspy",
         "lib/python3.10/site-packages/xpress/lib",
     )
     const libxprs = joinpath(xpressdlpath, "libxprs.dylib")
-elseif get(ENV, "CI", "") == "true" && ENVSys.islinux()  # Use the artifact instead.
-    import LazyArtifacts
+elseif get(ENV, "CI", "") == "true" && Sys.islinux()  # Use the artifact instead.
     const xpressdlpath = joinpath(
         LazyArtifacts.artifact"xpresspy",
         "lib/python3.10/site-packages/xpress/lib",
@@ -32,7 +31,6 @@ elseif get(ENV, "CI", "") == "true" && ENVSys.islinux()  # Use the artifact inst
     # Annoyingly, Xpress has the version after extension
     const libxprs = joinpath(xpressdlpath, "libxprs.so.42")
 elseif get(ENV, "CI", "") == "true" && Sys.iswindows()  # Use the artifact instead.
-    import LazyArtifacts
     const xpressdlpath = joinpath(
         LazyArtifacts.artifact"xpresspy",
         joinpath("Lib", "site-packages", "xpress", "lib"),
