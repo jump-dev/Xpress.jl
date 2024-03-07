@@ -131,15 +131,17 @@ function MOI.get(
 end
 
 # ==============================================================================
-#    MOI.UserCutCallback  & MOI.LazyConstraint 
+#    MOI.UserCutCallback  & MOI.LazyConstraint
 # ==============================================================================
 
 function MOI.set(model::Optimizer, ::MOI.UserCutCallback, cb::Function)
+    MOI.set(model, MOI.RawOptimizerAttribute("MIPDUALREDUCTIONS"), 0)
     model.user_cut_callback = cb
     return
 end
 
 function MOI.set(model::Optimizer, ::MOI.LazyConstraintCallback, cb::Function)
+    MOI.set(model, MOI.RawOptimizerAttribute("MIPDUALREDUCTIONS"), 0)
     model.lazy_callback = cb
     return
 end
