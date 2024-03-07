@@ -3,15 +3,6 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-@static if v"1.2" > VERSION >= v"1.1"
-    # see: https://github.com/jump-dev/Xpress.jl/pull/44#issuecomment-585882858
-    error("Versions 1.1.x of julia are not supported. The current verions is $(VERSION)")
-end
-
-import MathOptInterface
-using SparseArrays
-
-const MOI = MathOptInterface
 const CleverDicts = MOI.Utilities.CleverDicts
 
 @enum(
@@ -161,7 +152,7 @@ mutable struct BasisStatus
     var_status::Vector{Cint}
 end
 
-mutable struct SensitivityCache 
+mutable struct SensitivityCache
     input::Vector{Float64}
     output::Vector{Float64}
     is_updated::Bool
@@ -240,7 +231,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # TODO: add functionality to the lower-level API to support querying single
     # elements of the solution.
-    
+
     cached_solution::Union{Nothing, CachedSolution}
     basis_status::Union{Nothing, BasisStatus}
     conflict::Union{Nothing, IISData}
@@ -391,7 +382,7 @@ function MOI.is_empty(model::Optimizer)
     model.termination_status != MOI.OPTIMIZE_NOT_CALLED && return false
     model.primal_status != MOI.NO_SOLUTION && return false
     model.dual_status != MOI.NO_SOLUTION && return false
-    
+
     model.callback_cached_solution !== nothing && return false
     # model.cb_cut_data !== nothing && return false
     model.callback_state != CB_NONE && return false
@@ -816,7 +807,7 @@ function MOI.add_variable(model::Optimizer)
         0,#length(_dmatval)::Int,
         Ref(0.0),#_dobj::Vector{Float64},
         C_NULL,#Cint.(_mrwind::Vector{Int}),
-        C_NULL,#Cint.(_mrstart::Vector{Int}), 
+        C_NULL,#Cint.(_mrstart::Vector{Int}),
         C_NULL,#_dmatval::Vector{Float64},
         Ref(-Inf),#_dbdl::Vector{Float64},
         Ref(Inf),#_dbdu::Vector{Float64}
@@ -831,7 +822,7 @@ function MOI.add_variables(model::Optimizer, N::Int)
         0,#length(_dmatval)::Int,
         zeros(N),# _dobj::Vector{Float64},
         C_NULL,#Cint.(_mrwind::Vector{Int}),
-        C_NULL,#Cint.(_mrstart::Vector{Int}), 
+        C_NULL,#Cint.(_mrstart::Vector{Int}),
         C_NULL,# _dmatval::Vector{Float64},
         fill(-Inf, N),# _dbdl::Vector{Float64},
         fill(Inf, N),# _dbdu::Vector{Float64}
@@ -1005,7 +996,7 @@ function MOI.set(
     rows = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ROWS, _)::Int
     cols = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_COLS, _)::Int
     if model.forward_sensitivity_cache === nothing
-        model.forward_sensitivity_cache = 
+        model.forward_sensitivity_cache =
             SensitivityCache(
                 zeros(rows),
                 zeros(cols),
@@ -1023,10 +1014,10 @@ function MOI.get(model::Optimizer, ::ForwardSensitivityOutputVariable, vi::MOI.V
     if is_mip(model) && model.moi_warnings
         @warn "The problem is a MIP, it might fail to get correct sensitivities."
     end
-    if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL 
+    if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL
         error("Model not optimized. Cannot get sensitivities.")
     end
-    if model.forward_sensitivity_cache === nothing 
+    if model.forward_sensitivity_cache === nothing
         error("Forward sensitivity cache not initiliazed correctly.")
     end
     if model.forward_sensitivity_cache.is_updated != true
@@ -1042,7 +1033,7 @@ function MOI.set(
     rows = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ROWS, _)::Int
     cols = @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_COLS, _)::Int
     if model.backward_sensitivity_cache === nothing
-        model.backward_sensitivity_cache = 
+        model.backward_sensitivity_cache =
             SensitivityCache(
                 zeros(cols),
                 zeros(rows),
@@ -1060,10 +1051,10 @@ function MOI.get(model::Optimizer, ::BackwardSensitivityOutputConstraint, ci::MO
     if is_mip(model) && model.moi_warnings
         @warn "The problem is a MIP, it might fail to get correct sensitivities."
     end
-    if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL 
+    if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL
         error("Model not optimized. Cannot get sensitivities.")
     end
-    if model.backward_sensitivity_cache === nothing 
+    if model.backward_sensitivity_cache === nothing
         error("Backward sensitivity cache not initiliazed correctly.")
     end
     if model.backward_sensitivity_cache.is_updated != true
@@ -1623,7 +1614,7 @@ or semi-integer lower bound and to change the lower bound.
 function _set_variable_semi_lower_bound(model, info, value)
     info.semi_lower_bound = value
     _set_variable_lower_bound(model, info, 0.0)
-    @checked Lib.XPRSchgglblimit(model.inner, Cint(1), Ref(Cint(info.column-1)), 
+    @checked Lib.XPRSchgglblimit(model.inner, Cint(1), Ref(Cint(info.column-1)),
         Ref(Cdouble(value)))
 end
 
@@ -2045,8 +2036,8 @@ function MOI.add_constraint(
         Ref{UInt8}(sense),#_srowtype,
         Ref(rhs),#_drhs,
         C_NULL,#_drng,
-        Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}), 
-        indices.-= 1,#Cint.(_mclind::Vector{Int}), 
+        Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}),
+        indices.-= 1,#Cint.(_mclind::Vector{Int}),
         coefficients#_dmatval
     )
     return MOI.ConstraintIndex{typeof(f), typeof(s)}(model.last_constraint_index)
@@ -2090,7 +2081,7 @@ function MOI.add_constraints(
         model.affine_constraint_info[model.last_constraint_index] =
             ConstraintInfo(length(model.affine_constraint_info) + 1, si, AFFINE)
     end
-    pop!(row_starts)     
+    pop!(row_starts)
     @checked Lib.XPRSaddrows(
         model.inner,
         length(rhss),#length(_drhs),
@@ -2098,8 +2089,8 @@ function MOI.add_constraints(
         senses,#_srowtype,
         rhss,#_drhs,
         C_NULL,#_drng,
-        row_starts.-= 1,#Cint.(_mrstart::Vector{Int}), 
-        columns.-= 1,#Cint.(_mclind::Vector{Int}), 
+        row_starts.-= 1,#Cint.(_mrstart::Vector{Int}),
+        columns.-= 1,#Cint.(_mclind::Vector{Int}),
         coefficients#_dmatval
         )
     return indices
@@ -2147,7 +2138,7 @@ function MOI.set(
     @checked Lib.XPRSchgrhs(
         model.inner,
         Cint(1),
-        Ref(Cint(_info(model, c).row - 1)), 
+        Ref(Cint(_info(model, c).row - 1)),
         Ref(MOI.constant(s)))
     return
 end
@@ -2157,7 +2148,7 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
     nzcnt_max = Xpress.n_non_zero_elements(model.inner)
 
     _nzcnt = Ref(Cint(0))
-    @checked Lib.XPRSgetrows(model.inner, C_NULL, C_NULL, C_NULL, 0, _nzcnt, 
+    @checked Lib.XPRSgetrows(model.inner, C_NULL, C_NULL, C_NULL, 0, _nzcnt,
         Cint(row-1), Cint(row-1))
     nzcnt = _nzcnt[]
 
@@ -2392,8 +2383,8 @@ function MOI.add_constraint(
         Ref{UInt8}(sense),#_srowtype,
         Ref(rhs-cte),#_drhs,
         C_NULL,#_drng,
-        Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}), 
-        indices.-= 1,#Cint.(_mrwind::Vector{Int}), 
+        Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}),
+        indices.-= 1,#Cint.(_mrwind::Vector{Int}),
         coefficients#_dmatval
     )
     @checked Lib.XPRSsetindicators(model.inner,
@@ -2494,7 +2485,7 @@ function MOI.get(
     @checked Lib.XPRSgetqrowqmatrixtriplets(model.inner, _info(model, c).row-1, nqelem, mqcol1, mqcol2, dqe)
     mqcol1 .+= 1
     mqcol2 .+= 1
-    
+
     quadratic_terms = MOI.ScalarQuadraticTerm{Float64}[]
     for (i, j, coef) in zip(mqcol1, mqcol2, dqe)
         push!(
@@ -2617,7 +2608,7 @@ function _get_sparse_sos(model)
             V[j] = setvals[j]
         end
     end
-    return sparse(I, J, V, nsets[], n)
+    return SparseArrays.sparse(I, J, V, nsets[], n)
 end
 
 function MOI.get(
@@ -2799,7 +2790,7 @@ function MOI.optimize!(model::Optimizer)
         has_Ray = Int64[0]
         @checked Lib.XPRSgetprimalray(model.inner, model.cached_solution.variable_primal, has_Ray)
         model.cached_solution.has_primal_certificate = _has_primal_ray(model)
-    elseif status == MOI.FEASIBLE_POINT 
+    elseif status == MOI.FEASIBLE_POINT
         model.cached_solution.has_feasible_point = true
     end
     status = MOI.get(model, MOI.DualStatus())
@@ -3021,7 +3012,7 @@ function _cache_dual_status(model)
         end
     end
     return MOI.NO_SOLUTION
-    
+
 end
 
 function MOI.get(model::Optimizer, attr::MOI.DualStatus)
@@ -3554,7 +3545,7 @@ function _replace_with_matching_sparsity!(
     for term in replacement.terms
         col = _info(model, term.variable).column
         @checked Lib.XPRSchgcoef(
-            model.inner, Cint(row-1), Cint(col-1), 
+            model.inner, Cint(row-1), Cint(col-1),
             MOI.coefficient(term)
         )
     end
@@ -3587,14 +3578,14 @@ function _replace_with_different_sparsity!(
     # First, zero out the old constraint function terms.
     for term in previous.terms
         col = _info(model, term.variable).column
-        @checked Lib.XPRSchgcoef(model.inner, Cint(row - 1), Cint(col - 1), 
+        @checked Lib.XPRSchgcoef(model.inner, Cint(row - 1), Cint(col - 1),
             0.0)
     end
 
     # Next, set the new constraint function terms.
     for term in previous.terms
         col = _info(model, term.variable).column
-        @checked Lib.XPRSchgcoef(model.inner, Cint(row - 1), Cint(col - 1), 
+        @checked Lib.XPRSchgcoef(model.inner, Cint(row - 1), Cint(col - 1),
             MOI.coefficient(term))
     end
     return
