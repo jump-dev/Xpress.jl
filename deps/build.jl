@@ -3,97 +3,71 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-using Libdl
+import Downloads
+import Libdl
 
-depsfile = joinpath(dirname(@__FILE__),"deps.jl")
+const DEPS_FILE = joinpath(dirname(@__FILE__),"deps.jl")
 
-if isfile(depsfile)
-    rm(depsfile)
-end
-
-
-function my_download(url::AbstractString, filename::AbstractString)
-    if Sys.iswindows() && VERSION < v"1.1"
-        # from https://github.com/JuliaLang/julia/blob/788b2c77c10c2160f4794a4d4b6b81a95a90940c/base/download.jl#L26
-        # otherwise files are not properly downloaded - check sizes
-        curl_exe = joinpath(get(ENV, "SYSTEMROOT", "C:\\Windows"), "System32\\curl.exe")
-        process = run(`$curl_exe -s -S -g -L -f -o $filename $url`)#, wait=false)
-        return filename
-    else
-        return download(url, filename)
+function write_deps_file(path)
+    open(DEPS_FILE,"w") do io
+        return print(io, "const xpressdlpath = \"$(escape_string(path))\"")
     end
-end
-
-function write_depsfile(path)
-    f = open(depsfile,"w")
-    if Sys.iswindows()
-        path = replace(path, "\\" => "\\\\")
-    end
-    print(f,"""
-    const xpressdlpath = \"$(path)\"
-    """)
-    close(f)
+    return
 end
 
 function local_installation()
-
-    libname = string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext)
-    paths_to_try = String[]
-
-    push!(paths_to_try, "")
-    push!(paths_to_try, @__DIR__)
-
+    lib_name = string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext)
+    paths_to_try = String["", @__DIR__]
     if haskey(ENV, "XPRESSDIR")
-        push!(paths_to_try, joinpath(ENV["XPRESSDIR"], Sys.iswindows() ? "bin" : "lib"))
+        push!(
+            paths_to_try,
+            joinpath(ENV["XPRESSDIR"], Sys.iswindows() ? "bin" : "lib"),
+        )
     end
-
-    global found = false
-    for l in paths_to_try
-        path = joinpath(l, libname)
-        d = Libdl.dlopen_e(path)
-        if d != C_NULL
-            global found = true
+    for dir in paths_to_try
+        path = joinpath(dir, lib_name)
+        if Libdl.dlopen_e(path) != C_NULL
             @info("Found $path")
-            write_depsfile(l)
-            break
+            write_deps_file(dir)
+            return
         end
     end
+    return error("""
+    Unable to locate Xpress installation.
 
-    if !found
-        error("""
-        Unable to locate Xpress installation.
-        Please check your enviroment variable XPRESSDIR.
-        Note that Xpress must be obtained separately from fico.com.
-        """)
-    end
+    Please check your enviroment variable `XPRESSDIR`.
+
+    Note that Xpress must be obtained separately from fico.com.
+    """)
 end
 
 function ci_installation()
-    files = if Sys.iswindows()
-    [
-        (ENV["SECRET_XPRS_WIN"], "xprs.dll")
-        (ENV["SECRET_XPRL_WIN"], "xprl.dll")
-        (ENV["SECRET_XPRA_WIN"], "xpauth.xpr")
-    ]
-    end
-    for (url, file) in files
-        local_filename = joinpath(@__DIR__, file)
-        my_download(url, local_filename)
-    end
-    path = joinpath(@__DIR__, files[1][2])
-    d = Libdl.dlopen_e(path)
-    if d != C_NULL
-        write_depsfile(@__DIR__)
+    url = if Sys.islinux()
+        "https://anaconda.org/fico-xpress/xpress/9.3.0/download/linux-64/xpress-9.3.0-py310ha14b774_0.tar.bz2"
     else
-        error("Could not open xprs.dll")
+        @assert Sys.isapple()
+        "https://anaconda.org/fico-xpress/xpress/9.3.0/download/osx-64/xpress-9.3.0-py310h9b76c6a_0.tar.bz2"
     end
+    Downloads.download(url, "xpress.tar.bz2")
+    run(`tar -xjf xpress.tar.bz2`)
+    root = "lib/python3.10/site-packages/xpress"
+    run(`cp $root/license/community-xpauth.xpr $root/lib/xpauth.xpr`)
+    if Sys.islinux()
+        run(`cp $root/lib/libxprs.so.42 $root/lib/libxprs.so`)
+    end
+    write_deps_file(joinpath(@__DIR__, root, "lib"))
+    return
+end
+
+if isfile(DEPS_FILE)
+    rm(DEPS_FILE)
 end
 
 if haskey(ENV, "XPRESS_JL_SKIP_LIB_CHECK")
     # Skip!
 elseif get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") == "true"
-    write_depsfile("julia_registryci_automerge")
-elseif get(ENV, "SECRET_XPRS_WIN", "") != ""
+    write_deps_file("julia_registryci_automerge")
+elseif get(ENV, "CI", "") == "true"
     ci_installation()
 else
     local_installation()
