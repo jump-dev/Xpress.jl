@@ -2673,7 +2673,7 @@ function _set_MIP_start(model)
     colind, solval = Cint[], Cdouble[]
     for info in values(model.variable_info)
         if info.start !== nothing
-            push!(colind, Cint(info.column))
+            push!(colind, Cint(info.column - 1))
             push!(solval, info.start)
         end
     end
