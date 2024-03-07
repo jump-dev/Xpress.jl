@@ -4424,3 +4424,33 @@ function MOI.get(
     column = _info(model, vi).column
     return model.cached_solution.variable_dual[column]
 end
+
+#=
+    RelativeGapTolerance
+=#
+
+MOI.supports(::Optimizer, ::MOI.RelativeGapTolerance) = true
+
+function MOI.get(model::Optimizer, ::MOI.RelativeGapTolerance)
+    return Xpress.getcontrol(model.inner, Lib.XPRS_MIPRELSTOP)
+end
+
+function MOI.set(model::Optimizer, ::MOI.RelativeGapTolerance, value::Float64)
+    Xpress.setcontrol!(model.inner, Lib.XPRS_MIPRELSTOP, value)
+    return
+end
+
+#=
+    AbsoluteGapTolerance
+=#
+
+MOI.supports(::Optimizer, ::MOI.AbsoluteGapTolerance) = true
+
+function MOI.get(model::Optimizer, ::MOI.AbsoluteGapTolerance)
+    return Xpress.getcontrol(model.inner, Lib.XPRS_MIPABSSTOP)
+end
+
+function MOI.set(model::Optimizer, ::MOI.AbsoluteGapTolerance, value::Float64)
+    Xpress.setcontrol!(model.inner, Lib.XPRS_MIPABSSTOP, value)
+    return
+end
