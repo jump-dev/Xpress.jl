@@ -2669,62 +2669,18 @@ function is_mip(model)
     return Xpress.is_mixedinteger(model.inner) && !model.solve_relaxation
 end
 
-# Internal function.
-# A variable may or may not have MIP-start. Such information is stored
-# in the field `start` inside a `VariableInfo`. If `start` is `nothing`
-# there is no MIP-start; otherwise it has a `Float64` MIP-start value.
-# `_gather_MIP_start` returns the sparse representation of all MIP-starts
-# that is needed by the XPRESS API function `addmipsol`.
-# The sparse representation amounts to two `Vector` of the same size:
-# `colind` and `solval`. `colind` has the internal column index for
-# each variable that has a MIP-start. `solval` has the corresponding
-# primal value for each column referred in `colind`.
-function _gather_MIP_start(model)
-    variable_info = model.variable_info
-    n_var = length(variable_info)
-    colind = Vector{Cint}(undef, 0)
-    solval = Vector{Cdouble}(undef, 0)
-    j = 0
-    for (_, var_info) in variable_info
-        if var_info.start !== nothing
-            j += 1
-            if j == 1 # only allocates if there is some start point
-                resize!(colind, n_var)
-                resize!(solval, n_var)
-            end
-            colind[j] = var_info.column - 1
-            solval[j] = var_info.start :: Float64
+function _set_MIP_start(model)
+    colind, solval = Cint[], Cdouble[]
+    for info in values(model.variable_info)
+        if info.start !== nothing
+            push!(colind, Cint(info.column))
+            push!(solval, info.start)
         end
     end
-    resize!(colind, j)
-    resize!(solval, j)
-
-    return colind, solval
-end
-
-# Internal function.
-# Informs `inner.model` of the solution stored in the `start` fields
-# of each element of `model.variable_info`.
-function _update_MIP_start!(model)
-    colind, solval = _gather_MIP_start(model)
-    number_mip_started_var = length(colind)
-    iszero(number_mip_started_var) && return
-    # See: https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSaddmipsol.html
-    # The documentation states that `colind` "Should be NULL when length is
-    # equal to COLS, in which case it is assumed that solval provides a
-    # complete solution vector."
-    if number_mip_started_var == length(model.variable_info)
-        # For the corner case in which `colind` is NOT already sorted we need
-        # to be sure that `solval` is in the same order as the model.inner
-        # columns.
-        # ignoring the colind parameter was making the solver reject the input solution
-        # permute!(solval, sortperm(colind))
-        # @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, C_NULL, "C_NULL1")
-        @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, colind, C_NULL)
-    else
-        @checked Lib.XPRSaddmipsol(model.inner, Cint(number_mip_started_var), solval, colind, C_NULL)
+    nnz = length(colind)
+    if nnz > 0
+        @checked Lib.XPRSaddmipsol(model.inner, nnz, solval, colind, C_NULL)
     end
-
     return
 end
 
@@ -2743,7 +2699,7 @@ function MOI.optimize!(model::Optimizer)
     rhs = Vector{Float64}(undef, n_constraints(model.inner))
     @checked Lib.XPRSgetrhs(model.inner, rhs, Cint(0), Cint(n_constraints(model.inner)-1))
     if !model.ignore_start && is_mip(model)
-        _update_MIP_start!(model)
+        _set_MIP_start(model)
     end
     start_time = time()
     if is_mip(model)
