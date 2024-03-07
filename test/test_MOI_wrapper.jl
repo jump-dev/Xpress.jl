@@ -6,10 +6,11 @@
 module TestMOIWrapper
 
 using Xpress
-using MathOptInterface
 using Test
 
-const MOI = MathOptInterface
+import LinearAlgebra
+import MathOptInterface as MOI
+import Random
 
 function runtests()
     for name in names(@__MODULE__; all = true)
@@ -19,6 +20,7 @@ function runtests()
             end
         end
     end
+    return
 end
 
 function test_Basic_Parameters()
@@ -1010,6 +1012,601 @@ function test_multiple_modifications2()
     return
 end
 
+function callback_simple_model()
+    model = Xpress.Optimizer(
+        HEURSTRATEGY = 0, # before v41
+        HEUREMPHASIS = 0,
+        OUTPUTLOG = 0,
+    )
+    MOI.Utilities.loadfromstring!(model, """
+        variables: x, y
+        maxobjective: y
+        c1: x in Integer()
+        c2: y in Integer()
+        c3: x in Interval(0.0, 2.5)
+        c4: y in Interval(0.0, 2.5)
+    """)
+    x = MOI.get(model, MOI.VariableIndex, "x")
+    y = MOI.get(model, MOI.VariableIndex, "y")
+    return model, x, y
 end
+
+function callback_knapsack_model()
+    model = Xpress.Optimizer(
+        OUTPUTLOG    = 0,
+        HEURSTRATEGY = 0, # before v41
+        HEUREMPHASIS = 0,
+        CUTSTRATEGY  = 0,
+        PRESOLVE     = 0,
+        MIPPRESOLVE  = 0,
+        PRESOLVEOPS  = 0,
+        MIPTHREADS = 1,
+        THREADS = 1,
+    )
+    MOI.set(model, MOI.NumberOfThreads(), 2)
+    N = 30
+    x = MOI.add_variables(model, N)
+    MOI.add_constraints(model, x, MOI.ZeroOne())
+    MOI.set.(model, MOI.VariablePrimalStart(), x, 0.0)
+    Random.seed!(1)
+    item_weights, item_values = rand(N), rand(N)
+    MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(item_weights, x), 0.0),
+        MOI.LessThan(10.0)
+    )
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(item_values, x), 0.0)
+    )
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    return model, x, item_weights
+end
+
+function test_lazy_constraint_callback_lazy_constraint()
+    model, x, y = callback_simple_model()
+    global lazy_called = false
+    MOI.set(model, MOI.LazyConstraintCallback(), cb_data -> begin
+        global lazy_called = true
+        x_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), x)
+        y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
+        status = MOI.get(model, MOI.CallbackNodeStatus(cb_data))::MOI.CallbackNodeStatusCode
+        if round.(Int, [x_val, y_val]) ≈ [x_val, y_val] atol=1e-6
+            @test status == MOI.CALLBACK_NODE_STATUS_INTEGER
+        else
+            @test status == MOI.CALLBACK_NODE_STATUS_FRACTIONAL
+        end
+        @test MOI.supports(model, MOI.LazyConstraint(cb_data))
+        if y_val - x_val > 1 + 1e-6
+            MOI.submit(
+                model,
+                MOI.LazyConstraint(cb_data),
+                MOI.ScalarAffineFunction{Float64}(
+                    MOI.ScalarAffineTerm.([-1.0, 1.0], [x, y]),
+                    0.0
+                ),
+                MOI.LessThan{Float64}(1.0)
+            )
+        elseif y_val + x_val > 3 + 1e-6
+            MOI.submit(
+                model,
+                MOI.LazyConstraint(cb_data),
+                MOI.ScalarAffineFunction{Float64}(
+                    MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]),
+                    0.0
+                ), MOI.LessThan{Float64}(3.0)
+            )
+        end
+    end)
+    @test MOI.supports(model, MOI.LazyConstraintCallback())
+    MOI.optimize!(model)
+    @test lazy_called
+    @test MOI.get(model, MOI.VariablePrimal(), x) == 1
+    @test MOI.get(model, MOI.VariablePrimal(), y) == 2
+    return
+end
+
+function test_lazy_constraint_callback_OptimizeInProgress()
+    model, x, y = callback_simple_model()
+    MOI.set(model, MOI.LazyConstraintCallback(), cb_data -> begin
+        @test_throws(
+            MOI.OptimizeInProgress(MOI.VariablePrimal()),
+            MOI.get(model, MOI.VariablePrimal(), x)
+        )
+        @test_throws(
+            MOI.OptimizeInProgress(MOI.ObjectiveValue()),
+            MOI.get(model, MOI.ObjectiveValue())
+        )
+        @test_throws(
+            MOI.OptimizeInProgress(MOI.ObjectiveBound()),
+            MOI.get(model, MOI.ObjectiveBound())
+        )
+    end)
+    MOI.optimize!(model)
+    return
+end
+
+function test_lazy_constraint_callback_HeuristicSolution()
+    model, x, y = callback_simple_model()
+    cb = nothing
+    MOI.set(model, MOI.LazyConstraintCallback(), cb_data -> begin
+        cb = cb_data
+        MOI.submit(
+            model,
+            MOI.HeuristicSolution(cb_data),
+            [x],
+            [2.0]
+        )
+    end)
+    @test_throws(
+        MOI.InvalidCallbackUsage(
+            MOI.LazyConstraintCallback(),
+            MOI.HeuristicSolution(cb)
+        ),
+        MOI.optimize!(model)
+    )
+    return
+end
+
+function test_user_cut_callback_UserCut()
+    model, x, item_weights = callback_knapsack_model()
+    global user_cut_submitted = false
+    MOI.set(model, MOI.UserCutCallback(), cb_data -> begin
+        terms = MOI.ScalarAffineTerm{Float64}[]
+        accumulated = 0.0
+        for (i, xi) in enumerate(x)
+            if MOI.get(model, MOI.CallbackVariablePrimal(cb_data), xi) > 0.0
+                push!(terms, MOI.ScalarAffineTerm(1.0, xi))
+                accumulated += item_weights[i]
+            end
+        end
+        @test MOI.supports(model, MOI.UserCut(cb_data))
+        if accumulated > 10.0
+            MOI.submit(
+                model,
+                MOI.UserCut(cb_data),
+                MOI.ScalarAffineFunction{Float64}(terms, 0.0),
+                MOI.LessThan{Float64}(length(terms) - 1)
+            )
+            global user_cut_submitted = true
+        end
+    end)
+    @test MOI.supports(model, MOI.UserCutCallback())
+    MOI.optimize!(model)
+    @test user_cut_submitted
+    return
+end
+
+function test_user_cut_callback_HeuristicSolution()
+    model, x, item_weights = callback_knapsack_model()
+    cb = nothing
+    MOI.set(model, MOI.UserCutCallback(), cb_data -> begin
+        cb = cb_data
+        MOI.submit(
+            model,
+            MOI.HeuristicSolution(cb_data),
+            [x[1]],
+            [0.0]
+        )
+    end)
+    @test_throws(
+        MOI.InvalidCallbackUsage(
+            MOI.UserCutCallback(),
+            MOI.HeuristicSolution(cb)
+        ),
+        MOI.optimize!(model)
+    )
+    return
+end
+
+function test_heuristic_callback_HeuristicSolution()
+    model, x, item_weights = callback_knapsack_model()
+    global callback_called = false
+    MOI.set(model, MOI.HeuristicCallback(), cb_data -> begin
+        x_vals = MOI.get.(model, MOI.CallbackVariablePrimal(cb_data), x)
+        status = MOI.get(model, MOI.CallbackNodeStatus(cb_data))::MOI.CallbackNodeStatusCode
+        if round.(Int, x_vals) ≈ x_vals atol=1e-6
+            @test status == MOI.CALLBACK_NODE_STATUS_INTEGER
+        else
+            @test status == MOI.CALLBACK_NODE_STATUS_FRACTIONAL
+        end
+        @test MOI.supports(model, MOI.HeuristicSolution(cb_data))
+        @test MOI.submit(
+            model,
+            MOI.HeuristicSolution(cb_data),
+            x,
+            floor.(x_vals)
+        ) == MOI.HEURISTIC_SOLUTION_UNKNOWN
+        global callback_called = true
+    end)
+    @test MOI.supports(model, MOI.HeuristicCallback())
+    MOI.optimize!(model)
+    @test callback_called
+    return
+end
+
+function test_heuristic_callback_LazyConstraint()
+    model, x, item_weights = callback_knapsack_model()
+    cb = nothing
+    MOI.set(model, MOI.HeuristicCallback(), cb_data -> begin
+        cb = cb_data
+        MOI.submit(
+            model,
+            MOI.LazyConstraint(cb_data),
+            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
+            MOI.LessThan(5.0)
+        )
+    end)
+    @test_throws(
+        MOI.InvalidCallbackUsage(
+            MOI.HeuristicCallback(),
+            MOI.LazyConstraint(cb)
+        ),
+        MOI.optimize!(model)
+    )
+    return
+end
+
+function test_heuristic_callback_UserCut()
+    model, x, item_weights = callback_knapsack_model()
+    cb = nothing
+    MOI.set(model, MOI.HeuristicCallback(), cb_data -> begin
+        cb = cb_data
+        MOI.submit(
+            model,
+            MOI.UserCut(cb_data),
+            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
+            MOI.LessThan(5.0)
+        )
+    end)
+    @test_throws(
+        MOI.InvalidCallbackUsage(
+            MOI.HeuristicCallback(),
+            MOI.UserCut(cb)
+        ),
+        MOI.optimize!(model)
+    )
+    return
+end
+
+function test_callback_function_OptimizeInProgress()
+    model, x, y = callback_simple_model()
+    MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
+        @test_throws(
+            MOI.OptimizeInProgress(MOI.VariablePrimal()),
+            MOI.get(model, MOI.VariablePrimal(), x)
+        )
+        @test_throws(
+            MOI.OptimizeInProgress(MOI.ObjectiveValue()),
+            MOI.get(model, MOI.ObjectiveValue())
+        )
+        @test_throws(
+            MOI.OptimizeInProgress(MOI.ObjectiveBound()),
+            MOI.get(model, MOI.ObjectiveBound())
+        )
+    end)
+    @test MOI.supports(model, Xpress.CallbackFunction())
+    MOI.optimize!(model)
+    return
+end
+
+function test_callback_function_LazyConstraint()
+    model, x, y = callback_simple_model()
+    cb_calls = Int32[]
+    global generic_lazy_called = false
+    function callback_function(cb_data)
+        push!(cb_calls, 1)
+        Xpress.get_cb_solution(model, cb_data.model)
+        x_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), x)
+        y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
+        if y_val - x_val > 1 + 1e-6
+            MOI.submit(model, MOI.LazyConstraint(cb_data),
+                MOI.ScalarAffineFunction{Float64}(
+                    MOI.ScalarAffineTerm.([-1.0, 1.0], [x, y]),
+                    0.0
+                ),
+                MOI.LessThan{Float64}(1.0)
+            )
+        elseif y_val + x_val > 3 + 1e-6
+            MOI.submit(model, MOI.LazyConstraint(cb_data),
+                MOI.ScalarAffineFunction{Float64}(
+                    MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]),
+                    0.0
+                ),
+                MOI.LessThan{Float64}(3.0)
+            )
+        end
+    end
+    MOI.set(model, Xpress.CallbackFunction(), callback_function)
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.VariablePrimal(), x) == 1
+    @test MOI.get(model, MOI.VariablePrimal(), y) == 2
+    @test length(cb_calls) > 0
+    return
+end
+
+function test_callback_function_UserCut()
+    model, x, item_weights = callback_knapsack_model()
+    user_cut_submitted = false
+    cb_calls = Int32[]
+    MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
+        push!(cb_calls)
+
+        if Xpress.get_control_or_attribute(cb_data.model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
+            return
+        end
+        Xpress.get_cb_solution(model, cb_data.model)
+        terms = MOI.ScalarAffineTerm{Float64}[]
+        accumulated = 0.0
+        for (i, xi) in enumerate(x)
+            if MOI.get(model, MOI.CallbackVariablePrimal(cb_data), xi) > 0.0
+                push!(terms, MOI.ScalarAffineTerm(1.0, xi))
+                accumulated += item_weights[i]
+            end
+        end
+        if accumulated > 10.0
+            MOI.submit(
+                model,
+                MOI.UserCut(cb_data),
+                MOI.ScalarAffineFunction{Float64}(terms, 0.0),
+                MOI.LessThan{Float64}(length(terms) - 1)
+            )
+            user_cut_submitted = true
+        end
+        return
+    end)
+    MOI.optimize!(model)
+    @test user_cut_submitted
+    return
+end
+
+function test_callback_function_HeuristicSolution()
+    model, x, item_weights = callback_knapsack_model()
+    callback_called = false
+    cb_calls = Int32[]
+    MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
+        if Xpress.get_control_or_attribute(cb_data.model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
+            return
+        end
+        Xpress.get_cb_solution(model, cb_data.model)
+        x_vals = MOI.get.(model, MOI.CallbackVariablePrimal(cb_data), x)
+        @test MOI.submit(
+            model,
+            MOI.HeuristicSolution(cb_data),
+            x,
+            floor.(x_vals)
+        ) == MOI.HEURISTIC_SOLUTION_UNKNOWN
+        callback_called = true
+        return
+    end)
+    MOI.optimize!(model)
+    @test callback_called
+    return
+end
+
+function test_callback_CallbackNodeStatus()
+    model, x, item_weights = callback_knapsack_model()
+    global unknown_reached = false
+    MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
+        if MOI.get(model, MOI.CallbackNodeStatus(cb_data)) == MOI.CALLBACK_NODE_STATUS_UNKNOWN
+            global unknown_reached = true
+        end
+    end)
+    MOI.optimize!(model)
+    @test unknown_reached
+    return
+end
+
+function test_callback_lazy_constraint_dual_reductions()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variables(model, 3)
+    MOI.add_constraint.(model, x, MOI.GreaterThan(0.0))
+    MOI.add_constraint.(model, x[1:2], MOI.Integer())
+    MOI.add_constraint(
+        model,
+        1.0 * x[1] + 1.0 * x[2] - 1.0 * x[3],
+        MOI.EqualTo(0.0),
+    )
+    MOI.add_constraint(model, 1.0 * x[1] + 1.0 * x[2], MOI.LessThan(220.0))
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    f = 1.0 * x[3]
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    function lazy_flow_constraints(cb_data)
+        x_val = MOI.get.(model, MOI.CallbackVariablePrimal(cb_data), x)
+        if x_val[1] + x_val[2] > 10
+            MOI.submit(
+                model,
+                MOI.LazyConstraint(cb_data),
+                1.0 * x[1] + 1.0 * x[2],
+                MOI.LessThan(10.0),
+            )
+        end
+    end
+    MOI.set(model, MOI.LazyConstraintCallback(), lazy_flow_constraints)
+    MOI.optimize!(model)
+    x_val = MOI.get(model, MOI.VariablePrimal(), x)
+    @test x_val[1] + x_val[2] <= 10.0 + 1e-4
+    @test x_val[1] + x_val[2] ≈ x_val[3]
+    return
+end
+
+function callback_simple_model()
+    model = Xpress.Optimizer(
+        PRESOLVE = 0,
+        CUTSTRATEGY = 0,
+        HEURSTRATEGY = 0,
+        SYMMETRY = 0,
+        OUTPUTLOG = 0
+    )
+    MOI.Utilities.loadfromstring!(model, """
+        variables: x, y
+        maxobjective: y
+        c1: x in Integer()
+        c2: y in Integer()
+        c3: x in Interval(0.0, 2.5)
+        c4: y in Interval(0.0, 2.5)
+    """)
+    x = MOI.get(model, MOI.VariableIndex, "x")
+    y = MOI.get(model, MOI.VariableIndex, "y")
+    return model, x, y
+end
+
+function test_callback_preintsol()
+    model, x, y = callback_simple_model()
+    data = 1.0 * LinearAlgebra.I(3)
+    function foo(cb::Xpress.CallbackData)
+        cb.data[1] = 98
+        cols = Xpress.get_control_or_attribute(cb.model, Xpress.Lib.XPRS_COLS)
+        rows = Xpress.get_control_or_attribute(cb.model, Xpress.Lib.XPRS_ROWS)
+        Xpress.get_control_or_attribute(cb.model, Xpress.Lib.XPRS_BESTBOUND)
+        ans_variable_primal = Vector{Float64}(undef,Int(cols))
+        ans_linear_primal = Vector{Float64}(undef,Int(cols))
+        Xpress.Lib.XPRSgetlpsol(
+            cb.model,
+            ans_variable_primal,
+            ans_linear_primal,
+            C_NULL,
+            C_NULL,
+        )
+        return
+    end
+    func_ptr, data_ptr = Xpress.set_callback_preintsol!(model.inner, foo, data)
+    @test data[1] == 1
+    MOI.optimize!(model)
+    @test data[1] == 98
+    @test func_ptr isa Ptr{Cvoid}
+    return
+end
+
+mutable struct DispatchModel
+    optimizer::MOI.AbstractOptimizer
+    g::Vector{MOI.VariableIndex}
+    Df::MOI.VariableIndex
+    c_limit_lower
+    c_limit_upper
+    c_demand
+end
+
+function GenerateModel_VariableIndex()
+    d = 45.0
+    I = 3
+    g_sup = [10.0, 20.0, 30.0]
+    c_g = [1.0, 3.0, 5.0]
+    c_Df = 10.0
+    model = Xpress.Optimizer(; PRESOLVE = 0, logfile = "outputXpress_SV.log")
+    g = MOI.add_variables(model, I)
+    Df = MOI.add_variable(model)
+    c_limit_inf = MOI.add_constraint.(model, g, MOI.GreaterThan(0.0))
+    push!(c_limit_inf, MOI.add_constraint(model, Df, MOI.GreaterThan(0.0)))
+    c_limit_sup = MOI.add_constraint.(model, g, MOI.LessThan.(g_sup))
+    c_demand = MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(I+1),[g;Df]), 0.0),
+        MOI.EqualTo(d),
+    )
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    obj = sum(c_g .* g) + c_Df * Df
+    MOI.set(model, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+    MOI.optimize!(model)
+    return DispatchModel(model, g, Df, c_limit_inf, c_limit_sup, c_demand)
+end
+
+function GenerateModel_ScalarAffineFunction()
+    d = 45.0
+    I = 3
+    g_sup = [10.0, 20.0, 30.0]
+    c_g = [1.0, 3.0, 5.0]
+    c_Df = 10.0
+    model = Xpress.Optimizer(; PRESOLVE = 0, logfile = "outputXpress_SAF.log")
+    g = MOI.add_variables(model, I)
+    Df = MOI.add_variable(model)
+    c_limit_inf = MOI.add_constraint.(model, 1.0 .* g, MOI.GreaterThan(0.0))
+    push!(
+        c_limit_inf,
+        MOI.add_constraint(model, 1.0 * Df, MOI.GreaterThan(0.0)),
+    )
+    c_limit_sup = MOI.add_constraint.(model, 1.0 .* g, MOI.LessThan.(g_sup))
+    c_demand = MOI.add_constraint(
+        model,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(I+1),[g;Df]), 0.0),
+        MOI.EqualTo(d)
+    )
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    obj = sum(c_g .* g) + c_Df * Df
+    MOI.set(model, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+    MOI.optimize!(model)
+    return DispatchModel(model, g, Df, c_limit_inf, c_limit_sup, c_demand)
+end
+
+function Forward(model::DispatchModel, ϵ::Float64 = 1.0)
+    variables = [model.g; model.Df]
+    primal =  MOI.get.(model.optimizer, MOI.VariablePrimal(), variables)
+    MOI.set(
+        model.optimizer,
+        Xpress.ForwardSensitivityInputConstraint(),
+        model.c_demand,
+        ϵ,
+    )
+    dual = MOI.get.(
+        model.optimizer,
+        Xpress.ForwardSensitivityOutputVariable(),
+        variables,
+    )
+    return vcat(primal, dual)
+end
+
+function Backward(model::DispatchModel, ϵ::Float64 = 1.0)
+    variables = [model.g; model.Df]
+    primal = MOI.get.(model.optimizer, MOI.VariablePrimal(), variables)
+    dual = zeros(length(variables))
+    for (i, xi) in enumerate(variables)
+        MOI.set(
+            model.optimizer,
+            Xpress.BackwardSensitivityInputVariable(),
+            xi,
+            ϵ,
+        )
+        dual[i] = MOI.get(
+            model.optimizer,
+            Xpress.BackwardSensitivityOutputConstraint(),
+            model.c_demand,
+        )
+        MOI.set(
+            model.optimizer,
+            Xpress.BackwardSensitivityInputVariable(),
+            xi,
+            0.0,
+        )
+    end
+    return vcat(primal, dual)
+end
+
+function test_variable_index_forward()
+    model = GenerateModel_VariableIndex()
+    @test Forward(model) == [10.0, 20.0, 15.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    return
+end
+
+function test_variable_index_backward()
+    model = GenerateModel_VariableIndex()
+    @test Backward(model) == [10.0, 20.0, 15.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    return
+end
+
+function test_scalar_affine_index_forward()
+    model = GenerateModel_ScalarAffineFunction()
+    @test Forward(model) == [10.0, 20.0, 15.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    return
+end
+
+function test_scalar_affine_index_backward()
+    model = GenerateModel_ScalarAffineFunction()
+    @test Backward(model) == [10.0, 20.0, 15.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    return
+end
+
+end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()
