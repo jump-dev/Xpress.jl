@@ -7,3 +7,6 @@ Manifest.toml
 *.sublime-project
 *.json
 *.txt
+deps/*.tar.bz2
+deps/lib
+deps/info

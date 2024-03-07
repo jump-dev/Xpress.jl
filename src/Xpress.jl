@@ -20,15 +20,12 @@ else
     const xpressdlpath = ""
 end
 
-const libxprs = joinpath(xpressdlpath, string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext))
+const libxprs = joinpath(
+    xpressdlpath,
+    string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext),
+)
 
-module Lib
-    import ..Xpress
-    const libxprs = Xpress.libxprs
-    include("ctypes.jl")
-    include("common.jl")
-    include("lib.jl")
-end
+include("Lib/Lib.jl")
 
 include("utils.jl")
 include("helper.jl")
@@ -37,30 +34,35 @@ include("api.jl")
 include("xprs_callbacks.jl")
 include("license.jl")
 
-const XPRS_ATTRIBUTES = Dict{String, Any}(
-    replace(string(name), "XPRS_"=>"") => getfield(Lib, name)
-        for name in names(Lib; all = true)
-        if startswith(string(name), "XPRS_") && all(isuppercase(c) || isdigit(c) for c in string(name) if c != '_')
+_is_xprs_attribute(name::Symbol) = _is_xprs_attribute(string(name))
+
+function _is_xprs_attribute(name::String)
+    return startswith(name, "XPRS_") &&
+           all(isuppercase(c) || isdigit(c) for c in name if c != '_')
+end
+
+const XPRS_ATTRIBUTES = Dict{String,Any}(
+    replace("$name", "XPRS_" => "") => getfield(Lib, name) for
+    name in filter(_is_xprs_attribute, names(Lib; all = true))
 )
 
 function initialize()
     Libdl.dlopen(libxprs)
     userlic()
-    init() # Call XPRSinit for initialization
-    # free is not strictly necessary since destroyprob is called
-    # inthe finalizer.
-    # the user can call free if needed.
-    # leaving it uncommented results in many print errors becaus
-    # it is called prior to finalizers.
-    # atexit(free) # Call free when process terminates
+    init()
+    # Calling free is not necessary since destroyprob is called
+    # in the finalizer.
+    return
 end
 
 include("MOI/MOI_wrapper.jl")
 
 function __init__()
-    if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT") && get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") != "true"
-        Xpress.initialize()
+    if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT") &&
+       get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") != "true"
+        initialize()
     end
+    return
 end
 
 end  # Xpress
