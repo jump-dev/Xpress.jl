@@ -52,6 +52,9 @@ function ci_installation()
     run(`tar -xjf xpress.tar.bz2`)
     root = "lib/python3.10/site-packages/xpress"
     run(`cp $root/license/community-xpauth.xpr $root/lib/xpauth.xpr`)
+    if Sys.islinux()
+        run(`cp $root/lib/libxprs.so.42 $root/lib/libxprs.so`)
+    end
     write_deps_file(joinpath(@__DIR__, root, "lib"))
     return
 end
