@@ -323,7 +323,7 @@ end
         cb_calls = Int32[]
         MOI.set(model, Xpress.CallbackFunction(), (cb_data) -> begin
             push!(cb_calls)
-            
+
             if Xpress.get_control_or_attribute(cb_data.model, Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE) > 1
                 return
             end
@@ -384,4 +384,42 @@ end
     end)
     MOI.optimize!(model)
     @test unknown_reached
+end
+
+function test_lazy_constraint_dual_reductions()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variables(model, 3)
+    MOI.add_constraint.(model, x, MOI.GreaterThan(0.0))
+    MOI.add_constraint.(model, x[1:2], MOI.Integer())
+    MOI.add_constraint(
+        model,
+        1.0 * x[1] + 1.0 * x[2] - 1.0 * x[3],
+        MOI.EqualTo(0.0),
+    )
+    MOI.add_constraint(model, 1.0 * x[1] + 1.0 * x[2], MOI.LessThan(220.0))
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    f = 1.0 * x[3]
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    function lazy_flow_constraints(cb_data)
+        x_val = MOI.get.(model, MOI.CallbackVariablePrimal(cb_data), x)
+        if x_val[1] + x_val[2] > 10
+            MOI.submit(
+                model,
+                MOI.LazyConstraint(cb_data),
+                1.0 * x[1] + 1.0 * x[2],
+                MOI.LessThan(10.0),
+            )
+        end
+    end
+    MOI.set(model, MOI.LazyConstraintCallback(), lazy_flow_constraints)
+    MOI.optimize!(model)
+    x_val = MOI.get(model, MOI.VariablePrimal(), x)
+    @test x_val[1] + x_val[2] <= 10.0 + 1e-4
+    @test x_val[1] + x_val[2] ≈ x_val[3]
+    return
+end
+
+@testset "Xpress.test_lazy_constraint_dual_reductions" begin
+    test_lazy_constraint_dual_reductions()
 end
