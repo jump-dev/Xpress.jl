@@ -7,10 +7,10 @@ function _invoke(f::Function, pos::Int, ::Type{Float64}, args...)
     out = Ref{Float64}(0.0) # should we use Cfloat here instead?
 
     args = collect(args)
-    insert!(args, pos-1, out)
+    insert!(args, pos - 1, out)
 
     r = f(args...)
-    if r != 0 
+    if r != 0
         throw(XpressError(r, "Unable to invoke $f"))
     end
     return out[]
@@ -20,7 +20,7 @@ function _invoke(f::Function, pos::Int, ::Type{Int}, args...)
     out = Ref{Cint}(0)
 
     args = collect(args)
-    insert!(args, pos-1, out)
+    insert!(args, pos - 1, out)
 
     r = f(args...)
     if r != 0
@@ -35,7 +35,7 @@ function _invoke(f::Function, pos::Int, ::Type{String}, args...)
     GC.@preserve buffer begin
         out = Cstring(buffer_p)
         args = collect(Any, args)
-        insert!(args, pos-1, out)
+        insert!(args, pos - 1, out)
         r = f(args...)
         if r != 0
             throw(XpressError(r, "Unable to invoke $f"))
@@ -82,8 +82,8 @@ macro _invoke(expr)
 
     # Remove all `_` arguments
     # TODO: note the positions and pass positions to the invoke function
-    indices = findall(x->x==:_, f.args)
-    filter!(x->x≠:_, f.args)
+    indices = findall(x -> x == :_, f.args)
+    filter!(x -> x ≠ :_, f.args)
 
     # Call invoke function at macro call site instead
     pushfirst!(f.args, :(_invoke))
@@ -105,7 +105,7 @@ macro _invoke(expr)
 end
 
 function get_xpress_error_message(xprs_ptr)
-    "(Unable to extract error message for $(typeof(xprs_ptr)).)"
+    return "(Unable to extract error message for $(typeof(xprs_ptr)).)"
 end
 
 """
@@ -134,7 +134,7 @@ end
 """
 macro checked(expr)
     @assert expr.head == :call "Can only use @checked on function calls"
-    @assert ( expr.args[1].head == :(.) ) && ( expr.args[1].args[1] == :Lib) "Can only use @checked on Lib.\$function"
+    @assert (expr.args[1].head == :(.)) && (expr.args[1].args[1] == :Lib) "Can only use @checked on Lib.\$function"
     @assert length(expr.args) >= 2 "Lib.\$function must be contain atleast one argument and the first argument must be of type XpressProblem"
     f = replace(String(expr.args[1].args[2].value), "XPRS" => "")
     return quote

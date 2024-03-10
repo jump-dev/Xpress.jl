@@ -23,13 +23,16 @@ function Base.showerror(io::IO, err::XpressError)
     elseif err.errorcode == 16
         print(io, "Program error.")
     elseif err.errorcode == 32
-        print(io, "Subroutine not completed successfully, possibly due to invalid argument.")
+        print(
+            io,
+            "Subroutine not completed successfully, possibly due to invalid argument.",
+        )
     elseif err.errorcode == 128
         print(io, "Too many users.")
     else
         print(io, "Unrecoverable error.")
     end
-    print(io, " $(err.msg)")
+    return print(io, " $(err.msg)")
 end
 
 function fixinfinity(val::Float64)
@@ -43,7 +46,7 @@ function fixinfinity(val::Float64)
 end
 
 function fixinfinity!(vals::Vector{Float64})
-    map!(fixinfinity, vals, vals)
+    return map!(fixinfinity, vals, vals)
 end
 
 """
@@ -53,12 +56,24 @@ abstract type Xpress.CWrapper
 """
 abstract type CWrapper end
 
-Base.unsafe_convert(::Type{Ptr{Cvoid}}, t::CWrapper) = (t.ptr == C_NULL) ? throw(XpressError(255, "Received null pointer in CWrapper. Something must be wrong.")) : t.ptr
+function Base.unsafe_convert(::Type{Ptr{Cvoid}}, t::CWrapper)
+    return (t.ptr == C_NULL) ?
+           throw(
+        XpressError(
+            255,
+            "Received null pointer in CWrapper. Something must be wrong.",
+        ),
+    ) : t.ptr
+end
 
 mutable struct XpressProblem <: CWrapper
     ptr::Lib.XPRSprob
     logfile::String
-    function XpressProblem(ptr::Lib.XPRSprob; finalize_env::Bool = true, logfile = "")
+    function XpressProblem(
+        ptr::Lib.XPRSprob;
+        finalize_env::Bool = true,
+        logfile = "",
+    )
         model = new(ptr, logfile)
         if finalize_env
             finalizer(destroyprob, model)
@@ -68,15 +83,15 @@ mutable struct XpressProblem <: CWrapper
 end
 
 function get_xpress_error_message(prob::XpressProblem)
-    last_error = @_invoke Lib.XPRSgetlasterror(prob, _)::String 
-    lstrip(last_error, ['?'])
+    last_error = @_invoke Lib.XPRSgetlasterror(prob, _)::String
+    return lstrip(last_error, ['?'])
 end
 
 function XpressProblem(; logfile = "")
     ref = Ref{Lib.XPRSprob}()
     Lib.XPRScreateprob(ref)
     @assert ref[] != C_NULL "Failed to create XpressProblem. Received null pointer from Xpress C interface."
-    p = XpressProblem(ref[], logfile = logfile)
+    p = XpressProblem(ref[]; logfile = logfile)
     if logfile != ""
         Lib.XPRSsetlogfile(p, logfile)
     end
@@ -110,15 +125,27 @@ end
 function get_control_or_attribute(prob::XpressProblem, control::String)
     control_index = get(INTEGER_CONTROLS, control, -1)
     if control_index != -1
-        return @_invoke Lib.XPRSgetintcontrol(prob, Int32(control_index), _)::Int
+        return @_invoke Lib.XPRSgetintcontrol(
+            prob,
+            Int32(control_index),
+            _,
+        )::Int
     end
     control_index = get(DOUBLE_CONTROLS, control, -1)
     if control_index != -1
-        return @_invoke Lib.XPRSgetdblcontrol(prob, Int32(control_index), _)::Float64
+        return @_invoke Lib.XPRSgetdblcontrol(
+            prob,
+            Int32(control_index),
+            _,
+        )::Float64
     end
     control_index = get(STRING_CONTROLS, control, -1)
     if control_index != -1
-        return @_invoke Lib.XPRSgetstrcontrol(prob, Int32(control_index), _)::String
+        return @_invoke Lib.XPRSgetstrcontrol(
+            prob,
+            Int32(control_index),
+            _,
+        )::String
     end
     control_index = get(INTEGER_ATTRIBUTES, control, -1)
     if control_index != -1
@@ -132,7 +159,7 @@ function get_control_or_attribute(prob::XpressProblem, control::String)
     if control_index != -1
         return @_invoke Lib.XPRSgetstrattrib(prob, control_index, _)::String
     end
-    error("Unrecognized control parameter: $(control).")
+    return error("Unrecognized control parameter: $(control).")
 end
 
 """
@@ -157,17 +184,29 @@ end
 function getcontrol(prob::XpressProblem, control::String)
     control_index = get(INTEGER_CONTROLS, control, -1)
     if control_index != -1
-        return @_invoke Lib.XPRSgetintcontrol(prob, Int32(control_index), _)::Int
+        return @_invoke Lib.XPRSgetintcontrol(
+            prob,
+            Int32(control_index),
+            _,
+        )::Int
     end
     control_index = get(DOUBLE_CONTROLS, control, -1)
     if control_index != -1
-        return @_invoke Lib.XPRSgetdblcontrol(prob, Int32(control_index), _)::Float64
+        return @_invoke Lib.XPRSgetdblcontrol(
+            prob,
+            Int32(control_index),
+            _,
+        )::Float64
     end
     control_index = get(STRING_CONTROLS, control, -1)
     if control_index != -1
-        return @_invoke Lib.XPRSgetstrcontrol(prob, Int32(control_index), _)::String
+        return @_invoke Lib.XPRSgetstrcontrol(
+            prob,
+            Int32(control_index),
+            _,
+        )::String
     end
-    error("Unrecognized control parameter: $(control).")
+    return error("Unrecognized control parameter: $(control).")
 end
 
 # getcontrol(prob::XpressProblem, control::Symbol) = getcontrol(prob, getproperty(Lib, Symbol("XPRS_$(String(control))")))
@@ -180,7 +219,9 @@ end
 Set parameter of any type
 """
 # setcontrol!(prob::XpressProblem, control::Symbol, val::Any) = setcontrol!(prob, getproperty(Lib, Symbol("XPRS_$(String(control))")), val::Any)
-setcontrol!(prob::XpressProblem, control::Integer, val) = setcontrol!(prob, Cint(control), val)
+function setcontrol!(prob::XpressProblem, control::Integer, val)
+    return setcontrol!(prob, Cint(control), val)
+end
 function setcontrol!(prob::XpressProblem, control::Cint, val)
     # TODO: dispatch on Val(control) instead?
     if control in INTEGER_CONTROLS_VALUES
@@ -214,7 +255,7 @@ function setcontrol!(prob::XpressProblem, control::String, val)
     if control_index != -1
         return Lib.XPRSsetstrcontrol(prob, control_index, val)
     end
-    error("Unrecognized control parameter: $(control).")
+    return error("Unrecognized control parameter: $(control).")
 end
 
 """
@@ -230,21 +271,47 @@ end
 
 # originals are more important to be used everywhere, presolved are actually
 # secondary
-n_variables(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int
-n_constraints(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALROWS, _)::Int
-n_special_ordered_sets(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETS, _)::Int
-n_quadratic_constraints(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQCONSTRAINTS, _)::Int
-n_non_zero_elements(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ELEMS, _)::Int
-n_quadratic_elements(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQELEMS, _)::Int
-n_quadratic_row_coefficients(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQCELEMS, _)::Int
-n_entities(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALMIPENTS, _)::Int
-n_setmembers(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETMEMBERS, _)::Int
+function n_variables(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int
+end
+function n_constraints(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALROWS, _)::Int
+end
+function n_special_ordered_sets(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETS, _)::Int
+end
+function n_quadratic_constraints(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQCONSTRAINTS, _)::Int
+end
+function n_non_zero_elements(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ELEMS, _)::Int
+end
+function n_quadratic_elements(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQELEMS, _)::Int
+end
+function n_quadratic_row_coefficients(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQCELEMS, _)::Int
+end
+function n_entities(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALMIPENTS, _)::Int
+end
+function n_setmembers(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETMEMBERS, _)::Int
+end
 
-n_original_variables(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int
-n_original_constraints(prob::XpressProblem) = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALROWS, _)::Int
+function n_original_variables(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int
+end
+function n_original_constraints(prob::XpressProblem)
+    @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALROWS, _)::Int
+end
 
-obj_sense(prob::XpressProblem) = @_invoke Lib.XPRSgetdblattrib(prob, Lib.XPRS_OBJSENSE, _)::Float64
-objective_sense(prob::XpressProblem) = obj_sense(prob)  == Lib.XPRS_OBJ_MINIMIZE ? :minimize : :maximize
+function obj_sense(prob::XpressProblem)
+    @_invoke Lib.XPRSgetdblattrib(prob, Lib.XPRS_OBJSENSE, _)::Float64
+end
+function objective_sense(prob::XpressProblem)
+    return obj_sense(prob) == Lib.XPRS_OBJ_MINIMIZE ? :minimize : :maximize
+end
 
 # derived attribute functions
 
@@ -252,19 +319,22 @@ objective_sense(prob::XpressProblem) = obj_sense(prob)  == Lib.XPRS_OBJ_MINIMIZE
     n_linear_constraints(prob::XpressProblem)
 Return the number of purely linear contraints in the XpressProblem
 """
-n_linear_constraints(prob::XpressProblem) = n_constraints(prob) - n_quadratic_constraints(prob)
+n_linear_constraints(prob::XpressProblem) =
+    n_constraints(prob) - n_quadratic_constraints(prob)
 
 """
     is_qcp(prob::XpressProblem)
 Return `true` if there are quadratic constraints in the XpressProblem
 """
-is_quadratic_constraints(prob::XpressProblem) = n_quadratic_constraints(prob) > 0
+is_quadratic_constraints(prob::XpressProblem) =
+    n_quadratic_constraints(prob) > 0
 
 """
     is_mip(prob::XpressProblem)
 Return `true` if there are integer entities in the XpressProblem
 """
-is_mixedinteger(prob::XpressProblem) = (n_entities(prob) + n_special_ordered_sets(prob)) > 0
+is_mixedinteger(prob::XpressProblem) =
+    (n_entities(prob) + n_special_ordered_sets(prob)) > 0
 
 """
     is_quadratic_objective(prob::XpressProblem)
@@ -278,8 +348,8 @@ Return a symbol enconding the type of the problem.]
 Options are: `:LP`, `:QP` and `:QCP`
 """
 function problem_type(prob::XpressProblem)
-    is_quadratic_constraints(prob) ? (:QCP) :
-    is_quadratic_objective(prob)  ? (:QP)  : (:LP)
+    return is_quadratic_constraints(prob) ? (:QCP) :
+           is_quadratic_objective(prob) ? (:QP) : (:LP)
 end
 
 """
@@ -287,21 +357,45 @@ end
 Prints a simplified problem description
 """
 function Base.show(io::IO, prob::XpressProblem)
-    println(io, "Xpress Problem:"     )
+    println(io, "Xpress Problem:")
     if is_mixedinteger(prob)
-    println(io, "    type   : $(problem_type(prob)) (MIP)")
+        println(io, "    type   : $(problem_type(prob)) (MIP)")
     else
-    println(io, "    type   : $(problem_type(prob))")
+        println(io, "    type   : $(problem_type(prob))")
     end
     println(io, "    sense  : $(objective_sense(prob))")
-    println(io, "    number of variables                    = $(n_variables(prob))")
-    println(io, "    number of linear constraints           = $(n_linear_constraints(prob))")
-    println(io, "    number of quadratic constraints        = $(n_quadratic_constraints(prob))")
-    println(io, "    number of sos constraints              = $(n_special_ordered_sets(prob))")
-    println(io, "    number of non-zero coeffs              = $(n_non_zero_elements(prob))")
-    println(io, "    number of non-zero qp objective terms  = $(n_quadratic_elements(prob))")
-    println(io, "    number of non-zero qp constraint terms = $(n_quadratic_row_coefficients(prob))")
-    println(io, "    number of integer entities             = $(n_entities(prob))")
+    println(
+        io,
+        "    number of variables                    = $(n_variables(prob))",
+    )
+    println(
+        io,
+        "    number of linear constraints           = $(n_linear_constraints(prob))",
+    )
+    println(
+        io,
+        "    number of quadratic constraints        = $(n_quadratic_constraints(prob))",
+    )
+    println(
+        io,
+        "    number of sos constraints              = $(n_special_ordered_sets(prob))",
+    )
+    println(
+        io,
+        "    number of non-zero coeffs              = $(n_non_zero_elements(prob))",
+    )
+    println(
+        io,
+        "    number of non-zero qp objective terms  = $(n_quadratic_elements(prob))",
+    )
+    println(
+        io,
+        "    number of non-zero qp constraint terms = $(n_quadratic_row_coefficients(prob))",
+    )
+    return println(
+        io,
+        "    number of integer entities             = $(n_entities(prob))",
+    )
 end
 
 const MIPSTATUS_STRING = Dict{Int,String}(
@@ -316,10 +410,10 @@ const MIPSTATUS_STRING = Dict{Int,String}(
 )
 
 function mip_solve_complete(stat)
-    stat in [Lib.XPRS_MIP_INFEAS, Lib.XPRS_MIP_OPTIMAL]
+    return stat in [Lib.XPRS_MIP_INFEAS, Lib.XPRS_MIP_OPTIMAL]
 end
 function mip_solve_stopped(stat)
-    stat in [Lib.XPRS_MIP_INFEAS, Lib.XPRS_MIP_OPTIMAL]
+    return stat in [Lib.XPRS_MIP_INFEAS, Lib.XPRS_MIP_OPTIMAL]
 end
 
 const LPSTATUS_STRING = Dict{Int,String}(
@@ -334,7 +428,7 @@ const LPSTATUS_STRING = Dict{Int,String}(
     Lib.XPRS_LP_NONCONVEX => "8 Problem contains quadratic data, which is not convex ( XPRS_LP_NONCONVEX).",
 )
 
-const STOPSTATUS_STRING = Dict{Int, String}(
+const STOPSTATUS_STRING = Dict{Int,String}(
     Lib.XPRS_STOP_NONE => "no interruption - the solve completed normally",
     Lib.XPRS_STOP_TIMELIMIT => "time limit hit",
     Lib.XPRS_STOP_CTRLC => "control C hit",

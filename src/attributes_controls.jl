@@ -21,7 +21,7 @@ Banner from header (xprs.h):
 
 =#
 
-const STRING_CONTROLS = Dict{String, Int32}(
+const STRING_CONTROLS = Dict{String,Int32}(
     "MPSRHSNAME" => 6001,
     "MPSOBJNAME" => 6002,
     "MPSRANGENAME" => 6003,
@@ -33,7 +33,7 @@ const STRING_CONTROLS = Dict{String, Int32}(
     "COMPUTEEXECSERVICE" => 6022,
 )
 
-const DOUBLE_CONTROLS = Dict{String, Int32}(
+const DOUBLE_CONTROLS = Dict{String,Int32}(
     "MAXCUTTIME" => 8149,
     "MAXSTALLTIME" => 8443,
     "TUNERMAXTIME" => 8364,
@@ -117,7 +117,7 @@ const DOUBLE_CONTROLS = Dict{String, Int32}(
     "REPAIRINFEASTIMELIMIT" => 7160,
 )
 
-const INTEGER_CONTROLS = Dict{String, Int32}(
+const INTEGER_CONTROLS = Dict{String,Int32}(
     "EXTRAROWS" => 8004,
     "EXTRACOLS" => 8005,
     "LPITERLIMIT" => 8007,
@@ -371,7 +371,7 @@ const INTEGER_CONTROLS = Dict{String, Int32}(
     "EXTRASETELEMS" => 8191,
 )
 
-const STRING_ATTRIBUTES = Dict{String, Int32}(
+const STRING_ATTRIBUTES = Dict{String,Int32}(
     "MATRIXNAME" => 3001,
     "BOUNDNAME" => 3002,
     "OBJNAME" => 3003, # kept for compatibility
@@ -381,7 +381,7 @@ const STRING_ATTRIBUTES = Dict{String, Int32}(
     "UUID" => 3011,
 )
 
-const DOUBLE_ATTRIBUTES = Dict{String, Int32}(
+const DOUBLE_ATTRIBUTES = Dict{String,Int32}(
     "MIPSOLTIME" => 1371,
     "TIME" => 1122,
     "LPOBJVAL" => 2001,
@@ -416,7 +416,7 @@ const DOUBLE_ATTRIBUTES = Dict{String, Int32}(
     "BARCGAP" => 4005,
 )
 
-const INTEGER_ATTRIBUTES = Dict{String, Int32}(
+const INTEGER_ATTRIBUTES = Dict{String,Int32}(
     "ROWS" => 1001,
     "SETS" => 1004,
     "PRIMALINFEAS" => 1007,
