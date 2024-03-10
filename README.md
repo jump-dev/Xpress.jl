@@ -73,6 +73,20 @@ to the console ([there might be issues with console output on windows (it is man
 If `logfile` is set to a file's path, output is printed to that file.
 By default, `logfile = ""` (console).
 
+### Custom options
+
+ * `MOI_POST_SOLVE::Bool`: set this attribute to `false` to skip `XPRSpostsolve`.
+   This is most useful in older versions of Xpress that throw an error if the
+   model is infeasible.
+ * `MOI_IGNORE_START::Bool`: set this attribute to `true` to skip setting
+   `MOI.VariablePrimalStart`
+ * `MOI_WARNINGS::Bool`: set this attribute to `false` to turn off the various
+   warnings printed by the MathOptInterface wrapper
+ * `MOI_SOLVE_MODE::String`: set the `flags` argument to
+   [`lpoptimize`](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/R/HTML/lpoptimize.html)
+ * `XPRESS_WARNING_WINDOWS::Bool`: set this attribute to `false` to turn of
+   warnings on Windows.
+
 ## Callbacks
 
 Solver specific and solver independent callbacks are working in
@@ -82,23 +96,17 @@ current implementation should be considered experimental.
 
 ## Environment variables
 
- - `XPRESS_JL_SKIP_LIB_CHECK`: Used to skip build lib check as previously described.
+ - `XPRESS_JL_SKIP_LIB_CHECK`: Used to skip build lib check as previously
+   described.
  - `XPRESS_JL_NO_INFO`: Disable license info log.
  - `XPRESS_JL_NO_DEPS_ERROR`: Disable error when do deps.jl file is found.
  - `XPRESS_JL_NO_AUTO_INIT`: Disable automatic run of `Xpress.initialize()`.
- Specially useful for explicitly loading the dynamic library.
-
-## Skipping Xpress.postsolve
-
-In older versions of Xpress, the command `XPRSpostsolve` throws an error in
-infeasible models. In these older versions the post solve should not be
-executed. To do this, one can use the `MOI.RawOptimizerAttribute("MOI_POST_SOLVE")`
-to skip this routine.
+   Specially useful for explicitly loading the dynamic library.
 
 ## C API
 
 The C API can be accessed via `Xpress.Lib.XPRSxx` functions, where the names and
-arguments are identical to the C API. 
+arguments are identical to the C API.
 
 See the [Xpress documentation](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML)
 for details.
