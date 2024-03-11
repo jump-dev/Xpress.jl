@@ -6,10 +6,10 @@
 import Downloads
 import Libdl
 
-const DEPS_FILE = joinpath(dirname(@__FILE__),"deps.jl")
+const DEPS_FILE = joinpath(dirname(@__FILE__), "deps.jl")
 
 function write_deps_file(path)
-    open(DEPS_FILE,"w") do io
+    open(DEPS_FILE, "w") do io
         return print(io, "const xpressdlpath = \"$(escape_string(path))\"")
     end
     return

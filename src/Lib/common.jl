@@ -4,7 +4,7 @@
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
 # Automatically generated using Clang.jl
-
+#! format: off
 
 # Skipping MacroDefinition: xprs_deprecated ( msg ) __declspec ( deprecated ( msg ) )
 # Skipping MacroDefinition: xprs_static_inline static inline

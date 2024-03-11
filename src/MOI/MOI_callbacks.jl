@@ -27,22 +27,27 @@ function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
     end
     model.has_generic_callback = true
     # Starting with this callback to test
-    model.callback_data = set_callback_optnode!(model.inner, (cb_data) -> begin
-        model.callback_state = CB_GENERIC
-        f(cb_data)
-        model.callback_state = CB_NONE
-    end)
+    model.callback_data = set_callback_optnode!(
+        model.inner,
+        (cb_data) -> begin
+            model.callback_state = CB_GENERIC
+            f(cb_data)
+            model.callback_state = CB_NONE
+        end,
+    )
     return
 end
 MOI.supports(::Optimizer, ::CallbackFunction) = true
 
 function get_cb_solution(model::Optimizer, model_inner::XpressProblem)
     reset_callback_cached_solution(model)
-    Lib.XPRSgetlpsol(model_inner,
-            model.callback_cached_solution.variable_primal,
-            model.callback_cached_solution.linear_primal,
-            model.callback_cached_solution.linear_dual,
-            model.callback_cached_solution.variable_dual)
+    Lib.XPRSgetlpsol(
+        model_inner,
+        model.callback_cached_solution.variable_primal,
+        model.callback_cached_solution.linear_primal,
+        model.callback_cached_solution.linear_dual,
+        model.callback_cached_solution.variable_dual,
+    )
     return
 end
 
@@ -50,11 +55,20 @@ function applycuts(opt::Optimizer, model::XpressProblem)
     itype = Cint(1)
     interp = Cint(-1) # Get all cuts
     delta = 0.0#Lib.XPRS_MINUSINFINITY
-    ncuts = Array{Cint}(undef,1)
+    ncuts = Array{Cint}(undef, 1)
     size = Cint(length(opt.cb_cut_data.cutptrs))
-    mcutptr = Array{Lib.XPRScut}(undef,size)
-    dviol = Array{Cdouble}(undef,size)
-    Lib.XPRSgetcpcutlist(model, itype, interp, delta, ncuts, size, mcutptr, dviol) # requires an availabel solution
+    mcutptr = Array{Lib.XPRScut}(undef, size)
+    dviol = Array{Cdouble}(undef, size)
+    Lib.XPRSgetcpcutlist(
+        model,
+        itype,
+        interp,
+        delta,
+        ncuts,
+        size,
+        mcutptr,
+        dviol,
+    ) # requires an availabel solution
     Lib.XPRSloadcuts(model, itype, interp, ncuts[1], mcutptr)
     return ncuts[1] > 0
 end
@@ -69,7 +83,11 @@ function default_moi_callback(model::Optimizer)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             # only allow one heuristic solution per LP optimal node
-            cb_count=@_invoke Lib.XPRSgetintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE,_)::Int
+            cb_count = @_invoke Lib.XPRSgetintattrib(
+                cb_data.model,
+                Lib.XPRS_CALLBACKCOUNT_OPTNODE,
+                _,
+            )::Int
             if cb_count > 1
                 return
             end
@@ -87,8 +105,12 @@ function default_moi_callback(model::Optimizer)
             # only allow one user cut solution per LP optimal node
             # limiting two calls to guarantee th user has a chance to add
             # a cut. if the user cut is loose the problem will be resolved anyway.
-            cb_count=@_invoke Lib.XPRSgetintattrib(cb_data.model, Lib.XPRS_CALLBACKCOUNT_OPTNODE,_)::Int
-            if cb_count> 2
+            cb_count = @_invoke Lib.XPRSgetintattrib(
+                cb_data.model,
+                Lib.XPRS_CALLBACKCOUNT_OPTNODE,
+                _,
+            )::Int
+            if cb_count > 2
                 return
             end
             model.user_cut_callback(cb_data)
@@ -112,7 +134,11 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.CallbackNodeStatus{CallbackData})
     if check_moi_callback_validity(model)
-        mip_infeas = @_invoke Lib.XPRSgetintattrib(attr.callback_data.model, Lib.XPRS_MIPINFEAS,_)::Int
+        mip_infeas = @_invoke Lib.XPRSgetintattrib(
+            attr.callback_data.model,
+            Lib.XPRS_MIPINFEAS,
+            _,
+        )::Int
         if mip_infeas == 0
             return MOI.CALLBACK_NODE_STATUS_INTEGER
         elseif mip_infeas > 0
@@ -125,9 +151,12 @@ end
 function MOI.get(
     model::Optimizer,
     ::MOI.CallbackVariablePrimal{CallbackData},
-    x::MOI.VariableIndex
+    x::MOI.VariableIndex,
 )
-    return model.callback_cached_solution.variable_primal[_info(model, x).column]
+    return model.callback_cached_solution.variable_primal[_info(
+        model,
+        x,
+    ).column]
 end
 
 # ==============================================================================
@@ -156,30 +185,44 @@ function MOI.submit(
     model::Optimizer,
     cb::CB,
     f::MOI.ScalarAffineFunction{Float64},
-    s::Union{MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.EqualTo{Float64}}
-) where CB <: Union{MOI.UserCut{CallbackData},MOI.LazyConstraint{CallbackData}}
-
+    s::Union{
+        MOI.LessThan{Float64},
+        MOI.GreaterThan{Float64},
+        MOI.EqualTo{Float64},
+    },
+) where {CB<:Union{MOI.UserCut{CallbackData},MOI.LazyConstraint{CallbackData}}}
     model_cb = cb.callback_data.model
     model.cb_cut_data.submitted = true
     if model.callback_state == CB_HEURISTIC
-        cache_exception(model,
-            MOI.InvalidCallbackUsage(MOI.HeuristicCallback(), cb))
-            Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
+        cache_exception(
+            model,
+            MOI.InvalidCallbackUsage(MOI.HeuristicCallback(), cb),
+        )
+        Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
         return
     elseif model.callback_state == CB_LAZY && CB <: MOI.UserCut{CallbackData}
-        cache_exception(model,
-            MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), cb))
-            Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
+        cache_exception(
+            model,
+            MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), cb),
+        )
+        Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
         return
-    elseif model.callback_state == CB_USER_CUT && CB <: MOI.LazyConstraint{CallbackData}
-        cache_exception(model,
-            MOI.InvalidCallbackUsage(MOI.UserCutCallback(), cb))
-            Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
+    elseif model.callback_state == CB_USER_CUT &&
+           CB <: MOI.LazyConstraint{CallbackData}
+        cache_exception(
+            model,
+            MOI.InvalidCallbackUsage(MOI.UserCutCallback(), cb),
+        )
+        Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
         return
     elseif !iszero(f.constant)
-        cache_exception(model,
-            MOI.ScalarFunctionConstantNotZero{Float64, typeof(f), typeof(s)}(f.constant))
-            Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
+        cache_exception(
+            model,
+            MOI.ScalarFunctionConstantNotZero{Float64,typeof(f),typeof(s)}(
+                f.constant,
+            ),
+        )
+        Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
         return
     end
     indices, coefficients = _indices_and_coefficients(model, f)
@@ -187,7 +230,7 @@ function MOI.submit(
 
     mtype = Int32[1] # Cut type
     mstart = Int32[0, length(indices)]
-    mindex  = Array{Lib.XPRScut}(undef,1)
+    mindex = Array{Lib.XPRScut}(undef, 1)
     ncuts = Cint(1)
     ncuts_ptr = Cint[0]
     nodupl = Cint(2) # Duplicates are excluded from the cut pool, ignoring cut type
@@ -197,7 +240,18 @@ function MOI.submit(
     mcols = Cint.(indices)
     interp = Cint(-1) # Load all cuts
 
-    ret =Lib.XPRSstorecuts(model_cb, ncuts, nodupl, Cint.(mtype), sensetype, drhs, Cint.(mstart), mindex, Cint.(mcols), coefficients)
+    ret = Lib.XPRSstorecuts(
+        model_cb,
+        ncuts,
+        nodupl,
+        Cint.(mtype),
+        sensetype,
+        drhs,
+        Cint.(mstart),
+        mindex,
+        Cint.(mcols),
+        coefficients,
+    )
     Lib.XPRSloadcuts(model_cb, mtype[], interp, ncuts, mindex)
     push!(model.cb_cut_data.cutptrs, mindex[1])
     model.cb_cut_data.cutptrs
@@ -218,27 +272,31 @@ function MOI.submit(
     model::Optimizer,
     cb::MOI.HeuristicSolution{CallbackData},
     variables::Vector{MOI.VariableIndex},
-    values::MOI.Vector{Float64}
+    values::MOI.Vector{Float64},
 )
     model_cb = cb.callback_data.model::Xpress.XpressProblem
     model_cb2 = cb.callback_data.model_root::Xpress.XpressProblem
     if model.callback_state == CB_LAZY
-        cache_exception(model,
-            MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), cb))
-            Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
+        cache_exception(
+            model,
+            MOI.InvalidCallbackUsage(MOI.LazyConstraintCallback(), cb),
+        )
+        Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
         return
     elseif model.callback_state == CB_USER_CUT
-        cache_exception(model,
-            MOI.InvalidCallbackUsage(MOI.UserCutCallback(), cb))
+        cache_exception(
+            model,
+            MOI.InvalidCallbackUsage(MOI.UserCutCallback(), cb),
+        )
         Lib.XPRSinterrupt(model_cb, Lib.XPRS_STOP_USER)
         return
     end
     ilength = length(variables)
-    mipsolval = fill(NaN,ilength)
-    mipsolcol = fill(NaN,ilength)
+    mipsolval = fill(NaN, ilength)
+    mipsolcol = fill(NaN, ilength)
     count = 1
     for (var, value) in zip(variables, values)
-        mipsolcol[count] = convert(Cint,_info(model, var).column - 1)
+        mipsolcol[count] = convert(Cint, _info(model, var).column - 1)
         mipsolval[count] = value
         count += 1
     end

@@ -46,7 +46,7 @@ Copies information defined for one  problem to another.
 - `probname`: A string of up to 1024 characters (including `NULL` terminator) containing the name for the problem copy. This must be unique when file writing is to be expected, and particularly for global problems.
 
 """
-function copyprob(dest::XpressProblem, src::XpressProblem, probname="")
+function copyprob(dest::XpressProblem, src::XpressProblem, probname = "")
     @checked Lib.XPRScopyprob(dest, src, probname)
     return dest
 end
@@ -78,7 +78,7 @@ Initializes the Optimizer library. This must be called before any other library 
 
 """
 function init()
-    Lib.XPRSinit(C_NULL)
+    return Lib.XPRSinit(C_NULL)
 end
 
 """
@@ -88,7 +88,7 @@ Frees any allocated  memory and closes all open files.
 
 """
 function free()
-    Lib.XPRSfree()
+    return Lib.XPRSfree()
 end
 
 """
@@ -120,7 +120,7 @@ Returns the number of days left until an evaluation license expires.
 
 """
 function getdaysleft()
-    daysleft = @_invoke Lib.XPRSgetdaysleft(_)::Int
+    return daysleft = @_invoke Lib.XPRSgetdaysleft(_)::Int
 end
 
 """
@@ -130,7 +130,7 @@ You can use this function to disable some of the checking and validation of func
 
 """
 function setcheckedmode(checked_mode)
-    Lib.XPRSsetcheckedmode(checked_mode)
+    return Lib.XPRSsetcheckedmode(checked_mode)
 end
 
 """
@@ -140,19 +140,19 @@ You can use this function to interrogate whether checking and validation of all 
 
 """
 function getcheckedmode(r_checked_mode)
-    Lib.XPRSgetcheckedmode(r_checked_mode)
+    return Lib.XPRSgetcheckedmode(r_checked_mode)
 end
 
 function license(lic, path)
-    r = Lib.XPRSlicense(lic, path)
+    return r = Lib.XPRSlicense(lic, path)
 end
 
 function beginlicensing(r_dontAlreadyHaveLicense)
-    Lib.XPRSbeginlicensing(r_dontAlreadyHaveLicense)
+    return Lib.XPRSbeginlicensing(r_dontAlreadyHaveLicense)
 end
 
 function endlicensing()
-    Lib.XPRSendlicensing()
+    return Lib.XPRSendlicensing()
 end
 
 """
@@ -167,7 +167,7 @@ Retrieves an error message describing the last licensing error, if any occurred.
 
 """
 function getlicerrmsg(; len = 1024)
-    buffer = Array{Cchar}(undef, len*8)
+    buffer = Array{Cchar}(undef, len * 8)
     buffer_p = pointer(buffer)
     GC.@preserve buffer begin
         Lib.XPRSgetlicerrmsg(buffer_p, len)
@@ -186,7 +186,7 @@ This directs all Optimizer output to a  log file.
 - `filename`: A string of up to MAXPROBNAMELENGTH characters containing the file name to which all logging output should be written. If set to `NULL` , redirection of the output will stop and all screen output will be turned back on (except for DLL users where screen output is always turned off).
 
 """
-function setlogfile(prob::XpressProblem, logname::Union{String, Ptr{Nothing}})
+function setlogfile(prob::XpressProblem, logname::Union{String,Ptr{Nothing}})
     @checked Lib.XPRSsetlogfile(prob, logname)
 end
 
@@ -221,7 +221,11 @@ Sets the value of a given double  control parameter.
 - `dsval`: Value to which the control parameter is to be set.
 
 """
-function setdblcontrol(prob::XpressProblem, _index::Integer, _dvalue::AbstractFloat)
+function setdblcontrol(
+    prob::XpressProblem,
+    _index::Integer,
+    _dvalue::AbstractFloat,
+)
     @checked Lib.XPRSsetdblcontrol(prob, _index, _dvalue)
 end
 
@@ -359,8 +363,20 @@ function getstrcontrol(prob::XpressProblem, _index::Integer)
     @_invoke Lib.XPRSgetstrcontrol(prob, _index, _)::String
 end
 
-function getstringcontrol(prob::XpressProblem, _index::Integer, _svalue, _svaluesize, _controlsize)
-    @checked Lib.XPRSgetstringcontrol(prob, _index, _svalue, _svaluesize, _controlsize)
+function getstringcontrol(
+    prob::XpressProblem,
+    _index::Integer,
+    _svalue,
+    _svaluesize,
+    _controlsize,
+)
+    @checked Lib.XPRSgetstringcontrol(
+        prob,
+        _index,
+        _svalue,
+        _svaluesize,
+        _controlsize,
+    )
 end
 
 """
@@ -401,8 +417,20 @@ function getstrattrib(prob::XpressProblem, _index::Integer)
     @_invoke Lib.XPRSgetstrattrib(prob, _index, _)::String
 end
 
-function getstringattrib(prob::XpressProblem, _index::Integer, _cvalue, _cvaluesize, _controlsize)
-    @checked Lib.XPRSgetstringattrib(prob, _index, _cvalue, _cvaluesize, _controlsize)
+function getstringattrib(
+    prob::XpressProblem,
+    _index::Integer,
+    _cvalue,
+    _cvaluesize,
+    _controlsize,
+)
+    @checked Lib.XPRSgetstringattrib(
+        prob,
+        _index,
+        _cvalue,
+        _cvaluesize,
+        _controlsize,
+    )
 end
 
 """
@@ -493,7 +521,7 @@ This function is deprecated, and will be removed in future releases. Perform  go
 - `flags`: Flags to pass to `XPRSgoal` ( `GOAL` ):`o`: optimization process logs to be displayed;`l`: treat integer variables as linear;`f`: write output into a file `filename.grp` .
 
 """
-function goal(prob::XpressProblem, _filename::String, _sflags::String="")
+function goal(prob::XpressProblem, _filename::String, _sflags::String = "")
     @checked Lib.XPRSgoal(prob, _filename, _sflags)
 end
 
@@ -509,7 +537,7 @@ Reads an (X)MPS or LP format  matrix from file.
 - `flags`: Flags to be passed:`l`: only `probname.lp` is searched for;`z`: read input file in gzip format from a `.gz` file [ Console only ]
 
 """
-function readprob(prob::XpressProblem, _sprobname::String, _sflags::String="")
+function readprob(prob::XpressProblem, _sprobname::String, _sflags::String = "")
     @checked Lib.XPRSreadprob(prob, _sprobname, _sflags)
 end
 
@@ -536,12 +564,72 @@ Enables the user to pass a  matrix directly to the  Optimizer, rather than readi
 - `dub`: Double array of length `ncol` containing the upper bounds on the columns. Use `XPRS_PLUSINFINITY` to represent an upper bound of plus infinity.
 
 """
-function loadlp(prob::XpressProblem, _sprobname="", ncols=0, nrows=0, _srowtypes=Cchar[], _drhs=Float64[], _drange=Float64[], _dobj=Float64[], _mstart=Int[], _mnel=Int[], _mrwind=Int[], _dmatval=Float64[], _dlb=Float64[], _dub=Float64[])
-    @checked Lib.XPRSloadlp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
+function loadlp(
+    prob::XpressProblem,
+    _sprobname = "",
+    ncols = 0,
+    nrows = 0,
+    _srowtypes = Cchar[],
+    _drhs = Float64[],
+    _drange = Float64[],
+    _dobj = Float64[],
+    _mstart = Int[],
+    _mnel = Int[],
+    _mrwind = Int[],
+    _dmatval = Float64[],
+    _dlb = Float64[],
+    _dub = Float64[],
+)
+    @checked Lib.XPRSloadlp(
+        prob,
+        _sprobname,
+        ncols,
+        nrows,
+        _srowtypes,
+        _drhs,
+        _drange,
+        _dobj,
+        _mstart,
+        _mnel,
+        _mrwind,
+        _dmatval,
+        _dlb,
+        _dub,
+    )
 end
 
-function loadlp64(prob::XpressProblem, _sprobname="", ncols=0, nrows=0, _srowtypes=Cchar[], _drhs=Float64[], _drange=Float64[], _dobj=Float64[], _mstart=Int[], _mnel=Int[], _mrwind=Int[], _dmatval=Float64[], _dlb=Float64[], _dub=Float64[])
-    @checked Lib.XPRSloadlp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub)
+function loadlp64(
+    prob::XpressProblem,
+    _sprobname = "",
+    ncols = 0,
+    nrows = 0,
+    _srowtypes = Cchar[],
+    _drhs = Float64[],
+    _drange = Float64[],
+    _dobj = Float64[],
+    _mstart = Int[],
+    _mnel = Int[],
+    _mrwind = Int[],
+    _dmatval = Float64[],
+    _dlb = Float64[],
+    _dub = Float64[],
+)
+    @checked Lib.XPRSloadlp64(
+        prob,
+        _sprobname,
+        ncols,
+        nrows,
+        _srowtypes,
+        _drhs,
+        _drange,
+        _dobj,
+        _mstart,
+        _mnel,
+        _mrwind,
+        _dmatval,
+        _dlb,
+        _dub,
+    )
 end
 
 """
@@ -571,12 +659,88 @@ Used to load a  quadratic problem into the Optimizer data structure. Such a prob
 - `dqe`: Double array of size `nqtr` containing the quadratic coefficients.
 
 """
-function loadqp(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
-    @checked Lib.XPRSloadqp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
+function loadqp(
+    prob::XpressProblem,
+    _sprobname,
+    ncols,
+    nrows,
+    _srowtypes,
+    _drhs,
+    _drange,
+    _dobj,
+    _mstart,
+    _mnel,
+    _mrwind,
+    _dmatval,
+    _dlb,
+    _dub,
+    nquads,
+    _mqcol1,
+    _mqcol2,
+    _dqval,
+)
+    @checked Lib.XPRSloadqp(
+        prob,
+        _sprobname,
+        ncols,
+        nrows,
+        _srowtypes,
+        _drhs,
+        _drange,
+        _dobj,
+        _mstart,
+        _mnel,
+        _mrwind,
+        _dmatval,
+        _dlb,
+        _dub,
+        nquads,
+        _mqcol1,
+        _mqcol2,
+        _dqval,
+    )
 end
 
-function loadqp64(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
-    @checked Lib.XPRSloadqp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval)
+function loadqp64(
+    prob::XpressProblem,
+    _sprobname,
+    ncols,
+    nrows,
+    _srowtypes,
+    _drhs,
+    _drange,
+    _dobj,
+    _mstart,
+    _mnel,
+    _mrwind,
+    _dmatval,
+    _dlb,
+    _dub,
+    nquads,
+    _mqcol1,
+    _mqcol2,
+    _dqval,
+)
+    @checked Lib.XPRSloadqp64(
+        prob,
+        _sprobname,
+        ncols,
+        nrows,
+        _srowtypes,
+        _drhs,
+        _drange,
+        _dobj,
+        _mstart,
+        _mnel,
+        _mrwind,
+        _dmatval,
+        _dlb,
+        _dub,
+        nquads,
+        _mqcol1,
+        _mqcol2,
+        _dqval,
+    )
 end
 
 """
@@ -615,12 +779,124 @@ Used to load a   global problem with quadratic   objective coefficients in to th
 - `dref`: Double array of length `msstart[nsets]-1` containing the reference row entries for each member of the sets. May be `NULL` if not required.
 
 """
-function loadqglobal(prob::XpressProblem, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
-    @checked Lib.XPRSloadqglobal(prob, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
+function loadqglobal(
+    prob::XpressProblem,
+    probname,
+    ncols,
+    nrows,
+    qsenx,
+    rhsx,
+    range,
+    objx,
+    matbeg,
+    matcnt,
+    matind,
+    dmtval,
+    bndl,
+    bndu,
+    nquads,
+    mqcol1,
+    mqcol2,
+    dqval,
+    ngents,
+    nsets,
+    qgtype,
+    mgcols,
+    dlim,
+    qstype,
+    msstart,
+    mscols,
+    dref,
+)
+    @checked Lib.XPRSloadqglobal(
+        prob,
+        probname,
+        ncols,
+        nrows,
+        qsenx,
+        rhsx,
+        range,
+        objx,
+        matbeg,
+        matcnt,
+        matind,
+        dmtval,
+        bndl,
+        bndu,
+        nquads,
+        mqcol1,
+        mqcol2,
+        dqval,
+        ngents,
+        nsets,
+        qgtype,
+        mgcols,
+        dlim,
+        qstype,
+        msstart,
+        mscols,
+        dref,
+    )
 end
 
-function loadqglobal64(prob::XpressProblem, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
-    @checked Lib.XPRSloadqglobal64(prob, probname, ncols, nrows, qsenx, rhsx, range, objx, matbeg, matcnt, matind, dmtval, bndl, bndu, nquads, mqcol1, mqcol2, dqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
+function loadqglobal64(
+    prob::XpressProblem,
+    probname,
+    ncols,
+    nrows,
+    qsenx,
+    rhsx,
+    range,
+    objx,
+    matbeg,
+    matcnt,
+    matind,
+    dmtval,
+    bndl,
+    bndu,
+    nquads,
+    mqcol1,
+    mqcol2,
+    dqval,
+    ngents,
+    nsets,
+    qgtype,
+    mgcols,
+    dlim,
+    qstype,
+    msstart,
+    mscols,
+    dref,
+)
+    @checked Lib.XPRSloadqglobal64(
+        prob,
+        probname,
+        ncols,
+        nrows,
+        qsenx,
+        rhsx,
+        range,
+        objx,
+        matbeg,
+        matcnt,
+        matind,
+        dmtval,
+        bndl,
+        bndu,
+        nquads,
+        mqcol1,
+        mqcol2,
+        dqval,
+        ngents,
+        nsets,
+        qgtype,
+        mgcols,
+        dlim,
+        qstype,
+        msstart,
+        mscols,
+        dref,
+    )
 end
 
 """
@@ -724,8 +1000,24 @@ Loads  directives into the  presolved matrix.
 - `ddpc`: Double array of length `ndir` containing the down pseudo costs for the columns or sets. May be `NULL` if not required.
 
 """
-function loadpresolvedirs(prob::XpressProblem, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
-    @checked Lib.XPRSloadpresolvedirs(prob, ndirs, _mcols, _mpri, _sbr, dupc, ddpc)
+function loadpresolvedirs(
+    prob::XpressProblem,
+    ndirs,
+    _mcols,
+    _mpri,
+    _sbr,
+    dupc,
+    ddpc,
+)
+    @checked Lib.XPRSloadpresolvedirs(
+        prob,
+        ndirs,
+        _mcols,
+        _mpri,
+        _sbr,
+        dupc,
+        ddpc,
+    )
 end
 
 """
@@ -780,12 +1072,108 @@ Used to load a  global problem in to the Optimizer data structures.  Integer,  b
 - `dref`: Double array of length `msstart[nsets]-1` containing the reference row entries for each member of the sets. May be `NULL` if not required.
 
 """
-function loadglobal(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
-    @checked Lib.XPRSloadglobal(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
+function loadglobal(
+    prob::XpressProblem,
+    _sprobname,
+    ncols,
+    nrows,
+    _srowtypes,
+    _drhs,
+    _drange,
+    _dobj,
+    _mstart,
+    _mnel,
+    _mrwind,
+    _dmatval,
+    _dlb,
+    _dub,
+    ngents,
+    nsets,
+    _qgtype,
+    _mgcols,
+    _dlim,
+    _stype,
+    _msstart,
+    _mscols,
+    _dref,
+)
+    @checked Lib.XPRSloadglobal(
+        prob,
+        _sprobname,
+        ncols,
+        nrows,
+        _srowtypes,
+        _drhs,
+        _drange,
+        _dobj,
+        _mstart,
+        _mnel,
+        _mrwind,
+        _dmatval,
+        _dlb,
+        _dub,
+        ngents,
+        nsets,
+        _qgtype,
+        _mgcols,
+        _dlim,
+        _stype,
+        _msstart,
+        _mscols,
+        _dref,
+    )
 end
 
-function loadglobal64(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
-    @checked Lib.XPRSloadglobal64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, ngents, nsets, _qgtype, _mgcols, _dlim, _stype, _msstart, _mscols, _dref)
+function loadglobal64(
+    prob::XpressProblem,
+    _sprobname,
+    ncols,
+    nrows,
+    _srowtypes,
+    _drhs,
+    _drange,
+    _dobj,
+    _mstart,
+    _mnel,
+    _mrwind,
+    _dmatval,
+    _dlb,
+    _dub,
+    ngents,
+    nsets,
+    _qgtype,
+    _mgcols,
+    _dlim,
+    _stype,
+    _msstart,
+    _mscols,
+    _dref,
+)
+    @checked Lib.XPRSloadglobal64(
+        prob,
+        _sprobname,
+        ncols,
+        nrows,
+        _srowtypes,
+        _drhs,
+        _drange,
+        _dobj,
+        _mstart,
+        _mnel,
+        _mrwind,
+        _dmatval,
+        _dlb,
+        _dub,
+        ngents,
+        nsets,
+        _qgtype,
+        _mgcols,
+        _dlim,
+        _stype,
+        _msstart,
+        _mscols,
+        _dref,
+    )
 end
 
 """
@@ -802,29 +1190,34 @@ When a model is loaded, the rows, columns and sets of the model may not have  na
 - `last`: End of the range of rows, columns or sets.
 
 """
-function addnames(prob::XpressProblem, _itype::Integer, first::Integer, names::Vector{String})
-"""
-    int XPRS_CC XPRSaddnames(XPRSprob prob, int type, const char cnames[], int first, int last);
+function addnames(
+    prob::XpressProblem,
+    _itype::Integer,
+    first::Integer,
+    names::Vector{String},
+)
+    """
+        int XPRS_CC XPRSaddnames(XPRSprob prob, int type, const char cnames[], int first, int last);
 
-When a model is loaded, the rows, columns and sets of the model may not have  names associated with them. This may not be important as the rows, columns and sets can be referred to by their sequence numbers. However, if you wish row, column and set names to appear in the ASCII solutions files, the names for a range of rows or columns can be added with  `XPRSaddnames`.
+    When a model is loaded, the rows, columns and sets of the model may not have  names associated with them. This may not be important as the rows, columns and sets can be referred to by their sequence numbers. However, if you wish row, column and set names to appear in the ASCII solutions files, the names for a range of rows or columns can be added with  `XPRSaddnames`.
 
-### Arguments
+    ### Arguments
 
-- `prob`: The current problem.
-- `type`: `1`: for row names;`2`: for column names.`3`: for set names.
-- `cnames`: Character buffer containing the null-terminated string names.
-- `first`: Start of the range of rows, columns or sets.
-- `last`: End of the range of rows, columns or sets.
+    - `prob`: The current problem.
+    - `type`: `1`: for row names;`2`: for column names.`3`: for set names.
+    - `cnames`: Character buffer containing the null-terminated string names.
+    - `first`: Start of the range of rows, columns or sets.
+    - `last`: End of the range of rows, columns or sets.
 
-"""
+    """
     # TODO: name _itype a Enum?
     NAMELENGTH = 64
 
-    last = first+length(names)-1
+    last = first + length(names) - 1
     first -= 1
     last -= 1
 
-    for (idx,str) in enumerate(names)
+    for (idx, str) in enumerate(names)
         if length(str) > NAMELENGTH
             names[idx] = first(str, NAMELENGTH)
         end
@@ -832,10 +1225,16 @@ When a model is loaded, the rows, columns and sets of the model may not have  na
 
     _cnames = join(names, "\0")
 
-    @checked Lib.XPRSaddnames(prob, Cint(_itype), _cnames, Cint(first), Cint(last))
+    @checked Lib.XPRSaddnames(
+        prob,
+        Cint(_itype),
+        _cnames,
+        Cint(first),
+        Cint(last),
+    )
 end
 function addnames(prob::XpressProblem, _itype::Integer, _sname::Vector{String})
-    addnames(prob, _itype, 1, _sname)
+    return addnames(prob, _itype, 1, _sname)
 end
 
 """
@@ -937,7 +1336,13 @@ Returns the indicator constraint condition (indicator variable and complement fl
 - `last`: Last row in the range (inclusive).
 
 """
-function getindicators(prob::XpressProblem, _inds, _comps, first::Integer=1, last::Integer=0)
+function getindicators(
+    prob::XpressProblem,
+    _inds,
+    _comps,
+    first::Integer = 1,
+    last::Integer = 0,
+)
     n_elems = last - first + 1
     if n_elems <= 0
         n_elems = n_constraints(prob)
@@ -949,7 +1354,7 @@ function getindicators(prob::XpressProblem, _inds, _comps, first::Integer=1, las
     end
     @assert n_elems == length(_inds) == length(_comps)
     @checked Lib.XPRSgetindicators(prob, _inds, _comps, first, last)
-    _inds .+= 1
+    return _inds .+= 1
 end
 
 """
@@ -978,7 +1383,7 @@ function dumpcontrols(prob::XpressProblem)
     @checked Lib.XPRSdumpcontrols(prob)
 end
 
-function minim(prob::XpressProblem, _sflags::String="")
+function minim(prob::XpressProblem, _sflags::String = "")
     @checked Lib.XPRSminim(prob, _sflags)
 end
 
@@ -993,7 +1398,7 @@ Begins a search for the optimal LP  solution. These functions are deprecated and
 - `flags`: Flags to pass to `XPRSmaxim` ( `MAXIM` ) or `XPRSminim` ( `MINIM` ). The default is `""` or `NULL` , in which case the algorithm used is determined by the DEFAULTALG control. If the argument includes:`b`: the model will be solved using the Newton barrier method;`p`: the model will be solved using the primal simplex algorithm;`d`: the model will be solved using the dual simplex algorithm;`l`: (lower case `L` ), the model will be solved as a linear model ignoring the discreteness of global variables;`n`: (lower case `N` ), the network part of the model will be identified and solved using the network simplex algorithm;`g`: the global model will be solved, calling XPRSglobal ( GLOBAL ).Certain combinations of options may be used where this makes sense so, for example, `pg` will solve the LP with the primal algorithm and then go on to perform the global search.
 
 """
-function maxim(prob::XpressProblem, _sflags::String="")
+function maxim(prob::XpressProblem, _sflags::String = "")
     @checked Lib.XPRSmaxim(prob, _sflags)
 end
 
@@ -1008,7 +1413,7 @@ This function begins a search for the optimal continuous (LP) solution. The dire
 - `flags`: Flags to pass to `XPRSlpoptimize` ( `LPOPTIMIZE` ). The default is `""` or `NULL` , in which case the algorithm used is determined by the DEFAULTALG control. If the argument includes:`b`: the model will be solved using the Newton barrier method;`p`: the model will be solved using the primal simplex algorithm;`d`: the model will be solved using the dual simplex algorithm;`n`: (lower case `N` ), the network part of the model will be identified and solved using the network simplex algorithm;
 
 """
-function lpoptimize(prob::XpressProblem, _sflags::String="")
+function lpoptimize(prob::XpressProblem, _sflags::String = "")
     @checked Lib.XPRSlpoptimize(prob, _sflags)
 end
 
@@ -1023,7 +1428,7 @@ This function begins a global search for the optimal MIP solution. The direction
 - `flags`: Flags to pass to XPRSmipoptimize ( MIPOPTIMIZE ), which specifies how to solve the initial continuous problem where the global entities are relaxed. If the argument includes:`b`: the initial continuous relaxation will be solved using the Newton barrier method;`p`: the initial continuous relaxation will be solved using the primal simplex algorithm;`d`: the initial continuous relaxation will be solved using the dual simplex algorithm;`n`: the network part of the initial continuous relaxation will be identified and solved using the network simplex algorithm;`l`: stop after having solved the initial continous relaxation.
 
 """
-function mipoptimize(prob::XpressProblem, _sflags::String="")
+function mipoptimize(prob::XpressProblem, _sflags::String = "")
     @checked Lib.XPRSmipoptimize(prob, _sflags)
 end
 
@@ -1071,8 +1476,24 @@ Returns the column  ranges computed by  XPRSrange.
 - `lcost`: Double array of length `COLS` for lower costs.
 
 """
-function getcolrange(prob::XpressProblem, _upact, _loact, _uup, _udn, _ucost, _lcost)
-    @checked Lib.XPRSgetcolrange(prob, _upact, _loact, _uup, _udn, _ucost, _lcost)
+function getcolrange(
+    prob::XpressProblem,
+    _upact,
+    _loact,
+    _uup,
+    _udn,
+    _ucost,
+    _lcost,
+)
+    @checked Lib.XPRSgetcolrange(
+        prob,
+        _upact,
+        _loact,
+        _uup,
+        _udn,
+        _ucost,
+        _lcost,
+    )
 end
 
 """
@@ -1118,7 +1539,11 @@ Instructs the Optimizer to read in a previously saved  basis from a file.
 - `flags`: Flags to pass to `XPRSreadbasis` ( `READBASIS` ):`i`: output the internal presolved basis.`t`: input a compact advanced form of the basis.
 
 """
-function readbasis(prob::XpressProblem, _sfilename::String, _sflags::String="")
+function readbasis(
+    prob::XpressProblem,
+    _sfilename::String,
+    _sflags::String = "",
+)
     @checked Lib.XPRSreadbasis(prob, _sfilename, _sflags)
 end
 
@@ -1134,7 +1559,11 @@ Writes the current  basis to a file for later input into the Optimizer.
 - `flags`: Flags to pass to `XPRSwritebasis` ( `WRITEBASIS` ):`i`: output the internal presolved basis.`t`: output a compact advanced form of the basis.`n`: output basis file containing current solution values.`h`: output values in single precision.`p`: obsolete flag (now default behavior).
 
 """
-function writebasis(prob::XpressProblem, _sfilename::String, _sflags::String="")
+function writebasis(
+    prob::XpressProblem,
+    _sfilename::String,
+    _sflags::String = "",
+)
     @checked Lib.XPRSwritebasis(prob, _sfilename, _sflags)
 end
 
@@ -1164,7 +1593,11 @@ Writes the current  solution to a  fixed format ASCII file,  *problem_name*`.prt
 - `flags`: Flags for `XPRSwriteprtsol` ( `WRITEPRTSOL` ) are:`x`: write the LP solution instead of the current MIP solution.
 
 """
-function writeprtsol(prob::XpressProblem, _sfilename::String, _sflags::String="")
+function writeprtsol(
+    prob::XpressProblem,
+    _sfilename::String,
+    _sflags::String = "",
+)
     @checked Lib.XPRSwriteprtsol(prob, _sfilename, _sflags)
 end
 
@@ -1195,7 +1628,7 @@ Writes the current  solution to a  CSV format ASCII file,  _problem_name_`.asc` 
 - `flags`: Flags to control which optional fields are output:`s`: sequence number;`n`: name;`t`: type;`b`: basis status;`a`: activity;`c`: cost (columns), slack (rows);`l`: lower bound;`u`: upper bound;`d`: dj (column; reduced costs), dual value (rows; shadow prices);`r`: right hand side (rows).If no flags are specified, all fields are output.  Additional flags:`p`: outputs in full precision;`q`: only outputs vectors with nonzero optimum value;`x`: output the current LP solution instead of the MIP solution.
 
 """
-function writesol(prob::XpressProblem, _sfilename::String, _sflags="")
+function writesol(prob::XpressProblem, _sfilename::String, _sflags = "")
     @checked Lib.XPRSwritesol(prob, _sfilename, _sflags)
 end
 
@@ -1329,7 +1762,17 @@ Returns a list of infeasible primal and dual  variables.
 - `mdj`: Integer array of length `ndv` where the dual infeasible variables will be returned. May be `NULL` if not required.
 
 """
-function getinfeas(prob::XpressProblem, npv, nps, nds, ndv, mx, mslack, mdual, mdj)
+function getinfeas(
+    prob::XpressProblem,
+    npv,
+    nps,
+    nds,
+    ndv,
+    mx,
+    mslack,
+    mdual,
+    mdj,
+)
     @checked Lib.XPRSgetinfeas(prob, npv, nps, nds, ndv, mx, mslack, mdual, mdj)
 end
 
@@ -1351,8 +1794,28 @@ Returns a list of scaled infeasible primal and dual  variables for the original 
 - `mdj`: Integer array of length `ndv` where the dual infeasible variables will be returned. May be `NULL` if not required.
 
 """
-function getscaledinfeas(prob::XpressProblem, npv, nps, nds, ndv, mx, mslack, mdual, mdj)
-    @checked Lib.XPRSgetscaledinfeas(prob, npv, nps, nds, ndv, mx, mslack, mdual, mdj)
+function getscaledinfeas(
+    prob::XpressProblem,
+    npv,
+    nps,
+    nds,
+    ndv,
+    mx,
+    mslack,
+    mdual,
+    mdj,
+)
+    @checked Lib.XPRSgetscaledinfeas(
+        prob,
+        npv,
+        nps,
+        nds,
+        ndv,
+        mx,
+        mslack,
+        mdual,
+        mdj,
+    )
 end
 
 """
@@ -1435,7 +1898,7 @@ Returns the  right hand side elements for the rows in a given range.
 - `last`: Last row in the range.
 
 """
-function getrhs(prob::XpressProblem, first::Integer=1, last::Integer=0)
+function getrhs(prob::XpressProblem, first::Integer = 1, last::Integer = 0)
     n_elems = last - first + 1
     if n_elems <= 0
         n_elems = n_constraints(prob)
@@ -1449,7 +1912,12 @@ function getrhs(prob::XpressProblem, first::Integer=1, last::Integer=0)
     @checked Lib.XPRSgetrhs(prob, _drhs, first, last)
     return _drhs
 end
-function getrhs!(prob::XpressProblem, _drhs::Vector{Float64}, first::Integer=1, last::Integer=0)
+function getrhs!(
+    prob::XpressProblem,
+    _drhs::Vector{Float64},
+    first::Integer = 1,
+    last::Integer = 0,
+)
     n_elems = last - first + 1
     if n_elems <= 0
         n_elems = n_constraints(prob)
@@ -1494,7 +1962,7 @@ Returns the lower   bounds for the   columns in a given range.
 - `last`: Last column in the range.
 
 """
-function getlb(prob::XpressProblem, first::Integer=1, last::Integer=0)
+function getlb(prob::XpressProblem, first::Integer = 1, last::Integer = 0)
     n_elems = last - first + 1
     if n_elems <= 0
         n_elems = n_variables(prob)
@@ -1522,7 +1990,7 @@ Returns the upper  bounds for the columns in a given range.
 - `last`: Last column in the range.
 
 """
-function getub(prob::XpressProblem, first::Integer=1, last::Integer=0)
+function getub(prob::XpressProblem, first::Integer = 1, last::Integer = 0)
     n_elems = last - first + 1
     if n_elems <= 0
         n_elems = n_variables(prob)
@@ -1554,8 +2022,26 @@ Returns the nonzeros in the constraint  matrix for the  columns in a given range
 - `last`: Last column in the range.
 
 """
-function getcols(prob::XpressProblem, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
-    @checked Lib.XPRSgetcols(prob, _mstart, _mrwind, _dmatval, maxcoeffs, ncoeffs, Cint(first-1), Cint(last-1))
+function getcols(
+    prob::XpressProblem,
+    _mstart,
+    _mrwind,
+    _dmatval,
+    maxcoeffs,
+    ncoeffs,
+    first::Integer,
+    last::Integer,
+)
+    @checked Lib.XPRSgetcols(
+        prob,
+        _mstart,
+        _mrwind,
+        _dmatval,
+        maxcoeffs,
+        ncoeffs,
+        Cint(first - 1),
+        Cint(last - 1),
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -1580,12 +2066,29 @@ Returns the   nonzeros in the constraint matrix for the rows in a given range.
 - `last`: Last row in the range.
 
 """
-function getrows(prob::XpressProblem, _mstart::Vector{<:Integer}, _mrwind::Vector{<:Integer}, _dmatval::Vector{Float64}, maxcoeffs::Integer, first::Integer, last::Integer)
-    @assert length(_mstart) >= last-first+2
+function getrows(
+    prob::XpressProblem,
+    _mstart::Vector{<:Integer},
+    _mrwind::Vector{<:Integer},
+    _dmatval::Vector{Float64},
+    maxcoeffs::Integer,
+    first::Integer,
+    last::Integer,
+)
+    @assert length(_mstart) >= last - first + 2
     @assert length(_mrwind) == maxcoeffs
     @assert length(_dmatval) == maxcoeffs
     temp = zeros(Cint, 1)
-    @checked Lib.XPRSgetrows(prob, _mstart, _mrwind, _dmatval, maxcoeffs, temp, Cint(first - 1), Cint(last - 1))
+    @checked Lib.XPRSgetrows(
+        prob,
+        _mstart,
+        _mrwind,
+        _dmatval,
+        maxcoeffs,
+        temp,
+        Cint(first - 1),
+        Cint(last - 1),
+    )
     _mstart .+= 1
     _mrwind .+= 1
     return
@@ -1593,7 +2096,16 @@ end
 
 function getrows_nnz(prob::XpressProblem, first::Integer, last::Integer)
     nzcnt = zeros(Cint, 1)
-    @checked Lib.XPRSgetrows(prob, C_NULL, C_NULL, C_NULL, 0, nzcnt, first - 1, last - 1)
+    @checked Lib.XPRSgetrows(
+        prob,
+        C_NULL,
+        C_NULL,
+        C_NULL,
+        0,
+        nzcnt,
+        first - 1,
+        last - 1,
+    )
     return nzcnt[]
 end
 
@@ -1643,8 +2155,26 @@ Returns the nonzeros in the quadratic objective coefficients matrix for the colu
 - `last`: Last column in the range.
 
 """
-function getmqobj(prob::XpressProblem, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
-    @checked Lib.XPRSgetmqobj(prob, _mstart, _mrwind, _dobjval, maxcoeffs, ncoeffs, Cint(first), Cint(last))
+function getmqobj(
+    prob::XpressProblem,
+    _mstart,
+    _mrwind,
+    _dobjval,
+    maxcoeffs,
+    ncoeffs,
+    first::Integer,
+    last::Integer,
+)
+    @checked Lib.XPRSgetmqobj(
+        prob,
+        _mstart,
+        _mrwind,
+        _dobjval,
+        maxcoeffs,
+        ncoeffs,
+        Cint(first),
+        Cint(last),
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -1667,7 +2197,11 @@ function crossoverlpsol(prob::XpressProblem, status)
     @checked Lib.XPRScrossoverlpsol(prob, status)
 end
 
-function getbarnumstability(prob::XpressProblem, dColumnStability, dRowStability)
+function getbarnumstability(
+    prob::XpressProblem,
+    dColumnStability,
+    dRowStability,
+)
     @checked Lib.XPRSgetbarnumstability(prob, dColumnStability, dRowStability)
 end
 
@@ -1736,8 +2270,22 @@ Returns statistics on the Irreducible Infeasible Sets (IIS) found so far by  XPR
 - `numinfeas`: The number of infeasible variables in the IISs after the first phase simplex.
 
 """
-function iisstatus(prob::XpressProblem, iiscount, rowsizes, colsizes, suminfeas, numinfeas)
-    @checked Lib.XPRSiisstatus(prob, iiscount, rowsizes, colsizes, suminfeas, numinfeas)
+function iisstatus(
+    prob::XpressProblem,
+    iiscount,
+    rowsizes,
+    colsizes,
+    suminfeas,
+    numinfeas,
+)
+    @checked Lib.XPRSiisstatus(
+        prob,
+        iiscount,
+        rowsizes,
+        colsizes,
+        suminfeas,
+        numinfeas,
+    )
 end
 
 """
@@ -1806,8 +2354,34 @@ Returns information for an Irreducible Infeasible Set: size, variables (row and 
 - `isolationcols`: The isolation status of the bounds:`-1`: if isolation information is not available for column (run iis isolations);`0`: if column is not in isolation;`1`: if column is in isolation. Can be NULL if not required.
 
 """
-function getiisdata(prob::XpressProblem, number, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, duals, rdcs, isolationrows, isolationcols)
-    @checked Lib.XPRSgetiisdata(prob, number, rownumber, colnumber, miisrow, miiscol, constrainttype, colbndtype, duals, rdcs, isolationrows, isolationcols)
+function getiisdata(
+    prob::XpressProblem,
+    number,
+    rownumber,
+    colnumber,
+    miisrow,
+    miiscol,
+    constrainttype,
+    colbndtype,
+    duals,
+    rdcs,
+    isolationrows,
+    isolationcols,
+)
+    @checked Lib.XPRSgetiisdata(
+        prob,
+        number,
+        rownumber,
+        colnumber,
+        miisrow,
+        miiscol,
+        constrainttype,
+        colbndtype,
+        duals,
+        rdcs,
+        isolationrows,
+        isolationcols,
+    )
 end
 
 function getiis(prob::XpressProblem, ncols, nrows, _miiscol, _miisrow)
@@ -1865,12 +2439,56 @@ Retrieves   global information about a problem. It must be called before  XPRSmi
 - `dref`: Double array of length `SETMEMBERS` where the reference row entries for each member of the sets will be returned.
 
 """
-function getglobal(prob::XpressProblem, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
-    @checked Lib.XPRSgetglobal(prob, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
+function getglobal(
+    prob::XpressProblem,
+    ngents,
+    nsets,
+    _sgtype,
+    _mgcols,
+    _dlim,
+    _sstype,
+    _msstart,
+    _mscols,
+    _dref,
+)
+    @checked Lib.XPRSgetglobal(
+        prob,
+        ngents,
+        nsets,
+        _sgtype,
+        _mgcols,
+        _dlim,
+        _sstype,
+        _msstart,
+        _mscols,
+        _dref,
+    )
 end
 
-function getglobal64(prob::XpressProblem, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
-    @checked Lib.XPRSgetglobal64(prob, ngents, nsets, _sgtype, _mgcols, _dlim, _sstype, _msstart, _mscols, _dref)
+function getglobal64(
+    prob::XpressProblem,
+    ngents,
+    nsets,
+    _sgtype,
+    _mgcols,
+    _dlim,
+    _sstype,
+    _msstart,
+    _mscols,
+    _dref,
+)
+    @checked Lib.XPRSgetglobal64(
+        prob,
+        ngents,
+        nsets,
+        _sgtype,
+        _mgcols,
+        _dlim,
+        _sstype,
+        _msstart,
+        _mscols,
+        _dref,
+    )
 end
 
 """
@@ -1885,7 +2503,7 @@ Writes the current  problem to an MPS or LP file.
 - `flags`: Flags, which can be one or more of the following:`o`: one element per line;`n`: scaled;`s`: scrambled vector names;`l`: output in LP format;`p`: full precision of numerical values (obsolete as this is now default behavior).`t`: omit the Xpress header in LP format;
 
 """
-function writeprob(prob::XpressProblem, _sfilename::String, _sflags="")
+function writeprob(prob::XpressProblem, _sfilename::String, _sflags = "")
     @checked Lib.XPRSwriteprob(prob, _sfilename, _sflags)
 end
 
@@ -1903,7 +2521,13 @@ Returns the names for the   rows,   columns or   set in a given range. The names
 - `last`: Last row, column or set in the range.
 
 """
-function getnames(prob::XpressProblem, _itype, _sbuff, first::Integer, last::Integer)
+function getnames(
+    prob::XpressProblem,
+    _itype,
+    _sbuff,
+    first::Integer,
+    last::Integer,
+)
     @checked Lib.XPRSgetnames(prob, _itype, _sbuff, first, last)
 end
 
@@ -2014,7 +2638,13 @@ Returns the current basis status for a specific column or row.
 """
 
 function getbasisval(prob::XpressProblem, row, column, _mrowstatus, _mcolstatus)
-    @checked Lib.XPRSgetbasisval(prob, Cint(row-1), Cint(column-1), _mrowstatus, _mcolstatus)
+    @checked Lib.XPRSgetbasisval(
+        prob,
+        Cint(row - 1),
+        Cint(column - 1),
+        _mrowstatus,
+        _mcolstatus,
+    )
 end
 
 """
@@ -2068,7 +2698,15 @@ Allows  rows to be added to the matrix after passing it to the Optimizer using t
 - `dmatval`: Double array of length `newnz` containing the (contiguous) element values.
 
 """
-function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Float64}, _drng, _mstart::Vector{<:Integer}, _mrwind::Vector{<:Integer}, _dmatval::Vector{Float64})
+function addrows(
+    prob::XpressProblem,
+    _srowtype::Vector{Cchar},
+    _drhs::Vector{Float64},
+    _drng,
+    _mstart::Vector{<:Integer},
+    _mrwind::Vector{<:Integer},
+    _dmatval::Vector{Float64},
+)
     nrows = length(_drhs)
     # @assert nrows == length(_drng) # can be a C_NULL
     @assert nrows == length(_srowtype)
@@ -2077,7 +2715,17 @@ function addrows(prob::XpressProblem, _srowtype::Vector{Cchar}, _drhs::Vector{Fl
     @assert ncoeffs == length(_dmatval)
     _mstart .-= 1
     _mrwind .-= 1
-    @checked Lib.XPRSaddrows(prob, nrows, Cint(ncoeffs), _srowtype, _drhs, _drng, Cint.(_mstart), Cint.(_mrwind), _dmatval)
+    @checked Lib.XPRSaddrows(
+        prob,
+        nrows,
+        Cint(ncoeffs),
+        _srowtype,
+        _drhs,
+        _drng,
+        Cint.(_mstart),
+        Cint.(_mrwind),
+        _dmatval,
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -2128,7 +2776,15 @@ Allows columns to be added to the   matrix after passing it to the Optimizer usi
 - `bdu`: Double array of length `newcol` containing the upper bounds on the added columns.
 
 """
-function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{<:Integer}, _mrwind::Vector{<:Integer}, _dmatval::Vector{Float64}, _dbdl::Vector{Float64}, _dbdu::Vector{Float64})
+function addcols(
+    prob::XpressProblem,
+    _dobj::Vector{Float64},
+    _mstart::Vector{<:Integer},
+    _mrwind::Vector{<:Integer},
+    _dmatval::Vector{Float64},
+    _dbdl::Vector{Float64},
+    _dbdu::Vector{Float64},
+)
     @assert length(_dbdl) == length(_dbdu)
     fixinfinity!(_dbdl)
     fixinfinity!(_dbdu)
@@ -2136,7 +2792,17 @@ function addcols(prob::XpressProblem, _dobj::Vector{Float64}, _mstart::Vector{<:
     ncoeffs = length(_dmatval)
     _mstart = _mstart .- 1
     _mrwind = _mrwind .- 1
-    @checked Lib.XPRSaddcols(prob, ncols, ncoeffs, _dobj, Cint.(_mstart), Cint.(_mrwind), _dmatval, _dbdl, _dbdu)
+    @checked Lib.XPRSaddcols(
+        prob,
+        ncols,
+        ncoeffs,
+        _dobj,
+        Cint.(_mstart),
+        Cint.(_mrwind),
+        _dmatval,
+        _dbdl,
+        _dbdu,
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -2182,7 +2848,11 @@ Used to change the type of a column in the matrix.
 - `qctype`: Character array of length `nels` giving the new column types:`C`: indicates a continuous column;`B`: indicates a binary column;`I`: indicates an integer column.`S`: indicates a semi–continuous column. The semi–continuous lower bound will be set to `1.0` .`R`: indicates a semi–integer column. The semi–integer lower bound will be set to `1.0` .`P`: indicates a partial integer column. The partial integer bound will be set to `1.0` .
 
 """
-function chgcoltype(prob::XpressProblem, _mindex::Vector{<:Integer}, _coltype::Vector{Cchar})
+function chgcoltype(
+    prob::XpressProblem,
+    _mindex::Vector{<:Integer},
+    _coltype::Vector{Cchar},
+)
     ncols = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgcoltype(prob, ncols, Cint.(_mindex), _coltype)
@@ -2201,7 +2871,11 @@ Used to change the type of a row in the  matrix.
 - `qrtype`: Character array of length `nels` giving the new row types:`L`: indicates a ≤ row;`E`: indicates an = row;`G`: indicates a ≥ row;`R`: indicates a range row;`N`: indicates a free row.
 
 """
-function chgrowtype(prob::XpressProblem, _mindex::Vector{<:Integer}, _srowtype::Vector{Cchar})
+function chgrowtype(
+    prob::XpressProblem,
+    _mindex::Vector{<:Integer},
+    _srowtype::Vector{Cchar},
+)
     nrows = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgrowtype(prob, nrows, Cint.(_mindex), _srowtype)
@@ -2221,10 +2895,21 @@ Used to change the  bounds on columns in the  matrix.
 - `bnd`: Double array of length `nbnds` giving the new bound values.
 
 """
-function chgbounds(prob::XpressProblem, _mindex::Vector{<:Integer}, _sboundtype::Vector{Cchar}, _dbnd::Vector{Float64})
+function chgbounds(
+    prob::XpressProblem,
+    _mindex::Vector{<:Integer},
+    _sboundtype::Vector{Cchar},
+    _dbnd::Vector{Float64},
+)
     nbnds = length(_mindex)
     _mindex = _mindex .- 1
-    @checked Lib.XPRSchgbounds(prob, Cint(nbnds), Cint.(_mindex), _sboundtype, _dbnd)
+    @checked Lib.XPRSchgbounds(
+        prob,
+        Cint(nbnds),
+        Cint.(_mindex),
+        _sboundtype,
+        _dbnd,
+    )
 end
 
 """
@@ -2240,7 +2925,11 @@ Used to change the   objective function coefficients.
 - `obj`: Double array of length `nels` giving the new objective function coefficient.
 
 """
-function chgobj(prob::XpressProblem, _mindex::Vector{<:Integer}, _dobj::Vector{Float64})
+function chgobj(
+    prob::XpressProblem,
+    _mindex::Vector{<:Integer},
+    _dobj::Vector{Float64},
+)
     ncols = length(_dobj)
     @assert length(_mindex) == ncols
     _mindex .-= 1
@@ -2278,8 +2967,20 @@ Used to change multiple coefficients in the  matrix. If any coefficient does not
 - `dval`: Double array of length `nels` containing the new coefficient values. If an element of `dval` is zero, the coefficient will be deleted.
 
 """
-function chgmcoef(prob::XpressProblem, ncoeffs, _mrow::Vector{<:Integer}, _mcol::Vector{<:Integer}, _dval)
-    @checked Lib.XPRSchgmcoef(prob, ncoeffs, _mrow .- one(Cint), _mcol .- one(Cint), _dval)
+function chgmcoef(
+    prob::XpressProblem,
+    ncoeffs,
+    _mrow::Vector{<:Integer},
+    _mcol::Vector{<:Integer},
+    _dval,
+)
+    @checked Lib.XPRSchgmcoef(
+        prob,
+        ncoeffs,
+        _mrow .- one(Cint),
+        _mcol .- one(Cint),
+        _dval,
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -2301,11 +3002,22 @@ Used to change multiple   quadratic coefficients in the   objective function. If
 - `dval`: New values for the coefficients. If an entry in `dval` is `0` , the corresponding entry will be deleted. These are the coefficients of the quadratic Hessian matrix.
 
 """
-function chgmqobj(prob::XpressProblem, _mcol1::Vector{<:Integer}, _mcol2::Vector{<:Integer}, _dval)
+function chgmqobj(
+    prob::XpressProblem,
+    _mcol1::Vector{<:Integer},
+    _mcol2::Vector{<:Integer},
+    _dval,
+)
     ncols = length(_mcol1)
     @assert length(_mcol2) == ncols
     @assert length(_dval) == ncols
-    @checked Lib.XPRSchgmqobj(prob, Cint(ncols), Cint.(_mcol1 .- 1), Cint.(_mcol2 .- 1), _dval)
+    @checked Lib.XPRSchgmqobj(
+        prob,
+        Cint(ncols),
+        Cint.(_mcol1 .- 1),
+        Cint.(_mcol2 .- 1),
+        _dval,
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -2330,7 +3042,7 @@ Used to change a single   quadratic coefficient in the   objective function corr
 
 """
 function chgqobj(prob::XpressProblem, _icol, _jcol, _dval)
-    @checked Lib.XPRSchgqobj(prob, _icol-1, _jcol-1, _dval)
+    @checked Lib.XPRSchgqobj(prob, _icol - 1, _jcol - 1, _dval)
 end
 
 """
@@ -2346,7 +3058,11 @@ Used to change  right–hand side values of the  problem.
 - `rhs`: Double array of length `nels` giving the right hand side values.
 
 """
-function chgrhs(prob::XpressProblem, _mindex::Vector{<:Integer}, _drhs::Vector{Float64})
+function chgrhs(
+    prob::XpressProblem,
+    _mindex::Vector{<:Integer},
+    _drhs::Vector{Float64},
+)
     nrows = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgrhs(prob, Cint(nrows), Cint.(_mindex), _drhs)
@@ -2365,7 +3081,12 @@ Used to change the  range for a row of the problem  matrix.
 - `rng`: Double array of length `nels` giving the range values.
 
 """
-function chgrhsrange(prob::XpressProblem, nrows::Integer, _mindex::Vector{<:Integer}, _drng::Vector{Float64})
+function chgrhsrange(
+    prob::XpressProblem,
+    nrows::Integer,
+    _mindex::Vector{<:Integer},
+    _drng::Vector{Float64},
+)
     @checked Lib.XPRSchgrhsrange(prob, Cint(nrows), Cint.(_mindex .- 1), _drng)
 end
 
@@ -2380,10 +3101,19 @@ Changes the problem's objective function sense to minimize or maximize.
 - `objsense`: `XPRS_OBJ_MINIMIZE` to change into a minimization, or `XPRS_OBJ_MAXIMIZE` to change into maximization problem.
 
 """
-function chgobjsense(prob::XpressProblem, objsense::Union{Symbol, Int})
-    v = objsense == :maximize || objsense == :Max || objsense == Lib.XPRS_OBJ_MAXIMIZE ? Lib.XPRS_OBJ_MAXIMIZE :
-        objsense == :minimize || objsense == :Min || objsense == Lib.XPRS_OBJ_MINIMIZE ? Lib.XPRS_OBJ_MINIMIZE :
-        throw(ArgumentError("Invalid objective sense: $objsense. It can only be `:maximize`, `:minimize`, `:Max`, `:Min`, `$(Lib.XPRS_OBJ_MAXIMIZE)`, or `$(Lib.XPRS_OBJ_MINIMIZE)`."))
+function chgobjsense(prob::XpressProblem, objsense::Union{Symbol,Int})
+    v =
+        objsense == :maximize ||
+        objsense == :Max ||
+        objsense == Lib.XPRS_OBJ_MAXIMIZE ? Lib.XPRS_OBJ_MAXIMIZE :
+        objsense == :minimize ||
+        objsense == :Min ||
+        objsense == Lib.XPRS_OBJ_MINIMIZE ? Lib.XPRS_OBJ_MINIMIZE :
+        throw(
+            ArgumentError(
+                "Invalid objective sense: $objsense. It can only be `:maximize`, `:minimize`, `:Max`, `:Min`, `$(Lib.XPRS_OBJ_MAXIMIZE)`, or `$(Lib.XPRS_OBJ_MINIMIZE)`.",
+            ),
+        )
     @checked Lib.XPRSchgobjsense(prob, v)
 end
 
@@ -2400,7 +3130,11 @@ Used to change semi-continuous or semi-integer lower bounds, or upper limits on 
 - `dlimit`: Double array of length `ncols` giving the new limit values.
 
 """
-function chgglblimit(prob::XpressProblem, _mindex::Vector{<:Integer}, _dlimit::Vector{Float64})
+function chgglblimit(
+    prob::XpressProblem,
+    _mindex::Vector{<:Integer},
+    _dlimit::Vector{Float64},
+)
     ncols = length(_mindex)
     _mindex = _mindex .- 1
     @checked Lib.XPRSchgglblimit(prob, ncols, Cint.(_mindex), _dlimit)
@@ -2490,8 +3224,26 @@ Adds  cuts directly to the matrix at the current node. Any cuts added to the mat
 - `dmatval`: Double array of length `mstart[ncuts]` containing the matrix values for the cuts.
 
 """
-function addcuts(prob::XpressProblem, ncuts, mtype, qrtype, drhs, mstart::Vector{<:Integer}, mcols::Vector{<:Integer}, dmatval)
-    @checked Lib.XPRSaddcuts(prob, ncuts, mtype, qrtype, drhs, Cint.(mstart), Cint.(mcols), dmatval)
+function addcuts(
+    prob::XpressProblem,
+    ncuts,
+    mtype,
+    qrtype,
+    drhs,
+    mstart::Vector{<:Integer},
+    mcols::Vector{<:Integer},
+    dmatval,
+)
+    @checked Lib.XPRSaddcuts(
+        prob,
+        ncuts,
+        mtype,
+        qrtype,
+        drhs,
+        Cint.(mstart),
+        Cint.(mcols),
+        dmatval,
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -2515,7 +3267,15 @@ Deletes  cuts from the  matrix at the current  node. Cuts from the parent   node
 - `mcutind`: Array containing pointers to the cuts which are to be deleted. This array may be `NULL` if `num` is set to `-1` otherwise it has length `num` .
 
 """
-function delcuts(prob::XpressProblem, ibasis, itype, interp, delta, ncuts, mcutind)
+function delcuts(
+    prob::XpressProblem,
+    ibasis,
+    itype,
+    interp,
+    delta,
+    ncuts,
+    mcutind,
+)
     @checked Lib.XPRSdelcuts(prob, ibasis, itype, interp, delta, ncuts, mcutind)
 end
 
@@ -2573,8 +3333,26 @@ Returns a list of cut indices from the  cut pool.
 - `dviol`: Double array of length `size` where the values of the signed violations of the cuts will be returned.
 
 """
-function getcpcutlist(prob::XpressProblem, itype, interp, delta, ncuts, maxcuts, mcutind, dviol)
-    @checked Lib.XPRSgetcpcutlist(prob, itype, interp, delta, ncuts, maxcuts, mcutind, dviol)
+function getcpcutlist(
+    prob::XpressProblem,
+    itype,
+    interp,
+    delta,
+    ncuts,
+    maxcuts,
+    mcutind,
+    dviol,
+)
+    @checked Lib.XPRSgetcpcutlist(
+        prob,
+        itype,
+        interp,
+        delta,
+        ncuts,
+        maxcuts,
+        mcutind,
+        dviol,
+    )
 end
 
 """
@@ -2596,8 +3374,30 @@ Returns cuts from the   cut pool. A list of cut pointers in the array  `mindex` 
 - `drhs`: Double array of length at least `ncuts` where the right hand side elements for the cuts will be returned. May be NULL if not required.
 
 """
-function getcpcuts(prob::XpressProblem, mindex, ncuts, size, mtype, qrtype, mstart::Vector{<:Integer}, mcols::Vector{<:Integer}, dmatval, drhs)
-    @checked Lib.XPRSgetcpcuts(prob, mindex, ncuts, size, mtype, qrtype, Cint.(mstart), Cint.(mcols), dmatval, drhs)
+function getcpcuts(
+    prob::XpressProblem,
+    mindex,
+    ncuts,
+    size,
+    mtype,
+    qrtype,
+    mstart::Vector{<:Integer},
+    mcols::Vector{<:Integer},
+    dmatval,
+    drhs,
+)
+    @checked Lib.XPRSgetcpcuts(
+        prob,
+        mindex,
+        ncuts,
+        size,
+        mtype,
+        qrtype,
+        Cint.(mstart),
+        Cint.(mcols),
+        dmatval,
+        drhs,
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -2642,8 +3442,30 @@ Stores cuts into the  cut pool, but does not apply them to the current node. The
 - `dmatval`: Double array of length `mstart[ncuts]` containing the matrix values for the cuts.
 
 """
-function storecuts(prob::XpressProblem, ncuts, nodupl, mtype::Vector{<:Integer}, qrtype, drhs::Vector{Float64}, mstart::Vector{<:Integer}, mindex, mcols::Vector{<:Integer}, dmatval)
-    @checked Lib.XPRSstorecuts(prob, ncuts, nodupl, Cint.(mtype), qrtype, drhs, Cint.(mstart), mindex, Cint.(mcols), dmatval)
+function storecuts(
+    prob::XpressProblem,
+    ncuts,
+    nodupl,
+    mtype::Vector{<:Integer},
+    qrtype,
+    drhs::Vector{Float64},
+    mstart::Vector{<:Integer},
+    mindex,
+    mcols::Vector{<:Integer},
+    dmatval,
+)
+    @checked Lib.XPRSstorecuts(
+        prob,
+        ncuts,
+        nodupl,
+        Cint.(mtype),
+        qrtype,
+        drhs,
+        Cint.(mstart),
+        mindex,
+        Cint.(mcols),
+        dmatval,
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -2672,8 +3494,34 @@ Presolves a row formulated in terms of the original variables such that it can b
 - `status`: Status of the presolved row:`-3`: Failed to presolve the row due to presolve dual reductions;`-2`: Failed to presolve the row due to presolve duplicate column reductions;`-1`: Failed to presolve the row due to an error. Check the Optimizer error code for the cause;`0`: The row was successfully presolved;`1`: The row was presolved, but may be relaxed.
 
 """
-function presolverow(prob::XpressProblem, qrtype, nzo, mcolso, dvalo, drhso, maxcoeffs, nzp, mcolsp, dvalp, drhsp, status)
-    @checked Lib.XPRSpresolverow(prob, qrtype, nzo, mcolso, dvalo, drhso, maxcoeffs, nzp, mcolsp, dvalp, drhsp, status)
+function presolverow(
+    prob::XpressProblem,
+    qrtype,
+    nzo,
+    mcolso,
+    dvalo,
+    drhso,
+    maxcoeffs,
+    nzp,
+    mcolsp,
+    dvalp,
+    drhsp,
+    status,
+)
+    @checked Lib.XPRSpresolverow(
+        prob,
+        qrtype,
+        nzo,
+        mcolso,
+        dvalo,
+        drhso,
+        maxcoeffs,
+        nzp,
+        mcolsp,
+        dvalp,
+        drhsp,
+        status,
+    )
 end
 
 """
@@ -2803,7 +3651,7 @@ function getlasterror(prob::XpressProblem)
         s = Lib.XPRSgetlasterror(prob, buffer_p)
         return s == 0 ? unsafe_string(buffer_p) : "Unable to get last error"
     end
- end
+end
 
 """
     int XPRS_CC XPRSbasiscondition(XPRSprob prob, double *condnum, double *scondnum);
@@ -2897,8 +3745,24 @@ Allows  sets to be added to the problem after passing it to the Optimizer using 
 - `dref`: Double array of length `newnz` containing the (contiguous) reference values.
 
 """
-function addsets(prob::XpressProblem, newsets, newnz, qstype, msstart::Vector{<:Integer}, mscols::Vector{<:Integer}, dref)
-    @checked Lib.XPRSaddsets(prob, newsets, newnz, qstype, Cint.(msstart), Cint.(mscols .- 1), dref)
+function addsets(
+    prob::XpressProblem,
+    newsets,
+    newnz,
+    qstype,
+    msstart::Vector{<:Integer},
+    mscols::Vector{<:Integer},
+    dref,
+)
+    @checked Lib.XPRSaddsets(
+        prob,
+        newsets,
+        newnz,
+        qstype,
+        Cint.(msstart),
+        Cint.(mscols .- 1),
+        dref,
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -2923,8 +3787,26 @@ Performs strong branching iterations on all specified bound changes. For each ca
 - `msbstatus`: Status of each LP after performing the strong branching iterations, as detailed for the LPSTATUS attribute.
 
 """
-function strongbranch(prob::XpressProblem, nbnds::Integer, _mindex::Vector{<:Integer}, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
-    @checked Lib.XPRSstrongbranch(prob, nbnds, Cint.(_mindex .- 1), _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus)
+function strongbranch(
+    prob::XpressProblem,
+    nbnds::Integer,
+    _mindex::Vector{<:Integer},
+    _sboundtype,
+    _dbnd,
+    itrlimit,
+    _dsbobjval,
+    _msbstatus,
+)
+    @checked Lib.XPRSstrongbranch(
+        prob,
+        nbnds,
+        Cint.(_mindex .- 1),
+        _sboundtype,
+        _dbnd,
+        itrlimit,
+        _dsbobjval,
+        _msbstatus,
+    )
 end
 
 """
@@ -2942,8 +3824,22 @@ Performs a dual side range sensitivity analysis, i.e. calculates estimates for t
 - `maxDualActivity`: Estimated upper bounds on the possible dual ranges.
 
 """
-function estimaterowdualranges(prob::XpressProblem, nRows, rowIndices, iterationLimit, minDualActivity, maxDualActivity)
-    @checked Lib.XPRSestimaterowdualranges(prob, nRows, rowIndices, iterationLimit, minDualActivity, maxDualActivity)
+function estimaterowdualranges(
+    prob::XpressProblem,
+    nRows,
+    rowIndices,
+    iterationLimit,
+    minDualActivity,
+    maxDualActivity,
+)
+    @checked Lib.XPRSestimaterowdualranges(
+        prob,
+        nRows,
+        rowIndices,
+        iterationLimit,
+        minDualActivity,
+        maxDualActivity,
+    )
 end
 
 """
@@ -3028,8 +3924,28 @@ By relaxing a set of selected constraints and bounds of an infeasible problem, i
 - `optflags`: Specifies flags to be passed to the Optimizer.
 
 """
-function repairweightedinfeas(prob::XpressProblem, scode, lrp_array, grp_array, lbp_array, ubp_array, second_phase, delta, optflags)
-    @checked Lib.XPRSrepairweightedinfeas(prob, scode, lrp_array, grp_array, lbp_array, ubp_array, second_phase, delta, optflags)
+function repairweightedinfeas(
+    prob::XpressProblem,
+    scode,
+    lrp_array,
+    grp_array,
+    lbp_array,
+    ubp_array,
+    second_phase,
+    delta,
+    optflags,
+)
+    @checked Lib.XPRSrepairweightedinfeas(
+        prob,
+        scode,
+        lrp_array,
+        grp_array,
+        lbp_array,
+        ubp_array,
+        second_phase,
+        delta,
+        optflags,
+    )
 end
 
 """
@@ -3055,8 +3971,36 @@ An extended version of  XPRSrepairweightedinfeas that allows for bounding the le
 - `r`: If a summary of the violated variables and constraints should be printed after the relaxed solution is determined.
 
 """
-function repairweightedinfeasbounds(prob::XpressProblem, scode, lrp_array, grp_array, lbp_array, ubp_array, lrb_array, grb_array, lbb_array, ubb_array, second_phase, delta, optflags)
-    @checked Lib.XPRSrepairweightedinfeasbounds(prob, scode, lrp_array, grp_array, lbp_array, ubp_array, lrb_array, grb_array, lbb_array, ubb_array, second_phase, delta, optflags)
+function repairweightedinfeasbounds(
+    prob::XpressProblem,
+    scode,
+    lrp_array,
+    grp_array,
+    lbp_array,
+    ubp_array,
+    lrb_array,
+    grb_array,
+    lbb_array,
+    ubb_array,
+    second_phase,
+    delta,
+    optflags,
+)
+    @checked Lib.XPRSrepairweightedinfeasbounds(
+        prob,
+        scode,
+        lrp_array,
+        grp_array,
+        lbp_array,
+        ubp_array,
+        lrb_array,
+        grb_array,
+        lbb_array,
+        ubb_array,
+        second_phase,
+        delta,
+        optflags,
+    )
 end
 
 """
@@ -3078,8 +4022,30 @@ Provides a simplified interface for  XPRSrepairweightedinfeas.
 - `delta`: The relaxation multiplier in the second phase -1. For console use `-d` value. A positive value means a relative relaxation by multiplying the first phase objective with ( `delta-1` ), while a negative value means an absolute relaxation, by adding `abs(delta)` to the first phase objective.
 
 """
-function repairinfeas(prob::XpressProblem, scode, ptype, phase2, globalflags, lrp, grp, lbp, ubp, delta)
-    @checked Lib.XPRSrepairinfeas(prob, scode, ptype, phase2, globalflags, lrp, grp, lbp, ubp, delta)
+function repairinfeas(
+    prob::XpressProblem,
+    scode,
+    ptype,
+    phase2,
+    globalflags,
+    lrp,
+    grp,
+    lbp,
+    ubp,
+    delta,
+)
+    @checked Lib.XPRSrepairinfeas(
+        prob,
+        scode,
+        ptype,
+        phase2,
+        globalflags,
+        lrp,
+        grp,
+        lbp,
+        ubp,
+        delta,
+    )
 end
 
 """
@@ -3130,7 +4096,13 @@ Calculates various measures for the stability of the current basis, including th
 - `flags`: `x`: Stability measure for the solution and right–hand side values relative to the current basis.`d`: Stability measure for the duals and the basic part of the objective relative to the current basis.`c`: Condition number of the basis (default).`i`: Use the infinity norm (default).`o`: Use the one norm.`e`: Use the Euclidian norm for vectors, and the Frobenius norm for matrices.`u`: Calculate values in the unscaled matrix.
 
 """
-function basisstability(prob::XpressProblem, typecode, norm, ifscaled::Bool, dval)
+function basisstability(
+    prob::XpressProblem,
+    typecode,
+    norm,
+    ifscaled::Bool,
+    dval,
+)
     @checked Lib.XPRSbasisstability(prob, typecode, norm, ifscaled, dval)
 end
 
@@ -3198,8 +4170,22 @@ Executes the MIP solution refiner.
 - `refinestatus`: Refinement results:`0`: An error has occurred`1`: The solution has been refined`2`: Current solution meets target criteria`3`: Solution cannot be refined
 
 """
-function refinemipsol(prob::XpressProblem, options, _sflags, solution, refined_solution, refinestatus)
-    @checked Lib.XPRSrefinemipsol(prob, options, _sflags, solution, refined_solution, refinestatus)
+function refinemipsol(
+    prob::XpressProblem,
+    options,
+    _sflags,
+    solution,
+    refined_solution,
+    refinestatus,
+)
+    @checked Lib.XPRSrefinemipsol(
+        prob,
+        options,
+        _sflags,
+        solution,
+        refined_solution,
+        refinestatus,
+    )
 end
 
 """
@@ -3236,8 +4222,24 @@ Returns the names for the rows, columns or sets in a given range. The names will
 - `last`: Last row, column or set in the range.
 
 """
-function getnamelist(prob::XpressProblem, _itype, _sbuff, names_len, names_len_reqd, first::Integer, last::Integer)
-    @checked Lib.XPRSgetnamelist(prob, _itype, _sbuff, names_len, names_len_reqd, first, last)
+function getnamelist(
+    prob::XpressProblem,
+    _itype,
+    _sbuff,
+    names_len,
+    names_len_reqd,
+    first::Integer,
+    last::Integer,
+)
+    @checked Lib.XPRSgetnamelist(
+        prob,
+        _itype,
+        _sbuff,
+        names_len,
+        names_len_reqd,
+        first,
+        last,
+    )
 end
 
 """
@@ -3256,8 +4258,22 @@ function getnamelistobject(prob::XpressProblem, _itype, r_nl)
     @checked Lib.XPRSgetnamelistobject(prob, _itype, r_nl)
 end
 
-function logfilehandler(obj, vUserContext, vSystemThreadId, sMsg, iMsgType, iMsgCode)
-    @checked Lib.XPRSlogfilehandler(obj, vUserContext, vSystemThreadId, sMsg, iMsgType, iMsgCode)
+function logfilehandler(
+    obj,
+    vUserContext,
+    vSystemThreadId,
+    sMsg,
+    iMsgType,
+    iMsgCode,
+)
+    @checked Lib.XPRSlogfilehandler(
+        obj,
+        vUserContext,
+        vSystemThreadId,
+        sMsg,
+        iMsgType,
+        iMsgCode,
+    )
 end
 
 """
@@ -3295,8 +4311,30 @@ Performs strong branching iterations on all specified bound changes. For each ca
 - `ibnd`: The index of bound for which `sbsolvecb` is called.
 
 """
-function strongbranchcb(prob::XpressProblem, nbnds::Integer, _mindex::Vector{Float64}, _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus, sbsolvecb, vContext)
-    @checked Lib.XPRSstrongbranchcb(prob, nbnds, Cint.(_mindex.-1), _sboundtype, _dbnd, itrlimit, _dsbobjval, _msbstatus, sbsolvecb, vContext)
+function strongbranchcb(
+    prob::XpressProblem,
+    nbnds::Integer,
+    _mindex::Vector{Float64},
+    _sboundtype,
+    _dbnd,
+    itrlimit,
+    _dsbobjval,
+    _msbstatus,
+    sbsolvecb,
+    vContext,
+)
+    @checked Lib.XPRSstrongbranchcb(
+        prob,
+        nbnds,
+        Cint.(_mindex .- 1),
+        _sboundtype,
+        _dbnd,
+        itrlimit,
+        _dsbobjval,
+        _msbstatus,
+        sbsolvecb,
+        vContext,
+    )
 end
 
 function setcblplog(prob::XpressProblem, f_lplog, p)
@@ -4215,7 +5253,12 @@ Declares a callback function that will be called after the selection of a global
 - `priority`: An integer that determines the order in which multiple callbacks of this type will be invoked. The callback added with a higher priority will be called before a callback with a lower priority. Set to 0 if not required.
 
 """
-function addcbchgbranchobject(prob::XpressProblem, f_chgbranchobject, p, priority)
+function addcbchgbranchobject(
+    prob::XpressProblem,
+    f_chgbranchobject,
+    p,
+    priority,
+)
     @checked Lib.XPRSaddcbchgbranchobject(prob, f_chgbranchobject, p, priority)
 end
 
@@ -4379,8 +5422,18 @@ function _ge_removecbmsghandler(f_msghandler, p)
     @checked Lib.XPRS_ge_removecbmsghandler(f_msghandler, p)
 end
 
-function _ge_getlasterror(iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    @checked Lib.XPRS_ge_getlasterror(iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+function _ge_getlasterror(
+    iMsgCode,
+    _msg,
+    _iStringBufferBytes,
+    _iBytesInInternalString,
+)
+    @checked Lib.XPRS_ge_getlasterror(
+        iMsgCode,
+        _msg,
+        _iStringBufferBytes,
+        _iBytesInInternalString,
+    )
 end
 
 function _msp_create(msp)
@@ -4399,36 +5452,166 @@ function _msp_probdetach(msp, prob)
     @checked Lib.XPRS_msp_probdetach(msp, prob)
 end
 
-function _msp_getsollist(msp, prob_to_rank_against, iRankAttrib, bRankAscending, iRankFirstIndex_Ob, iRankLastIndex_Ob, iSolutionIds_Zb, nReturnedSolIds, nSols)
-    @checked Lib.XPRS_msp_getsollist(msp, prob_to_rank_against, iRankAttrib, bRankAscending, iRankFirstIndex_Ob, iRankLastIndex_Ob, iSolutionIds_Zb, nReturnedSolIds, nSols)
+function _msp_getsollist(
+    msp,
+    prob_to_rank_against,
+    iRankAttrib,
+    bRankAscending,
+    iRankFirstIndex_Ob,
+    iRankLastIndex_Ob,
+    iSolutionIds_Zb,
+    nReturnedSolIds,
+    nSols,
+)
+    @checked Lib.XPRS_msp_getsollist(
+        msp,
+        prob_to_rank_against,
+        iRankAttrib,
+        bRankAscending,
+        iRankFirstIndex_Ob,
+        iRankLastIndex_Ob,
+        iSolutionIds_Zb,
+        nReturnedSolIds,
+        nSols,
+    )
 end
 
-function _msp_getsollist2(msp, prob_to_rank_against, iRankAttrib, bRankAscending, iRankFirstIndex_Ob, iRankLastIndex_Ob, bUseUserBitFilter, iUserBitMask, iUserBitPattern, bUseInternalBitFilter, iInternalBitMask, iInternalBitPattern, iSolutionIds_Zb, nReturnedSolIds, nSols)
-    @checked Lib.XPRS_msp_getsollist2(msp, prob_to_rank_against, iRankAttrib, bRankAscending, iRankFirstIndex_Ob, iRankLastIndex_Ob, bUseUserBitFilter, iUserBitMask, iUserBitPattern, bUseInternalBitFilter, iInternalBitMask, iInternalBitPattern, iSolutionIds_Zb, nReturnedSolIds, nSols)
+function _msp_getsollist2(
+    msp,
+    prob_to_rank_against,
+    iRankAttrib,
+    bRankAscending,
+    iRankFirstIndex_Ob,
+    iRankLastIndex_Ob,
+    bUseUserBitFilter,
+    iUserBitMask,
+    iUserBitPattern,
+    bUseInternalBitFilter,
+    iInternalBitMask,
+    iInternalBitPattern,
+    iSolutionIds_Zb,
+    nReturnedSolIds,
+    nSols,
+)
+    @checked Lib.XPRS_msp_getsollist2(
+        msp,
+        prob_to_rank_against,
+        iRankAttrib,
+        bRankAscending,
+        iRankFirstIndex_Ob,
+        iRankLastIndex_Ob,
+        bUseUserBitFilter,
+        iUserBitMask,
+        iUserBitPattern,
+        bUseInternalBitFilter,
+        iInternalBitMask,
+        iInternalBitPattern,
+        iSolutionIds_Zb,
+        nReturnedSolIds,
+        nSols,
+    )
 end
 
-function _msp_getsol(msp, iSolutionId, iSolutionIdStatus_, x, iColFirst, iColLast, nValuesReturned)
-    @checked Lib.XPRS_msp_getsol(msp, iSolutionId, iSolutionIdStatus_, x, iColFirst, iColLast, nValuesReturned)
+function _msp_getsol(
+    msp,
+    iSolutionId,
+    iSolutionIdStatus_,
+    x,
+    iColFirst,
+    iColLast,
+    nValuesReturned,
+)
+    @checked Lib.XPRS_msp_getsol(
+        msp,
+        iSolutionId,
+        iSolutionIdStatus_,
+        x,
+        iColFirst,
+        iColLast,
+        nValuesReturned,
+    )
 end
 
-function _msp_getslack(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, slack, iRowFirst, iRowLast, nValuesReturned)
-    @checked Lib.XPRS_msp_getslack(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, slack, iRowFirst, iRowLast, nValuesReturned)
+function _msp_getslack(
+    msp,
+    prob_to_rank_against,
+    iSolutionId,
+    iSolutionIdStatus_,
+    slack,
+    iRowFirst,
+    iRowLast,
+    nValuesReturned,
+)
+    @checked Lib.XPRS_msp_getslack(
+        msp,
+        prob_to_rank_against,
+        iSolutionId,
+        iSolutionIdStatus_,
+        slack,
+        iRowFirst,
+        iRowLast,
+        nValuesReturned,
+    )
 end
 
-function _msp_loadsol(msp, iSolutionId, x, nCols, sSolutionName, bNameModifiedForUniqueness, iSolutionIdOfExistingDuplicatePreventedLoad)
-    @checked Lib.XPRS_msp_loadsol(msp, iSolutionId, x, nCols, sSolutionName, bNameModifiedForUniqueness, iSolutionIdOfExistingDuplicatePreventedLoad)
+function _msp_loadsol(
+    msp,
+    iSolutionId,
+    x,
+    nCols,
+    sSolutionName,
+    bNameModifiedForUniqueness,
+    iSolutionIdOfExistingDuplicatePreventedLoad,
+)
+    @checked Lib.XPRS_msp_loadsol(
+        msp,
+        iSolutionId,
+        x,
+        nCols,
+        sSolutionName,
+        bNameModifiedForUniqueness,
+        iSolutionIdOfExistingDuplicatePreventedLoad,
+    )
 end
 
 function _msp_delsol(msp, iSolutionId, iSolutionIdStatus_)
     @checked Lib.XPRS_msp_delsol(msp, iSolutionId, iSolutionIdStatus_)
 end
 
-function _msp_getintattribprobsol(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
-    @checked Lib.XPRS_msp_getintattribprobsol(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
+function _msp_getintattribprobsol(
+    msp,
+    prob_to_rank_against,
+    iSolutionId,
+    iSolutionIdStatus_,
+    iAttribId,
+    Dst,
+)
+    @checked Lib.XPRS_msp_getintattribprobsol(
+        msp,
+        prob_to_rank_against,
+        iSolutionId,
+        iSolutionIdStatus_,
+        iAttribId,
+        Dst,
+    )
 end
 
-function _msp_getdblattribprobsol(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
-    @checked Lib.XPRS_msp_getdblattribprobsol(msp, prob_to_rank_against, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
+function _msp_getdblattribprobsol(
+    msp,
+    prob_to_rank_against,
+    iSolutionId,
+    iSolutionIdStatus_,
+    iAttribId,
+    Dst,
+)
+    @checked Lib.XPRS_msp_getdblattribprobsol(
+        msp,
+        prob_to_rank_against,
+        iSolutionId,
+        iSolutionIdStatus_,
+        iAttribId,
+        Dst,
+    )
 end
 
 function _msp_getintattribprob(msp, prob::XpressProblem, iAttribId, Dst)
@@ -4439,36 +5622,136 @@ function _msp_getdblattribprob(msp, prob::XpressProblem, iAttribId, Dst)
     @checked Lib.XPRS_msp_getdblattribprob(msp, prob, iAttribId, Dst)
 end
 
-function _msp_getintattribsol(msp, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
-    @checked Lib.XPRS_msp_getintattribsol(msp, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
+function _msp_getintattribsol(
+    msp,
+    iSolutionId,
+    iSolutionIdStatus_,
+    iAttribId,
+    Dst,
+)
+    @checked Lib.XPRS_msp_getintattribsol(
+        msp,
+        iSolutionId,
+        iSolutionIdStatus_,
+        iAttribId,
+        Dst,
+    )
 end
 
-function _msp_getdblattribsol(msp, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
-    @checked Lib.XPRS_msp_getdblattribsol(msp, iSolutionId, iSolutionIdStatus_, iAttribId, Dst)
+function _msp_getdblattribsol(
+    msp,
+    iSolutionId,
+    iSolutionIdStatus_,
+    iAttribId,
+    Dst,
+)
+    @checked Lib.XPRS_msp_getdblattribsol(
+        msp,
+        iSolutionId,
+        iSolutionIdStatus_,
+        iAttribId,
+        Dst,
+    )
 end
 
-function _msp_getintcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
-    @checked Lib.XPRS_msp_getintcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
+function _msp_getintcontrolsol(
+    msp,
+    iSolutionId,
+    iSolutionIdStatus_,
+    iControlId,
+    Val,
+)
+    @checked Lib.XPRS_msp_getintcontrolsol(
+        msp,
+        iSolutionId,
+        iSolutionIdStatus_,
+        iControlId,
+        Val,
+    )
 end
 
-function _msp_getdblcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
-    @checked Lib.XPRS_msp_getdblcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
+function _msp_getdblcontrolsol(
+    msp,
+    iSolutionId,
+    iSolutionIdStatus_,
+    iControlId,
+    Val,
+)
+    @checked Lib.XPRS_msp_getdblcontrolsol(
+        msp,
+        iSolutionId,
+        iSolutionIdStatus_,
+        iControlId,
+        Val,
+    )
 end
 
-function _msp_setintcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
-    @checked Lib.XPRS_msp_setintcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
+function _msp_setintcontrolsol(
+    msp,
+    iSolutionId,
+    iSolutionIdStatus_,
+    iControlId,
+    Val,
+)
+    @checked Lib.XPRS_msp_setintcontrolsol(
+        msp,
+        iSolutionId,
+        iSolutionIdStatus_,
+        iControlId,
+        Val,
+    )
 end
 
-function _msp_setdblcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
-    @checked Lib.XPRS_msp_setdblcontrolsol(msp, iSolutionId, iSolutionIdStatus_, iControlId, Val)
+function _msp_setdblcontrolsol(
+    msp,
+    iSolutionId,
+    iSolutionIdStatus_,
+    iControlId,
+    Val,
+)
+    @checked Lib.XPRS_msp_setdblcontrolsol(
+        msp,
+        iSolutionId,
+        iSolutionIdStatus_,
+        iControlId,
+        Val,
+    )
 end
 
-function _msp_getintattribprobextreme(msp, prob_to_rank_against, bGet_Max_Otherwise_Min, iSolutionId, iAttribId, ExtremeVal)
-    @checked Lib.XPRS_msp_getintattribprobextreme(msp, prob_to_rank_against, bGet_Max_Otherwise_Min, iSolutionId, iAttribId, ExtremeVal)
+function _msp_getintattribprobextreme(
+    msp,
+    prob_to_rank_against,
+    bGet_Max_Otherwise_Min,
+    iSolutionId,
+    iAttribId,
+    ExtremeVal,
+)
+    @checked Lib.XPRS_msp_getintattribprobextreme(
+        msp,
+        prob_to_rank_against,
+        bGet_Max_Otherwise_Min,
+        iSolutionId,
+        iAttribId,
+        ExtremeVal,
+    )
 end
 
-function _msp_getdblattribprobextreme(msp, prob_to_rank_against, bGet_Max_Otherwise_Min, iSolutionId, iAttribId, ExtremeVal)
-    @checked Lib.XPRS_msp_getdblattribprobextreme(msp, prob_to_rank_against, bGet_Max_Otherwise_Min, iSolutionId, iAttribId, ExtremeVal)
+function _msp_getdblattribprobextreme(
+    msp,
+    prob_to_rank_against,
+    bGet_Max_Otherwise_Min,
+    iSolutionId,
+    iAttribId,
+    ExtremeVal,
+)
+    @checked Lib.XPRS_msp_getdblattribprobextreme(
+        msp,
+        prob_to_rank_against,
+        bGet_Max_Otherwise_Min,
+        iSolutionId,
+        iAttribId,
+        ExtremeVal,
+    )
 end
 
 function _msp_getintattrib(msp, iAttribId, Val)
@@ -4495,28 +5778,94 @@ function _msp_setdblcontrol(msp, iControlId, Val)
     @checked Lib.XPRS_msp_setdblcontrol(msp, iControlId, Val)
 end
 
-function _msp_setsolname(msp, iSolutionId, sNewSolutionBaseName, bNameModifiedForUniqueness, iSolutionIdStatus_)
-    @checked Lib.XPRS_msp_setsolname(msp, iSolutionId, sNewSolutionBaseName, bNameModifiedForUniqueness, iSolutionIdStatus_)
+function _msp_setsolname(
+    msp,
+    iSolutionId,
+    sNewSolutionBaseName,
+    bNameModifiedForUniqueness,
+    iSolutionIdStatus_,
+)
+    @checked Lib.XPRS_msp_setsolname(
+        msp,
+        iSolutionId,
+        sNewSolutionBaseName,
+        bNameModifiedForUniqueness,
+        iSolutionIdStatus_,
+    )
 end
 
-function _msp_getsolname(msp, iSolutionId, _sname, _iStringBufferBytes, _iBytesInInternalString, iSolutionIdStatus_)
-    @checked Lib.XPRS_msp_getsolname(msp, iSolutionId, _sname, _iStringBufferBytes, _iBytesInInternalString, iSolutionIdStatus_)
+function _msp_getsolname(
+    msp,
+    iSolutionId,
+    _sname,
+    _iStringBufferBytes,
+    _iBytesInInternalString,
+    iSolutionIdStatus_,
+)
+    @checked Lib.XPRS_msp_getsolname(
+        msp,
+        iSolutionId,
+        _sname,
+        _iStringBufferBytes,
+        _iBytesInInternalString,
+        iSolutionIdStatus_,
+    )
 end
 
 function _msp_findsolbyname(msp, sSolutionName, iSolutionId)
     @checked Lib.XPRS_msp_findsolbyname(msp, sSolutionName, iSolutionId)
 end
 
-function _msp_writeslxsol(msp, prob_context, iSolutionId, iSolutionIdStatus_, sFileName, sFlags)
-    @checked Lib.XPRS_msp_writeslxsol(msp, prob_context, iSolutionId, iSolutionIdStatus_, sFileName, sFlags)
+function _msp_writeslxsol(
+    msp,
+    prob_context,
+    iSolutionId,
+    iSolutionIdStatus_,
+    sFileName,
+    sFlags,
+)
+    @checked Lib.XPRS_msp_writeslxsol(
+        msp,
+        prob_context,
+        iSolutionId,
+        iSolutionIdStatus_,
+        sFileName,
+        sFlags,
+    )
 end
 
-function _msp_readslxsol(msp, col_name_list, sFileName, sFlags, iSolutionId_Beg, iSolutionId_End)
-    @checked Lib.XPRS_msp_readslxsol(msp, col_name_list, sFileName, sFlags, iSolutionId_Beg, iSolutionId_End)
+function _msp_readslxsol(
+    msp,
+    col_name_list,
+    sFileName,
+    sFlags,
+    iSolutionId_Beg,
+    iSolutionId_End,
+)
+    @checked Lib.XPRS_msp_readslxsol(
+        msp,
+        col_name_list,
+        sFileName,
+        sFlags,
+        iSolutionId_Beg,
+        iSolutionId_End,
+    )
 end
 
-function _msp_getlasterror(msp, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    @checked Lib.XPRS_msp_getlasterror(msp, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+function _msp_getlasterror(
+    msp,
+    iMsgCode,
+    _msg,
+    _iStringBufferBytes,
+    _iBytesInInternalString,
+)
+    @checked Lib.XPRS_msp_getlasterror(
+        msp,
+        iMsgCode,
+        _msg,
+        _iStringBufferBytes,
+        _iBytesInInternalString,
+    )
 end
 
 function _msp_setcbmsghandler(msp, f_msghandler, p)
@@ -4551,8 +5900,24 @@ function _nml_getmaxnamelen(nml, namlen)
     @checked Lib.XPRS_nml_getmaxnamelen(nml, namlen)
 end
 
-function _nml_getnames(nml, padlen, buf, buflen, r_buflen_reqd, firstIndex, lastIndex)
-    @checked Lib.XPRS_nml_getnames(nml, padlen, buf, buflen, r_buflen_reqd, firstIndex, lastIndex)
+function _nml_getnames(
+    nml,
+    padlen,
+    buf,
+    buflen,
+    r_buflen_reqd,
+    firstIndex,
+    lastIndex,
+)
+    @checked Lib.XPRS_nml_getnames(
+        nml,
+        padlen,
+        buf,
+        buflen,
+        r_buflen_reqd,
+        firstIndex,
+        lastIndex,
+    )
 end
 
 function _nml_addnames(nml, buf, firstIndex, lastIndex)
@@ -4571,8 +5936,20 @@ function _nml_copynames(dst, src)
     @checked Lib.XPRS_nml_copynames(dst, src)
 end
 
-function _nml_getlasterror(nml, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    @checked Lib.XPRS_nml_getlasterror(nml, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+function _nml_getlasterror(
+    nml,
+    iMsgCode,
+    _msg,
+    _iStringBufferBytes,
+    _iBytesInInternalString,
+)
+    @checked Lib.XPRS_nml_getlasterror(
+        nml,
+        iMsgCode,
+        _msg,
+        _iStringBufferBytes,
+        _iBytesInInternalString,
+    )
 end
 
 """
@@ -4611,8 +5988,28 @@ Returns the nonzeros in a quadratic constraint coefficients matrix for the colum
 - `last`: Last column in the range.
 
 """
-function getqrowqmatrix(prob::XpressProblem, irow, mstart, mclind, dobjval, maxcoeffs, ncoeffs, first::Integer, last::Integer)
-    @checked Lib.XPRSgetqrowqmatrix(prob, irow, mstart, mclind, dobjval, maxcoeffs, ncoeffs, first, last)
+function getqrowqmatrix(
+    prob::XpressProblem,
+    irow,
+    mstart,
+    mclind,
+    dobjval,
+    maxcoeffs,
+    ncoeffs,
+    first::Integer,
+    last::Integer,
+)
+    @checked Lib.XPRSgetqrowqmatrix(
+        prob,
+        irow,
+        mstart,
+        mclind,
+        dobjval,
+        maxcoeffs,
+        ncoeffs,
+        first,
+        last,
+    )
 end
 
 """
@@ -4632,11 +6029,25 @@ Returns the nonzeros in a quadratic constraint coefficients matrix as triplets (
 """
 function getqrowqmatrixtriplets(prob::XpressProblem, irow)
     nqelem = Ref{Cint}()
-    @checked Lib.XPRSgetqrowqmatrixtriplets(prob, irow-1, nqelem, C_NULL, C_NULL, C_NULL)
-    mqcol1 = Array{Cint}(undef,  nqelem[])
-    mqcol2 = Array{Cint}(undef,  nqelem[])
-    dqe = Array{Float64}(undef,  nqelem[])
-    @checked Lib.XPRSgetqrowqmatrixtriplets(prob, irow-1, nqelem, mqcol1, mqcol2, dqe)
+    @checked Lib.XPRSgetqrowqmatrixtriplets(
+        prob,
+        irow - 1,
+        nqelem,
+        C_NULL,
+        C_NULL,
+        C_NULL,
+    )
+    mqcol1 = Array{Cint}(undef, nqelem[])
+    mqcol2 = Array{Cint}(undef, nqelem[])
+    dqe = Array{Float64}(undef, nqelem[])
+    @checked Lib.XPRSgetqrowqmatrixtriplets(
+        prob,
+        irow - 1,
+        nqelem,
+        mqcol1,
+        mqcol2,
+        dqe,
+    )
     mqcol1 .+= 1
     mqcol2 .+= 1
     return mqcol1, mqcol2, dqe
@@ -4696,7 +6107,14 @@ Adds a new quadratic matrix into a row defined by triplets.
 
 """
 function addqmatrix(prob::XpressProblem, irow, mqc1, mqc2, dqew)
-    @checked Lib.XPRSaddqmatrix(prob, irow - 1, length(mqc1), Cint.(mqc1 .- 1), Cint.(mqc2 .- 1), dqew)
+    @checked Lib.XPRSaddqmatrix(
+        prob,
+        irow - 1,
+        length(mqc1),
+        Cint.(mqc1 .- 1),
+        Cint.(mqc2 .- 1),
+        dqew,
+    )
 end
 
 # # Disable 64Bit versions do to reliability issues.
@@ -4716,7 +6134,7 @@ Deletes the quadratic part of a row or of the objective function.
 
 """
 function delqmatrix(prob::XpressProblem, irow)
-    @checked Lib.XPRSdelqmatrix(prob, irow-1)
+    @checked Lib.XPRSdelqmatrix(prob, irow - 1)
 end
 
 """
@@ -4752,12 +6170,112 @@ Used to load a quadratic problem with quadratic side constraints into the Optimi
 - `qcdqval`: Integer array of size `nqcelem` , containing the coefficients for the quadratic constraint matrices.
 
 """
-function loadqcqp(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
-    @checked Lib.XPRSloadqcqp(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
+function loadqcqp(
+    prob::XpressProblem,
+    _sprobname,
+    ncols,
+    nrows,
+    _srowtypes,
+    _drhs,
+    _drange,
+    _dobj,
+    _mstart,
+    _mnel,
+    _mrwind,
+    _dmatval,
+    _dlb,
+    _dub,
+    nquads,
+    _mqcol1,
+    _mqcol2,
+    _dqval,
+    qmn,
+    qcrows,
+    qcnquads,
+    qcmqcol1,
+    qcmqcol2,
+    qcdqval,
+)
+    @checked Lib.XPRSloadqcqp(
+        prob,
+        _sprobname,
+        ncols,
+        nrows,
+        _srowtypes,
+        _drhs,
+        _drange,
+        _dobj,
+        _mstart,
+        _mnel,
+        _mrwind,
+        _dmatval,
+        _dlb,
+        _dub,
+        nquads,
+        _mqcol1,
+        _mqcol2,
+        _dqval,
+        qmn,
+        qcrows,
+        qcnquads,
+        qcmqcol1,
+        qcmqcol2,
+        qcdqval,
+    )
 end
 
-function loadqcqp64(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
-    @checked Lib.XPRSloadqcqp64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _mstart, _mnel, _mrwind, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval)
+function loadqcqp64(
+    prob::XpressProblem,
+    _sprobname,
+    ncols,
+    nrows,
+    _srowtypes,
+    _drhs,
+    _drange,
+    _dobj,
+    _mstart,
+    _mnel,
+    _mrwind,
+    _dmatval,
+    _dlb,
+    _dub,
+    nquads,
+    _mqcol1,
+    _mqcol2,
+    _dqval,
+    qmn,
+    qcrows,
+    qcnquads,
+    qcmqcol1,
+    qcmqcol2,
+    qcdqval,
+)
+    @checked Lib.XPRSloadqcqp64(
+        prob,
+        _sprobname,
+        ncols,
+        nrows,
+        _srowtypes,
+        _drhs,
+        _drange,
+        _dobj,
+        _mstart,
+        _mnel,
+        _mrwind,
+        _dmatval,
+        _dlb,
+        _dub,
+        nquads,
+        _mqcol1,
+        _mqcol2,
+        _dqval,
+        qmn,
+        qcrows,
+        qcnquads,
+        qcmqcol1,
+        qcmqcol2,
+        qcdqval,
+    )
 end
 
 """
@@ -4802,12 +6320,148 @@ Used to load a global, quadratic problem with quadratic side constraints into th
 - `dref`: Double array of length `msstart[nsets]-1` containing the reference row entries for each member of the sets. May be `NULL` if not required.
 
 """
-function loadqcqpglobal(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
-    @checked Lib.XPRSloadqcqpglobal(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
+function loadqcqpglobal(
+    prob::XpressProblem,
+    _sprobname,
+    ncols,
+    nrows,
+    _srowtypes,
+    _drhs,
+    _drange,
+    _dobj,
+    _matbeg,
+    _matcnt,
+    _matrow,
+    _dmatval,
+    _dlb,
+    _dub,
+    nquads,
+    _mqcol1,
+    _mqcol2,
+    _dqval,
+    qmn,
+    qcrows,
+    qcnquads,
+    qcmqcol1,
+    qcmqcol2,
+    qcdqval,
+    ngents,
+    nsets,
+    qgtype,
+    mgcols,
+    dlim,
+    qstype,
+    msstart,
+    mscols,
+    dref,
+)
+    @checked Lib.XPRSloadqcqpglobal(
+        prob,
+        _sprobname,
+        ncols,
+        nrows,
+        _srowtypes,
+        _drhs,
+        _drange,
+        _dobj,
+        _matbeg,
+        _matcnt,
+        _matrow,
+        _dmatval,
+        _dlb,
+        _dub,
+        nquads,
+        _mqcol1,
+        _mqcol2,
+        _dqval,
+        qmn,
+        qcrows,
+        qcnquads,
+        qcmqcol1,
+        qcmqcol2,
+        qcdqval,
+        ngents,
+        nsets,
+        qgtype,
+        mgcols,
+        dlim,
+        qstype,
+        msstart,
+        mscols,
+        dref,
+    )
 end
 
-function loadqcqpglobal64(prob::XpressProblem, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
-    @checked Lib.XPRSloadqcqpglobal64(prob, _sprobname, ncols, nrows, _srowtypes, _drhs, _drange, _dobj, _matbeg, _matcnt, _matrow, _dmatval, _dlb, _dub, nquads, _mqcol1, _mqcol2, _dqval, qmn, qcrows, qcnquads, qcmqcol1, qcmqcol2, qcdqval, ngents, nsets, qgtype, mgcols, dlim, qstype, msstart, mscols, dref)
+function loadqcqpglobal64(
+    prob::XpressProblem,
+    _sprobname,
+    ncols,
+    nrows,
+    _srowtypes,
+    _drhs,
+    _drange,
+    _dobj,
+    _matbeg,
+    _matcnt,
+    _matrow,
+    _dmatval,
+    _dlb,
+    _dub,
+    nquads,
+    _mqcol1,
+    _mqcol2,
+    _dqval,
+    qmn,
+    qcrows,
+    qcnquads,
+    qcmqcol1,
+    qcmqcol2,
+    qcdqval,
+    ngents,
+    nsets,
+    qgtype,
+    mgcols,
+    dlim,
+    qstype,
+    msstart,
+    mscols,
+    dref,
+)
+    @checked Lib.XPRSloadqcqpglobal64(
+        prob,
+        _sprobname,
+        ncols,
+        nrows,
+        _srowtypes,
+        _drhs,
+        _drange,
+        _dobj,
+        _matbeg,
+        _matcnt,
+        _matrow,
+        _dmatval,
+        _dlb,
+        _dub,
+        nquads,
+        _mqcol1,
+        _mqcol2,
+        _dqval,
+        qmn,
+        qcrows,
+        qcnquads,
+        qcmqcol1,
+        qcmqcol2,
+        qcdqval,
+        ngents,
+        nsets,
+        qgtype,
+        mgcols,
+        dlim,
+        qstype,
+        msstart,
+        mscols,
+        dref,
+    )
 end
 
 function _mse_create(mse)
@@ -4818,16 +6472,64 @@ function _mse_destroy(mse)
     @checked Lib.XPRS_mse_destroy(mse)
 end
 
-function _mse_getsollist(mse, iMetricId, iRankFirstIndex_Ob, iRankLastIndex_Ob, iSolutionIds, nReturnedSolIds, nSols)
-    @checked Lib.XPRS_mse_getsollist(mse, iMetricId, iRankFirstIndex_Ob, iRankLastIndex_Ob, iSolutionIds, nReturnedSolIds, nSols)
+function _mse_getsollist(
+    mse,
+    iMetricId,
+    iRankFirstIndex_Ob,
+    iRankLastIndex_Ob,
+    iSolutionIds,
+    nReturnedSolIds,
+    nSols,
+)
+    @checked Lib.XPRS_mse_getsollist(
+        mse,
+        iMetricId,
+        iRankFirstIndex_Ob,
+        iRankLastIndex_Ob,
+        iSolutionIds,
+        nReturnedSolIds,
+        nSols,
+    )
 end
 
-function _mse_getsolmetric(mse, iSolutionId, iSolutionIdStatus, iMetricId, dMetric)
-    @checked Lib.XPRS_mse_getsolmetric(mse, iSolutionId, iSolutionIdStatus, iMetricId, dMetric)
+function _mse_getsolmetric(
+    mse,
+    iSolutionId,
+    iSolutionIdStatus,
+    iMetricId,
+    dMetric,
+)
+    @checked Lib.XPRS_mse_getsolmetric(
+        mse,
+        iSolutionId,
+        iSolutionIdStatus,
+        iMetricId,
+        dMetric,
+    )
 end
 
-function _mse_getcullchoice(mse, iMetricId, cull_sol_id_list, nMaxSolsToCull, nSolsToCull, dNewSolMetric, x, nCols, bRejectSoln)
-    @checked Lib.XPRS_mse_getcullchoice(mse, iMetricId, cull_sol_id_list, nMaxSolsToCull, nSolsToCull, dNewSolMetric, x, nCols, bRejectSoln)
+function _mse_getcullchoice(
+    mse,
+    iMetricId,
+    cull_sol_id_list,
+    nMaxSolsToCull,
+    nSolsToCull,
+    dNewSolMetric,
+    x,
+    nCols,
+    bRejectSoln,
+)
+    @checked Lib.XPRS_mse_getcullchoice(
+        mse,
+        iMetricId,
+        cull_sol_id_list,
+        nMaxSolsToCull,
+        nSolsToCull,
+        dNewSolMetric,
+        x,
+        nCols,
+        bRejectSoln,
+    )
 end
 
 function _mse_minim(mse, prob::XpressProblem, msp, f_mse_handler, p, nMaxSols)
@@ -4866,16 +6568,38 @@ function _mse_setdblcontrol(mse, iAttribId, Val)
     @checked Lib.XPRS_mse_setdblcontrol(mse, iAttribId, Val)
 end
 
-function _mse_getlasterror(mse, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    @checked Lib.XPRS_mse_getlasterror(mse, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+function _mse_getlasterror(
+    mse,
+    iMsgCode,
+    _msg,
+    _iStringBufferBytes,
+    _iBytesInInternalString,
+)
+    @checked Lib.XPRS_mse_getlasterror(
+        mse,
+        iMsgCode,
+        _msg,
+        _iStringBufferBytes,
+        _iBytesInInternalString,
+    )
 end
 
 function _mse_setsolbasename(mse, sSolutionBaseName)
     @checked Lib.XPRS_mse_setsolbasename(mse, sSolutionBaseName)
 end
 
-function _mse_getsolbasename(mse, _sname, _iStringBufferBytes, _iBytesInInternalString)
-    @checked Lib.XPRS_mse_getsolbasename(mse, _sname, _iStringBufferBytes, _iBytesInInternalString)
+function _mse_getsolbasename(
+    mse,
+    _sname,
+    _iStringBufferBytes,
+    _iBytesInInternalString,
+)
+    @checked Lib.XPRS_mse_getsolbasename(
+        mse,
+        _sname,
+        _iStringBufferBytes,
+        _iBytesInInternalString,
+    )
 end
 
 function _mse_setcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
@@ -4887,7 +6611,12 @@ function _mse_getcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
 end
 
 function _mse_addcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p, priority)
-    @checked Lib.XPRS_mse_addcbgetsolutiondiff(mse, f_mse_getsolutiondiff, p, priority)
+    @checked Lib.XPRS_mse_addcbgetsolutiondiff(
+        mse,
+        f_mse_getsolutiondiff,
+        p,
+        priority,
+    )
 end
 
 function _mse_removecbgetsolutiondiff(mse, f_mse_getsolutiondiff, p)
@@ -4939,19 +6668,86 @@ function _bo_setpreferredbranch(obranch, ibranch)
 end
 
 function _bo_addbounds(obranch, ibranch, nbounds, cbndtype, mbndcol, dbndval)
-    @checked Lib.XPRS_bo_addbounds(obranch, ibranch, nbounds, cbndtype, mbndcol, dbndval)
+    @checked Lib.XPRS_bo_addbounds(
+        obranch,
+        ibranch,
+        nbounds,
+        cbndtype,
+        mbndcol,
+        dbndval,
+    )
 end
 
-function _bo_getbounds(obranch, ibranch, p_nbounds, nbounds_size, cbndtype, mbndcol, dbndval)
-    @checked Lib.XPRS_bo_getbounds(obranch, ibranch, p_nbounds, nbounds_size, cbndtype, mbndcol, dbndval)
+function _bo_getbounds(
+    obranch,
+    ibranch,
+    p_nbounds,
+    nbounds_size,
+    cbndtype,
+    mbndcol,
+    dbndval,
+)
+    @checked Lib.XPRS_bo_getbounds(
+        obranch,
+        ibranch,
+        p_nbounds,
+        nbounds_size,
+        cbndtype,
+        mbndcol,
+        dbndval,
+    )
 end
 
-function _bo_addrows(obranch, ibranch, nrows, nelems, crtype, drrhs, mrbeg, mcol, dval)
-    @checked Lib.XPRS_bo_addrows(obranch, ibranch, nrows, nelems, crtype, drrhs, mrbeg, mcol, dval)
+function _bo_addrows(
+    obranch,
+    ibranch,
+    nrows,
+    nelems,
+    crtype,
+    drrhs,
+    mrbeg,
+    mcol,
+    dval,
+)
+    @checked Lib.XPRS_bo_addrows(
+        obranch,
+        ibranch,
+        nrows,
+        nelems,
+        crtype,
+        drrhs,
+        mrbeg,
+        mcol,
+        dval,
+    )
 end
 
-function _bo_getrows(obranch, ibranch, p_nrows, nrows_size, p_nelems, nelems_size, crtype, drrhs, mrbeg, mcol, dval)
-    @checked Lib.XPRS_bo_getrows(obranch, ibranch, p_nrows, nrows_size, p_nelems, nelems_size, crtype, drrhs, mrbeg, mcol, dval)
+function _bo_getrows(
+    obranch,
+    ibranch,
+    p_nrows,
+    nrows_size,
+    p_nelems,
+    nelems_size,
+    crtype,
+    drrhs,
+    mrbeg,
+    mcol,
+    dval,
+)
+    @checked Lib.XPRS_bo_getrows(
+        obranch,
+        ibranch,
+        p_nrows,
+        nrows_size,
+        p_nelems,
+        nelems_size,
+        crtype,
+        drrhs,
+        mrbeg,
+        mcol,
+        dval,
+    )
 end
 
 function _bo_addcuts(obranch, ibranch, ncuts, mcutind)
@@ -4962,8 +6758,20 @@ function _bo_getid(obranch, p_id)
     @checked Lib.XPRS_bo_getid(obranch, p_id)
 end
 
-function _bo_getlasterror(obranch, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    @checked Lib.XPRS_bo_getlasterror(obranch, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+function _bo_getlasterror(
+    obranch,
+    iMsgCode,
+    _msg,
+    _iStringBufferBytes,
+    _iBytesInInternalString,
+)
+    @checked Lib.XPRS_bo_getlasterror(
+        obranch,
+        iMsgCode,
+        _msg,
+        _iStringBufferBytes,
+        _iBytesInInternalString,
+    )
 end
 
 function _bo_validate(obranch, p_status)

@@ -14,7 +14,7 @@ end
 
 function touchlic(path)
     f = open(path)
-    close(f)
+    return close(f)
 end
 
 function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
@@ -52,13 +52,19 @@ function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
         end
     end
 
-    error("Could not find xpauth.xpr license file. Check XPRESSDIR or XPAUTH_PATH environment variables.")
+    return error(
+        "Could not find xpauth.xpr license file. Check XPRESSDIR or XPAUTH_PATH environment variables.",
+    )
 end
 """
     userlic(; liccheck::Function = emptyliccheck, xpauth_path::String = "" )
 Performs license chhecking with `liccheck` validation function on dir `xpauth_path`
 """
-function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpauth_path::String = "" )
+function userlic(;
+    verbose::Bool = true,
+    liccheck::Function = emptyliccheck,
+    xpauth_path::String = "",
+)
 
     # change directory to reach all libs
     initdir = pwd()
@@ -72,7 +78,7 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
 
     # pre allocate vars
     lic = Cint[1]
-    slicmsg =  path_lic #xpauth_path == "dh" ? Array{Cchar}(undef, 1024*8) :
+    slicmsg = path_lic #xpauth_path == "dh" ? Array{Cchar}(undef, 1024*8) :
 
     # FIRST call do xprslicense to get BASE LIC
     license(lic, slicmsg)
@@ -81,7 +87,7 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
     lic = liccheck(lic)
 
     # Send GIVEN LIC to XPRESS lib
-    buffer = Array{Cchar}(undef, 1024*8)
+    buffer = Array{Cchar}(undef, 1024 * 8)
     buffer_p = pointer(buffer)
     ierr = GC.@preserve buffer begin
         license(lic, Cstring(buffer_p))
@@ -101,10 +107,10 @@ function userlic(; verbose::Bool = true, liccheck::Function = emptyliccheck, xpa
         # USER
         if verbose && !haskey(ENV, "XPRESS_JL_NO_INFO")
             @info("Xpress: User license detected.")
-            @info(  unsafe_string(pointer(slicmsg))  )
+            @info(unsafe_string(pointer(slicmsg)))
         end
     end
 
     # go back to initial folder
-    cd(initdir)
+    return cd(initdir)
 end

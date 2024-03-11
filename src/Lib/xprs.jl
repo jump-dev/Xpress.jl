@@ -5,7 +5,7 @@
 
 # Julia wrapper for header: xprs.h
 # Automatically generated using Clang.jl
-
+#! format: off
 
 function XPRScopycallbacks(dest, src)
     ccall((:XPRScopycallbacks, libxprs), Cint, (XPRSprob, XPRSprob), dest, src)
