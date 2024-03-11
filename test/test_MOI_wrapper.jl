@@ -1157,8 +1157,11 @@ end
 
 function callback_simple_model()
     model = Xpress.Optimizer(;
-        HEURSTRATEGY = 0, # before v41
+        PRESOLVE = 0,
+        CUTSTRATEGY = 0,
         HEUREMPHASIS = 0,
+        HEURSTRATEGY = 0,
+        SYMMETRY = 0,
         OUTPUTLOG = 0,
     )
     MOI.Utilities.loadfromstring!(
@@ -1632,30 +1635,6 @@ function test_callback_lazy_constraint_dual_reductions()
     @test x_val[1] + x_val[2] <= 10.0 + 1e-4
     @test x_val[1] + x_val[2] ≈ x_val[3]
     return
-end
-
-function callback_simple_model()
-    model = Xpress.Optimizer(;
-        PRESOLVE = 0,
-        CUTSTRATEGY = 0,
-        HEURSTRATEGY = 0,
-        SYMMETRY = 0,
-        OUTPUTLOG = 0,
-    )
-    MOI.Utilities.loadfromstring!(
-        model,
-        """
-    variables: x, y
-    maxobjective: y
-    c1: x in Integer()
-    c2: y in Integer()
-    c3: x in Interval(0.0, 2.5)
-    c4: y in Interval(0.0, 2.5)
-""",
-    )
-    x = MOI.get(model, MOI.VariableIndex, "x")
-    y = MOI.get(model, MOI.VariableIndex, "y")
-    return model, x, y
 end
 
 function test_callback_preintsol()
