@@ -524,10 +524,10 @@ function reset_message_callback(model)
         @checked Lib.XPRSremovecbmessage(model.inner, C_NULL, C_NULL)
         model.message_callback = nothing
     end
-    if model.inner.logfile == "" &&    # no file -> screen
-       model.log_level != 0        # has log
+    if isempty(model.inner.logfile) && model.log_level != 0
         model.message_callback = setoutputcb!(model.inner, model.show_warning)
     end
+    return
 end
 
 function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
@@ -2953,6 +2953,7 @@ function pre_solve_reset(model::Optimizer)
     reset_cached_solution(model)
     return
 end
+
 function check_cb_exception(model::Optimizer)
     if model.cb_exception !== nothing
         e = model.cb_exception
@@ -2962,9 +2963,7 @@ function check_cb_exception(model::Optimizer)
     return
 end
 
-function is_mip(model)
-    return is_mixedinteger(model.inner) && !model.solve_relaxation
-end
+is_mip(model) = is_mixedinteger(model.inner) && !model.solve_relaxation
 
 function _set_MIP_start(model)
     colind, solval = Cint[], Cdouble[]
@@ -3012,17 +3011,14 @@ function MOI.optimize!(model::Optimizer)
     end
     model.cached_solution.solve_time = time() - start_time
     check_cb_exception(model)
-
-    # should be almost a no-op if not needed
-    # might have minor overhead due to memory being freed
+    # Should be almost a no-op if not needed. Might have minor overhead due to
+    # memory being freed
     if model.post_solve
         @checked Lib.XPRSpostsolve(model.inner)
     end
-
     model.termination_status = _cache_termination_status(model)
     model.primal_status = _cache_primal_status(model)
     model.dual_status = _cache_dual_status(model)
-
     # TODO: add @checked here - must review statuses
     if is_mip(model)
         # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
@@ -3044,7 +3040,6 @@ function MOI.optimize!(model::Optimizer)
     end
     model.cached_solution.linear_primal .=
         rhs .- model.cached_solution.linear_primal
-
     status = MOI.get(model, MOI.PrimalStatus())
     if status == MOI.INFEASIBILITY_CERTIFICATE
         has_Ray = Int64[0]
@@ -3074,6 +3069,7 @@ function _throw_if_optimize_in_progress(model, attr)
     if model.callback_state != CB_NONE
         throw(MOI.OptimizeInProgress(attr))
     end
+    return
 end
 
 function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
@@ -3317,6 +3313,10 @@ function MOI.get(model::Optimizer, attr::MOI.DualStatus)
     return model.dual_status
 end
 
+#=
+    MOI.VariablePrimal
+=#
+
 function MOI.get(
     model::Optimizer,
     attr::MOI.VariablePrimal,
@@ -3327,6 +3327,10 @@ function MOI.get(
     column = _info(model, x).column
     return model.cached_solution.variable_primal[column]
 end
+
+#=
+    MOI.ConstraintPrimal
+=#
 
 function MOI.get(
     model::Optimizer,
@@ -3359,6 +3363,10 @@ function MOI.get(
     row = _info(model, c).row
     return model.cached_solution.linear_primal[row]
 end
+
+#=
+    MOI.ConstraintDual
+=#
 
 function _dual_multiplier(model::Optimizer)
     return MOI.get(model, MOI.ObjectiveSense()) == MOI.MIN_SENSE ? 1.0 : -1.0
@@ -3409,10 +3417,6 @@ function _farkas_variable_dual(model::Optimizer, col::Int64)
         (i, v) in zip(mrwind, dmatval)
     )
 end
-
-#=
-    Duals
-=#
 
 function MOI.get(
     model::Optimizer,
