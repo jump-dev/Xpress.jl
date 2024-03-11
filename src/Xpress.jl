@@ -56,6 +56,7 @@ function initialize()
 end
 
 include("MOI/MOI_wrapper.jl")
+include("MOI/MOI_callbacks.jl")
 
 function __init__()
     if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT") &&
