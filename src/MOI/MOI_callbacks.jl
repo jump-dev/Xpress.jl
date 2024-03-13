@@ -305,7 +305,7 @@ function MOI.submit(
     if ilength == MOI.get(model, MOI.NumberOfVariables())
         mipsolcol = C_NULL
     end
-    addmipsol(model_cb, ilength, mipsolval, mipsolcol, C_NULL)
+    @checked Lib.XPRSaddmipsol(model_cb, ilength, mipsolval, mipsolcol, C_NULL)
     return MOI.HEURISTIC_SOLUTION_UNKNOWN
 end
 MOI.supports(::Optimizer, ::MOI.HeuristicSolution{CallbackData}) = true
