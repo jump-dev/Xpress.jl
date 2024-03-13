@@ -16,12 +16,9 @@ end
 @testset "Xpress tests" begin
     prob = Xpress.XpressProblem()
     @test Xpress.getcontrol(prob, "HEURTHREADS") == 0
-    vXpress_major = Int(Xpress.get_version().major)
-    file_extension = ifelse(vXpress_major <= 38, ".mps", "")
-    msg = "Xpress internal error:\n\n85 Error: File not found: $(file_extension).\n"
+    r = Xpress.Lib.XPRSreadprob(prob, "", "")
     if Xpress.get_version() >= v"41.0.0"
-        @test_throws Xpress.XpressError(85, msg) Xpress.readprob(prob, "", "")
-    else
-        @test_throws Xpress.XpressError(32, msg) Xpress.readprob(prob, "", "")
+        msg = "Xpress internal error:\n\n85 Error: File not found: .\n"
+        @test_throws Xpress.XpressError(85, msg) Xpress._check(prob, r)
     end
 end

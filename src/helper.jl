@@ -76,7 +76,7 @@ mutable struct XpressProblem <: CWrapper
     )
         model = new(ptr, logfile)
         if finalize_env
-            finalizer(destroyprob, model)
+            finalizer(Lib.XPRSdestroyprob, model)
         end
         return model
     end

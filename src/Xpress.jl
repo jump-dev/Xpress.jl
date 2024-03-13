@@ -49,7 +49,7 @@ const XPRS_ATTRIBUTES = Dict{String,Any}(
 function initialize()
     Libdl.dlopen(libxprs)
     userlic()
-    init()
+    Lib.XPRSinit(C_NULL)
     # Calling free is not necessary since destroyprob is called
     # in the finalizer.
     return

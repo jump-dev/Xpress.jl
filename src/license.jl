@@ -81,7 +81,7 @@ function userlic(;
     slicmsg = path_lic #xpauth_path == "dh" ? Array{Cchar}(undef, 1024*8) :
 
     # FIRST call do xprslicense to get BASE LIC
-    license(lic, slicmsg)
+    Lib.XPRSlicense(lic, slicmsg)
 
     # convert BASE LIC to GIVEN LIC
     lic = liccheck(lic)
@@ -90,7 +90,7 @@ function userlic(;
     buffer = Array{Cchar}(undef, 1024 * 8)
     buffer_p = pointer(buffer)
     ierr = GC.@preserve buffer begin
-        license(lic, Cstring(buffer_p))
+        Lib.XPRSlicense(lic, Cstring(buffer_p))
     end
 
     # check LIC TYPE
