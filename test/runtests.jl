@@ -21,7 +21,7 @@ end
     msg = "Xpress internal error:\n\n85 Error: File not found: $(file_extension).\n"
     if Xpress.get_version() >= v"41.0.0"
         @test_throws(
-            Xpress.XpressError(85, msg)
+            Xpress.XpressError(85, msg),
             Xpress.Lib.XPRSreadprob(prob, "", ""),
         )
     else
