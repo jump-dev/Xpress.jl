@@ -3,27 +3,21 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-function _invoke(f::Function, pos::Int, ::Type{Float64}, args...)
-    out = Ref{Float64}(0.0) # should we use Cfloat here instead?
-
+function _invoke(f::Function, pos::Int, ::Type{Int}, args...)
+    out = Ref{Cint}(0)
     args = collect(args)
     insert!(args, pos - 1, out)
-
-    r = f(args...)
-    if r != 0
+    if (r = f(args...)) != 0
         throw(XpressError(r, "Unable to invoke $f"))
     end
     return out[]
 end
 
-function _invoke(f::Function, pos::Int, ::Type{Int}, args...)
-    out = Ref{Cint}(0)
-
+function _invoke(f::Function, pos::Int, ::Type{Float64}, args...)
+    out = Ref{Float64}(0.0)
     args = collect(args)
     insert!(args, pos - 1, out)
-
-    r = f(args...)
-    if r != 0
+    if (r = f(args...)) != 0
         throw(XpressError(r, "Unable to invoke $f"))
     end
     return out[]
@@ -31,13 +25,11 @@ end
 
 function _invoke(f::Function, pos::Int, ::Type{String}, args...)
     buffer = Array{Cchar}(undef, 1024)
-    buffer_p = pointer(buffer)
     GC.@preserve buffer begin
-        out = Cstring(buffer_p)
+        out = Cstring(pointer(buffer))
         args = collect(Any, args)
         insert!(args, pos - 1, out)
-        r = f(args...)
-        if r != 0
+        if (r = f(args...)) != 0
             throw(XpressError(r, "Unable to invoke $f"))
         end
         return unsafe_string(out)
@@ -71,25 +63,18 @@ julia> @macroexpand @_invoke Lib.XPRSgetversion(_)::String
 """
 macro _invoke(expr)
     @assert expr.head == :(::) "macro argument must have return type declaration"
-
     # macro return type must be a valid type that exists in Xpress or Julia
     return_type = expr.args[2]
-
     f = expr.args[1]
-
     @assert f.head == :call "macro argument must have a function call"
     @assert :_ in f.args[2:end] "macro argument must have an underscore argument"
-
     # Remove all `_` arguments
     # TODO: note the positions and pass positions to the invoke function
     indices = findall(x -> x == :_, f.args)
-    filter!(x -> x ≠ :_, f.args)
-
+    filter!(x -> x != :_, f.args)
     # Call invoke function at macro call site instead
     pushfirst!(f.args, :(_invoke))
-
     f.args = esc.(f.args)
-
     # invoke function takes the position of return type as the first argument
     # invoke function takes the return type as the first argument
     # invoke function uses this argument to dispatch to the correct method
@@ -97,10 +82,8 @@ macro _invoke(expr)
         insert!(f.args, 3, return_type)
         insert!(f.args, 3, indices[1])
     else
-        # TODO: Implement multiple return types
         error("Not implemented @_invoke macro for multiple `_`")
     end
-
     return f
 end
 
