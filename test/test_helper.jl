@@ -59,7 +59,7 @@ function test_setcontrol_error()
     p = Xpress.XpressProblem()
     @test_throws(
         ErrorException("Unrecognized control: bad"),
-        Xpress.setcontrol(p, "bad", false),
+        Xpress.setcontrol!(p, "bad", false),
     )
     return
 end
