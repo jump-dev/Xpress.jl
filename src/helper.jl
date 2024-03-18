@@ -96,7 +96,7 @@ function getcontrol(prob::XpressProblem, name::String)
     elseif p_type[] == Lib.XPRS_TYPE_STRING
         return @_invoke Lib.XPRSgetstrcontrol(prob, p_id[], _)::String
     end
-    return error("Unrecognized control: $control")
+    return error("Unrecognized control: $name")
 end
 
 function get_control_or_attribute(prob::XpressProblem, name::String)
@@ -120,19 +120,13 @@ function setcontrol!(prob::XpressProblem, name::String, val)
     elseif p_type[] == Lib.XPRS_TYPE_STRING
         Lib.XPRSsetstrcontrol(prob, p_id[], String(val))
     else
-        return error("Unrecognized control: $control")
+        return error("Unrecognized control: $name")
     end
 end
 
 get_banner() = @_invoke Lib.XPRSgetbanner(_)::String
 
 get_version() = VersionNumber(@_invoke Lib.XPRSgetversion(_)::String)
-
-function is_mixedinteger(prob::XpressProblem)
-    n = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALMIPENTS, _)::Int
-    nsos = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETS, _)::Int
-    return n + nsos > 0
-end
 
 function get_xpress_error_message(prob::XpressProblem)
     last_error = @_invoke Lib.XPRSgetlasterror(prob, _)::String
@@ -160,10 +154,10 @@ function Base.show(io::IO, prob::XpressProblem)
         @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQELEMS, _)::Int
     nnz = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ELEMS, _)::Int
     problem_type = ifelse(qcons > 0, "QCP", ifelse(qelems > 0, "QP", "LP"))
-    suffix = is_mixedinteger(prob) ? " (MIP)" : ""
     nsos = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETS, _)::Int
     mipents =
         @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALMIPENTS, _)::Int
+    suffix = ifelse(mipents + nsos > 0, " (MIP)", "")
     print(
         io,
         """

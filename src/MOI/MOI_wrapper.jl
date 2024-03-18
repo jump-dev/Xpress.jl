@@ -2994,7 +2994,15 @@ function check_cb_exception(model::Optimizer)
     return
 end
 
-is_mip(model) = is_mixedinteger(model.inner) && !model.solve_relaxation
+function is_mip(model::Optimizer)
+    n = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALMIPENTS, _)::Int,
+    )
+    nsos = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALSETS, _)::Int,
+    )
+    return !model.solve_relaxation && n + nsos > 0
+end
 
 function _set_MIP_start(model)
     colind, solval = Cint[], Cdouble[]
