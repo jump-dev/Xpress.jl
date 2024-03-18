@@ -65,16 +65,7 @@ end
 
 Base.cconvert(::Type{Ptr{Cvoid}}, prob::XpressProblem) = prob
 
-function Base.unsafe_convert(::Type{Ptr{Cvoid}}, prob::XpressProblem)
-    if prob.ptr == C_NULL
-        err = XpressError(
-            255,
-            "Received null pointer in XpressProblem. Something must be wrong.",
-        )
-        throw(err)
-    end
-    return prob.ptr
-end
+Base.unsafe_convert(::Type{Ptr{Cvoid}}, prob::XpressProblem) = prob.ptr
 
 function getattribute(prob::XpressProblem, name::String)
     p_id, p_type = Ref{Cint}(), Ref{Cint}()
@@ -90,7 +81,7 @@ function getattribute(prob::XpressProblem, name::String)
     elseif p_type[] == Lib.XPRS_TYPE_STRING
         return @_invoke Lib.XPRSgetstrattrib(prob, p_id[], _)::String
     end
-    return error("Unrecognized atribute: $name")
+    return error("Unrecognized attribute: $name")
 end
 
 function getcontrol(prob::XpressProblem, name::String)
@@ -173,7 +164,7 @@ function Base.show(io::IO, prob::XpressProblem)
     nsos = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETS, _)::Int
     mipents =
         @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALMIPENTS, _)::Int
-    println(
+    print(
         io,
         """
         Xpress Problem:
