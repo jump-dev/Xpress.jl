@@ -4955,10 +4955,10 @@ end
 MOI.supports(::Optimizer, ::MOI.AbsoluteGapTolerance) = true
 
 function MOI.get(model::Optimizer, ::MOI.AbsoluteGapTolerance)
-    return getcontrol(model.inner, Lib.XPRS_MIPABSSTOP)
+    return getcontrol(model.inner, "XPRS_MIPABSSTOP")
 end
 
 function MOI.set(model::Optimizer, ::MOI.AbsoluteGapTolerance, value::Float64)
-    setcontrol!(model.inner, Lib.XPRS_MIPABSSTOP, value)
+    setcontrol!(model.inner, "XPRS_MIPABSSTOP", value)
     return
 end
