@@ -188,11 +188,6 @@ function MOI.submit(
 )
     model.cb_cut_data.submitted = true
     _throw_if_invalid_state(model, cb, CB_USER_CUT)
-    if !iszero(f.constant)
-        F, S = MOI.ScalarAffineFunction{Float64}, typeof(s)
-        err = MOI.ScalarFunctionConstantNotZero{Float64,F,S}(f.constant)
-        return callback_exception(model, cb, err)
-    end
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
     mindex = Vector{Lib.XPRScut}(undef, 1)
@@ -202,7 +197,7 @@ function MOI.submit(
         2,                          # nodupl,
         Cint[1],                    # mtype
         [sense],                    # sensetype,
-        [rhs],                      # drhs
+        [rhs - f.constant],         # drhs
         Cint[0, length(indices)],   # mstart
         mindex,
         Cint.(indices .- 1),        # mcols
@@ -237,11 +232,6 @@ function MOI.submit(
 )
     model.cb_cut_data.submitted = true
     _throw_if_invalid_state(model, cb, CB_LAZY)
-    if !iszero(f.constant)
-        F, S = MOI.ScalarAffineFunction{Float64}, typeof(s)
-        err = MOI.ScalarFunctionConstantNotZero{Float64,F,S}(f.constant)
-        return callback_exception(model, cb, err)
-    end
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
     mindex = Vector{Lib.XPRScut}(undef, 1)
@@ -251,7 +241,7 @@ function MOI.submit(
         2,                          # nodupl,
         Cint[1],                    # mtype
         [sense],                    # sensetype,
-        [rhs],                      # drhs
+        [rhs - f.constant],         # drhs
         Cint[0, length(indices)],   # mstart
         mindex,
         Cint.(indices .- 1),        # mcols
