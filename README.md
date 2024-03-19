@@ -65,13 +65,13 @@ set_optimizer(model, "PRESOLVE", 0)
 
 ## Options
 
-For other parameters use [Xpress Optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/)
-or type `julia -e "using Xpress; println(keys(Xpress.XPRS_ATTRIBUTES))"`.
+For other parameters see the [Xpress Optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/).
 
-If `logfile` is set to `""`, the log file is disabled and output is printed
-to the console ([there might be issues with console output on windows (it is manually implemented with callbacks)](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html)).
-If `logfile` is set to a file's path, output is printed to that file.
-By default, `logfile = ""` (console).
+If `logfile` is set to `""`, the log file is disabled and output is printed to
+the console ([there might be issues with console output on windows (it is manually implemented with callbacks)](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html)).
+
+If `logfile` is set to a file's path, output is printed to that file. By
+default, `logfile = ""` (console).
 
 ### Custom options
 
