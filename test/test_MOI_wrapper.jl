@@ -1798,6 +1798,42 @@ function test_scalar_affine_index_backward()
     return
 end
 
+function test_supports_raw_optimizer_attribute()
+    model = Xpress.Optimizer()
+    @test MOI.supports(model, MOI.RawOptimizerAttribute("PRESOLVE"))
+    @test MOI.supports(model, MOI.RawOptimizerAttribute("XPRS_PRESOLVE"))
+    @test !MOI.supports(model, MOI.RawOptimizerAttribute("PSLV"))
+    return
+end
+
+function test_unsupported_raw_optimizer_attribute()
+    model = Xpress.Optimizer()
+    attr = MOI.RawOptimizerAttribute("PSLV")
+    err = MOI.UnsupportedAttribute{typeof(attr)}
+    @test_throws err MOI.get(model, attr)
+    @test_throws err MOI.set(model, attr, false)
+    return
+end
+
+function test_special_moi_attributes()
+    model = Xpress.Optimizer()
+    for name in (
+        "logfile",
+        "MOI_POST_SOLVE",
+        "MOI_IGNORE_START",
+        "MOI_WARNINGS",
+        "MOI_SOLVE_MODE",
+        "XPRESS_WARNING_WINDOWS",
+    )
+        attr = MOI.RawOptimizerAttribute(name)
+        @test MOI.supports(model, attr)
+        value = MOI.get(model, attr)
+        MOI.set(model, attr, value)
+        @test MOI.get(model, attr) == value
+    end
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()

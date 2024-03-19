@@ -480,22 +480,34 @@ end
     MOI.RawOptimizerAttribute
 =#
 
-MOI.supports(::Optimizer, ::MOI.RawOptimizerAttribute) = true
+function MOI.supports(model::Optimizer, attr::MOI.RawOptimizerAttribute)
+    if attr.name in (
+        "logfile",
+        "MOI_POST_SOLVE",
+        "MOI_IGNORE_START",
+        "MOI_WARNINGS",
+        "MOI_SOLVE_MODE",
+        "XPRESS_WARNING_WINDOWS",
+    )
+        return true
+    end
+    p_id, p_type = Ref{Cint}(), Ref{Cint}()
+    ret = Lib.XPRSgetcontrolinfo(model.inner, attr.name, p_id, p_type)
+    if ret != 0
+        ret = Lib.XPRSgetattribinfo(model.inner, attr.name, p_id, p_type)
+    end
+    p_type_fail = p_type[] in (Lib.XPRS_TYPE_NOTDEFINED, Lib.XPRS_TYPE_INT64)
+    return ret == 0 && !p_type_fail
+end
 
 function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
-    # Always store value in params dictionary when setting
-    # This is because when calling `empty!` we create a new XpressProblem and
-    # and want to set all the raw parameters and attributes again.
-    model.params[param] = value
-    if param == MOI.RawOptimizerAttribute("logfile")
-        if value == ""
-            # disable log file
-            @checked Lib.XPRSsetlogfile(model.inner, C_NULL)
-        else
-            @checked Lib.XPRSsetlogfile(model.inner, value)
-        end
+    if !MOI.supports(model, param)
+        throw(MOI.UnsupportedAttribute(param))
+    elseif param == MOI.RawOptimizerAttribute("logfile")
         model.inner.logfile = value
         reset_message_callback(model)
+        value = ifelse(value == "", C_NULL, value)
+        @checked Lib.XPRSsetlogfile(model.inner, value)
     elseif param == MOI.RawOptimizerAttribute("MOI_POST_SOLVE")
         model.post_solve = value
     elseif param == MOI.RawOptimizerAttribute("MOI_IGNORE_START")
@@ -515,6 +527,10 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
     else
         setcontrol!(model.inner, param.name, value)
     end
+    # Always store value in params dictionary when setting. This is because when
+    # calling `MOI.empty!` we create a new XpressProblem and want to set all the
+    # raw parameters and attributes again.
+    model.params[param] = value
     return
 end
 
@@ -531,7 +547,9 @@ function reset_message_callback(model)
 end
 
 function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
-    if param == MOI.RawOptimizerAttribute("logfile")
+    if !MOI.supports(model, param)
+        throw(MOI.UnsupportedAttribute(param))
+    elseif param == MOI.RawOptimizerAttribute("logfile")
         return model.inner.logfile
     elseif param == MOI.RawOptimizerAttribute("MOI_IGNORE_START")
         return model.ignore_start
