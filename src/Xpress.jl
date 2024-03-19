@@ -26,8 +26,6 @@ const libxprs = joinpath(
 )
 
 include("Lib/Lib.jl")
-
-include("utils.jl")
 include("helper.jl")
 include("api.jl")
 include("xprs_callbacks.jl")
