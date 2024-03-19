@@ -494,7 +494,7 @@ function MOI.supports(model::Optimizer, attr::MOI.RawOptimizerAttribute)
     p_id, p_type = Ref{Cint}(), Ref{Cint}()
     ret = Lib.XPRSgetcontrolinfo(model.inner, attr.name, p_id, p_type)
     if ret != 0
-        ret = Lib.XPRSgetattributeinfo(model.inner, attr.name, p_id, p_type)
+        ret = Lib.XPRSgetattribinfo(model.inner, attr.name, p_id, p_type)
     end
     p_type_fail = p_type[] in (Lib.XPRS_TYPE_NOTDEFINED, Lib.XPRS_TYPE_INT64)
     return ret == 0 && !p_type_fail
