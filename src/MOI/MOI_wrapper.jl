@@ -488,6 +488,7 @@ function MOI.supports(model::Optimizer, attr::MOI.RawOptimizerAttribute)
         "MOI_WARNINGS",
         "MOI_SOLVE_MODE",
         "XPRESS_WARNING_WINDOWS",
+        "XPRESSVERSION",
     )
         return true
     end
