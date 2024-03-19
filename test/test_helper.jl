@@ -83,6 +83,20 @@ function test_XpressProblem_show()
     return
 end
 
+function test_checked()
+    if Xpress.get_version() < v"41.0.0"
+        return
+    end
+    prob = Xpress.XpressProblem()
+    msg = "Xpress internal error:\n\n85 Error: File not found: .\n"
+    Lib = Xpress.Lib
+    @test_throws(
+        Xpress.XpressError(85, msg),
+        Xpress.@checked(Lib.XPRSreadprob(prob, "", "")),
+    )
+    return
+end
+
 end  # TestHelper
 
 TestHelper.runtests()
