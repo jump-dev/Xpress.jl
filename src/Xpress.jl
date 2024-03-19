@@ -28,7 +28,6 @@ const libxprs = joinpath(
 include("Lib/Lib.jl")
 include("helper.jl")
 include("api.jl")
-include("xprs_callbacks.jl")
 include("license.jl")
 
 function initialize()
@@ -50,5 +49,7 @@ function __init__()
     end
     return
 end
+
+export CallbackData
 
 end  # Xpress

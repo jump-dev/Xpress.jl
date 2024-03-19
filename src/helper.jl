@@ -290,3 +290,108 @@ const STOPSTATUS_STRING = Dict{Int,String}(
     Lib.XPRS_STOP_SOLLIMIT => "solution limit hit",
     Lib.XPRS_STOP_USER => "user interrupt.",
 )
+
+mutable struct CallbackData
+    model_root::XpressProblem
+    data::Any
+    model::XpressProblem
+end
+
+Base.broadcastable(x::CallbackData) = Ref(x)
+
+mutable struct _CallbackUserData
+    callback::Function
+    model::XpressProblem
+    data::Any
+end
+
+Base.cconvert(::Type{Ptr{Cvoid}}, x::_CallbackUserData) = x
+
+function Base.unsafe_convert(::Type{Ptr{Cvoid}}, x::_CallbackUserData)
+    return pointer_from_objref(x)::Ptr{Cvoid}
+end
+
+function _setcboptnode_wrapper(
+    ptr_inner::Lib.XPRSprob,
+    ptr_user_data::Ptr{Cvoid},
+    feas::Ptr{Cint},
+)
+    user_data = unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
+    inner = XpressProblem(ptr_inner; finalize_env = false)
+    user_data.callback(CallbackData(user_data.model, user_data.data, inner))
+    return Cint(0)
+end
+
+function set_callback_optnode!(
+    model::XpressProblem,
+    callback::Function,
+    data::Any = nothing,
+)
+    callback_ptr = @cfunction(
+        _setcboptnode_wrapper,
+        Cint,
+        (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint})
+    )
+    user_data = _CallbackUserData(callback, model, data)
+    Lib.XPRSaddcboptnode(model.ptr, callback_ptr, user_data, 0)
+    return callback_ptr, user_data
+end
+
+function _setcbpreintsol_wrapper(
+    ptr_model::Lib.XPRSprob,
+    ptr_user_data::Ptr{Cvoid},
+    ::Ptr{Cint},
+    ::Ptr{Cint},
+    ::Ptr{Cdouble},
+)
+    user_data = unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
+    inner = XpressProblem(ptr_model; finalize_env = false)
+    user_data.callback(CallbackData(user_data.model, user_data.data, inner))
+    return Cint(0)
+end
+
+function set_callback_preintsol!(
+    model::XpressProblem,
+    callback::Function,
+    data::Any = nothing,
+)
+    callback_ptr = @cfunction(
+        _setcbpreintsol_wrapper,
+        Cint,
+        (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble})
+    )
+    user_data = _CallbackUserData(callback, model, data)
+    Lib.XPRSaddcbpreintsol(model.ptr, callback_ptr, user_data, 0)
+    return callback_ptr, user_data
+end
+
+function _addcboutput2screen_wrapper(
+    ::Lib.XPRSprob,
+    ptr_user_data::Ptr{Cvoid},
+    msg::Ptr{Cchar},
+    ::Cint,
+    msgtype::Cint,
+)
+    user_data = unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
+    if msgtype == 1 || (msgtype == 3 && user_data.data::Bool)
+        # Information || Warning
+        println(unsafe_string(msg))
+    elseif msgtype == 2 || msgtype == 4
+        # Not used || Error
+    else
+        # Exiting - buffers need flushing
+        flush(stdout)
+    end
+    return Cint(0)
+end
+
+function setoutputcb!(model::XpressProblem, show_warning::Bool)
+    callback_ptr = @cfunction(
+        _addcboutput2screen_wrapper,
+        Cint,
+        (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint)
+    )
+    user_data = _CallbackUserData(() -> nothing, model, show_warning)
+    Lib.XPRSaddcbmessage(model.ptr, callback_ptr, user_data, 0)
+    return callback_ptr, user_data
+end
