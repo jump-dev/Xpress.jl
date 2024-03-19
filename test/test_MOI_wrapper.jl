@@ -1807,6 +1807,7 @@ function test_supports_raw_optimizer_attribute()
 end
 
 function test_special_moi_attributes()
+    model = Xpress.Optimizer()
     for name in (
         "logfile",
         "MOI_POST_SOLVE",
