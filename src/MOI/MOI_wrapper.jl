@@ -497,22 +497,13 @@ function MOI.supports(model::Optimizer, attr::MOI.RawOptimizerAttribute)
 end
 
 function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
-    if MOI.supports(model, param)
+    if !MOI.supports(model, param)
         throw(MOI.UnsupportedAttribute(param))
-    end
-    # Always store value in params dictionary when setting. This is because when
-    # calling `MOI.empty!` we create a new XpressProblem and want to set all the
-    # raw parameters and attributes again.
-    model.params[param] = value
-    if param == MOI.RawOptimizerAttribute("logfile")
-        if value == ""
-            # disable log file
-            @checked Lib.XPRSsetlogfile(model.inner, C_NULL)
-        else
-            @checked Lib.XPRSsetlogfile(model.inner, value)
-        end
+    elseif param == MOI.RawOptimizerAttribute("logfile")
         model.inner.logfile = value
         reset_message_callback(model)
+        value = ifelse(value == "", C_NULL, value)
+        @checked Lib.XPRSsetlogfile(model.inner, value)
     elseif param == MOI.RawOptimizerAttribute("MOI_POST_SOLVE")
         model.post_solve = value
     elseif param == MOI.RawOptimizerAttribute("MOI_IGNORE_START")
@@ -532,6 +523,10 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
     else
         setcontrol!(model.inner, param.name, value)
     end
+    # Always store value in params dictionary when setting. This is because when
+    # calling `MOI.empty!` we create a new XpressProblem and want to set all the
+    # raw parameters and attributes again.
+    model.params[param] = value
     return
 end
 
@@ -548,10 +543,9 @@ function reset_message_callback(model)
 end
 
 function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
-    if MOI.supports(model, param)
+    if !MOI.supports(model, param)
         throw(MOI.UnsupportedAttribute(param))
-    end
-    if param == MOI.RawOptimizerAttribute("logfile")
+    elseif param == MOI.RawOptimizerAttribute("logfile")
         return model.inner.logfile
     elseif param == MOI.RawOptimizerAttribute("MOI_IGNORE_START")
         return model.ignore_start
