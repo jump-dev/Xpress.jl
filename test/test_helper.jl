@@ -8,6 +8,8 @@ module TestHelper
 using Xpress
 using Test
 
+import Xpress.Lib as Lib
+
 function runtests()
     for name in names(@__MODULE__; all = true)
         if startswith("$(name)", "test_")
@@ -80,6 +82,40 @@ function test_XpressProblem_show()
         number of integer entities             = 0
     """
     @test target == sprint(show, p)
+    return
+end
+
+function test_checked()
+    if Xpress.get_version() < v"41.0.0"
+        return
+    end
+    prob = Xpress.XpressProblem()
+    msg = "Xpress internal error:\n\n85 Error: File not found: .\n"
+    @test_throws(
+        Xpress.XpressError(85, msg),
+        Xpress.@checked(Lib.XPRSreadprob(prob, "", "")),
+    )
+    return
+end
+
+function test_invoke_errors()
+    prob = C_NULL
+    @test_throws(
+        Xpress.XpressError,
+        Xpress.@_invoke(
+            Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int,
+        ),
+    )
+    @test_throws(
+        Xpress.XpressError,
+        Xpress.@_invoke(
+            Lib.XPRSgetdblattrib(prob, Lib.XPRS_OBJSENSE, _)::Float64,
+        ),
+    )
+    @test_throws(
+        Xpress.XpressError,
+        Xpress.@_invoke(Lib.XPRSgetlasterror(prob, _)::String)
+    )
     return
 end
 
