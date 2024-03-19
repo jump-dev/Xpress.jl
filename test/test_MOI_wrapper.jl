@@ -1523,7 +1523,7 @@ function test_callback_function_UserCut()
 
             if Xpress.get_control_or_attribute(
                 cb_data.model,
-                Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE,
+                "XPRS_CALLBACKCOUNT_OPTNODE",
             ) > 1
                 return
             end
@@ -1563,7 +1563,7 @@ function test_callback_function_HeuristicSolution()
         (cb_data) -> begin
             if Xpress.get_control_or_attribute(
                 cb_data.model,
-                Xpress.Lib.XPRS_CALLBACKCOUNT_OPTNODE,
+                "XPRS_CALLBACKCOUNT_OPTNODE",
             ) > 1
                 return
             end
@@ -1642,9 +1642,9 @@ function test_callback_preintsol()
     data = 1.0 * LinearAlgebra.I(3)
     function foo(cb::Xpress.CallbackData)
         cb.data[1] = 98
-        cols = Xpress.get_control_or_attribute(cb.model, Xpress.Lib.XPRS_COLS)
-        rows = Xpress.get_control_or_attribute(cb.model, Xpress.Lib.XPRS_ROWS)
-        Xpress.get_control_or_attribute(cb.model, Xpress.Lib.XPRS_BESTBOUND)
+        cols = Xpress.get_control_or_attribute(cb.model, "XPRS_COLS")
+        rows = Xpress.get_control_or_attribute(cb.model, "XPRS_ROWS")
+        Xpress.get_control_or_attribute(cb.model, "XPRS_BESTBOUND")
         ans_variable_primal = Vector{Float64}(undef, Int(cols))
         ans_linear_primal = Vector{Float64}(undef, Int(cols))
         Xpress.Lib.XPRSgetlpsol(

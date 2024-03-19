@@ -1152,7 +1152,11 @@ function MOI.get(
     model::Optimizer,
     ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
 )
-    ncols = n_variables(model.inner)
+    ncols = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_ORIGINALCOLS,
+        _,
+    )::Int
     first = 0
     last = ncols - 1
     _dobj = Vector{Float64}(undef, ncols)
@@ -1199,8 +1203,14 @@ function MOI.get(
     ::MOI.ObjectiveFunction{MOI.ScalarQuadraticFunction{Float64}},
 )
     dest = zeros(length(model.variable_info))
-    nnz = n_quadratic_elements(model.inner)
-    n = n_variables(model.inner)
+    nnz = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALQELEMS, _)::Int
+    )
+    n = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_ORIGINALCOLS,
+        _,
+    )::Int
     nels = Ref{Cint}(nnz)
     mstart = Array{Cint}(undef, n + 1)
     mclind = Array{Cint}(undef, nnz)
@@ -2330,7 +2340,8 @@ end
 
 function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
     row = _info(model, c).row
-    nzcnt_max = n_non_zero_elements(model.inner)
+    nzcnt_max =
+        @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ELEMS, _)::Int
 
     _nzcnt = Ref(Cint(0))
     @checked Lib.XPRSgetrows(
@@ -2635,10 +2646,15 @@ function MOI.add_constraint(
         indices .-= 1,#Cint.(_mrwind::Vector{Int}),
         coefficients,#_dmatval
     )
+    ncons = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_ORIGINALROWS,
+        _,
+    )::Int
     @checked Lib.XPRSsetindicators(
         model.inner,
         1,
-        Ref{Cint}(n_constraints(model.inner) - 1),
+        Ref{Cint}(ncons - 1),
         Ref{Cint}(con_value - 1),
         Ref{Cint}(indicator_activation(Val{A})),
     )
@@ -2720,9 +2736,14 @@ function MOI.add_constraint(
     V .*= 0.5 # only for constraints
     I .-= 1
     J .-= 1
+    ncons = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_ORIGINALROWS,
+        _,
+    )::Int
     @checked Lib.XPRSaddqmatrix(
         model.inner,
-        n_constraints(model.inner) - 1,
+        ncons - 1,
         Cint(length(I)),
         I,
         J,
@@ -2867,9 +2888,19 @@ function MOI.delete(
 end
 
 function _get_sparse_sos(model)
-    nnz = n_setmembers(model.inner)
-    nsos = n_special_ordered_sets(model.inner)
-    n = n_variables(model.inner)
+    nnz = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALSETMEMBERS, _)::Int
+    )
+    nsos = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_ORIGINALSETS,
+        _,
+    )::Int
+    n = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_ORIGINALCOLS,
+        _,
+    )::Int
 
     settypes = Array{Cchar}(undef, nsos)
     setstart = Array{Cint}(undef, nsos + 1)
@@ -2963,7 +2994,15 @@ function check_cb_exception(model::Optimizer)
     return
 end
 
-is_mip(model) = is_mixedinteger(model.inner) && !model.solve_relaxation
+function is_mip(model::Optimizer)
+    n = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALMIPENTS, _)::Int,
+    )
+    nsos = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALSETS, _)::Int,
+    )
+    return !model.solve_relaxation && n + nsos > 0
+end
 
 function _set_MIP_start(model)
     colind, solval = Cint[], Cdouble[]
@@ -2984,8 +3023,10 @@ function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
     if check_moi_callback_validity(model)
         if model.moi_warnings &&
-           getcontrol(model.inner, Lib.XPRS_HEURSTRATEGY) != 0
-            @warn "Callbacks in XPRESS might not work correctly with HEURSTRATEGY != 0"
+           getcontrol(model.inner, "XPRS_HEURSTRATEGY") != 0
+            @warn(
+                "Callbacks in XPRESS might not work correctly with HEURSTRATEGY != 0",
+            )
         end
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
         model.has_generic_callback = false # because it is set as true in the above
@@ -2993,13 +3034,13 @@ function MOI.optimize!(model::Optimizer)
     pre_solve_reset(model)
     # cache rhs: must be done before hand because it cant be
     # properly queried if the problem ends up in a presolve state
-    rhs = Vector{Float64}(undef, n_constraints(model.inner))
-    @checked Lib.XPRSgetrhs(
+    ncons = @_invoke Lib.XPRSgetintattrib(
         model.inner,
-        rhs,
-        Cint(0),
-        Cint(n_constraints(model.inner) - 1),
-    )
+        Lib.XPRS_ORIGINALROWS,
+        _,
+    )::Int
+    rhs = Vector{Float64}(undef, ncons)
+    @checked Lib.XPRSgetrhs(model.inner, rhs, Cint(0), Cint(ncons - 1))
     if !model.ignore_start && is_mip(model)
         _set_MIP_start(model)
     end
@@ -4205,9 +4246,14 @@ function MOI.add_constraint(
         C_NULL,
         C_NULL,
     )
+    ncons = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_ORIGINALROWS,
+        _,
+    )::Int
     @checked Lib.XPRSaddqmatrix(
         model.inner,
-        n_constraints(model.inner) - 1,
+        ncons - 1,
         Cint(length(I)),
         I,
         I,
@@ -4297,14 +4343,12 @@ function MOI.add_constraint(
         C_NULL,
         C_NULL,
     )
-    @checked Lib.XPRSaddqmatrix(
+    ncons = @_invoke Lib.XPRSgetintattrib(
         model.inner,
-        n_constraints(model.inner) - 1,
-        length(I),
-        I,
-        J,
-        V,
-    )
+        Lib.XPRS_ORIGINALROWS,
+        _,
+    )::Int
+    @checked Lib.XPRSaddqmatrix(model.inner, ncons - 1, length(I), I, J, V)
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, RSOC)
@@ -4904,11 +4948,11 @@ end
 MOI.supports(::Optimizer, ::MOI.RelativeGapTolerance) = true
 
 function MOI.get(model::Optimizer, ::MOI.RelativeGapTolerance)
-    return getcontrol(model.inner, Lib.XPRS_MIPRELSTOP)
+    return getcontrol(model.inner, "XPRS_MIPRELSTOP")
 end
 
 function MOI.set(model::Optimizer, ::MOI.RelativeGapTolerance, value::Float64)
-    setcontrol!(model.inner, Lib.XPRS_MIPRELSTOP, value)
+    setcontrol!(model.inner, "XPRS_MIPRELSTOP", value)
     return
 end
 
@@ -4919,10 +4963,10 @@ end
 MOI.supports(::Optimizer, ::MOI.AbsoluteGapTolerance) = true
 
 function MOI.get(model::Optimizer, ::MOI.AbsoluteGapTolerance)
-    return getcontrol(model.inner, Lib.XPRS_MIPABSSTOP)
+    return getcontrol(model.inner, "XPRS_MIPABSSTOP")
 end
 
 function MOI.set(model::Optimizer, ::MOI.AbsoluteGapTolerance, value::Float64)
-    setcontrol!(model.inner, Lib.XPRS_MIPABSSTOP, value)
+    setcontrol!(model.inner, "XPRS_MIPABSSTOP", value)
     return
 end

@@ -29,7 +29,6 @@ include("Lib/Lib.jl")
 
 include("utils.jl")
 include("helper.jl")
-include("attributes_controls.jl")
 include("api.jl")
 include("xprs_callbacks.jl")
 include("license.jl")
