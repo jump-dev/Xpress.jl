@@ -6942,3 +6942,15 @@ function setcontrols!(prob::XpressProblem; kwargs...)
     end
     return
 end
+
+_is_xprs_attribute(name::Symbol) = _is_xprs_attribute(string(name))
+
+function _is_xprs_attribute(name::String)
+    return startswith(name, "XPRS_") &&
+           all(isuppercase(c) || isdigit(c) for c in name if c != '_')
+end
+
+const XPRS_ATTRIBUTES = Dict{String,Any}(
+    replace("$name", "XPRS_" => "") => getfield(Lib, name) for
+    name in filter(_is_xprs_attribute, names(Lib; all = true))
+)
