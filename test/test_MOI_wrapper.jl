@@ -1806,6 +1806,24 @@ function test_supports_raw_optimizer_attribute()
     return
 end
 
+function test_special_moi_attributes()
+    for name in (
+        "logfile",
+        "MOI_POST_SOLVE",
+        "MOI_IGNORE_START",
+        "MOI_WARNINGS",
+        "MOI_SOLVE_MODE",
+        "XPRESS_WARNING_WINDOWS",
+    )
+        attr = MOI.RawOptimizerAttribute(name)
+        @test MOI.supports(model, attr)
+        value = MOI.get(model, attr)
+        MOI.set(model, attr, value)
+        @test MOI.get(model, attr) == value
+    end
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()
