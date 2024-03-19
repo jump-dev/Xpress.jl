@@ -29,14 +29,59 @@ include("Lib/Lib.jl")
 include("helper.jl")
 include("api.jl")
 include("xprs_callbacks.jl")
-include("license.jl")
+
+function _get_xpauthpath(; verbose::Bool)
+    candidates = String[pwd(), dirname(libxprs)]
+    for key in ("XPAUTH_PATH", "XPRESS_DIR")
+        if haskey(ENV, key)
+            push!(candidates, replace(ENV[key], "\"" => ""))
+        end
+    end
+    push!(candidates, joinpath(dirname(dirname(libxprs)), "bin"))
+    for candidate in candidates
+        for filename in (candidate, joinpath(candidate, "xpauth.xpr"))
+            if isfile(filename)
+                if verbose
+                    @info("Xpress: Found license file $filename")
+                end
+                return filename
+            end
+        end
+    end
+    return error(
+        "Could not find xpauth.xpr license file. Set the `XPRESSDIR` or " *
+        "`XPAUTH_PATH` environment variables.",
+    )
+end
 
 function initialize()
     Libdl.dlopen(libxprs)
-    userlic()
+    verbose = !haskey(ENV, "XPRESS_JL_NO_INFO")
+    path_lic = _get_xpauthpath(; verbose)
+    touch(path_lic)
+    lic = Ref{Cint}(1)
+    # TODO(odow): why do we call XPRSlicense twice?
+    Lib.XPRSlicense(lic, path_lic)
+    buffer = Vector{Cchar}(undef, 1024 * 8)
+    ierr = GC.@preserve buffer begin
+        Lib.XPRSlicense(lic, Cstring(pointer(buffer)))
+    end
+    if ierr == 16
+        if verbose
+            @info("Xpress: Development license detected.")
+        end
+    elseif ierr == 0
+        if verbose
+            @info("Xpress: User license detected.")
+        end
+    else
+        @info("Xpress: Failed to find working license.")
+        GC.@preserve buffer begin
+            Lib.XPRSgetlicerrmsg(pointer(buffer), 1024)
+            error(unsafe_string(pointer(buffer)))
+        end
+    end
     Lib.XPRSinit(C_NULL)
-    # Calling free is not necessary since destroyprob is called
-    # in the finalizer.
     return
 end
 
