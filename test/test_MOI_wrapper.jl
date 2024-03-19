@@ -1798,6 +1798,14 @@ function test_scalar_affine_index_backward()
     return
 end
 
+function test_supports_raw_optimizer_attribute()
+    model = Xpress.Optimizer()
+    @test MOI.supports(model, MOI.RawOptimizerAttribute("PRESOLVE"))
+    @test MOI.supports(model, MOI.RawOptimizerAttribute("XPRS_PRESOLVE"))
+    @test !MOI.supports(model, MOI.RawOptimizerAttribute("PSLV"))
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()
