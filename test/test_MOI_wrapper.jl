@@ -1806,6 +1806,15 @@ function test_supports_raw_optimizer_attribute()
     return
 end
 
+function test_unsupported_raw_optimizer_attribute()
+    model = Xpress.Optimizer()
+    attr = MOI.RawOptimizerAttribute("PSLV")
+    err = MOI.UnsupportedAttribute{typeof(attr)}
+    @test_throws err MOI.get(model, attr)
+    @test_throws err MOI.set(model, attr, false)
+    return
+end
+
 function test_special_moi_attributes()
     model = Xpress.Optimizer()
     for name in (
