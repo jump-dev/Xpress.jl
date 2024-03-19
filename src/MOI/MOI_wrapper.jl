@@ -488,13 +488,16 @@ function MOI.supports(model::Optimizer, attr::MOI.RawOptimizerAttribute)
         "MOI_WARNINGS",
         "MOI_SOLVE_MODE",
         "XPRESS_WARNING_WINDOWS",
-        "XPRESSVERSION",
     )
         return true
     end
     p_id, p_type = Ref{Cint}(), Ref{Cint}()
-    @checked Lib.XPRSgetcontrolinfo(model.inner, attr.name, p_id, p_type)
-    return !(p_type[] in (Lib.XPRS_TYPE_NOTDEFINED, Lib.XPRS_TYPE_INT64))
+    ret = Lib.XPRSgetcontrolinfo(model.inner, attr.name, p_id, p_type)
+    if ret != 0
+        ret = Lib.XPRSgetattributeinfo(model.inner, attr.name, p_id, p_type)
+    end
+    p_type_fail = p_type[] in (Lib.XPRS_TYPE_NOTDEFINED, Lib.XPRS_TYPE_INT64)
+    return ret == 0 && !p_type_fail
 end
 
 function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
