@@ -49,14 +49,7 @@ mutable struct VariableInfo
     type::VariableType
     start::Union{Float64,Nothing}
     name::String
-    # Storage for constraint names associated with variables because Xpress can
-    # only store names for variables and proper constraints. We can perform an
-    # optimization and only store three strings for the constraint names
-    # because, at most, there can be three VariableIndex constraints, e.g.,
-    # LessThan, GreaterThan, and Integer.
-    lessthan_name::String
-    greaterthan_interval_or_equalto_name::String
-    type_constraint_name::String
+
     # Storage for the lower bound if the variable is the `t` variable in a
     # second order cone.
     lower_bound_if_soc::Float64
@@ -72,9 +65,6 @@ mutable struct VariableInfo
             NONE,
             CONTINUOUS,
             nothing,
-            "",
-            "",
-            "",
             "",
             NaN,
             0,
@@ -1526,7 +1516,6 @@ function MOI.delete(
     else
         info.bound = NONE
     end
-    info.lessthan_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
         @checked Lib.XPRSchgcoltype(
@@ -1758,7 +1747,6 @@ function MOI.delete(
     else
         info.bound = NONE
     end
-    info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
         @checked Lib.XPRSchgcoltype(
@@ -1782,7 +1770,6 @@ function MOI.delete(
     _set_variable_upper_bound(model, info, Inf)
     info.previous_upper_bound = Inf
     info.bound = NONE
-    info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
         @checked Lib.XPRSchgcoltype(
@@ -1806,7 +1793,6 @@ function MOI.delete(
     _set_variable_upper_bound(model, info, Inf)
     info.previous_upper_bound = Inf
     info.bound = NONE
-    info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
         @checked Lib.XPRSchgcoltype(
@@ -1964,7 +1950,6 @@ function MOI.delete(
         _set_variable_upper_bound(model, info, info.previous_upper_bound)
     end
     info.type = CONTINUOUS
-    info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
     return
 end
@@ -2007,7 +1992,6 @@ function MOI.delete(
         Ref(UInt8('C')),
     )
     info.type = CONTINUOUS
-    info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
     return
 end
@@ -2059,7 +2043,6 @@ function MOI.delete(
     _set_variable_upper_bound(model, info, Inf)
     info.semi_lower_bound = NaN
     info.type = CONTINUOUS
-    info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
     return
 end
@@ -2114,7 +2097,6 @@ function MOI.delete(
     _set_variable_upper_bound(model, info, Inf)
     info.semi_lower_bound = NaN
     info.type = CONTINUOUS
-    info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
     return
 end
@@ -2462,7 +2444,6 @@ function _rebuild_name_to_constraint_index(model::Optimizer)
         model.sos_constraint_info,
         MOI.VectorOfVariables,
     )
-    _rebuild_name_to_constraint_index_variables(model)
     return
 end
 
@@ -2501,39 +2482,6 @@ function _rebuild_name_to_constraint_index_util(model::Optimizer, dict, F)
         else
             model.name_to_constraint_index[info.name] =
                 MOI.ConstraintIndex{F,typeof(info.set)}(index)
-        end
-    end
-    return
-end
-
-function _rebuild_name_to_constraint_index_variables(model::Optimizer)
-    for (key, info) in model.variable_info
-        for S in (
-            MOI.LessThan{Float64},
-            MOI.GreaterThan{Float64},
-            MOI.EqualTo{Float64},
-            MOI.Interval{Float64},
-            MOI.ZeroOne,
-            MOI.Integer,
-            MOI.Semicontinuous{Float64},
-            MOI.Semiinteger{Float64},
-        )
-            constraint_name = ""
-            if info.bound in _bound_enums(S)
-                constraint_name =
-                    S == MOI.LessThan{Float64} ? info.lessthan_name :
-                    info.greaterthan_interval_or_equalto_name
-            elseif info.type in _type_enums(S)
-                constraint_name = info.type_constraint_name
-            end
-            if constraint_name == ""
-                continue
-            elseif haskey(model.name_to_constraint_index, constraint_name)
-                model.name_to_constraint_index[constraint_name] = nothing
-            else
-                model.name_to_constraint_index[constraint_name] =
-                    MOI.ConstraintIndex{MOI.VariableIndex,S}(key.value)
-            end
         end
     end
     return
