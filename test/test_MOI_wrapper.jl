@@ -821,9 +821,7 @@ function test_MIP_Start()
 
     MOI.optimize!(model)
 
-    # @show MOI.get(model, MOI.TerminationStatus())
-    # @show MOI.get(model, MOI.PrimalStatus())
-    # @show MOI.get(model, MOI.RawStatusString())
+    @test MOI.get(model, MOI.RawStatusString()) isa String
 
     solution3 = MOI.get(model, MOI.VariablePrimal(), x)
     computed_obj_value3 = profit' * solution3

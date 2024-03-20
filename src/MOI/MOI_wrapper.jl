@@ -3794,13 +3794,12 @@ function MOI.get(model::Optimizer, ::MOI.ListOfConstraintTypesPresent)
             )
         elseif info.type == SOC
             push!(constraints, (MOI.VectorOfVariables, MOI.SecondOrderCone))
-        elseif info.type == RSOC
+        else
+            @assert info.type == RSOC
             push!(
                 constraints,
                 (MOI.VectorOfVariables, MOI.RotatedSecondOrderCone),
             )
-        else
-            error("Unknown constraint type $(info.type)")
         end
     end
     for info in values(model.sos_constraint_info)
