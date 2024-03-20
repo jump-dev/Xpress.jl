@@ -79,39 +79,32 @@ end
 
 function default_moi_callback(model::Optimizer)
     function default_callback(cb_data)
+        # If we added a cut from the existing pool, it means that the current
+        # solution violates a cut that we previously added but that has since
+        # been deleted.
+        #
+        # TODO(odow): could we remove this? We don't enforce it for any other
+        # solver.
+        if _load_existing_cuts(model, cb_data)
+            return
+        end
+        # Check if this callback has been called at this solution before and
+        # exit. We should be called only once at each node.
+        attr = Lib.XPRS_CALLBACKCOUNT_OPTNODE
+        if @_invoke(Lib.XPRSgetintattrib(cb_data.model, attr, _)::Int) > 1
+            return
+        end
         get_cb_solution(model, cb_data.model)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
-            cb_count = @_invoke Lib.XPRSgetintattrib(
-                cb_data.model,
-                Lib.XPRS_CALLBACKCOUNT_OPTNODE,
-                _,
-            )::Int
-            if cb_count > 1
-                return
-            end
             model.heuristic_callback(cb_data)
         end
         if model.user_cut_callback !== nothing
             model.callback_state = CB_USER_CUT
-            if _load_existing_cuts(model, cb_data)
-                return
-            end
-            cb_count = @_invoke Lib.XPRSgetintattrib(
-                cb_data.model,
-                Lib.XPRS_CALLBACKCOUNT_OPTNODE,
-                _,
-            )::Int
-            if cb_count > 2
-                return
-            end
             model.user_cut_callback(cb_data)
         end
         if model.lazy_callback !== nothing
             model.callback_state = CB_LAZY
-            if _load_existing_cuts(model, cb_data)
-                return
-            end
             model.lazy_callback(cb_data)
         end
         return
