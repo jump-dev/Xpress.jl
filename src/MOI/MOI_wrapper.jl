@@ -643,13 +643,13 @@ function MOI.get(
 end
 
 function _indices_and_coefficients(
-    indices::AbstractVector{<:Integer},
-    coefficients::AbstractVector{Float64},
+    indices::AbstractVector{Cint},
+    coefficients::AbstractVector{Cdouble},
     model::Optimizer,
     f::MOI.ScalarAffineFunction{Float64},
 )
     for (i, term) in enumerate(f.terms)
-        indices[i] = _info(model, term.variable).column
+        indices[i] = Cint(_info(model, term.variable).column - 1)
         coefficients[i] = term.coefficient
     end
     return indices, coefficients
@@ -669,15 +669,14 @@ end
 
 function _indices_and_coefficients_indicator(
     model::Optimizer,
-    f::MOI.VectorAffineFunction,
+    f::MOI.VectorAffineFunction{Float64},
 )
-    nnz = length(f.terms) - 1
-    indices = Vector{Cint}(undef, nnz)
-    coefficients = Vector{Float64}(undef, nnz)
+    indices = Vector{Cint}(undef, length(f.terms) - 1)
+    coefficients = Vector{Float64}(undef, length(f.terms) - 1)
     i = 1
     for fi in f.terms
         if fi.output_index != 1
-            indices[i] = _info(model, fi.scalar_term.variable).column
+            indices[i] = Cint(_info(model, fi.scalar_term.variable).column - 1)
             coefficients[i] = fi.scalar_term.coefficient
             i += 1
         end
@@ -692,11 +691,11 @@ function _indices_and_coefficients(
     indices::AbstractVector{Cint},
     coefficients::AbstractVector{Float64},
     model::Optimizer,
-    f::MOI.ScalarQuadraticFunction,
+    f::MOI.ScalarQuadraticFunction{Float64},
 )
     for (i, term) in enumerate(f.quadratic_terms)
-        I[i] = _info(model, term.variable_1).column
-        J[i] = _info(model, term.variable_2).column
+        I[i] = Cint(_info(model, term.variable_1).column - 1)
+        J[i] = Cint(_info(model, term.variable_2).column - 1)
         V[i] = term.coefficient
         # MOI    represents objective as 0.5 x' Q x
         # Example: obj = 2x^2 + x*y + y^2
@@ -721,7 +720,7 @@ function _indices_and_coefficients(
         #     Only for constraints, Xpress -> MOI => multiply all by 2
     end
     for (i, term) in enumerate(f.affine_terms)
-        indices[i] = _info(model, term.variable).column
+        indices[i] = Cint(_info(model, term.variable).column - 1)
         coefficients[i] = term.coefficient
     end
     return
@@ -1208,9 +1207,7 @@ function MOI.set(
     for (i, c) in zip(affine_indices, affine_coefficients)
         obj[i] = c
     end
-    I .-= 1
-    J .-= 1
-    @checked Lib.XPRSchgmqobj(model.inner, Cint(length(I)), I, J, V)
+    @checked Lib.XPRSchgmqobj(model.inner, length(I), I, J, V)
     model.objective_type = SCALAR_QUADRATIC
     model.is_objective_set = true
     return
@@ -2215,12 +2212,9 @@ function MOI.add_constraint(
     f::MOI.ScalarAffineFunction{Float64},
     s::SIMPLE_SCALAR_SETS,
 )
+    F, S = typeof(f), typeof(s)
     if !iszero(f.constant)
-        throw(
-            MOI.ScalarFunctionConstantNotZero{Float64,typeof(f),typeof(s)}(
-                f.constant,
-            ),
-        )
+        throw(MOI.ScalarFunctionConstantNotZero{Float64,F,S}(f.constant))
     end
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
@@ -2229,16 +2223,16 @@ function MOI.add_constraint(
     sense, rhs = _sense_and_rhs(s)
     @checked Lib.XPRSaddrows(
         model.inner,
-        1,#length(_drhs),
-        Cint(length(indices)),#Cint(length(_mclind)),
-        Ref{UInt8}(sense),#_srowtype,
-        Ref(rhs),#_drhs,
-        C_NULL,#_drng,
-        Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}),
-        indices .-= 1,#Cint.(_mclind::Vector{Int}),
-        coefficients,#_dmatval
+        1,                  # length(_drhs)
+        length(indices),    # length(_mclind)
+        Ref{UInt8}(sense),  # _srowtype
+        Ref(rhs),           # _drhs
+        C_NULL,             # _drng
+        Ref{Cint}(0),       # _mrstart::Vector{Int}
+        indices,            # _mclind::Vector{Int}
+        coefficients,       # _dmatval
     )
-    return MOI.ConstraintIndex{typeof(f),typeof(s)}(model.last_constraint_index)
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
 
 function MOI.add_constraints(
@@ -2252,20 +2246,17 @@ function MOI.add_constraints(
     canonicalized_functions = MOI.Utilities.canonical.(f)
     # First pass: compute number of non-zeros to allocate space.
     nnz = 0
+    F, S = eltype(f), eltype(s)
     for fi in canonicalized_functions
         if !iszero(fi.constant)
-            throw(
-                MOI.ScalarFunctionConstantNotZero{Float64,eltype(f),eltype(s)}(
-                    fi.constant,
-                ),
-            )
+            throw(MOI.ScalarFunctionConstantNotZero{Float64,F,S}(fi.constant))
         end
         nnz += length(fi.terms)
     end
     # Initialize storage
-    indices = Vector{MOI.ConstraintIndex{eltype(f),eltype(s)}}(undef, length(f))
+    indices = Vector{MOI.ConstraintIndex{F,S}}(undef, length(f))
     row_starts = Vector{Cint}(undef, length(f) + 1)
-    row_starts[1] = 1
+    row_starts[1] = 0
     columns = Vector{Cint}(undef, nnz)
     coefficients = Vector{Float64}(undef, nnz)
     senses = Vector{Cchar}(undef, length(f))
@@ -2275,29 +2266,27 @@ function MOI.add_constraints(
         senses[i], rhss[i] = _sense_and_rhs(si)
         row_starts[i+1] = row_starts[i] + length(fi.terms)
         _indices_and_coefficients(
-            view(columns, row_starts[i]:row_starts[i+1]-1),
-            view(coefficients, row_starts[i]:row_starts[i+1]-1),
+            view(columns, row_starts[i]+1:row_starts[i+1]),
+            view(coefficients, row_starts[i]+1:row_starts[i+1]),
             model,
             fi,
         )
         model.last_constraint_index += 1
-        indices[i] = MOI.ConstraintIndex{eltype(f),eltype(s)}(
-            model.last_constraint_index,
-        )
+        indices[i] = MOI.ConstraintIndex{F,S}(model.last_constraint_index)
         model.affine_constraint_info[model.last_constraint_index] =
             ConstraintInfo(length(model.affine_constraint_info) + 1, si, AFFINE)
     end
     pop!(row_starts)
     @checked Lib.XPRSaddrows(
         model.inner,
-        length(rhss),#length(_drhs),
-        Cint(length(columns)),#Cint(length(_mclind)),
-        senses,#_srowtype,
-        rhss,#_drhs,
-        C_NULL,#_drng,
-        row_starts .-= 1,#Cint.(_mrstart::Vector{Int}),
-        columns .-= 1,#Cint.(_mclind::Vector{Int}),
-        coefficients,#_dmatval
+        length(rhss),     # length(_drhs)
+        length(columns),  # length(_mclind)
+        senses,           # _srowtype
+        rhss,             # _drhs
+        C_NULL,           # _drng
+        row_starts,       # _mrstart
+        columns,          # _mclind
+        coefficients,     # _dmatval
     )
     return indices
 end
@@ -2655,14 +2644,14 @@ function MOI.add_constraint(
     sense, rhs = _sense_and_rhs(is.set)
     @checked Lib.XPRSaddrows(
         model.inner,
-        1,#length(_drhs),
-        Cint(length(indices)),#Cint(length(_mclind)),
-        Ref{UInt8}(sense),#_srowtype,
-        Ref(rhs - cte),#_drhs,
-        C_NULL,#_drng,
-        Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}),
-        indices .-= 1,#Cint.(_mrwind::Vector{Int}),
-        coefficients,#_dmatval
+        1,                  # length(_drhs)
+        length(indices),    # length(_mclind)
+        Ref{UInt8}(sense),  # _srowtype
+        Ref(rhs - cte),     # _drhs
+        C_NULL,             # _drng
+        Ref{Cint}(0),       # _mrstart
+        indices,            # _mrwind
+        coefficients,       # _dmatval
     )
     ncons = @_invoke Lib.XPRSgetintattrib(
         model.inner,
@@ -2676,10 +2665,8 @@ function MOI.add_constraint(
         Ref{Cint}(con_value - 1),
         Ref{Cint}(indicator_activation(Val{A})),
     )
-    index = MOI.ConstraintIndex{MOI.VectorAffineFunction{T},typeof(is)}(
-        model.last_constraint_index,
-    )
-    return index
+    F, S = MOI.VectorAffineFunction{T}, typeof(is)
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
 
 function MOI.get(
@@ -2731,29 +2718,24 @@ function MOI.add_constraint(
     f::MOI.ScalarQuadraticFunction{Float64},
     s::SCALAR_SETS,
 )
+    F, S = typeof(f), typeof(s)
     if !iszero(f.constant)
-        throw(
-            MOI.ScalarFunctionConstantNotZero{Float64,typeof(f),typeof(s)}(
-                f.constant,
-            ),
-        )
+        throw(MOI.ScalarFunctionConstantNotZero{Float64,F,S}(f.constant))
     end
     sense, rhs = _sense_and_rhs(s)
     indices, coefficients, I, J, V = _indices_and_coefficients(model, f)
+    V .*= 0.5  # only for constraints
     @checked Lib.XPRSaddrows(
         model.inner,
         1,
-        Cint(length(indices)),
+        length(indices),
         Ref{UInt8}(sense),
         Ref(rhs),
         C_NULL,
         Ref{Cint}(0),
-        indices .-= 1,
+        indices,
         coefficients,
     )
-    V .*= 0.5 # only for constraints
-    I .-= 1
-    J .-= 1
     ncons = @_invoke Lib.XPRSgetintattrib(
         model.inner,
         Lib.XPRS_ORIGINALROWS,
@@ -2770,9 +2752,7 @@ function MOI.add_constraint(
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, QUADRATIC)
-    return MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64},typeof(s)}(
-        model.last_constraint_index,
-    )
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
 
 function MOI.get(

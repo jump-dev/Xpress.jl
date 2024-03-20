@@ -194,7 +194,7 @@ function MOI.submit(
         [rhs - f.constant],         # drhs
         Cint[0, length(indices)],   # mstart
         mindex,
-        Cint.(indices .- 1),        # mcols
+        indices,                    # mcols
         coefficients,
     )
     @checked Lib.XPRSloadcuts(cb.callback_data.model, 1, Cint(-1), 1, mindex)
@@ -238,7 +238,7 @@ function MOI.submit(
         [rhs - f.constant],         # drhs
         Cint[0, length(indices)],   # mstart
         mindex,
-        Cint.(indices .- 1),        # mcols
+        indices,                    # mcols
         coefficients,
     )
     @checked Lib.XPRSloadcuts(cb.callback_data.model, 1, Cint(-1), 1, mindex)
