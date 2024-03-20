@@ -1874,21 +1874,13 @@ function MOI.add_constraint(
         Ref(UInt8('B')),
     )
     if info.type == CONTINUOUS
-        # The function chgcoltype reset the variable bounds to [0, 1],
-        # so we need to add them again if they're set before.
+        # The function chgcoltype reset the variable bounds to [0, 1], so we
+        # need to add them again if they're set before.
         if lower !== nothing && lower >= 0
-            _set_variable_lower_bound(
-                model,
-                info,
-                info.previous_lower_bound,
-            )
+            _set_variable_lower_bound(model, info, info.previous_lower_bound)
         end
         if upper !== nothing && upper <= 1
-            _set_variable_upper_bound(
-                model,
-                info,
-                info.previous_upper_bound,
-            )
+            _set_variable_upper_bound(model, info, info.previous_upper_bound)
         end
     end
     info.type = BINARY
