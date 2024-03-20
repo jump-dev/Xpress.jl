@@ -1470,6 +1470,20 @@ function test_callback_function_OptimizeInProgress()
     return
 end
 
+function test_callback_function_invalid()
+    model, x, y = callback_simple_model()
+    MOI.set(model, Xpress.CallbackFunction(), cb_data -> nothing)
+    MOI.set(model, MOI.LazyConstraintCallback(), cb_data -> nothing)
+    @test_throws(
+        ErrorException(
+            "Cannot use Xpress.CallbackFunction as well as " *
+            "MOI.AbstractCallbackFunction",
+        ),
+        MOI.optimize!(model),
+    )
+    return
+end
+
 function test_callback_function_LazyConstraint()
     model, x, y = callback_simple_model()
     cb_calls = Int32[]
@@ -1967,7 +1981,7 @@ function test_is_valid_variable()
         MOI.GreaterThan(0.0),
     )
         x = MOI.add_variable(model)
-        c = MOI.add_constraint(model, x, MOI.Integer())
+        c = MOI.add_constraint(model, x, set)
         @test MOI.is_valid(model, c)
         d = typeof(c)(-1)
         @test !MOI.is_valid(model, d)
@@ -2132,12 +2146,28 @@ function test_ListOfConstraintTypesPresent_Indicator()
     return
 end
 
+function test_indicator_invalid()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    z = MOI.add_constrained_variable(model, MOI.ZeroOne())
+    f = MOI.Utilities.operate(vcat, Float64, 1.0 * z + x, z)
+    s = MOI.Indicator{MOI.ACTIVATE_ON_ONE}(MOI.EqualTo(0.0))
+    @test_throws(
+        ErrorException(
+            "There should be exactly one term in output_index 1, found 2",
+        ),
+        MOI.add_constraint(model, f, s),
+    )
+    return
+end
+
 function test_name_to_constraint()
     model = Xpress.Optimizer()
     MOI.Utilities.loadfromstring!(
         model,
         """
-        variables: t, u, x, y, a, b, c
+        variables: t, u, x, y, z, a, b, c
+        z in ZeroOne()
         c0: [x, y] in SOS2([1.0, 2.0])
         c1: [x, y] in SOS1([1.0, 2.0])
         [x, y] in SOS1([1.0, 2.0])
@@ -2145,6 +2175,7 @@ function test_name_to_constraint()
         c3: 1.0 * x * x <= 3.0
         c4: [t, u, x, y] in RotatedSecondOrderCone(4)
         c5: [a, b, c] in SecondOrderCone(3)
+        c6: [z, 1.0 * x] in Indicator{ACTIVATE_ON_ONE}(EqualTo(0.0))
         d: 1.0 * u >= 0.0
         d: 2.0 * u >= 0.0
         d2: 1.0 * u >= 0.0
@@ -2183,6 +2214,13 @@ function test_name_to_constraint()
     @test isa(
         MOI.get(model, MOI.ConstraintIndex, "c5"),
         MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SecondOrderCone},
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c6"),
+        MOI.ConstraintIndex{
+            MOI.VectorAffineFunction{Float64},
+            MOI.Indicator{MOI.ACTIVATE_ON_ONE,MOI.EqualTo{Float64}},
+        },
     )
     return
 end
@@ -2342,6 +2380,87 @@ function test_soc_already_exists()
         ),
         MOI.add_constraint(model, f, MOI.RotatedSecondOrderCone(3)),
     )
+    return
+end
+
+function test_min_variable_constraint_dual()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x, c = MOI.add_constrained_variable(model, MOI.LessThan(1.0))
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    f = -2.0 * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    MOI.optimize!(model)
+    @test ≈(MOI.get(model, MOI.ConstraintDual(), c), -2.0)
+    return
+end
+
+function test_unbounded_primal_certificate()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    f = 2.0 * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.ResultCount()) == 1
+    @test MOI.get(model, MOI.PrimalStatus()) == MOI.INFEASIBILITY_CERTIFICATE
+    @test MOI.get(model, MOI.DualStatus()) == MOI.NO_SOLUTION
+    @test MOI.get(model, MOI.VariablePrimal(), x) ≈ -1.0
+    return
+end
+
+function test_constraint_basis_status()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    c = MOI.add_constraint(model, 2.0 * x, MOI.EqualTo(1.0))
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.ConstraintBasisStatus(), c) == MOI.NONBASIC
+    return
+end
+
+function test_conflict_col_type_char()
+    for set in (
+        MOI.LessThan(-1.0),
+        MOI.EqualTo(1.0),
+        MOI.GreaterThan(1.0),
+        MOI.Interval(1.0, 2.0),
+        MOI.Semicontinuous(3.0, 5.0),
+        MOI.Semiinteger(3.0, 5.0),
+        MOI.Integer(),
+    )
+        model = Xpress.Optimizer()
+        MOI.set(model, MOI.Silent(), true)
+        x = MOI.add_variable(model)
+        a = MOI.add_constraint(model, 1.0 * x, MOI.EqualTo(-0.5))
+        b = MOI.add_constraint(model, x, set)
+        _, c = MOI.add_constrained_variable(model, set)
+        MOI.optimize!(model)
+        MOI.compute_conflict!(model)
+        attr = MOI.ConstraintConflictStatus()
+        @test MOI.get(model, attr, a) == MOI.IN_CONFLICT
+        @test MOI.get(model, attr, b) == MOI.IN_CONFLICT
+        @test MOI.get(model, attr, c) == MOI.NOT_IN_CONFLICT
+    end
+    return
+end
+
+function test_conflict_zeroone()
+    for (value, ret) in (-0.5 => MOI.MAYBE_IN_CONFLICT, 0.5 => MOI.IN_CONFLICT)
+        model = Xpress.Optimizer()
+        MOI.set(model, MOI.Silent(), true)
+        x = MOI.add_variable(model)
+        a = MOI.add_constraint(model, 1.0 * x, MOI.EqualTo(value))
+        b = MOI.add_constraint(model, x, MOI.ZeroOne())
+        _, c = MOI.add_constrained_variable(model, MOI.ZeroOne())
+        MOI.optimize!(model)
+        MOI.compute_conflict!(model)
+        attr = MOI.ConstraintConflictStatus()
+        @test MOI.get(model, attr, a) == MOI.IN_CONFLICT
+        @test MOI.get(model, attr, b) == ret
+        @test MOI.get(model, attr, c) == MOI.NOT_IN_CONFLICT
+    end
     return
 end
 

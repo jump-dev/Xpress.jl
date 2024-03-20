@@ -4450,14 +4450,13 @@ function MOI.get(
     return MOI.NOT_IN_CONFLICT
 end
 
-col_type_char(::Type{MOI.LessThan{Float64}}) = 'U'
-col_type_char(::Type{MOI.GreaterThan{Float64}}) = 'L'
-col_type_char(::Type{MOI.EqualTo{Float64}}) = 'F'
-# col_type_char(::Type{MOI.Interval{Float64}}) = 'T'
-col_type_char(::Type{MOI.ZeroOne}) = 'B'
-col_type_char(::Type{MOI.Integer}) = 'I'
-col_type_char(::Type{MOI.Semicontinuous{Float64}}) = 'S'
-col_type_char(::Type{MOI.Semiinteger{Float64}}) = 'R'
+col_type_char(::Type{MOI.LessThan{Float64}}) = (Cchar('U'),)
+col_type_char(::Type{MOI.GreaterThan{Float64}}) = (Cchar('L'),)
+col_type_char(::Type{MOI.EqualTo{Float64}}) = Cchar.(('F', 'L', 'U'))
+col_type_char(::Type{MOI.Interval{Float64}}) = Cchar.(('T', 'L', 'U'))
+col_type_char(::Type{MOI.Integer}) = (Cchar('I'),)
+col_type_char(::Type{MOI.Semicontinuous{Float64}}) = Cchar.(('S', 'L', 'U'))
+col_type_char(::Type{MOI.Semiinteger{Float64}}) = Cchar.(('R', 'L', 'U'))
 
 function MOI.get(
     model::Optimizer,
@@ -4465,32 +4464,9 @@ function MOI.get(
     index::MOI.ConstraintIndex{MOI.VariableIndex,S},
 ) where {S<:MOI.AbstractScalarSet}
     _ensure_conflict_computed(model)
-    _char = col_type_char(S)
     ref_col = _info(model, index).column - 1
-    for (idx, col) in enumerate(model.conflict.miiscol)
-        if col == ref_col && (
-            model.conflict.stat > 1 ||
-            Char(model.conflict.colbndtype[idx]) == _char
-        )
-            return MOI.IN_CONFLICT
-        end
-    end
-    return MOI.NOT_IN_CONFLICT
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::MOI.ConstraintConflictStatus,
-    index::MOI.ConstraintIndex{MOI.VariableIndex,MOI.Interval{Float64}},
-)
-    _ensure_conflict_computed(model)
-    ref_col = _info(model, index).column - 1
-    for (idx, col) in enumerate(model.conflict.miiscol)
-        if col == ref_col && (
-            model.conflict.stat > 1 ||
-            Char(model.conflict.colbndtype[idx]) == 'U' ||
-            Char(model.conflict.colbndtype[idx]) == 'L'
-        )
+    for (bnd, col) in zip(model.conflict.colbndtype, model.conflict.miiscol)
+        if col == ref_col && bnd in col_type_char(S)
             return MOI.IN_CONFLICT
         end
     end
@@ -4504,13 +4480,11 @@ function MOI.get(
 )
     _ensure_conflict_computed(model)
     ref_col = _info(model, index).column - 1
-    for (idx, col) in enumerate(model.conflict.miiscol)
+    for (bnd, col) in zip(model.conflict.colbndtype, model.conflict.miiscol)
         if col == ref_col
-            if Char(model.conflict.colbndtype[idx]) == 'B'
+            if bnd == Cchar('B')
                 return MOI.IN_CONFLICT
-            elseif Char(model.conflict.colbndtype[idx]) == 'U'
-                return MOI.MAYBE_IN_CONFLICT
-            elseif Char(model.conflict.colbndtype[idx]) == 'L'
+            elseif bnd == Cchar('L') || bnd == Cchar('U')
                 return MOI.MAYBE_IN_CONFLICT
             end
         end
