@@ -1731,6 +1731,7 @@ function GenerateModel_ScalarAffineFunction()
 end
 
 function Forward(model::DispatchModel, ϵ::Float64 = 1.0)
+    @test MOI.is_set_by_optimize(Xpress.ForwardSensitivityOutputVariable())
     variables = [model.g; model.Df]
     primal = MOI.get.(model.optimizer, MOI.VariablePrimal(), variables)
     MOI.set(
@@ -1749,6 +1750,7 @@ function Forward(model::DispatchModel, ϵ::Float64 = 1.0)
 end
 
 function Backward(model::DispatchModel, ϵ::Float64 = 1.0)
+    @test MOI.is_set_by_optimize(Xpress.BackwardSensitivityOutputConstraint())
     variables = [model.g; model.Df]
     primal = MOI.get.(model.optimizer, MOI.VariablePrimal(), variables)
     dual = zeros(length(variables))
@@ -1777,6 +1779,35 @@ end
 function test_variable_index_forward()
     model = GenerateModel_VariableIndex()
     @test Forward(model) == [10.0, 20.0, 15.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    return
+end
+
+function test_BackwardSensitivityOutputConstraint_error()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.ZeroOne())
+    c = MOI.add_constraint(model, 0.5 * x, MOI.EqualTo(0.0))
+    attr = Xpress.BackwardSensitivityOutputConstraint()
+    err = ErrorException("Model not optimized. Cannot get sensitivities.")
+    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, c))
+    MOI.optimize!(model)
+    err = ErrorException("Backward sensitivity cache not initiliazed correctly.")
+    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, c))
+    return
+end
+
+function test_ForwardSensitivityOutputVariable_error()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.ZeroOne())
+    attr = Xpress.ForwardSensitivityOutputVariable()
+    err = ErrorException("Model not optimized. Cannot get sensitivities.")
+    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, x))
+    MOI.optimize!(model)
+    err = ErrorException("Forward sensitivity cache not initiliazed correctly.")
+    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, x))
     return
 end
 
@@ -1925,6 +1956,79 @@ function test_quadratic_scalar_function_constant_not_zero()
         MOI.ScalarFunctionConstantNotZero{Float64,typeof(f),typeof(s)},
         MOI.add_constraint(model, f, s),
     )
+    return
+end
+
+function test_is_valid_variable()
+    model = Xpress.Optimizer()
+    for set in (
+        MOI.ZeroOne(),
+        MOI.Integer(),
+        MOI.LessThan(0.0),
+        MOI.EqualTo(0.0),
+        MOI.GreaterThan(0.0),
+    )
+        x = MOI.add_variable(model)
+        c = MOI.add_constraint(model, x, MOI.Integer())
+        @test MOI.is_valid(model, c)
+        d = typeof(c)(-1)
+        @test !MOI.is_valid(model, d)
+        @test_throws MOI.InvalidIndex Xpress._info(model, d)
+    end
+    return
+end
+
+function test_SettingVariableIndexNotAllowed()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    c = MOI.add_constraint(model, x, MOI.Integer())
+    y = MOI.add_variable(model)
+    @test_throws(
+        MOI.SettingVariableIndexNotAllowed(),
+        MOI.set(model, MOI.ConstraintFunction(), c, y),
+    )
+    return
+end
+
+function test_VariableIndex_Integer()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    c = MOI.add_constraint(model, x, MOI.Integer())
+    @test MOI.is_valid(model, c)
+    @test MOI.get(model, MOI.ConstraintSet(), c) == MOI.Integer()
+    MOI.delete(model, c)
+    @test !MOI.is_valid(model, c)
+    @test_throws MOI.InvalidIndex MOI.get(model, MOI.ConstraintSet(), c)
+    return
+end
+
+function test_add_constraints_invalid()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    @test_throws(
+        ErrorException("Number of functions does not equal number of sets."),
+        MOI.add_constraints(model, [1.0 * x], MOI.EqualTo{Float64}[]),
+    )
+    return
+end
+
+function test_solution_attributes()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    c = MOI.add_constraint(model, x, MOI.Integer())
+    @test MOI.get(model, MOI.ResultCount()) == 0
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.BarrierIterations()) == 0
+    @test MOI.get(model, MOI.SimplexIterations()) == 0
+    @test MOI.get(model, MOI.NodeCount()) == 0
+    @test isnan(MOI.get(model, MOI.RelativeGap()))
+    return
+end
+
+function test_RawSolver()
+    model = Xpress.Optimizer()
+    @test MOI.get(model, MOI.RawSolver()) == model.inner
     return
 end
 
