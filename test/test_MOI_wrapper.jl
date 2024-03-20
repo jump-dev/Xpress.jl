@@ -2280,7 +2280,7 @@ end
 function test_error_binary_bad_bounds()
     model = Xpress.Optimizer()
     x = MOI.add_variable(model)
-    MOI.add_constraint(model, x, MOI.Interval(0.2, 1.0))
+    MOI.add_constraint(model, x, MOI.Interval(0.2, 0.9))
     @test_throws(
         ErrorException("The problem is infeasible"),
         MOI.add_constraint(model, x, MOI.ZeroOne()),
