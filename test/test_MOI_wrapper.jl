@@ -1906,6 +1906,28 @@ function test_callback_function_replace()
     return
 end
 
+function test_add_constraints_scalar_function_constant_not_zero()
+    model = Xpress.Optimizer()
+    x = MOI.add_variables(model, 2)
+    f, s = 1.0 .* x .+ 2.0, MOI.EqualTo.([0.0, 0.0])
+    @test_throws(
+        MOI.ScalarFunctionConstantNotZero{Float64,eltype(f),eltype(s)},
+        MOI.add_constraints(model, f, s),
+    )
+    return
+end
+
+function test_quadratic_scalar_function_constant_not_zero()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    f, s = 1.0 * x * x + 2.0, MOI.EqualTo(0.0)
+    @test_throws(
+        MOI.ScalarFunctionConstantNotZero{Float64,typeof(f),typeof(s)},
+        MOI.add_constraint(model, f, s),
+    )
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()
