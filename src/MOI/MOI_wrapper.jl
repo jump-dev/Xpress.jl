@@ -4129,7 +4129,7 @@ function MOI.delete(
     # Reset the lower bound on the `t` variable.
     t_info = _info(model, f.variables[1])
     t_info.num_soc_constraints -= 1
-    @assert t_info.num_soc_constraints > 0
+    @assert t_info.num_soc_constraints == 0
     if isnan(t_info.lower_bound_if_soc)
         return  # Don't do anything. It must have a >0 lower bound anyway.
     end
@@ -4164,7 +4164,7 @@ function MOI.delete(
     for i in 1:2
         t_info = _info(model, f.variables[i])
         t_info.num_soc_constraints -= 1
-        @assert t_info.num_soc_constraints > 0
+        @assert t_info.num_soc_constraints == 0
         if isnan(t_info.lower_bound_if_soc)
             continue  # Don't do anything. It must have a >0 lower bound anyway.
         end
