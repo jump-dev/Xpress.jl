@@ -821,9 +821,7 @@ function test_MIP_Start()
 
     MOI.optimize!(model)
 
-    # @show MOI.get(model, MOI.TerminationStatus())
-    # @show MOI.get(model, MOI.PrimalStatus())
-    # @show MOI.get(model, MOI.RawStatusString())
+    @test MOI.get(model, MOI.RawStatusString()) isa String
 
     solution3 = MOI.get(model, MOI.VariablePrimal(), x)
     computed_obj_value3 = profit' * solution3
@@ -1731,6 +1729,7 @@ function GenerateModel_ScalarAffineFunction()
 end
 
 function Forward(model::DispatchModel, ϵ::Float64 = 1.0)
+    @test MOI.is_set_by_optimize(Xpress.ForwardSensitivityOutputVariable())
     variables = [model.g; model.Df]
     primal = MOI.get.(model.optimizer, MOI.VariablePrimal(), variables)
     MOI.set(
@@ -1749,6 +1748,7 @@ function Forward(model::DispatchModel, ϵ::Float64 = 1.0)
 end
 
 function Backward(model::DispatchModel, ϵ::Float64 = 1.0)
+    @test MOI.is_set_by_optimize(Xpress.BackwardSensitivityOutputConstraint())
     variables = [model.g; model.Df]
     primal = MOI.get.(model.optimizer, MOI.VariablePrimal(), variables)
     dual = zeros(length(variables))
@@ -1777,6 +1777,35 @@ end
 function test_variable_index_forward()
     model = GenerateModel_VariableIndex()
     @test Forward(model) == [10.0, 20.0, 15.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    return
+end
+
+function test_BackwardSensitivityOutputConstraint_error()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.ZeroOne())
+    c = MOI.add_constraint(model, 0.5 * x, MOI.EqualTo(0.0))
+    attr = Xpress.BackwardSensitivityOutputConstraint()
+    err = ErrorException("Model not optimized. Cannot get sensitivities.")
+    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, c))
+    MOI.optimize!(model)
+    err = ErrorException("Backward sensitivity cache not initiliazed correctly.")
+    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, c))
+    return
+end
+
+function test_ForwardSensitivityOutputVariable_error()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.ZeroOne())
+    attr = Xpress.ForwardSensitivityOutputVariable()
+    err = ErrorException("Model not optimized. Cannot get sensitivities.")
+    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, x))
+    MOI.optimize!(model)
+    err = ErrorException("Forward sensitivity cache not initiliazed correctly.")
+    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, x))
     return
 end
 
@@ -1924,6 +1953,236 @@ function test_quadratic_scalar_function_constant_not_zero()
     @test_throws(
         MOI.ScalarFunctionConstantNotZero{Float64,typeof(f),typeof(s)},
         MOI.add_constraint(model, f, s),
+    )
+    return
+end
+
+function test_is_valid_variable()
+    model = Xpress.Optimizer()
+    for set in (
+        MOI.ZeroOne(),
+        MOI.Integer(),
+        MOI.LessThan(0.0),
+        MOI.EqualTo(0.0),
+        MOI.GreaterThan(0.0),
+    )
+        x = MOI.add_variable(model)
+        c = MOI.add_constraint(model, x, MOI.Integer())
+        @test MOI.is_valid(model, c)
+        d = typeof(c)(-1)
+        @test !MOI.is_valid(model, d)
+        @test_throws MOI.InvalidIndex Xpress._info(model, d)
+    end
+    return
+end
+
+function test_SettingVariableIndexNotAllowed()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    c = MOI.add_constraint(model, x, MOI.Integer())
+    y = MOI.add_variable(model)
+    @test_throws(
+        MOI.SettingVariableIndexNotAllowed(),
+        MOI.set(model, MOI.ConstraintFunction(), c, y),
+    )
+    return
+end
+
+function test_VariableIndex_Integer()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    c = MOI.add_constraint(model, x, MOI.Integer())
+    @test MOI.is_valid(model, c)
+    @test MOI.get(model, MOI.ConstraintSet(), c) == MOI.Integer()
+    MOI.delete(model, c)
+    @test !MOI.is_valid(model, c)
+    @test_throws MOI.InvalidIndex MOI.get(model, MOI.ConstraintSet(), c)
+    return
+end
+
+function test_add_constraints_invalid()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    @test_throws(
+        ErrorException("Number of functions does not equal number of sets."),
+        MOI.add_constraints(model, [1.0 * x], MOI.EqualTo{Float64}[]),
+    )
+    return
+end
+
+function test_solution_attributes()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    c = MOI.add_constraint(model, x, MOI.Integer())
+    @test MOI.get(model, MOI.ResultCount()) == 0
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.BarrierIterations()) == 0
+    @test MOI.get(model, MOI.SimplexIterations()) == 0
+    @test MOI.get(model, MOI.NodeCount()) == 0
+    @test isnan(MOI.get(model, MOI.RelativeGap()))
+    return
+end
+
+function test_RawSolver()
+    model = Xpress.Optimizer()
+    @test MOI.get(model, MOI.RawSolver()) == model.inner
+    return
+end
+
+function test_ReducedCost()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.GreaterThan(2.0))
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    f = 2.0 * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    MOI.optimize!(model)
+    @test MOI.is_set_by_optimize(Xpress.ReducedCost())
+    @test MOI.attribute_value_type(Xpress.ReducedCost()) == Float64
+    @test MOI.get(model, Xpress.ReducedCost(), x) == 2.0
+    @test_throws(
+        MOI.ResultIndexBoundsError,
+        MOI.get(model, Xpress.ReducedCost(2), x),
+    )
+    return
+end
+
+function test_write_to_file()
+    model = Xpress.Optimizer()
+    MOI.write_to_file(model, "model.mps")
+    @test occursin("ENDATA", read("model.mps", String))
+    rm("model.mps")
+    MOI.write_to_file(model, "model.lp")
+    @test occursin("Subject To", read("model.lp", String))
+    rm("model.lp")
+    return
+end
+
+function test_modify_different_sparsity()
+    model = Xpress.Optimizer()
+    x = MOI.add_variables(model, 2)
+    c = MOI.add_constraint(model, 1.0 * x[1], MOI.EqualTo(0.0))
+    @test ≈(MOI.get(model, MOI.ConstraintFunction(), c), 1.0 * x[1])
+    MOI.set(model, MOI.ConstraintFunction(), c, 1.0 * x[2])
+    @test ≈(MOI.get(model, MOI.ConstraintFunction(), c), 1.0 * x[2])
+    MOI.set(model, MOI.ConstraintFunction(), c, 2.0 * x[2])
+    @test ≈(MOI.get(model, MOI.ConstraintFunction(), c), 2.0 * x[2])
+    return
+end
+
+function test_ListOfConstraintTypesPresent()
+    model = Xpress.Optimizer()
+    sets = (
+        MOI.LessThan(0.0),
+        MOI.GreaterThan(0.0),
+        MOI.EqualTo(0.0),
+        MOI.Interval(0.0, 1.0),
+        MOI.Integer(),
+        MOI.ZeroOne(),
+        MOI.Semicontinuous(2.0, 3.0),
+        MOI.Semiinteger(2.0, 5.0),
+    )
+    for (i, set) in enumerate(sets)
+        _ = MOI.add_constrained_variable(model, set)
+        ret = MOI.get(model, MOI.ListOfConstraintTypesPresent())
+        @test (MOI.VariableIndex, typeof(set)) in ret
+        @test length(ret) == i
+    end
+    return
+end
+
+function test_ListOfConstraintTypesPresent_vector()
+    model = Xpress.Optimizer()
+    sets = (
+        MOI.SecondOrderCone(3),
+        MOI.RotatedSecondOrderCone(3),
+        MOI.SOS1([1.0, 2.0, 3.0]),
+        MOI.SOS2([1.0, 2.0, 3.0]),
+    )
+    for (i, set) in enumerate(sets)
+        _ = MOI.add_constrained_variables(model, set)
+        ret = MOI.get(model, MOI.ListOfConstraintTypesPresent())
+        @test (MOI.VectorOfVariables, typeof(set)) in ret
+        @test length(ret) == i
+    end
+    return
+end
+
+function test_ListOfConstraintTypesPresent_ScalarQuadraticFunction()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    set = MOI.LessThan(1.0)
+    MOI.add_constraint(model, 1.0 * x * x, set)
+    ret = MOI.get(model, MOI.ListOfConstraintTypesPresent())
+    @test (MOI.ScalarQuadraticFunction{Float64}, typeof(set)) in ret
+    return
+end
+
+function test_ListOfConstraintTypesPresent_Indicator()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    z, _ = MOI.add_constrained_variable(model, MOI.ZeroOne())
+    f = MOI.Utilities.operate(vcat, Float64, 1.0 * x, z)
+    set = MOI.Indicator{MOI.ACTIVATE_ON_ONE}(MOI.EqualTo(0.0))
+    MOI.add_constraint(model, f, set)
+    ret = MOI.get(model, MOI.ListOfConstraintTypesPresent())
+    @test (MOI.VectorAffineFunction{Float64}, typeof(set)) in ret
+    return
+end
+
+function test_name_to_constraint()
+    model = Xpress.Optimizer()
+    MOI.Utilities.loadfromstring!(
+        model,
+        """
+        variables: t, u, x, y, a, b, c
+        c0: [x, y] in SOS2([1.0, 2.0])
+        c1: [x, y] in SOS1([1.0, 2.0])
+        [x, y] in SOS1([1.0, 2.0])
+        c2: 1.0 * t >= 0.0
+        c3: 1.0 * x * x <= 3.0
+        c4: [t, u, x, y] in RotatedSecondOrderCone(4)
+        c5: [a, b, c] in SecondOrderCone(3)
+        d: 1.0 * u >= 0.0
+        d: 2.0 * u >= 0.0
+        d2: 1.0 * u >= 0.0
+        d2: [x, y] in SOS1([1.0, 2.0])
+        """,
+    )
+    @test MOI.get(model, MOI.ConstraintIndex, "foo") === nothing
+    @test_throws ErrorException MOI.get(model, MOI.ConstraintIndex, "d")
+    @test_throws ErrorException MOI.get(model, MOI.ConstraintIndex, "d2")
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c0"),
+        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SOS2{Float64}}
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c1"),
+        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SOS1{Float64}}
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c2"),
+        MOI.ConstraintIndex{
+            MOI.ScalarAffineFunction{Float64},
+            MOI.GreaterThan{Float64},
+        }
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c3"),
+        MOI.ConstraintIndex{
+            MOI.ScalarQuadraticFunction{Float64},
+            MOI.LessThan{Float64},
+        },
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c4"),
+        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.RotatedSecondOrderCone},
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c5"),
+        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SecondOrderCone},
     )
     return
 end
