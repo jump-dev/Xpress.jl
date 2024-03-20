@@ -78,7 +78,7 @@ end
 # ==============================================================================
 
 function default_moi_callback(model::Optimizer)
-    return (cb_data) -> begin
+    function default_callback(cb_data)
         get_cb_solution(model, cb_data.model)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
@@ -114,8 +114,9 @@ function default_moi_callback(model::Optimizer)
             end
             model.lazy_callback(cb_data)
         end
+        return
     end
-    return
+    return default_callback
 end
 
 function MOI.get(model::Optimizer, attr::MOI.CallbackNodeStatus{CallbackData})
