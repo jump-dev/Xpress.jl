@@ -2150,7 +2150,7 @@ end
 function test_indicator_invalid()
     model = Xpress.Optimizer()
     x = MOI.add_variable(model)
-    z = MOI.add_constrained_variable(model, MOI.ZeroOne())
+    z, _ = MOI.add_constrained_variable(model, MOI.ZeroOne())
     f = MOI.Utilities.operate(vcat, Float64, 1.0 * z + x, z)
     s = MOI.Indicator{MOI.ACTIVATE_ON_ONE}(MOI.EqualTo(0.0))
     @test_throws(

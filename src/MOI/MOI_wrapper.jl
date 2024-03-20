@@ -4399,7 +4399,7 @@ function MOI.get(model::Optimizer, ::MOI.ConflictStatus)
     else
         # stat == 2 -> error
         # stat == 3 -> timeout
-        if model.conflict.ncols > 0
+        if model.conflict.colnumber > 0
             # We can sometimes find a bound violation conflict
             return MOI.CONFLICT_FOUND
         end
