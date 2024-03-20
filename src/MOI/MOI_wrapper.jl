@@ -3869,7 +3869,7 @@ function MOI.get(model::Optimizer, ::MOI.ListOfConstraintTypesPresent)
         elseif info.type == INDICATOR
             push!(
                 constraints,
-                (MOI.ScalarAffineFunction{Float64}, typeof(info.set)),
+                (MOI.VectorAffineFunction{Float64}, typeof(info.set)),
             )
         elseif info.type == QUADRATIC
             push!(
@@ -4032,21 +4032,14 @@ function _replace_with_different_sparsity!(
     replacement::MOI.ScalarAffineFunction,
     row::Integer,
 )
-    # First, zero out the old constraint function terms.
     for term in previous.terms
         col = _info(model, term.variable).column
-        @checked Lib.XPRSchgcoef(model.inner, Cint(row - 1), Cint(col - 1), 0.0)
+        @checked Lib.XPRSchgcoef(model.inner, row - 1, col - 1, 0.0)
     end
-
-    # Next, set the new constraint function terms.
-    for term in previous.terms
+    for term in replacement.terms
         col = _info(model, term.variable).column
-        @checked Lib.XPRSchgcoef(
-            model.inner,
-            Cint(row - 1),
-            Cint(col - 1),
-            MOI.coefficient(term),
-        )
+        val = MOI.coefficient(term)
+        @checked Lib.XPRSchgcoef(model.inner, row - 1, col - 1, val)
     end
     return
 end
@@ -4067,9 +4060,6 @@ function _matching_sparsity_pattern(
     f1::MOI.ScalarAffineFunction{Float64},
     f2::MOI.ScalarAffineFunction{Float64},
 )
-    if axes(f1.terms) != axes(f2.terms)
-        return false
-    end
     for (f1_term, f2_term) in zip(f1.terms, f2.terms)
         if MOI.term_indices(f1_term) != MOI.term_indices(f2_term)
             return false
@@ -4143,24 +4133,19 @@ function MOI.get(
     ::MOI.VariableBasisStatus,
     x::MOI.VariableIndex,
 )
-    column = _info(model, x).column
-    basis_status = model.basis_status
-    if basis_status == nothing
-        _generate_basis_status(model::Optimizer)
-        basis_status = model.basis_status
+    if model.basis_status == nothing
+        _generate_basis_status(model)
     end
-    vstatus = basis_status.var_status
-    vbasis = vstatus[column]
+    vbasis = model.basis_status.var_status[_info(model, x).column]
     if vbasis == 1
         return MOI.BASIC
     elseif vbasis == 0
         return MOI.NONBASIC_AT_LOWER
     elseif vbasis == 2
         return MOI.NONBASIC_AT_UPPER
-    elseif vbasis == 3
-        return MOI.SUPER_BASIC
     else
-        error("VBasis value of $(vbasis) isn't defined.")
+        @assert vbasis == 3
+        return MOI.SUPER_BASIC
     end
 end
 
@@ -4176,6 +4161,7 @@ function MOI.add_constrained_variables(
     vis = MOI.add_variables(model, N)
     return vis, MOI.add_constraint(model, MOI.VectorOfVariables(vis), s)
 end
+
 function MOI.add_constraint(
     model::Optimizer,
     f::MOI.VectorOfVariables,
@@ -4184,14 +4170,10 @@ function MOI.add_constraint(
     if length(f.variables) != s.dimension
         error("Dimension of $(s) does not match number of terms in $(f)")
     end
-
     N = s.dimension
     vis = f.variables
-
     # first check any variabel is alread in a (R)SOC
-
     vs_info = _info.(model, vis)
-
     has_v_in_soc = false
     for v in vs_info
         if v.in_soc
@@ -4208,12 +4190,9 @@ function MOI.add_constraint(
         end
         error("Variables $(list) already belong a to SOC or RSOC constraint")
     end
-
     # SOC is the cone: t ≥ ||x||₂ ≥ 0. In Xpress' quadratic form, this is
     # Σᵢ xᵢ² - t² <= 0 and t ≥ 0.
-
     # First, check the lower bound on t.
-
     t_info = vs_info[1]
     lb = _get_variable_lower_bound(model, t_info)
     if isnan(t_info.lower_bound_if_soc) && lb < 0.0
@@ -4227,9 +4206,7 @@ function MOI.add_constraint(
         )
     end
     t_info.num_soc_constraints += 1
-
     # Now add the quadratic constraint.
-
     I = Cint[Cint(vs_info[i].column - 1) for i in 1:N]
     V = fill(1.0, N)
     V[1] = -1.0
@@ -4260,14 +4237,12 @@ function MOI.add_constraint(
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, SOC)
-
     # set variables to SOC
     for v in vs_info
         v.in_soc = true
     end
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SecondOrderCone}(
-        model.last_constraint_index,
-    )
+    F, S = MOI.VectorOfVariables, MOI.SecondOrderCone
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
 
 function MOI.add_constraint(
@@ -4278,14 +4253,10 @@ function MOI.add_constraint(
     if length(f.variables) != s.dimension
         error("Dimension of $(s) does not match number of terms in $(f)")
     end
-
     N = s.dimension
     vis = f.variables
-
     # first check any variable is already in a (R)SOC
-
     vs_info = _info.(model, vis)
-
     has_v_in_soc = false
     for v in vs_info
         if v.in_soc
@@ -4302,12 +4273,9 @@ function MOI.add_constraint(
         end
         error("Variables $(list) already belong a to SOC or RSOC constraint")
     end
-
     # RSOC is the cone: 2tu ≥ ||x||₂^2 ≥ 0, t ≥ 0, u ≥ 0. In Xpress' quadratic form, this is
     # Σᵢ xᵢ² - 2tu <= 0 and t ≥ 0, u ≥ 0.
-
     # First, check the lower bound on t and u.
-
     for i in 1:2
         t_info = vs_info[i]
         lb = _get_variable_lower_bound(model, t_info)
@@ -4323,9 +4291,7 @@ function MOI.add_constraint(
         end
         t_info.num_soc_constraints += 1
     end
-
     # Now add the quadratic constraint.
-
     I = Cint[Cint(vs_info[i].column - 1) for i in 1:N if i != 2]
     J = Cint[Cint(vs_info[i].column - 1) for i in 1:N if i != 1]
     V = fill(1.0, N - 1)
@@ -4350,14 +4316,12 @@ function MOI.add_constraint(
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, RSOC)
-
     # set variables to SOC
     for v in vs_info
         v.in_soc = true
     end
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.RotatedSecondOrderCone}(
-        model.last_constraint_index,
-    )
+    F, S = MOI.VectorOfVariables, MOI.RotatedSecondOrderCone
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
 
 function MOI.delete(
@@ -4476,7 +4440,6 @@ function MOI.get(
     mqcol1 .+= 1
     mqcol2 .+= 1
     I, J, V = mqcol1, mqcol2, dqe
-
     t = nothing
     x = MOI.VariableIndex[]
     sizehint!(x, length(I) - 1)
@@ -4522,7 +4485,6 @@ function MOI.get(
     )
     I .+= 1
     J .+= 1
-
     t = nothing
     u = nothing
     x = MOI.VariableIndex[]
@@ -4760,6 +4722,7 @@ function MOI.get(
     end
     return MOI.NOT_IN_CONFLICT
 end
+
 function MOI.get(
     model::Optimizer,
     ::MOI.ConstraintConflictStatus,
@@ -4834,14 +4797,14 @@ function _pass_variable_names_to_solver(model::Optimizer; warn = true)
         Cint(0),
         Cint(n_variables - 1),
     )
-    return nothing
+    return
 end
 
 function _pass_constraint_names_to_solver(model::Optimizer; warn = true)
     NAMELENGTH = 64
     n_constraints = length(model.affine_constraint_info)
     if n_constraints == 0
-        return nothing
+        return
     end
     con_names = String[string('R', i) for i in 1:n_constraints]
     duplicate_check = Set{String}()
@@ -4870,7 +4833,7 @@ function _pass_constraint_names_to_solver(model::Optimizer; warn = true)
         Cint(0),
         Cint(n_constraints - 1),
     )
-    return nothing
+    return
 end
 
 function _get_variable_names(model)
@@ -4922,10 +4885,6 @@ end
 struct ReducedCost <: MOI.AbstractVariableAttribute
     result_index::Int
     ReducedCost(result_index::Int = 1) = new(result_index)
-end
-
-function MOI.supports(::Optimizer, ::ReducedCost, ::Type{MOI.VariableIndex})
-    return true
 end
 
 MOI.is_set_by_optimize(::ReducedCost) = true

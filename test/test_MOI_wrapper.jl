@@ -2032,6 +2032,108 @@ function test_RawSolver()
     return
 end
 
+function test_ReducedCost()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.GreaterThan(2.0))
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    f = 2.0 * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    MOI.optimize!(model)
+    @test MOI.is_set_by_optimize(Xpress.ReducedCost())
+    @test MOI.attribute_value_type(Xpress.ReducedCost()) == Float64
+    @test MOI.get(model, Xpress.ReducedCost(), x) == 2.0
+    @test_throws(
+        MOI.ResultIndexBoundsError,
+        MOI.get(model, Xpress.ReducedCost(2), x),
+    )
+    return
+end
+
+function test_write_to_file()
+    model = Xpress.Optimizer()
+    MOI.write_to_file(model, "model.mps")
+    @test occursin("ENDATA", read("model.mps", String))
+    rm("model.mps")
+    MOI.write_to_file(model, "model.lp")
+    @test occursin("Subject To", read("model.lp", String))
+    rm("model.lp")
+    return
+end
+
+function test_modify_different_sparsity()
+    model = Xpress.Optimizer()
+    x = MOI.add_variables(model, 2)
+    c = MOI.add_constraint(model, 1.0 * x[1], MOI.EqualTo(0.0))
+    @test ≈(MOI.get(model, MOI.ConstraintFunction(), c), 1.0 * x[1])
+    MOI.set(model, MOI.ConstraintFunction(), c, 1.0 * x[2])
+    @test ≈(MOI.get(model, MOI.ConstraintFunction(), c), 1.0 * x[2])
+    MOI.set(model, MOI.ConstraintFunction(), c, 2.0 * x[2])
+    @test ≈(MOI.get(model, MOI.ConstraintFunction(), c), 2.0 * x[2])
+    return
+end
+
+function test_ListOfConstraintTypesPresent()
+    model = Xpress.Optimizer()
+    sets = (
+        MOI.LessThan(0.0),
+        MOI.GreaterThan(0.0),
+        MOI.EqualTo(0.0),
+        MOI.Interval(0.0, 1.0),
+        MOI.Integer(),
+        MOI.ZeroOne(),
+        MOI.Semicontinuous(2.0, 3.0),
+        MOI.Semiinteger(2.0, 5.0),
+    )
+    for (i, set) in enumerate(sets)
+        _ = MOI.add_constrained_variable(model, set)
+        ret = MOI.get(model, MOI.ListOfConstraintTypesPresent())
+        @test (MOI.VariableIndex, typeof(set)) in ret
+        @test length(ret) == i
+    end
+    return
+end
+
+function test_ListOfConstraintTypesPresent_vector()
+    model = Xpress.Optimizer()
+    sets = (
+        MOI.SecondOrderCone(3),
+        MOI.RotatedSecondOrderCone(3),
+        MOI.SOS1([1.0, 2.0, 3.0]),
+        MOI.SOS2([1.0, 2.0, 3.0]),
+    )
+    for (i, set) in enumerate(sets)
+        _ = MOI.add_constrained_variables(model, set)
+        ret = MOI.get(model, MOI.ListOfConstraintTypesPresent())
+        @test (MOI.VectorOfVariables, typeof(set)) in ret
+        @test length(ret) == i
+    end
+    return
+end
+
+function test_ListOfConstraintTypesPresent_ScalarQuadraticFunction()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    set = MOI.LessThan(1.0)
+    MOI.add_constraint(model, 1.0 * x * x, set)
+    ret = MOI.get(model, MOI.ListOfConstraintTypesPresent())
+    @test (MOI.ScalarQuadraticFunction{Float64}, typeof(set)) in ret
+    return
+end
+
+function test_ListOfConstraintTypesPresent_Indicator()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    z, _ = MOI.add_constrained_variable(model, MOI.ZeroOne())
+    f = MOI.Utilities.operate(vcat, Float64, 1.0 * x, z)
+    set = MOI.Indicator{MOI.ACTIVATE_ON_ONE}(MOI.EqualTo(0.0))
+    MOI.add_constraint(model, f, set)
+    ret = MOI.get(model, MOI.ListOfConstraintTypesPresent())
+    @test (MOI.VectorAffineFunction{Float64}, typeof(set)) in ret
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()
