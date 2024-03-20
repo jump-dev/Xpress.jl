@@ -1205,7 +1205,7 @@ function MOI.set(
         _indices_and_coefficients(model, f)
     obj = zeros(length(model.variable_info))
     for (i, c) in zip(affine_indices, affine_coefficients)
-        obj[i] = c
+        obj[i+1] = c
     end
     @checked Lib.XPRSchgmqobj(model.inner, length(I), I, J, V)
     model.objective_type = SCALAR_QUADRATIC
