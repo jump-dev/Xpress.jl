@@ -257,40 +257,6 @@ function Base.show(io::IO, prob::XpressProblem)
     return
 end
 
-const MIPSTATUS_STRING = Dict{Int,String}(
-    Lib.XPRS_MIP_NOT_LOADED => "0 Problem has not been loaded ( XPRS_MIP_NOT_LOADED).",
-    Lib.XPRS_MIP_LP_NOT_OPTIMAL => "1 Global search incomplete - the initial continuous relaxation has not been solved and no integer solution has been found ( XPRS_MIP_LP_NOT_OPTIMAL).",
-    Lib.XPRS_MIP_LP_OPTIMAL => "2 Global search incomplete - the initial continuous relaxation has been solved and no integer solution has been found ( XPRS_MIP_LP_OPTIMAL).",
-    Lib.XPRS_MIP_NO_SOL_FOUND => "3 Global search incomplete - no integer solution found ( XPRS_MIP_NO_SOL_FOUND).",
-    Lib.XPRS_MIP_SOLUTION => "4 Global search incomplete - an integer solution has been found ( XPRS_MIP_SOLUTION).",
-    Lib.XPRS_MIP_INFEAS => "5 Global search complete - no integer solution found ( XPRS_MIP_INFEAS).",
-    Lib.XPRS_MIP_OPTIMAL => "6 Global search complete - integer solution found ( XPRS_MIP_OPTIMAL).",
-    Lib.XPRS_MIP_UNBOUNDED => "7 Global search incomplete - the initial continuous relaxation was found to be unbounded. A solution may have been found ( XPRS_MIP_UNBOUNDED).",
-)
-
-const LPSTATUS_STRING = Dict{Int,String}(
-    Lib.XPRS_LP_UNSTARTED => "0 Unstarted ( XPRS_LP_UNSTARTED).",
-    Lib.XPRS_LP_OPTIMAL => "1 Optimal ( XPRS_LP_OPTIMAL).",
-    Lib.XPRS_LP_INFEAS => "2 Infeasible ( XPRS_LP_INFEAS).",
-    Lib.XPRS_LP_CUTOFF => "3 Objective worse than cutoff ( XPRS_LP_CUTOFF).",
-    Lib.XPRS_LP_UNFINISHED => "4 Unfinished ( XPRS_LP_UNFINISHED).",
-    Lib.XPRS_LP_UNBOUNDED => "5 Unbounded ( XPRS_LP_UNBOUNDED).",
-    Lib.XPRS_LP_CUTOFF_IN_DUAL => "6 Cutoff in dual ( XPRS_LP_CUTOFF_IN_DUAL).",
-    Lib.XPRS_LP_UNSOLVED => "7 Problem could not be solved due to numerical issues. ( XPRS_LP_UNSOLVED).",
-    Lib.XPRS_LP_NONCONVEX => "8 Problem contains quadratic data, which is not convex ( XPRS_LP_NONCONVEX).",
-)
-
-const STOPSTATUS_STRING = Dict{Int,String}(
-    Lib.XPRS_STOP_NONE => "no interruption - the solve completed normally",
-    Lib.XPRS_STOP_TIMELIMIT => "time limit hit",
-    Lib.XPRS_STOP_CTRLC => "control C hit",
-    Lib.XPRS_STOP_NODELIMIT => "node limit hit",
-    Lib.XPRS_STOP_ITERLIMIT => "iteration limit hit",
-    Lib.XPRS_STOP_MIPGAP => "MIP gap is sufficiently small",
-    Lib.XPRS_STOP_SOLLIMIT => "solution limit hit",
-    Lib.XPRS_STOP_USER => "user interrupt.",
-)
-
 mutable struct CallbackData
     model_root::XpressProblem
     data::Any

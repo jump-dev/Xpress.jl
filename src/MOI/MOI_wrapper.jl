@@ -3111,150 +3111,114 @@ function _throw_if_optimize_in_progress(model, attr)
     return
 end
 
+const _MIPSTATUS = Dict(
+    Lib.XPRS_MIP_NOT_LOADED => (
+        "0 Problem has not been loaded ( XPRS_MIP_NOT_LOADED).",
+        MOI.OPTIMIZE_NOT_CALLED,
+    ),
+    Lib.XPRS_MIP_LP_NOT_OPTIMAL => (
+        "1 Global search incomplete - the initial continuous relaxation has not been solved and no integer solution has been found ( XPRS_MIP_LP_NOT_OPTIMAL).",
+        MOI.OTHER_ERROR,
+    ),
+    Lib.XPRS_MIP_LP_OPTIMAL => (
+        "2 Global search incomplete - the initial continuous relaxation has been solved and no integer solution has been found ( XPRS_MIP_LP_OPTIMAL).",
+        MOI.OTHER_ERROR,
+    ),
+    Lib.XPRS_MIP_NO_SOL_FOUND => (
+        "3 Global search incomplete - no integer solution found ( XPRS_MIP_NO_SOL_FOUND).",
+        MOI.OTHER_ERROR,
+    ),
+    Lib.XPRS_MIP_SOLUTION => (
+        "4 Global search incomplete - an integer solution has been found ( XPRS_MIP_SOLUTION).",
+        MOI.LOCALLY_SOLVED,
+    ),
+    Lib.XPRS_MIP_INFEAS => (
+        "5 Global search complete - no integer solution found ( XPRS_MIP_INFEAS).",
+        MOI.INFEASIBLE,
+    ),
+    Lib.XPRS_MIP_OPTIMAL => (
+        "6 Global search complete - integer solution found ( XPRS_MIP_OPTIMAL).",
+        MOI.OPTIMAL,
+    ),
+    Lib.XPRS_MIP_UNBOUNDED => (
+        "7 Global search incomplete - the initial continuous relaxation was found to be unbounded. A solution may have been found ( XPRS_MIP_UNBOUNDED).",
+        MOI.INFEASIBLE_OR_UNBOUNDED,
+    ),
+)
+
+const _LPSTATUS = Dict(
+    Lib.XPRS_LP_UNSTARTED =>
+        ("0 Unstarted ( XPRS_LP_UNSTARTED).", MOI.OPTIMIZE_NOT_CALLED),
+    Lib.XPRS_LP_OPTIMAL => ("1 Optimal ( XPRS_LP_OPTIMAL).", MOI.OPTIMAL),
+    Lib.XPRS_LP_INFEAS =>
+        ("2 Infeasible ( XPRS_LP_INFEAS).", MOI.INFEASIBLE),
+    Lib.XPRS_LP_CUTOFF => (
+        "3 Objective worse than cutoff ( XPRS_LP_CUTOFF).",
+        MOI.OTHER_LIMIT,
+    ),
+    Lib.XPRS_LP_UNFINISHED =>
+        ("4 Unfinished ( XPRS_LP_UNFINISHED).", MOI.OTHER_ERROR),
+    Lib.XPRS_LP_UNBOUNDED =>
+        ("5 Unbounded ( XPRS_LP_UNBOUNDED).", MOI.DUAL_INFEASIBLE),
+    Lib.XPRS_LP_CUTOFF_IN_DUAL =>
+        ("6 Cutoff in dual ( XPRS_LP_CUTOFF_IN_DUAL).", MOI.OTHER_LIMIT),
+    Lib.XPRS_LP_UNSOLVED => (
+        "7 Problem could not be solved due to numerical issues. ( XPRS_LP_UNSOLVED).",
+        MOI.NUMERICAL_ERROR,
+    ),
+    Lib.XPRS_LP_NONCONVEX => (
+        "8 Problem contains quadratic data, which is not convex ( XPRS_LP_NONCONVEX).",
+        MOI.INVALID_OPTION,
+    ),
+)
+
+const _STOPSTATUS = Dict(
+    Lib.XPRS_STOP_NONE =>
+        ("no interruption - the solve completed normally", MOI.OPTIMAL),
+    Lib.XPRS_STOP_TIMELIMIT => ("time limit hit", MOI.TIME_LIMIT),
+    Lib.XPRS_STOP_CTRLC => ("control C hit", MOI.INTERRUPTED),
+    Lib.XPRS_STOP_NODELIMIT => ("node limit hit", MOI.NODE_LIMIT),
+    Lib.XPRS_STOP_ITERLIMIT => ("iteration limit hit", MOI.ITERATION_LIMIT),
+    Lib.XPRS_STOP_MIPGAP => ("MIP gap is sufficiently small", MOI.OPTIMAL),
+    Lib.XPRS_STOP_SOLLIMIT => ("solution limit hit", MOI.SOLUTION_LIMIT),
+    Lib.XPRS_STOP_USER => ("user interrupt.", MOI.INTERRUPTED),
+)
+
 function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
     _throw_if_optimize_in_progress(model, attr)
     stop =
         @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
-    stop_str = STOPSTATUS_STRING[stop]
     if is_mip(model)
         stat = @_invoke Lib.XPRSgetintattrib(
             model.inner,
             Lib.XPRS_MIPSTATUS,
             _,
         )::Int
-        return MIPSTATUS_STRING[stat] * " - " * stop_str
+        return _MIPSTATUS[stat][1] * " - " * _STOPSTATUS[stop][1]
     else
         stat = @_invoke Lib.XPRSgetintattrib(
             model.inner,
             Lib.XPRS_LPSTATUS,
             _,
         )::Int
-        return LPSTATUS_STRING[stat] * " - " * stop_str
+        return _LPSTATUS[stat][1] * " - " * _STOPSTATUS[stop][1]
     end
 end
 
 function _cache_termination_status(model::Optimizer)
     stop =
         @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
-    if stop != Lib.XPRS_STOP_NONE
-        if stop == Lib.XPRS_STOP_TIMELIMIT
-            return MOI.TIME_LIMIT
-        elseif stop == Lib.XPRS_STOP_CTRLC
-            return MOI.INTERRUPTED
-        elseif stop == Lib.XPRS_STOP_NODELIMIT
-            return MOI.NODE_LIMIT
-        elseif stop == Lib.XPRS_STOP_ITERLIMIT
-            return MOI.ITERATION_LIMIT
-        elseif stop == Lib.XPRS_STOP_MIPGAP
-            stat = Lib.XPRS_MIP_NOT_LOADED
-            if is_mip(model)
-                stat = @_invoke Lib.XPRSgetintattrib(
-                    model.inner,
-                    Lib.XPRS_MIPSTATUS,
-                    _,
-                )::Int
-                if stat == Lib.XPRS_MIP_OPTIMAL
-                    return MOI.OPTIMAL
-                else
-                    return MOI.OTHER_ERROR
-                end
-            else
-                return MOI.OTHER_ERROR
-            end
-        elseif stop == Lib.XPRS_STOP_SOLLIMIT
-            return MOI.SOLUTION_LIMIT
-        else
-            @assert stop == Lib.XPRS_STOP_USER
-            return MOI.INTERRUPTED
-        end
-        #=
-        XPRS_STOP_NONE no interruption - the solve completed normally
-        XPRS_STOP_TIMELIMIT time limit hit
-        XPRS_STOP_CTRLC control C hit
-        XPRS_STOP_NODELIMIT node limit hit
-        XPRS_STOP_ITERLIMIT iteration limit hit
-        XPRS_STOP_MIPGAP MIP gap is sufficiently small
-        XPRS_STOP_SOLLIMIT solution limit hit
-        XPRS_STOP_USER user interrupt
-        =#
-    end # else:
-    if is_mip(model)
-        stat = @_invoke Lib.XPRSgetintattrib(
-            model.inner,
-            Lib.XPRS_MIPSTATUS,
-            _,
-        )::Int
-        if stat == Lib.XPRS_MIP_NOT_LOADED
-            return MOI.OPTIMIZE_NOT_CALLED
-        elseif stat == Lib.XPRS_MIP_LP_NOT_OPTIMAL # is a STOP
-            return MOI.OTHER_ERROR
-        elseif stat == Lib.XPRS_MIP_LP_OPTIMAL # is a STOP
-            return MOI.OTHER_ERROR
-        elseif stat == Lib.XPRS_MIP_NO_SOL_FOUND # is a STOP
-            return MOI.OTHER_ERROR
-        elseif stat == Lib.XPRS_MIP_SOLUTION # is a STOP
-            return MOI.LOCALLY_SOLVED
-        elseif stat == Lib.XPRS_MIP_INFEAS
-            return MOI.INFEASIBLE
-        elseif stat == Lib.XPRS_MIP_OPTIMAL
-            return MOI.OPTIMAL
-        else
-            @assert stat == Lib.XPRS_MIP_UNBOUNDED
-            return MOI.INFEASIBLE_OR_UNBOUNDED #? DUAL_INFEASIBLE?
-        end
-        #=
-        0 Problem has not been loaded (XPRS_MIP_NOT_LOADED).
-        1 Global search incomplete - the initial continuous relaxation has not been solved and
-            no integer solution has been found (XPRS_MIP_LP_NOT_OPTIMAL).
-        2 Global search incomplete - the initial continuous relaxation has been solved and no
-            integer solution has been found (XPRS_MIP_LP_OPTIMAL).
-        3 Global search incomplete - no integer solution found (XPRS_MIP_NO_SOL_FOUND).
-        4 Global search incomplete - an integer solution has been found
-            (XPRS_MIP_SOLUTION).
-        5 Global search complete - no integer solution found (XPRS_MIP_INFEAS).
-        6 Global search complete - integer solution found (XPRS_MIP_OPTIMAL).
-        7 Global search incomplete - the initial continuous relaxation was found to be
-            unbounded. A solution may have been found (XPRS_MIP_UNBOUNDED).
-        =#
+    if stop != Lib.XPRS_STOP_NONE && stop != Lib.XPRS_STOP_MIPGAP
+        return _STOPSTATUS[stop][2]
+    elseif is_mip(model)
+        mipstatus = Lib.XPRS_MIPSTATUS
+        stat = @_invoke Lib.XPRSgetintattrib(model.inner, mipstatus, _)::Int
+        return _MIPSTATUS[stat][2]
     else
-        stat = @_invoke Lib.XPRSgetintattrib(
-            model.inner,
-            Lib.XPRS_LPSTATUS,
-            _,
-        )::Int
-        if stat == Lib.XPRS_LP_UNSTARTED
-            return MOI.OPTIMIZE_NOT_CALLED
-        elseif stat == Lib.XPRS_LP_OPTIMAL
-            return MOI.OPTIMAL
-        elseif stat == Lib.XPRS_LP_INFEAS
-            return MOI.INFEASIBLE
-        elseif stat == Lib.XPRS_LP_CUTOFF
-            return MOI.OTHER_LIMIT
-        elseif stat == Lib.XPRS_LP_UNFINISHED # is a STOP
-            return MOI.OTHER_ERROR
-        elseif stat == Lib.XPRS_LP_UNBOUNDED
-            return MOI.DUAL_INFEASIBLE
-        elseif stat == Lib.XPRS_LP_CUTOFF_IN_DUAL
-            return MOI.OTHER_LIMIT
-        elseif stat == Lib.XPRS_LP_UNSOLVED
-            return MOI.NUMERICAL_ERROR
-        else
-            @assert stat == Lib.XPRS_LP_NONCONVEX
-            return MOI.INVALID_OPTION
-        end
-        #=
-        0 Unstarted (XPRS_LP_UNSTARTED).
-        1 Optimal (XPRS_LP_OPTIMAL).
-        2 Infeasible (XPRS_LP_INFEAS).
-        3 Objective worse than cutoff (XPRS_LP_CUTOFF).
-        4 Unfinished (XPRS_LP_UNFINISHED).
-        5 Unbounded (XPRS_LP_UNBOUNDED).
-        6 Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL).
-        7 Problem could not be solved due to numerical issues. (XPRS_LP_UNSOLVED).
-        8 Problem contains quadratic data, which is not convex (XPRS_LP_NONCONVEX)
-        =#
+        lpstatus = Lib.XPRS_LPSTATUS
+        stat = @_invoke Lib.XPRSgetintattrib(model.inner, lpstatus, _)::Int
+        return _LPSTATUS[stat][2]
     end
-    return MOI.OTHER_ERROR
 end
 
 function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
