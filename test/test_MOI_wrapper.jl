@@ -2311,6 +2311,40 @@ function test_set_lower_bound_of_soc()
     return
 end
 
+function test_soc_dimension_mismatch()
+    model = Xpress.Optimizer()
+    f = MOI.VectorOfVariables(MOI.add_variables(model, 2))
+    for s in (MOI.SecondOrderCone(3), MOI.RotatedSecondOrderCone(4))
+        @test_throws(
+            ErrorException(
+                "Dimension of $(s) does not match number of terms in $(f)",
+            ),
+            MOI.add_constraint(model, f, s),
+        )
+    end
+    return
+end
+
+function test_soc_already_exists()
+    model = Xpress.Optimizer()
+    x, _ = MOI.add_constrained_variables(model, MOI.SecondOrderCone(3))
+    y = MOI.add_variables(model, 2)
+    f = MOI.VectorOfVariables([x[1]; y])
+    @test_throws(
+        ErrorException(
+            "Variable $(x[1]) already belongs a to SOC or RSOC constraint",
+        ),
+        MOI.add_constraint(model, f, MOI.SecondOrderCone(3)),
+    )
+    @test_throws(
+        ErrorException(
+            "Variable $(x[1]) already belongs a to SOC or RSOC constraint",
+        ),
+        MOI.add_constraint(model, f, MOI.RotatedSecondOrderCone(3)),
+    )
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()

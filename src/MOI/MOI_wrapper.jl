@@ -3989,45 +3989,32 @@ function MOI.add_constraint(
     if length(f.variables) != s.dimension
         error("Dimension of $(s) does not match number of terms in $(f)")
     end
-    N = s.dimension
-    vis = f.variables
-    # first check any variabel is alread in a (R)SOC
-    vs_info = _info.(model, vis)
-    has_v_in_soc = false
+    vs_info = _info.(model, f.variables)
     for v in vs_info
         if v.in_soc
-            has_v_in_soc = true
-            break
+            error(
+                "Variable $(v.index) already belongs a to SOC or RSOC constraint",
+            )
         end
-    end
-    if has_v_in_soc
-        list = MOI.VariableIndex[]
-        for i in 1:N
-            if vs_info[i].in_soc
-                push!(list, vis[i])
-            end
-        end
-        error("Variables $(list) already belong a to SOC or RSOC constraint")
     end
     # SOC is the cone: t ≥ ||x||₂ ≥ 0. In Xpress' quadratic form, this is
     # Σᵢ xᵢ² - t² <= 0 and t ≥ 0.
     # First, check the lower bound on t.
-    t_info = vs_info[1]
-    lb = _get_variable_lower_bound(model, t_info)
-    if isnan(t_info.lower_bound_if_soc) && lb < 0.0
-        t_info.lower_bound_if_soc = lb
+    lb = _get_variable_lower_bound(model, vs_info[1])
+    if isnan(vs_info[1].lower_bound_if_soc) && lb < 0.0
+        vs_info[1].lower_bound_if_soc = lb
         @checked Lib.XPRSchgbounds(
             model.inner,
             Cint(1),
-            Ref(Cint(t_info.column - 1)),
+            Ref(Cint(vs_info[1].column - 1)),
             Ref(UInt8('L')),
             Ref(0.0),
         )
     end
-    t_info.num_soc_constraints += 1
+    vs_info[1].num_soc_constraints += 1
     # Now add the quadratic constraint.
-    I = Cint[Cint(vs_info[i].column - 1) for i in 1:N]
-    V = fill(1.0, N)
+    I = Cint[Cint(vs_info[i].column - 1) for i in 1:s.dimension]
+    V = fill(1.0, s.dimension)
     V[1] = -1.0
     @checked Lib.XPRSaddrows(
         model.inner,
@@ -4045,18 +4032,10 @@ function MOI.add_constraint(
         Lib.XPRS_ORIGINALROWS,
         _,
     )::Int
-    @checked Lib.XPRSaddqmatrix(
-        model.inner,
-        ncons - 1,
-        Cint(length(I)),
-        I,
-        I,
-        V,
-    )
+    @checked Lib.XPRSaddqmatrix(model.inner, ncons - 1, length(I), I, I, V)
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, SOC)
-    # set variables to SOC
     for v in vs_info
         v.in_soc = true
     end
@@ -4072,48 +4051,36 @@ function MOI.add_constraint(
     if length(f.variables) != s.dimension
         error("Dimension of $(s) does not match number of terms in $(f)")
     end
-    N = s.dimension
-    vis = f.variables
-    # first check any variable is already in a (R)SOC
-    vs_info = _info.(model, vis)
-    has_v_in_soc = false
+    vs_info = _info.(model, f.variables)
     for v in vs_info
         if v.in_soc
-            has_v_in_soc = true
-            break
+            error(
+                "Variable $(v.index) already belongs a to SOC or RSOC constraint",
+            )
         end
     end
-    if has_v_in_soc
-        list = MOI.VariableIndex[]
-        for i in 1:N
-            if vs_info[i].in_soc
-                push!(list, vis[i])
-            end
-        end
-        error("Variables $(list) already belong a to SOC or RSOC constraint")
-    end
-    # RSOC is the cone: 2tu ≥ ||x||₂^2 ≥ 0, t ≥ 0, u ≥ 0. In Xpress' quadratic form, this is
-    # Σᵢ xᵢ² - 2tu <= 0 and t ≥ 0, u ≥ 0.
+    # RSOC is the cone: 2tu ≥ ||x||₂^2 ≥ 0, t ≥ 0, u ≥ 0. In Xpress' quadratic
+    # form, this is
+    #   Σᵢ xᵢ² - 2tu <= 0 and t ≥ 0, u ≥ 0.
     # First, check the lower bound on t and u.
     for i in 1:2
-        t_info = vs_info[i]
-        lb = _get_variable_lower_bound(model, t_info)
-        if isnan(t_info.lower_bound_if_soc) && lb < 0.0
-            t_info.lower_bound_if_soc = lb
+        lb = _get_variable_lower_bound(model, vs_info[i])
+        if isnan(vs_info[i].lower_bound_if_soc) && lb < 0.0
+            vs_info[i].lower_bound_if_soc = lb
             @checked Lib.XPRSchgbounds(
                 model.inner,
                 Cint(1),
-                Ref(Cint(t_info.column - 1)),
+                Ref(Cint(vs_info[i].column - 1)),
                 Ref(UInt8('L')),
                 Ref(0.0),
             )
         end
-        t_info.num_soc_constraints += 1
+        vs_info[i].num_soc_constraints += 1
     end
     # Now add the quadratic constraint.
-    I = Cint[Cint(vs_info[i].column - 1) for i in 1:N if i != 2]
-    J = Cint[Cint(vs_info[i].column - 1) for i in 1:N if i != 1]
-    V = fill(1.0, N - 1)
+    I = Cint[Cint(vs_info[i].column - 1) for i in 1:s.dimension if i != 2]
+    J = Cint[Cint(vs_info[i].column - 1) for i in 1:s.dimension if i != 1]
+    V = fill(1.0, s.dimension - 1)
     V[1] = -1.0 # just the upper triangle
     @checked Lib.XPRSaddrows(
         model.inner,
@@ -4126,11 +4093,9 @@ function MOI.add_constraint(
         C_NULL,
         C_NULL,
     )
-    ncons = @_invoke Lib.XPRSgetintattrib(
-        model.inner,
-        Lib.XPRS_ORIGINALROWS,
-        _,
-    )::Int
+    ncons = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALROWS, _)::Int,
+    )
     @checked Lib.XPRSaddqmatrix(model.inner, ncons - 1, length(I), I, J, V)
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
@@ -4164,14 +4129,9 @@ function MOI.delete(
     # Reset the lower bound on the `t` variable.
     t_info = _info(model, f.variables[1])
     t_info.num_soc_constraints -= 1
-    if t_info.num_soc_constraints > 0
-        # Don't do anything. There are still SOC associated with this variable.
-        # This should not happen in Xpress
-        error("Error in Xpress' MathOptInteface SOC wrapper.")
-        return
-    elseif isnan(t_info.lower_bound_if_soc)
-        # Don't do anything. It must have a >0 lower bound anyway.
-        return
+    @assert t_info.num_soc_constraints > 0
+    if isnan(t_info.lower_bound_if_soc)
+        return  # Don't do anything. It must have a >0 lower bound anyway.
     end
     # There was a previous bound that we over-wrote, and it must have been
     # < 0 otherwise we wouldn't have needed to overwrite it.
@@ -4204,14 +4164,9 @@ function MOI.delete(
     for i in 1:2
         t_info = _info(model, f.variables[i])
         t_info.num_soc_constraints -= 1
-        if t_info.num_soc_constraints > 0
-            # Don't do anything. There are still SOC associated with this variable.
-            # This should not happen in Xpress
-            error("Error in Xpress' MathOptInteface SOC wrapper.")
-            continue
-        elseif isnan(t_info.lower_bound_if_soc)
-            # Don't do anything. It must have a >0 lower bound anyway.
-            continue
+        @assert t_info.num_soc_constraints > 0
+        if isnan(t_info.lower_bound_if_soc)
+            continue  # Don't do anything. It must have a >0 lower bound anyway.
         end
         # There was a previous bound that we over-wrote, and it must have been
         # < 0 otherwise we wouldn't have needed to overwrite it.
