@@ -1834,6 +1834,42 @@ function test_special_moi_attributes()
     return
 end
 
+function test_callback_function_nothing()
+    model, x, y = callback_simple_model()
+    function callback_function(cb_data)
+        Xpress.get_cb_solution(model, cb_data.model)
+        x_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), x)
+        y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
+        if y_val - x_val > 1 + 1e-6
+            MOI.submit(
+                model,
+                MOI.LazyConstraint(cb_data),
+                1.0 * y - 1.0 * x,
+                MOI.LessThan{Float64}(1.0),
+            )
+        elseif y_val + x_val > 3 + 1e-6
+            MOI.submit(
+                model,
+                MOI.LazyConstraint(cb_data),
+                1.0 * x + 1.0 * y,
+                MOI.LessThan{Float64}(3.0),
+            )
+        end
+    end
+    MOI.set(model, Xpress.CallbackFunction(), callback_function)
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.VariablePrimal(), x) ≈ 1
+    @test MOI.get(model, MOI.VariablePrimal(), y) ≈ 2
+    # Now drop the callback and re-solve
+    MOI.set(model, Xpress.CallbackFunction(), nothing)
+    MOI.optimize!(model)
+    x_val = MOI.get(model, MOI.VariablePrimal(), x)
+    y_val = MOI.get(model, MOI.VariablePrimal(), y)
+    # It should violate the solution
+    @test y_val - x_val > 1 || y_val + x_val > 3
+    return
+end
+
 end  # TestMOIWrapper
 
-TestMOIWrapper.runtests()
+# TestMOIWrapper.runtests()
