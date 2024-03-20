@@ -2134,6 +2134,58 @@ function test_ListOfConstraintTypesPresent_Indicator()
     return
 end
 
+function test_name_to_constraint()
+    model = Xpress.Optimizer()
+    MOI.Utilities.loadfromstring!(
+        model,
+        """
+        variables: t, u, x, y, a, b, c
+        c0: [x, y] in SOS2([1.0, 2.0])
+        c1: [x, y] in SOS1([1.0, 2.0])
+        [x, y] in SOS1([1.0, 2.0])
+        c2: 1.0 * t >= 0.0
+        c3: 1.0 * x * x <= 3.0
+        c4: [t, u, x, y] in RotatedSecondOrderCone(4)
+        c5: [a, b, c] in SecondOrderCone(3)
+        d: 1.0 * u >= 0.0
+        d: 2.0 * u >= 0.0
+        """,
+    )
+    @test MOI.get(model, MOI.ConstraintIndex, "foo") === nothing
+    @test_throws ErrorException MOI.get(model, MOI.ConstraintIndex, "d")
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c0"),
+        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SOS2{Float64}}
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c1"),
+        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SOS1{Float64}}
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c2"),
+        MOI.ConstraintIndex{
+            MOI.ScalarAffineFunction{Float64},
+            MOI.GreaterThan{Float64},
+        }
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c3"),
+        MOI.ConstraintIndex{
+            MOI.ScalarQuadraticFunction{Float64},
+            MOI.LessThan{Float64},
+        },
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c4"),
+        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.RotatedSecondOrderCone},
+    )
+    @test isa(
+        MOI.get(model, MOI.ConstraintIndex, "c5"),
+        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SecondOrderCone},
+    )
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()

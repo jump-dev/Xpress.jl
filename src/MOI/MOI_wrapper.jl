@@ -1513,40 +1513,6 @@ function MOI.add_constraint(
     return index
 end
 
-function MOI.add_constraints(
-    model::Optimizer,
-    f::Vector{MOI.VariableIndex},
-    s::Vector{S},
-) where {S<:SCALAR_SETS}
-    for fi in f
-        info = _info(model, fi)
-        if S <: MOI.LessThan{Float64}
-            _throw_if_existing_upper(info.bound, info.type, S, fi)
-            info.bound =
-                info.bound == GREATER_THAN ? LESS_AND_GREATER_THAN : LESS_THAN
-        elseif S <: MOI.GreaterThan{Float64}
-            _throw_if_existing_lower(info.bound, info.type, S, fi)
-            info.bound =
-                info.bound == LESS_THAN ? LESS_AND_GREATER_THAN : GREATER_THAN
-        elseif S <: MOI.EqualTo{Float64}
-            _throw_if_existing_lower(info.bound, info.type, S, fi)
-            _throw_if_existing_upper(info.bound, info.type, S, fi)
-            info.bound = EQUAL_TO
-        else
-            @assert S <: MOI.Interval{Float64}
-            _throw_if_existing_lower(info.bound, info.type, S, fi)
-            _throw_if_existing_upper(info.bound, info.type, S, fi)
-            info.bound = INTERVAL
-        end
-    end
-    indices =
-        [MOI.ConstraintIndex{MOI.VariableIndex,eltype(s)}(fi.value) for fi in f]
-    for (index, s) in zip(indices, s)
-        MOI.set(model, MOI.ConstraintSet(), index, s)
-    end
-    return indices
-end
-
 function MOI.delete(
     model::Optimizer,
     c::MOI.ConstraintIndex{MOI.VariableIndex,MOI.LessThan{Float64}},
@@ -2507,34 +2473,20 @@ function _rebuild_name_to_constraint_index_util(model::Optimizer, dict)
         elseif haskey(model.name_to_constraint_index, info.name)
             model.name_to_constraint_index[info.name] = nothing
         else
-            model.name_to_constraint_index[info.name] = if info.type == AFFINE
-                MOI.ConstraintIndex{
-                    MOI.ScalarAffineFunction{Float64},
-                    typeof(info.set),
-                }(
-                    index,
-                )
+            F = if info.type == AFFINE
+                MOI.ScalarAffineFunction{Float64}
             elseif info.type == QUADRATIC
-                MOI.ConstraintIndex{
-                    MOI.ScalarQuadraticFunction{Float64},
-                    typeof(info.set),
-                }(
-                    index,
-                )
+                MOI.ScalarQuadraticFunction{Float64}
             elseif info.type == INDICATOR
-                MOI.ConstraintIndex{
-                    MOI.VectorAffineFunction{Float64},
-                    typeof(info.set),
-                }(
-                    index,
-                )
+                MOI.VectorAffineFunction{Float64}
             elseif info.type == SOC
-                MOI.ConstraintIndex{MOI.VectorOfVariables,typeof(info.set)}(index)
-            elseif info.type == RSOC
-                MOI.ConstraintIndex{MOI.VectorOfVariables,typeof(info.set)}(index)
+                MOI.VectorOfVariables
             else
-                error("Unknown constraint type $(info.type)")
+                @assert info.type == RSOC
+                MOI.VectorOfVariables
             end
+            model.name_to_constraint_index[info.name] =
+                MOI.ConstraintIndex{F,typeof(info.set)}(index)
         end
     end
     return
