@@ -28,7 +28,8 @@ const libxprs = joinpath(
 include("Lib/Lib.jl")
 include("helper.jl")
 include("api.jl")
-include("xprs_callbacks.jl")
+include("MOI/MOI_wrapper.jl")
+include("MOI/MOI_callbacks.jl")
 
 function _get_xpauthpath(; verbose::Bool)
     candidates = String[pwd(), dirname(libxprs)]
@@ -85,9 +86,6 @@ function initialize()
     return
 end
 
-include("MOI/MOI_wrapper.jl")
-include("MOI/MOI_callbacks.jl")
-
 function __init__()
     if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT") &&
        get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") != "true"
@@ -95,5 +93,7 @@ function __init__()
     end
     return
 end
+
+export CallbackData
 
 end  # Xpress

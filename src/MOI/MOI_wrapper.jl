@@ -49,14 +49,7 @@ mutable struct VariableInfo
     type::VariableType
     start::Union{Float64,Nothing}
     name::String
-    # Storage for constraint names associated with variables because Xpress can
-    # only store names for variables and proper constraints. We can perform an
-    # optimization and only store three strings for the constraint names
-    # because, at most, there can be three VariableIndex constraints, e.g.,
-    # LessThan, GreaterThan, and Integer.
-    lessthan_name::String
-    greaterthan_interval_or_equalto_name::String
-    type_constraint_name::String
+
     # Storage for the lower bound if the variable is the `t` variable in a
     # second order cone.
     lower_bound_if_soc::Float64
@@ -72,9 +65,6 @@ mutable struct VariableInfo
             NONE,
             CONTINUOUS,
             nothing,
-            "",
-            "",
-            "",
             "",
             NaN,
             0,
@@ -480,22 +470,34 @@ end
     MOI.RawOptimizerAttribute
 =#
 
-MOI.supports(::Optimizer, ::MOI.RawOptimizerAttribute) = true
+function MOI.supports(model::Optimizer, attr::MOI.RawOptimizerAttribute)
+    if attr.name in (
+        "logfile",
+        "MOI_POST_SOLVE",
+        "MOI_IGNORE_START",
+        "MOI_WARNINGS",
+        "MOI_SOLVE_MODE",
+        "XPRESS_WARNING_WINDOWS",
+    )
+        return true
+    end
+    p_id, p_type = Ref{Cint}(), Ref{Cint}()
+    ret = Lib.XPRSgetcontrolinfo(model.inner, attr.name, p_id, p_type)
+    if ret != 0
+        ret = Lib.XPRSgetattribinfo(model.inner, attr.name, p_id, p_type)
+    end
+    p_type_fail = p_type[] in (Lib.XPRS_TYPE_NOTDEFINED, Lib.XPRS_TYPE_INT64)
+    return ret == 0 && !p_type_fail
+end
 
 function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
-    # Always store value in params dictionary when setting
-    # This is because when calling `empty!` we create a new XpressProblem and
-    # and want to set all the raw parameters and attributes again.
-    model.params[param] = value
-    if param == MOI.RawOptimizerAttribute("logfile")
-        if value == ""
-            # disable log file
-            @checked Lib.XPRSsetlogfile(model.inner, C_NULL)
-        else
-            @checked Lib.XPRSsetlogfile(model.inner, value)
-        end
+    if !MOI.supports(model, param)
+        throw(MOI.UnsupportedAttribute(param))
+    elseif param == MOI.RawOptimizerAttribute("logfile")
         model.inner.logfile = value
         reset_message_callback(model)
+        value = ifelse(value == "", C_NULL, value)
+        @checked Lib.XPRSsetlogfile(model.inner, value)
     elseif param == MOI.RawOptimizerAttribute("MOI_POST_SOLVE")
         model.post_solve = value
     elseif param == MOI.RawOptimizerAttribute("MOI_IGNORE_START")
@@ -515,6 +517,10 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
     else
         setcontrol!(model.inner, param.name, value)
     end
+    # Always store value in params dictionary when setting. This is because when
+    # calling `MOI.empty!` we create a new XpressProblem and want to set all the
+    # raw parameters and attributes again.
+    model.params[param] = value
     return
 end
 
@@ -531,7 +537,9 @@ function reset_message_callback(model)
 end
 
 function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
-    if param == MOI.RawOptimizerAttribute("logfile")
+    if !MOI.supports(model, param)
+        throw(MOI.UnsupportedAttribute(param))
+    elseif param == MOI.RawOptimizerAttribute("logfile")
         return model.inner.logfile
     elseif param == MOI.RawOptimizerAttribute("MOI_IGNORE_START")
         return model.ignore_start
@@ -625,13 +633,13 @@ function MOI.get(
 end
 
 function _indices_and_coefficients(
-    indices::AbstractVector{<:Integer},
-    coefficients::AbstractVector{Float64},
+    indices::AbstractVector{Cint},
+    coefficients::AbstractVector{Cdouble},
     model::Optimizer,
     f::MOI.ScalarAffineFunction{Float64},
 )
     for (i, term) in enumerate(f.terms)
-        indices[i] = _info(model, term.variable).column
+        indices[i] = Cint(_info(model, term.variable).column - 1)
         coefficients[i] = term.coefficient
     end
     return indices, coefficients
@@ -651,15 +659,14 @@ end
 
 function _indices_and_coefficients_indicator(
     model::Optimizer,
-    f::MOI.VectorAffineFunction,
+    f::MOI.VectorAffineFunction{Float64},
 )
-    nnz = length(f.terms) - 1
-    indices = Vector{Cint}(undef, nnz)
-    coefficients = Vector{Float64}(undef, nnz)
+    indices = Vector{Cint}(undef, length(f.terms) - 1)
+    coefficients = Vector{Float64}(undef, length(f.terms) - 1)
     i = 1
     for fi in f.terms
         if fi.output_index != 1
-            indices[i] = _info(model, fi.scalar_term.variable).column
+            indices[i] = Cint(_info(model, fi.scalar_term.variable).column - 1)
             coefficients[i] = fi.scalar_term.coefficient
             i += 1
         end
@@ -674,11 +681,11 @@ function _indices_and_coefficients(
     indices::AbstractVector{Cint},
     coefficients::AbstractVector{Float64},
     model::Optimizer,
-    f::MOI.ScalarQuadraticFunction,
+    f::MOI.ScalarQuadraticFunction{Float64},
 )
     for (i, term) in enumerate(f.quadratic_terms)
-        I[i] = _info(model, term.variable_1).column
-        J[i] = _info(model, term.variable_2).column
+        I[i] = Cint(_info(model, term.variable_1).column - 1)
+        J[i] = Cint(_info(model, term.variable_2).column - 1)
         V[i] = term.coefficient
         # MOI    represents objective as 0.5 x' Q x
         # Example: obj = 2x^2 + x*y + y^2
@@ -703,7 +710,7 @@ function _indices_and_coefficients(
         #     Only for constraints, Xpress -> MOI => multiply all by 2
     end
     for (i, term) in enumerate(f.affine_terms)
-        indices[i] = _info(model, term.variable).column
+        indices[i] = Cint(_info(model, term.variable).column - 1)
         coefficients[i] = term.coefficient
     end
     return
@@ -1188,11 +1195,9 @@ function MOI.set(
         _indices_and_coefficients(model, f)
     obj = zeros(length(model.variable_info))
     for (i, c) in zip(affine_indices, affine_coefficients)
-        obj[i] = c
+        obj[i+1] = c
     end
-    I .-= 1
-    J .-= 1
-    @checked Lib.XPRSchgmqobj(model.inner, Cint(length(I)), I, J, V)
+    @checked Lib.XPRSchgmqobj(model.inner, length(I), I, J, V)
     model.objective_type = SCALAR_QUADRATIC
     model.is_objective_set = true
     return
@@ -1498,40 +1503,6 @@ function MOI.add_constraint(
     return index
 end
 
-function MOI.add_constraints(
-    model::Optimizer,
-    f::Vector{MOI.VariableIndex},
-    s::Vector{S},
-) where {S<:SCALAR_SETS}
-    for fi in f
-        info = _info(model, fi)
-        if S <: MOI.LessThan{Float64}
-            _throw_if_existing_upper(info.bound, info.type, S, fi)
-            info.bound =
-                info.bound == GREATER_THAN ? LESS_AND_GREATER_THAN : LESS_THAN
-        elseif S <: MOI.GreaterThan{Float64}
-            _throw_if_existing_lower(info.bound, info.type, S, fi)
-            info.bound =
-                info.bound == LESS_THAN ? LESS_AND_GREATER_THAN : GREATER_THAN
-        elseif S <: MOI.EqualTo{Float64}
-            _throw_if_existing_lower(info.bound, info.type, S, fi)
-            _throw_if_existing_upper(info.bound, info.type, S, fi)
-            info.bound = EQUAL_TO
-        else
-            @assert S <: MOI.Interval{Float64}
-            _throw_if_existing_lower(info.bound, info.type, S, fi)
-            _throw_if_existing_upper(info.bound, info.type, S, fi)
-            info.bound = INTERVAL
-        end
-    end
-    indices =
-        [MOI.ConstraintIndex{MOI.VariableIndex,eltype(s)}(fi.value) for fi in f]
-    for (index, s) in zip(indices, s)
-        MOI.set(model, MOI.ConstraintSet(), index, s)
-    end
-    return indices
-end
-
 function MOI.delete(
     model::Optimizer,
     c::MOI.ConstraintIndex{MOI.VariableIndex,MOI.LessThan{Float64}},
@@ -1545,7 +1516,6 @@ function MOI.delete(
     else
         info.bound = NONE
     end
-    info.lessthan_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
         @checked Lib.XPRSchgcoltype(
@@ -1777,7 +1747,6 @@ function MOI.delete(
     else
         info.bound = NONE
     end
-    info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
         @checked Lib.XPRSchgcoltype(
@@ -1801,7 +1770,6 @@ function MOI.delete(
     _set_variable_upper_bound(model, info, Inf)
     info.previous_upper_bound = Inf
     info.bound = NONE
-    info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
         @checked Lib.XPRSchgcoltype(
@@ -1825,7 +1793,6 @@ function MOI.delete(
     _set_variable_upper_bound(model, info, Inf)
     info.previous_upper_bound = Inf
     info.bound = NONE
-    info.greaterthan_interval_or_equalto_name = ""
     model.name_to_constraint_index = nothing
     if info.type == BINARY
         @checked Lib.XPRSchgcoltype(
@@ -1983,7 +1950,6 @@ function MOI.delete(
         _set_variable_upper_bound(model, info, info.previous_upper_bound)
     end
     info.type = CONTINUOUS
-    info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
     return
 end
@@ -2026,7 +1992,6 @@ function MOI.delete(
         Ref(UInt8('C')),
     )
     info.type = CONTINUOUS
-    info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
     return
 end
@@ -2078,7 +2043,6 @@ function MOI.delete(
     _set_variable_upper_bound(model, info, Inf)
     info.semi_lower_bound = NaN
     info.type = CONTINUOUS
-    info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
     return
 end
@@ -2133,7 +2097,6 @@ function MOI.delete(
     _set_variable_upper_bound(model, info, Inf)
     info.semi_lower_bound = NaN
     info.type = CONTINUOUS
-    info.type_constraint_name = ""
     model.name_to_constraint_index = nothing
     return
 end
@@ -2197,12 +2160,9 @@ function MOI.add_constraint(
     f::MOI.ScalarAffineFunction{Float64},
     s::SIMPLE_SCALAR_SETS,
 )
+    F, S = typeof(f), typeof(s)
     if !iszero(f.constant)
-        throw(
-            MOI.ScalarFunctionConstantNotZero{Float64,typeof(f),typeof(s)}(
-                f.constant,
-            ),
-        )
+        throw(MOI.ScalarFunctionConstantNotZero{Float64,F,S}(f.constant))
     end
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
@@ -2211,16 +2171,16 @@ function MOI.add_constraint(
     sense, rhs = _sense_and_rhs(s)
     @checked Lib.XPRSaddrows(
         model.inner,
-        1,#length(_drhs),
-        Cint(length(indices)),#Cint(length(_mclind)),
-        Ref{UInt8}(sense),#_srowtype,
-        Ref(rhs),#_drhs,
-        C_NULL,#_drng,
-        Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}),
-        indices .-= 1,#Cint.(_mclind::Vector{Int}),
-        coefficients,#_dmatval
+        1,                  # length(_drhs)
+        length(indices),    # length(_mclind)
+        Ref{UInt8}(sense),  # _srowtype
+        Ref(rhs),           # _drhs
+        C_NULL,             # _drng
+        Ref{Cint}(0),       # _mrstart::Vector{Int}
+        indices,            # _mclind::Vector{Int}
+        coefficients,       # _dmatval
     )
-    return MOI.ConstraintIndex{typeof(f),typeof(s)}(model.last_constraint_index)
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
 
 function MOI.add_constraints(
@@ -2234,20 +2194,17 @@ function MOI.add_constraints(
     canonicalized_functions = MOI.Utilities.canonical.(f)
     # First pass: compute number of non-zeros to allocate space.
     nnz = 0
+    F, S = eltype(f), eltype(s)
     for fi in canonicalized_functions
         if !iszero(fi.constant)
-            throw(
-                MOI.ScalarFunctionConstantNotZero{Float64,eltype(f),eltype(s)}(
-                    fi.constant,
-                ),
-            )
+            throw(MOI.ScalarFunctionConstantNotZero{Float64,F,S}(fi.constant))
         end
         nnz += length(fi.terms)
     end
     # Initialize storage
-    indices = Vector{MOI.ConstraintIndex{eltype(f),eltype(s)}}(undef, length(f))
+    indices = Vector{MOI.ConstraintIndex{F,S}}(undef, length(f))
     row_starts = Vector{Cint}(undef, length(f) + 1)
-    row_starts[1] = 1
+    row_starts[1] = 0
     columns = Vector{Cint}(undef, nnz)
     coefficients = Vector{Float64}(undef, nnz)
     senses = Vector{Cchar}(undef, length(f))
@@ -2257,29 +2214,27 @@ function MOI.add_constraints(
         senses[i], rhss[i] = _sense_and_rhs(si)
         row_starts[i+1] = row_starts[i] + length(fi.terms)
         _indices_and_coefficients(
-            view(columns, row_starts[i]:row_starts[i+1]-1),
-            view(coefficients, row_starts[i]:row_starts[i+1]-1),
+            view(columns, row_starts[i]+1:row_starts[i+1]),
+            view(coefficients, row_starts[i]+1:row_starts[i+1]),
             model,
             fi,
         )
         model.last_constraint_index += 1
-        indices[i] = MOI.ConstraintIndex{eltype(f),eltype(s)}(
-            model.last_constraint_index,
-        )
+        indices[i] = MOI.ConstraintIndex{F,S}(model.last_constraint_index)
         model.affine_constraint_info[model.last_constraint_index] =
             ConstraintInfo(length(model.affine_constraint_info) + 1, si, AFFINE)
     end
     pop!(row_starts)
     @checked Lib.XPRSaddrows(
         model.inner,
-        length(rhss),#length(_drhs),
-        Cint(length(columns)),#Cint(length(_mclind)),
-        senses,#_srowtype,
-        rhss,#_drhs,
-        C_NULL,#_drng,
-        row_starts .-= 1,#Cint.(_mrstart::Vector{Int}),
-        columns .-= 1,#Cint.(_mclind::Vector{Int}),
-        coefficients,#_dmatval
+        length(rhss),     # length(_drhs)
+        length(columns),  # length(_mclind)
+        senses,           # _srowtype
+        rhss,             # _drhs
+        C_NULL,           # _drng
+        row_starts,       # _mrstart
+        columns,          # _mclind
+        coefficients,     # _dmatval
     )
     return indices
 end
@@ -2489,7 +2444,6 @@ function _rebuild_name_to_constraint_index(model::Optimizer)
         model.sos_constraint_info,
         MOI.VectorOfVariables,
     )
-    _rebuild_name_to_constraint_index_variables(model)
     return
 end
 
@@ -2500,34 +2454,20 @@ function _rebuild_name_to_constraint_index_util(model::Optimizer, dict)
         elseif haskey(model.name_to_constraint_index, info.name)
             model.name_to_constraint_index[info.name] = nothing
         else
-            model.name_to_constraint_index[info.name] = if info.type == AFFINE
-                MOI.ConstraintIndex{
-                    MOI.ScalarAffineFunction{Float64},
-                    typeof(info.set),
-                }(
-                    index,
-                )
+            F = if info.type == AFFINE
+                MOI.ScalarAffineFunction{Float64}
             elseif info.type == QUADRATIC
-                MOI.ConstraintIndex{
-                    MOI.ScalarQuadraticFunction{Float64},
-                    typeof(info.set),
-                }(
-                    index,
-                )
+                MOI.ScalarQuadraticFunction{Float64}
             elseif info.type == INDICATOR
-                MOI.ConstraintIndex{
-                    MOI.VectorAffineFunction{Float64},
-                    typeof(info.set),
-                }(
-                    index,
-                )
+                MOI.VectorAffineFunction{Float64}
             elseif info.type == SOC
-                MOI.ConstraintIndex{MOI.VectorOfVariables,typeof(info.set)}(index)
-            elseif info.type == RSOC
-                MOI.ConstraintIndex{MOI.VectorOfVariables,typeof(info.set)}(index)
+                MOI.VectorOfVariables
             else
-                error("Unknown constraint type $(info.type)")
+                @assert info.type == RSOC
+                MOI.VectorOfVariables
             end
+            model.name_to_constraint_index[info.name] =
+                MOI.ConstraintIndex{F,typeof(info.set)}(index)
         end
     end
     return
@@ -2542,39 +2482,6 @@ function _rebuild_name_to_constraint_index_util(model::Optimizer, dict, F)
         else
             model.name_to_constraint_index[info.name] =
                 MOI.ConstraintIndex{F,typeof(info.set)}(index)
-        end
-    end
-    return
-end
-
-function _rebuild_name_to_constraint_index_variables(model::Optimizer)
-    for (key, info) in model.variable_info
-        for S in (
-            MOI.LessThan{Float64},
-            MOI.GreaterThan{Float64},
-            MOI.EqualTo{Float64},
-            MOI.Interval{Float64},
-            MOI.ZeroOne,
-            MOI.Integer,
-            MOI.Semicontinuous{Float64},
-            MOI.Semiinteger{Float64},
-        )
-            constraint_name = ""
-            if info.bound in _bound_enums(S)
-                constraint_name =
-                    S == MOI.LessThan{Float64} ? info.lessthan_name :
-                    info.greaterthan_interval_or_equalto_name
-            elseif info.type in _type_enums(S)
-                constraint_name = info.type_constraint_name
-            end
-            if constraint_name == ""
-                continue
-            elseif haskey(model.name_to_constraint_index, constraint_name)
-                model.name_to_constraint_index[constraint_name] = nothing
-            else
-                model.name_to_constraint_index[constraint_name] =
-                    MOI.ConstraintIndex{MOI.VariableIndex,S}(key.value)
-            end
         end
     end
     return
@@ -2637,14 +2544,14 @@ function MOI.add_constraint(
     sense, rhs = _sense_and_rhs(is.set)
     @checked Lib.XPRSaddrows(
         model.inner,
-        1,#length(_drhs),
-        Cint(length(indices)),#Cint(length(_mclind)),
-        Ref{UInt8}(sense),#_srowtype,
-        Ref(rhs - cte),#_drhs,
-        C_NULL,#_drng,
-        Ref{Cint}(0),#Cint.(_mrstart::Vector{Int}),
-        indices .-= 1,#Cint.(_mrwind::Vector{Int}),
-        coefficients,#_dmatval
+        1,                  # length(_drhs)
+        length(indices),    # length(_mclind)
+        Ref{UInt8}(sense),  # _srowtype
+        Ref(rhs - cte),     # _drhs
+        C_NULL,             # _drng
+        Ref{Cint}(0),       # _mrstart
+        indices,            # _mrwind
+        coefficients,       # _dmatval
     )
     ncons = @_invoke Lib.XPRSgetintattrib(
         model.inner,
@@ -2658,10 +2565,8 @@ function MOI.add_constraint(
         Ref{Cint}(con_value - 1),
         Ref{Cint}(indicator_activation(Val{A})),
     )
-    index = MOI.ConstraintIndex{MOI.VectorAffineFunction{T},typeof(is)}(
-        model.last_constraint_index,
-    )
-    return index
+    F, S = MOI.VectorAffineFunction{T}, typeof(is)
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
 
 function MOI.get(
@@ -2713,29 +2618,24 @@ function MOI.add_constraint(
     f::MOI.ScalarQuadraticFunction{Float64},
     s::SCALAR_SETS,
 )
+    F, S = typeof(f), typeof(s)
     if !iszero(f.constant)
-        throw(
-            MOI.ScalarFunctionConstantNotZero{Float64,typeof(f),typeof(s)}(
-                f.constant,
-            ),
-        )
+        throw(MOI.ScalarFunctionConstantNotZero{Float64,F,S}(f.constant))
     end
     sense, rhs = _sense_and_rhs(s)
     indices, coefficients, I, J, V = _indices_and_coefficients(model, f)
+    V .*= 0.5  # only for constraints
     @checked Lib.XPRSaddrows(
         model.inner,
         1,
-        Cint(length(indices)),
+        length(indices),
         Ref{UInt8}(sense),
         Ref(rhs),
         C_NULL,
         Ref{Cint}(0),
-        indices .-= 1,
+        indices,
         coefficients,
     )
-    V .*= 0.5 # only for constraints
-    I .-= 1
-    J .-= 1
     ncons = @_invoke Lib.XPRSgetintattrib(
         model.inner,
         Lib.XPRS_ORIGINALROWS,
@@ -2752,9 +2652,7 @@ function MOI.add_constraint(
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, QUADRATIC)
-    return MOI.ConstraintIndex{MOI.ScalarQuadraticFunction{Float64},typeof(s)}(
-        model.last_constraint_index,
-    )
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
 
 function MOI.get(
@@ -3113,150 +3011,114 @@ function _throw_if_optimize_in_progress(model, attr)
     return
 end
 
+const _MIPSTATUS = Dict(
+    Lib.XPRS_MIP_NOT_LOADED => (
+        "0 Problem has not been loaded ( XPRS_MIP_NOT_LOADED).",
+        MOI.OPTIMIZE_NOT_CALLED,
+    ),
+    Lib.XPRS_MIP_LP_NOT_OPTIMAL => (
+        "1 Global search incomplete - the initial continuous relaxation has not been solved and no integer solution has been found ( XPRS_MIP_LP_NOT_OPTIMAL).",
+        MOI.OTHER_ERROR,
+    ),
+    Lib.XPRS_MIP_LP_OPTIMAL => (
+        "2 Global search incomplete - the initial continuous relaxation has been solved and no integer solution has been found ( XPRS_MIP_LP_OPTIMAL).",
+        MOI.OTHER_ERROR,
+    ),
+    Lib.XPRS_MIP_NO_SOL_FOUND => (
+        "3 Global search incomplete - no integer solution found ( XPRS_MIP_NO_SOL_FOUND).",
+        MOI.OTHER_ERROR,
+    ),
+    Lib.XPRS_MIP_SOLUTION => (
+        "4 Global search incomplete - an integer solution has been found ( XPRS_MIP_SOLUTION).",
+        MOI.LOCALLY_SOLVED,
+    ),
+    Lib.XPRS_MIP_INFEAS => (
+        "5 Global search complete - no integer solution found ( XPRS_MIP_INFEAS).",
+        MOI.INFEASIBLE,
+    ),
+    Lib.XPRS_MIP_OPTIMAL => (
+        "6 Global search complete - integer solution found ( XPRS_MIP_OPTIMAL).",
+        MOI.OPTIMAL,
+    ),
+    Lib.XPRS_MIP_UNBOUNDED => (
+        "7 Global search incomplete - the initial continuous relaxation was found to be unbounded. A solution may have been found ( XPRS_MIP_UNBOUNDED).",
+        MOI.INFEASIBLE_OR_UNBOUNDED,
+    ),
+)
+
+const _LPSTATUS = Dict(
+    Lib.XPRS_LP_UNSTARTED =>
+        ("0 Unstarted ( XPRS_LP_UNSTARTED).", MOI.OPTIMIZE_NOT_CALLED),
+    Lib.XPRS_LP_OPTIMAL => ("1 Optimal ( XPRS_LP_OPTIMAL).", MOI.OPTIMAL),
+    Lib.XPRS_LP_INFEAS =>
+        ("2 Infeasible ( XPRS_LP_INFEAS).", MOI.INFEASIBLE),
+    Lib.XPRS_LP_CUTOFF => (
+        "3 Objective worse than cutoff ( XPRS_LP_CUTOFF).",
+        MOI.OTHER_LIMIT,
+    ),
+    Lib.XPRS_LP_UNFINISHED =>
+        ("4 Unfinished ( XPRS_LP_UNFINISHED).", MOI.OTHER_ERROR),
+    Lib.XPRS_LP_UNBOUNDED =>
+        ("5 Unbounded ( XPRS_LP_UNBOUNDED).", MOI.DUAL_INFEASIBLE),
+    Lib.XPRS_LP_CUTOFF_IN_DUAL =>
+        ("6 Cutoff in dual ( XPRS_LP_CUTOFF_IN_DUAL).", MOI.OTHER_LIMIT),
+    Lib.XPRS_LP_UNSOLVED => (
+        "7 Problem could not be solved due to numerical issues. ( XPRS_LP_UNSOLVED).",
+        MOI.NUMERICAL_ERROR,
+    ),
+    Lib.XPRS_LP_NONCONVEX => (
+        "8 Problem contains quadratic data, which is not convex ( XPRS_LP_NONCONVEX).",
+        MOI.INVALID_OPTION,
+    ),
+)
+
+const _STOPSTATUS = Dict(
+    Lib.XPRS_STOP_NONE =>
+        ("no interruption - the solve completed normally", MOI.OPTIMAL),
+    Lib.XPRS_STOP_TIMELIMIT => ("time limit hit", MOI.TIME_LIMIT),
+    Lib.XPRS_STOP_CTRLC => ("control C hit", MOI.INTERRUPTED),
+    Lib.XPRS_STOP_NODELIMIT => ("node limit hit", MOI.NODE_LIMIT),
+    Lib.XPRS_STOP_ITERLIMIT => ("iteration limit hit", MOI.ITERATION_LIMIT),
+    Lib.XPRS_STOP_MIPGAP => ("MIP gap is sufficiently small", MOI.OPTIMAL),
+    Lib.XPRS_STOP_SOLLIMIT => ("solution limit hit", MOI.SOLUTION_LIMIT),
+    Lib.XPRS_STOP_USER => ("user interrupt.", MOI.INTERRUPTED),
+)
+
 function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
     _throw_if_optimize_in_progress(model, attr)
     stop =
         @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
-    stop_str = STOPSTATUS_STRING[stop]
     if is_mip(model)
         stat = @_invoke Lib.XPRSgetintattrib(
             model.inner,
             Lib.XPRS_MIPSTATUS,
             _,
         )::Int
-        return MIPSTATUS_STRING[stat] * " - " * stop_str
+        return _MIPSTATUS[stat][1] * " - " * _STOPSTATUS[stop][1]
     else
         stat = @_invoke Lib.XPRSgetintattrib(
             model.inner,
             Lib.XPRS_LPSTATUS,
             _,
         )::Int
-        return LPSTATUS_STRING[stat] * " - " * stop_str
+        return _LPSTATUS[stat][1] * " - " * _STOPSTATUS[stop][1]
     end
 end
 
 function _cache_termination_status(model::Optimizer)
     stop =
         @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
-    if stop != Lib.XPRS_STOP_NONE
-        if stop == Lib.XPRS_STOP_TIMELIMIT
-            return MOI.TIME_LIMIT
-        elseif stop == Lib.XPRS_STOP_CTRLC
-            return MOI.INTERRUPTED
-        elseif stop == Lib.XPRS_STOP_NODELIMIT
-            return MOI.NODE_LIMIT
-        elseif stop == Lib.XPRS_STOP_ITERLIMIT
-            return MOI.ITERATION_LIMIT
-        elseif stop == Lib.XPRS_STOP_MIPGAP
-            stat = Lib.XPRS_MIP_NOT_LOADED
-            if is_mip(model)
-                stat = @_invoke Lib.XPRSgetintattrib(
-                    model.inner,
-                    Lib.XPRS_MIPSTATUS,
-                    _,
-                )::Int
-                if stat == Lib.XPRS_MIP_OPTIMAL
-                    return MOI.OPTIMAL
-                else
-                    return MOI.OTHER_ERROR
-                end
-            else
-                return MOI.OTHER_ERROR
-            end
-        elseif stop == Lib.XPRS_STOP_SOLLIMIT
-            return MOI.SOLUTION_LIMIT
-        else
-            @assert stop == Lib.XPRS_STOP_USER
-            return MOI.INTERRUPTED
-        end
-        #=
-        XPRS_STOP_NONE no interruption - the solve completed normally
-        XPRS_STOP_TIMELIMIT time limit hit
-        XPRS_STOP_CTRLC control C hit
-        XPRS_STOP_NODELIMIT node limit hit
-        XPRS_STOP_ITERLIMIT iteration limit hit
-        XPRS_STOP_MIPGAP MIP gap is sufficiently small
-        XPRS_STOP_SOLLIMIT solution limit hit
-        XPRS_STOP_USER user interrupt
-        =#
-    end # else:
-    if is_mip(model)
-        stat = @_invoke Lib.XPRSgetintattrib(
-            model.inner,
-            Lib.XPRS_MIPSTATUS,
-            _,
-        )::Int
-        if stat == Lib.XPRS_MIP_NOT_LOADED
-            return MOI.OPTIMIZE_NOT_CALLED
-        elseif stat == Lib.XPRS_MIP_LP_NOT_OPTIMAL # is a STOP
-            return MOI.OTHER_ERROR
-        elseif stat == Lib.XPRS_MIP_LP_OPTIMAL # is a STOP
-            return MOI.OTHER_ERROR
-        elseif stat == Lib.XPRS_MIP_NO_SOL_FOUND # is a STOP
-            return MOI.OTHER_ERROR
-        elseif stat == Lib.XPRS_MIP_SOLUTION # is a STOP
-            return MOI.LOCALLY_SOLVED
-        elseif stat == Lib.XPRS_MIP_INFEAS
-            return MOI.INFEASIBLE
-        elseif stat == Lib.XPRS_MIP_OPTIMAL
-            return MOI.OPTIMAL
-        else
-            @assert stat == Lib.XPRS_MIP_UNBOUNDED
-            return MOI.INFEASIBLE_OR_UNBOUNDED #? DUAL_INFEASIBLE?
-        end
-        #=
-        0 Problem has not been loaded (XPRS_MIP_NOT_LOADED).
-        1 Global search incomplete - the initial continuous relaxation has not been solved and
-            no integer solution has been found (XPRS_MIP_LP_NOT_OPTIMAL).
-        2 Global search incomplete - the initial continuous relaxation has been solved and no
-            integer solution has been found (XPRS_MIP_LP_OPTIMAL).
-        3 Global search incomplete - no integer solution found (XPRS_MIP_NO_SOL_FOUND).
-        4 Global search incomplete - an integer solution has been found
-            (XPRS_MIP_SOLUTION).
-        5 Global search complete - no integer solution found (XPRS_MIP_INFEAS).
-        6 Global search complete - integer solution found (XPRS_MIP_OPTIMAL).
-        7 Global search incomplete - the initial continuous relaxation was found to be
-            unbounded. A solution may have been found (XPRS_MIP_UNBOUNDED).
-        =#
+    if stop != Lib.XPRS_STOP_NONE && stop != Lib.XPRS_STOP_MIPGAP
+        return _STOPSTATUS[stop][2]
+    elseif is_mip(model)
+        mipstatus = Lib.XPRS_MIPSTATUS
+        stat = @_invoke Lib.XPRSgetintattrib(model.inner, mipstatus, _)::Int
+        return _MIPSTATUS[stat][2]
     else
-        stat = @_invoke Lib.XPRSgetintattrib(
-            model.inner,
-            Lib.XPRS_LPSTATUS,
-            _,
-        )::Int
-        if stat == Lib.XPRS_LP_UNSTARTED
-            return MOI.OPTIMIZE_NOT_CALLED
-        elseif stat == Lib.XPRS_LP_OPTIMAL
-            return MOI.OPTIMAL
-        elseif stat == Lib.XPRS_LP_INFEAS
-            return MOI.INFEASIBLE
-        elseif stat == Lib.XPRS_LP_CUTOFF
-            return MOI.OTHER_LIMIT
-        elseif stat == Lib.XPRS_LP_UNFINISHED # is a STOP
-            return MOI.OTHER_ERROR
-        elseif stat == Lib.XPRS_LP_UNBOUNDED
-            return MOI.DUAL_INFEASIBLE
-        elseif stat == Lib.XPRS_LP_CUTOFF_IN_DUAL
-            return MOI.OTHER_LIMIT
-        elseif stat == Lib.XPRS_LP_UNSOLVED
-            return MOI.NUMERICAL_ERROR
-        else
-            @assert stat == Lib.XPRS_LP_NONCONVEX
-            return MOI.INVALID_OPTION
-        end
-        #=
-        0 Unstarted (XPRS_LP_UNSTARTED).
-        1 Optimal (XPRS_LP_OPTIMAL).
-        2 Infeasible (XPRS_LP_INFEAS).
-        3 Objective worse than cutoff (XPRS_LP_CUTOFF).
-        4 Unfinished (XPRS_LP_UNFINISHED).
-        5 Unbounded (XPRS_LP_UNBOUNDED).
-        6 Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL).
-        7 Problem could not be solved due to numerical issues. (XPRS_LP_UNSOLVED).
-        8 Problem contains quadratic data, which is not convex (XPRS_LP_NONCONVEX)
-        =#
+        lpstatus = Lib.XPRS_LPSTATUS
+        stat = @_invoke Lib.XPRSgetintattrib(model.inner, lpstatus, _)::Int
+        return _LPSTATUS[stat][2]
     end
-    return MOI.OTHER_ERROR
 end
 
 function MOI.get(model::Optimizer, attr::MOI.TerminationStatus)
@@ -3871,7 +3733,7 @@ function MOI.get(model::Optimizer, ::MOI.ListOfConstraintTypesPresent)
         elseif info.type == INDICATOR
             push!(
                 constraints,
-                (MOI.ScalarAffineFunction{Float64}, typeof(info.set)),
+                (MOI.VectorAffineFunction{Float64}, typeof(info.set)),
             )
         elseif info.type == QUADRATIC
             push!(
@@ -3880,13 +3742,12 @@ function MOI.get(model::Optimizer, ::MOI.ListOfConstraintTypesPresent)
             )
         elseif info.type == SOC
             push!(constraints, (MOI.VectorOfVariables, MOI.SecondOrderCone))
-        elseif info.type == RSOC
+        else
+            @assert info.type == RSOC
             push!(
                 constraints,
                 (MOI.VectorOfVariables, MOI.RotatedSecondOrderCone),
             )
-        else
-            error("Unknown constraint type $(info.type)")
         end
     end
     for info in values(model.sos_constraint_info)
@@ -4034,21 +3895,14 @@ function _replace_with_different_sparsity!(
     replacement::MOI.ScalarAffineFunction,
     row::Integer,
 )
-    # First, zero out the old constraint function terms.
     for term in previous.terms
         col = _info(model, term.variable).column
-        @checked Lib.XPRSchgcoef(model.inner, Cint(row - 1), Cint(col - 1), 0.0)
+        @checked Lib.XPRSchgcoef(model.inner, row - 1, col - 1, 0.0)
     end
-
-    # Next, set the new constraint function terms.
-    for term in previous.terms
+    for term in replacement.terms
         col = _info(model, term.variable).column
-        @checked Lib.XPRSchgcoef(
-            model.inner,
-            Cint(row - 1),
-            Cint(col - 1),
-            MOI.coefficient(term),
-        )
+        val = MOI.coefficient(term)
+        @checked Lib.XPRSchgcoef(model.inner, row - 1, col - 1, val)
     end
     return
 end
@@ -4069,9 +3923,6 @@ function _matching_sparsity_pattern(
     f1::MOI.ScalarAffineFunction{Float64},
     f2::MOI.ScalarAffineFunction{Float64},
 )
-    if axes(f1.terms) != axes(f2.terms)
-        return false
-    end
     for (f1_term, f2_term) in zip(f1.terms, f2.terms)
         if MOI.term_indices(f1_term) != MOI.term_indices(f2_term)
             return false
@@ -4145,24 +3996,19 @@ function MOI.get(
     ::MOI.VariableBasisStatus,
     x::MOI.VariableIndex,
 )
-    column = _info(model, x).column
-    basis_status = model.basis_status
-    if basis_status == nothing
-        _generate_basis_status(model::Optimizer)
-        basis_status = model.basis_status
+    if model.basis_status == nothing
+        _generate_basis_status(model)
     end
-    vstatus = basis_status.var_status
-    vbasis = vstatus[column]
+    vbasis = model.basis_status.var_status[_info(model, x).column]
     if vbasis == 1
         return MOI.BASIC
     elseif vbasis == 0
         return MOI.NONBASIC_AT_LOWER
     elseif vbasis == 2
         return MOI.NONBASIC_AT_UPPER
-    elseif vbasis == 3
-        return MOI.SUPER_BASIC
     else
-        error("VBasis value of $(vbasis) isn't defined.")
+        @assert vbasis == 3
+        return MOI.SUPER_BASIC
     end
 end
 
@@ -4178,6 +4024,7 @@ function MOI.add_constrained_variables(
     vis = MOI.add_variables(model, N)
     return vis, MOI.add_constraint(model, MOI.VectorOfVariables(vis), s)
 end
+
 function MOI.add_constraint(
     model::Optimizer,
     f::MOI.VectorOfVariables,
@@ -4186,14 +4033,10 @@ function MOI.add_constraint(
     if length(f.variables) != s.dimension
         error("Dimension of $(s) does not match number of terms in $(f)")
     end
-
     N = s.dimension
     vis = f.variables
-
     # first check any variabel is alread in a (R)SOC
-
     vs_info = _info.(model, vis)
-
     has_v_in_soc = false
     for v in vs_info
         if v.in_soc
@@ -4210,12 +4053,9 @@ function MOI.add_constraint(
         end
         error("Variables $(list) already belong a to SOC or RSOC constraint")
     end
-
     # SOC is the cone: t ≥ ||x||₂ ≥ 0. In Xpress' quadratic form, this is
     # Σᵢ xᵢ² - t² <= 0 and t ≥ 0.
-
     # First, check the lower bound on t.
-
     t_info = vs_info[1]
     lb = _get_variable_lower_bound(model, t_info)
     if isnan(t_info.lower_bound_if_soc) && lb < 0.0
@@ -4229,9 +4069,7 @@ function MOI.add_constraint(
         )
     end
     t_info.num_soc_constraints += 1
-
     # Now add the quadratic constraint.
-
     I = Cint[Cint(vs_info[i].column - 1) for i in 1:N]
     V = fill(1.0, N)
     V[1] = -1.0
@@ -4262,14 +4100,12 @@ function MOI.add_constraint(
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, SOC)
-
     # set variables to SOC
     for v in vs_info
         v.in_soc = true
     end
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SecondOrderCone}(
-        model.last_constraint_index,
-    )
+    F, S = MOI.VectorOfVariables, MOI.SecondOrderCone
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
 
 function MOI.add_constraint(
@@ -4280,14 +4116,10 @@ function MOI.add_constraint(
     if length(f.variables) != s.dimension
         error("Dimension of $(s) does not match number of terms in $(f)")
     end
-
     N = s.dimension
     vis = f.variables
-
     # first check any variable is already in a (R)SOC
-
     vs_info = _info.(model, vis)
-
     has_v_in_soc = false
     for v in vs_info
         if v.in_soc
@@ -4304,12 +4136,9 @@ function MOI.add_constraint(
         end
         error("Variables $(list) already belong a to SOC or RSOC constraint")
     end
-
     # RSOC is the cone: 2tu ≥ ||x||₂^2 ≥ 0, t ≥ 0, u ≥ 0. In Xpress' quadratic form, this is
     # Σᵢ xᵢ² - 2tu <= 0 and t ≥ 0, u ≥ 0.
-
     # First, check the lower bound on t and u.
-
     for i in 1:2
         t_info = vs_info[i]
         lb = _get_variable_lower_bound(model, t_info)
@@ -4325,9 +4154,7 @@ function MOI.add_constraint(
         end
         t_info.num_soc_constraints += 1
     end
-
     # Now add the quadratic constraint.
-
     I = Cint[Cint(vs_info[i].column - 1) for i in 1:N if i != 2]
     J = Cint[Cint(vs_info[i].column - 1) for i in 1:N if i != 1]
     V = fill(1.0, N - 1)
@@ -4352,14 +4179,12 @@ function MOI.add_constraint(
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, RSOC)
-
     # set variables to SOC
     for v in vs_info
         v.in_soc = true
     end
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.RotatedSecondOrderCone}(
-        model.last_constraint_index,
-    )
+    F, S = MOI.VectorOfVariables, MOI.RotatedSecondOrderCone
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
 
 function MOI.delete(
@@ -4478,7 +4303,6 @@ function MOI.get(
     mqcol1 .+= 1
     mqcol2 .+= 1
     I, J, V = mqcol1, mqcol2, dqe
-
     t = nothing
     x = MOI.VariableIndex[]
     sizehint!(x, length(I) - 1)
@@ -4524,7 +4348,6 @@ function MOI.get(
     )
     I .+= 1
     J .+= 1
-
     t = nothing
     u = nothing
     x = MOI.VariableIndex[]
@@ -4762,6 +4585,7 @@ function MOI.get(
     end
     return MOI.NOT_IN_CONFLICT
 end
+
 function MOI.get(
     model::Optimizer,
     ::MOI.ConstraintConflictStatus,
@@ -4836,14 +4660,14 @@ function _pass_variable_names_to_solver(model::Optimizer; warn = true)
         Cint(0),
         Cint(n_variables - 1),
     )
-    return nothing
+    return
 end
 
 function _pass_constraint_names_to_solver(model::Optimizer; warn = true)
     NAMELENGTH = 64
     n_constraints = length(model.affine_constraint_info)
     if n_constraints == 0
-        return nothing
+        return
     end
     con_names = String[string('R', i) for i in 1:n_constraints]
     duplicate_check = Set{String}()
@@ -4872,7 +4696,7 @@ function _pass_constraint_names_to_solver(model::Optimizer; warn = true)
         Cint(0),
         Cint(n_constraints - 1),
     )
-    return nothing
+    return
 end
 
 function _get_variable_names(model)
@@ -4924,10 +4748,6 @@ end
 struct ReducedCost <: MOI.AbstractVariableAttribute
     result_index::Int
     ReducedCost(result_index::Int = 1) = new(result_index)
-end
-
-function MOI.supports(::Optimizer, ::ReducedCost, ::Type{MOI.VariableIndex})
-    return true
 end
 
 MOI.is_set_by_optimize(::ReducedCost) = true

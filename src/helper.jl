@@ -257,36 +257,107 @@ function Base.show(io::IO, prob::XpressProblem)
     return
 end
 
-const MIPSTATUS_STRING = Dict{Int,String}(
-    Lib.XPRS_MIP_NOT_LOADED => "0 Problem has not been loaded ( XPRS_MIP_NOT_LOADED).",
-    Lib.XPRS_MIP_LP_NOT_OPTIMAL => "1 Global search incomplete - the initial continuous relaxation has not been solved and no integer solution has been found ( XPRS_MIP_LP_NOT_OPTIMAL).",
-    Lib.XPRS_MIP_LP_OPTIMAL => "2 Global search incomplete - the initial continuous relaxation has been solved and no integer solution has been found ( XPRS_MIP_LP_OPTIMAL).",
-    Lib.XPRS_MIP_NO_SOL_FOUND => "3 Global search incomplete - no integer solution found ( XPRS_MIP_NO_SOL_FOUND).",
-    Lib.XPRS_MIP_SOLUTION => "4 Global search incomplete - an integer solution has been found ( XPRS_MIP_SOLUTION).",
-    Lib.XPRS_MIP_INFEAS => "5 Global search complete - no integer solution found ( XPRS_MIP_INFEAS).",
-    Lib.XPRS_MIP_OPTIMAL => "6 Global search complete - integer solution found ( XPRS_MIP_OPTIMAL).",
-    Lib.XPRS_MIP_UNBOUNDED => "7 Global search incomplete - the initial continuous relaxation was found to be unbounded. A solution may have been found ( XPRS_MIP_UNBOUNDED).",
-)
+mutable struct CallbackData
+    model_root::XpressProblem
+    data::Any
+    model::XpressProblem
+end
 
-const LPSTATUS_STRING = Dict{Int,String}(
-    Lib.XPRS_LP_UNSTARTED => "0 Unstarted ( XPRS_LP_UNSTARTED).",
-    Lib.XPRS_LP_OPTIMAL => "1 Optimal ( XPRS_LP_OPTIMAL).",
-    Lib.XPRS_LP_INFEAS => "2 Infeasible ( XPRS_LP_INFEAS).",
-    Lib.XPRS_LP_CUTOFF => "3 Objective worse than cutoff ( XPRS_LP_CUTOFF).",
-    Lib.XPRS_LP_UNFINISHED => "4 Unfinished ( XPRS_LP_UNFINISHED).",
-    Lib.XPRS_LP_UNBOUNDED => "5 Unbounded ( XPRS_LP_UNBOUNDED).",
-    Lib.XPRS_LP_CUTOFF_IN_DUAL => "6 Cutoff in dual ( XPRS_LP_CUTOFF_IN_DUAL).",
-    Lib.XPRS_LP_UNSOLVED => "7 Problem could not be solved due to numerical issues. ( XPRS_LP_UNSOLVED).",
-    Lib.XPRS_LP_NONCONVEX => "8 Problem contains quadratic data, which is not convex ( XPRS_LP_NONCONVEX).",
-)
+Base.broadcastable(x::CallbackData) = Ref(x)
 
-const STOPSTATUS_STRING = Dict{Int,String}(
-    Lib.XPRS_STOP_NONE => "no interruption - the solve completed normally",
-    Lib.XPRS_STOP_TIMELIMIT => "time limit hit",
-    Lib.XPRS_STOP_CTRLC => "control C hit",
-    Lib.XPRS_STOP_NODELIMIT => "node limit hit",
-    Lib.XPRS_STOP_ITERLIMIT => "iteration limit hit",
-    Lib.XPRS_STOP_MIPGAP => "MIP gap is sufficiently small",
-    Lib.XPRS_STOP_SOLLIMIT => "solution limit hit",
-    Lib.XPRS_STOP_USER => "user interrupt.",
+mutable struct _CallbackUserData
+    callback::Function
+    model::XpressProblem
+    data::Any
+end
+
+Base.cconvert(::Type{Ptr{Cvoid}}, x::_CallbackUserData) = x
+
+function Base.unsafe_convert(::Type{Ptr{Cvoid}}, x::_CallbackUserData)
+    return pointer_from_objref(x)::Ptr{Cvoid}
+end
+
+function _setcboptnode_wrapper(
+    ptr_inner::Lib.XPRSprob,
+    ptr_user_data::Ptr{Cvoid},
+    feas::Ptr{Cint},
 )
+    user_data = unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
+    inner = XpressProblem(ptr_inner; finalize_env = false)
+    user_data.callback(CallbackData(user_data.model, user_data.data, inner))
+    return Cint(0)
+end
+
+function set_callback_optnode!(
+    model::XpressProblem,
+    callback::Function,
+    data::Any = nothing,
+)
+    callback_ptr = @cfunction(
+        _setcboptnode_wrapper,
+        Cint,
+        (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint})
+    )
+    user_data = _CallbackUserData(callback, model, data)
+    Lib.XPRSaddcboptnode(model.ptr, callback_ptr, user_data, 0)
+    return callback_ptr, user_data
+end
+
+function _setcbpreintsol_wrapper(
+    ptr_model::Lib.XPRSprob,
+    ptr_user_data::Ptr{Cvoid},
+    ::Ptr{Cint},
+    ::Ptr{Cint},
+    ::Ptr{Cdouble},
+)
+    user_data = unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
+    inner = XpressProblem(ptr_model; finalize_env = false)
+    user_data.callback(CallbackData(user_data.model, user_data.data, inner))
+    return Cint(0)
+end
+
+function set_callback_preintsol!(
+    model::XpressProblem,
+    callback::Function,
+    data::Any = nothing,
+)
+    callback_ptr = @cfunction(
+        _setcbpreintsol_wrapper,
+        Cint,
+        (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble})
+    )
+    user_data = _CallbackUserData(callback, model, data)
+    Lib.XPRSaddcbpreintsol(model.ptr, callback_ptr, user_data, 0)
+    return callback_ptr, user_data
+end
+
+function _addcboutput2screen_wrapper(
+    ::Lib.XPRSprob,
+    ptr_user_data::Ptr{Cvoid},
+    msg::Ptr{Cchar},
+    ::Cint,
+    msgtype::Cint,
+)
+    user_data = unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
+    if msgtype == 1 || (msgtype == 3 && user_data.data::Bool)
+        # Information || Warning
+        println(unsafe_string(msg))
+    elseif msgtype == 2 || msgtype == 4
+        # Not used || Error
+    else
+        # Exiting - buffers need flushing
+        flush(stdout)
+    end
+    return Cint(0)
+end
+
+function setoutputcb!(model::XpressProblem, show_warning::Bool)
+    callback_ptr = @cfunction(
+        _addcboutput2screen_wrapper,
+        Cint,
+        (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint)
+    )
+    user_data = _CallbackUserData(() -> nothing, model, show_warning)
+    Lib.XPRSaddcbmessage(model.ptr, callback_ptr, user_data, 0)
+    return callback_ptr, user_data
+end
