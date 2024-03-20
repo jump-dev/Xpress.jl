@@ -2195,7 +2195,7 @@ end
 
 function test_empty_constraint_attributes()
     model = Xpress.Optimizer()
-    x, c = MOI.add_variable(model, MOI.GreaterThan(0.0))
+    x, c = MOI.add_constrained_variable(model, MOI.GreaterThan(0.0))
     F, S = MOI.VariableIndex, MOI.GreaterThan{Float64}
     ret = MOI.get(model, MOI.ListOfConstraintAttributesSet{F,S}())
     @test ret == MOI.AbstractConstraintAttribute[]
