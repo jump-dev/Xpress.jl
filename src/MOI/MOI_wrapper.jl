@@ -127,7 +127,6 @@ end
 
 mutable struct IISData
     stat::Cint
-    is_standard_iis::Bool
     rownumber::Int # number of rows participating in the IIS
     colnumber::Int # number of columns participating in the IIS
     miisrow::Vector{Cint} # index of the rows that participate
@@ -4294,64 +4293,35 @@ end
 ### IIS
 ###
 
-function getinfeasbounds(model::Optimizer)
-    nvars = length(model.variable_info)
-    lbs = Ref(0.0)
-    @checked Lib.XPRSgetlb(model.inner, lbs, Cint(0), Cint(nvars - 1))
-    ubs = Ref(0.0)
-    @checked Lib.XPRSgetub(model.inner, ubs, Cint(0), Cint(nvars - 1))
-    check_bounds = lbs .<= ubs
-    if sum(check_bounds) == nvars
-        error("There was an error in computation")
-    end
-    if model.moi_warnings
-        @warn "Xpress can't find IIS with invalid bounds, the constraints that keep the model infeasible can't be found, only the infeasible bounds will be available"
-    end
-    col = 0
-    ncols = 0
-    infeas_cols = Int[]
-    for check_col in check_bounds
-        if !check_col
-            push!(infeas_cols, col)
-            ncols += 1
-        end
-        col += 1
-    end
-    miiscol = Vector{Cint}(undef, ncols)
-    for col in 1:ncols
-        miiscol[col] = infeas_cols[col]
-    end
-    return ncols, miiscol
-end
-
 function getfirstiis(model::Optimizer)
-    iismode = Cint(1)
     status_code = Ref{Cint}(0)
-    @checked Lib.XPRSiisfirst(model.inner, iismode, status_code)
-    if status_code[] == 1
-        # The problem is actually feasible.
-        return IISData(
-            status_code[],
-            true,
-            0,
-            0,
-            Cint[],
-            Cint[],
-            UInt8[],
-            UInt8[],
-        )
+    @checked Lib.XPRSiisfirst(model.inner, 1, status_code)
+    if status_code[] == 1  # The problem is actually feasible.
+        return IISData(status_code[], 0, 0, Cint[], Cint[], UInt8[], UInt8[])
     elseif 2 <= status_code[] <= 3 # 2 = error, 3 = timeout
-        ncols, miiscol = getinfeasbounds(model)
-        return IISData(
-            status_code[],
-            false,
-            0,
-            ncols,
-            Cint[],
-            miiscol,
-            UInt8[],
-            UInt8[],
-        )
+        if model.moi_warnings
+            @warn(
+                "Xpress can't find IIS with invalid bounds, the constraints " *
+                "that keep the model infeasible can't be found, only the " *
+                "infeasible bounds will be available",
+            )
+        end
+        nvars = length(model.variable_info)
+        lbs, ubs = zeros(Cdouble, nvars), zeros(Cdouble, nvars)
+        @checked Lib.XPRSgetlb(model.inner, lbs, Cint(0), Cint(nvars - 1))
+        @checked Lib.XPRSgetub(model.inner, ubs, Cint(0), Cint(nvars - 1))
+        miiscol, colbndtype = Cint[], Cchar[]
+        for (col, (l, u)) in enumerate(zip(lbs, ubs))
+            if l > u
+                push!(miiscol, Cint(col - 1))
+                push!(colbndtype, Cchar('L'))
+                push!(miiscol, Cint(col - 1))
+                push!(colbndtype, Cchar('U'))
+            end
+        end
+        ncols = length(miiscol)
+        code = status_code[]
+        return IISData(code, 0, ncols, Cint[], miiscol, UInt8[], colbndtype)
     end
     # XPRESS' API works in two steps: first, retrieve the sizes of the arrays to
     # retrieve; then, the user is expected to allocate the needed memory,
@@ -4395,7 +4365,6 @@ function getfirstiis(model::Optimizer)
     )
     return IISData(
         status_code[],
-        true,
         nrows,
         ncols,
         miisrow,
@@ -4423,14 +4392,17 @@ end
 function MOI.get(model::Optimizer, ::MOI.ConflictStatus)
     if model.conflict === nothing
         return MOI.COMPUTE_CONFLICT_NOT_CALLED
-    elseif model.conflict.stat == 0 || !model.conflict.is_standard_iis
-        # Currently this condition (!model.conflict.is_standard_iis) is always false.
+    elseif model.conflict.stat == 0
         return MOI.CONFLICT_FOUND
     elseif model.conflict.stat == 1
         return MOI.NO_CONFLICT_EXISTS
     else
         # stat == 2 -> error
         # stat == 3 -> timeout
+        if model.conflict.ncols > 0
+            # We can sometimes find a bound violation conflict
+            return MOI.CONFLICT_FOUND
+        end
         return MOI.NO_CONFLICT_FOUND
     end
 end

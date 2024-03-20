@@ -1804,7 +1804,8 @@ function test_BackwardSensitivityOutputConstraint_error()
     err = ErrorException("Model not optimized. Cannot get sensitivities.")
     @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, c))
     MOI.optimize!(model)
-    err = ErrorException("Backward sensitivity cache not initiliazed correctly.")
+    err =
+        ErrorException("Backward sensitivity cache not initiliazed correctly.")
     @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, c))
     return
 end
@@ -2187,18 +2188,18 @@ function test_name_to_constraint()
     @test_throws ErrorException MOI.get(model, MOI.ConstraintIndex, "d2")
     @test isa(
         MOI.get(model, MOI.ConstraintIndex, "c0"),
-        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SOS2{Float64}}
+        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SOS2{Float64}},
     )
     @test isa(
         MOI.get(model, MOI.ConstraintIndex, "c1"),
-        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SOS1{Float64}}
+        MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SOS1{Float64}},
     )
     @test isa(
         MOI.get(model, MOI.ConstraintIndex, "c2"),
         MOI.ConstraintIndex{
             MOI.ScalarAffineFunction{Float64},
             MOI.GreaterThan{Float64},
-        }
+        },
     )
     @test isa(
         MOI.get(model, MOI.ConstraintIndex, "c3"),
@@ -2249,7 +2250,7 @@ function test_copy_to()
         minobjective: 2.0 * x + y + 3.0
         c1: x >= 0.0
         c2: [x, y] in SOS1([1.0, 2.0])
-        """
+        """,
     )
     model = Xpress.Optimizer()
     index_map = MOI.copy_to(model, src)
@@ -2461,6 +2462,21 @@ function test_conflict_zeroone()
         @test MOI.get(model, attr, b) == ret
         @test MOI.get(model, attr, c) == MOI.NOT_IN_CONFLICT
     end
+    return
+end
+
+function test_conflict_infeasible_bounds()
+    model = Xpress.Optimizer()
+    x = MOI.add_variables(model, 2)
+    c0 = MOI.add_constraint(model, x[1], MOI.GreaterThan(2.0))
+    c1 = MOI.add_constraint(model, x[2], MOI.GreaterThan(2.0))
+    c2 = MOI.add_constraint(model, x[2], MOI.LessThan(1.0))
+    MOI.compute_conflict!(model)
+    @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+    attr = MOI.ConstraintConflictStatus()
+    @test MOI.get(model, attr, c0) == MOI.NOT_IN_CONFLICT
+    @test MOI.get(model, attr, c1) == MOI.IN_CONFLICT
+    @test MOI.get(model, attr, c2) == MOI.IN_CONFLICT
     return
 end
 
