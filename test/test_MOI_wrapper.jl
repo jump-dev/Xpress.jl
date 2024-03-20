@@ -2147,10 +2147,13 @@ function test_name_to_constraint()
         c5: [a, b, c] in SecondOrderCone(3)
         d: 1.0 * u >= 0.0
         d: 2.0 * u >= 0.0
+        d2: 1.0 * u >= 0.0
+        d2: [x, y] in SOS1([1.0, 2.0])
         """,
     )
     @test MOI.get(model, MOI.ConstraintIndex, "foo") === nothing
     @test_throws ErrorException MOI.get(model, MOI.ConstraintIndex, "d")
+    @test_throws ErrorException MOI.get(model, MOI.ConstraintIndex, "d2")
     @test isa(
         MOI.get(model, MOI.ConstraintIndex, "c0"),
         MOI.ConstraintIndex{MOI.VectorOfVariables,MOI.SOS2{Float64}}
