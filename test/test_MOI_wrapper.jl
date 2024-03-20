@@ -1872,4 +1872,4 @@ end
 
 end  # TestMOIWrapper
 
-# TestMOIWrapper.runtests()
+TestMOIWrapper.runtests()
