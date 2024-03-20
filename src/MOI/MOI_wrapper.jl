@@ -1463,21 +1463,9 @@ function MOI.add_constraint(
 ) where {S<:SCALAR_SETS}
     info = _info(model, f)
     if info.type == BINARY
-        lower, upper = _bounds(s)
-        if lower !== nothing
-            if lower > 1
-                error("The problem is infeasible")
-            end
-        end
-        if upper !== nothing
-            if upper < 0
-                error("The problem is infeasible")
-            end
-        end
-        if lower !== nothing && upper !== nothing
-            if (lower > 0 && upper < 1)
-                error("The problem is infeasible")
-            end
+        lower, upper = something.(_bounds(s), (0.0, 1.0))
+        if (1 < lower) || (upper < 0) || (0 < lower && upper < 1)
+            error("The problem is infeasible")
         end
     end
     if S <: MOI.LessThan{Float64}
@@ -1567,21 +1555,13 @@ function _set_variable_fixed_bound(model, info, value)
         # case above). Now we're setting this with a negative one, but there are
         # still some SOC constraints, so the negative upper bound jointly with
         # the SOC constraint will make the problem infeasible.
-        # error("???")
         @assert value < 0.0
         @checked Lib.XPRSchgbounds(
             model.inner,
-            Cint(1),
-            Ref(Cint(info.column - 1)),
-            Ref(UInt8('L')),
-            Ref(0.0),
-        )
-        @checked Lib.XPRSchgbounds(
-            model.inner,
-            Cint(1),
-            Ref(Cint(info.column - 1)),
-            Ref(UInt8('U')),
-            Ref(value),
+            2,
+            [Cint(info.column - 1), Cint(info.column - 1)],
+            [UInt8('L'), UInt8('U')],
+            [0.0, value],
         )
         info.lower_bound_if_soc = value
         return
@@ -1589,7 +1569,6 @@ function _set_variable_fixed_bound(model, info, value)
         # Previously, we had a negative lower bound. We're setting this with
         # another negative one, but there are still some SOC constraints.
         # this case will also lead to a infeasibility
-        # error("???")
         @assert info.lower_bound_if_soc < 0.0
         info.lower_bound_if_soc = value
         @checked Lib.XPRSchgbounds(
@@ -1883,20 +1862,9 @@ function MOI.add_constraint(
     info = _info(model, f)
     lower, upper = info.previous_lower_bound, info.previous_upper_bound
     if info.type == CONTINUOUS
-        if lower !== nothing
-            if lower > 1
-                error("The problem is infeasible")
-            end
-        end
-        if upper !== nothing
-            if upper < 0
-                error("The problem is infeasible")
-            end
-        end
-        if lower !== nothing && upper !== nothing
-            if (lower > 0 && upper < 1)
-                error("The problem is infeasible")
-            end
+        l, u = something(lower, 0.0), something(upper, 1.0)
+        if (l > 1) || (u < 0) || (l > 0 && u < 1)
+            error("The problem is infeasible")
         end
     end
     @checked Lib.XPRSchgcoltype(
@@ -1908,23 +1876,19 @@ function MOI.add_constraint(
     if info.type == CONTINUOUS
         # The function chgcoltype reset the variable bounds to [0, 1],
         # so we need to add them again if they're set before.
-        if lower !== nothing
-            if lower >= 0
-                _set_variable_lower_bound(
-                    model,
-                    info,
-                    info.previous_lower_bound,
-                )
-            end
+        if lower !== nothing && lower >= 0
+            _set_variable_lower_bound(
+                model,
+                info,
+                info.previous_lower_bound,
+            )
         end
-        if upper !== nothing
-            if upper <= 1
-                _set_variable_upper_bound(
-                    model,
-                    info,
-                    info.previous_upper_bound,
-                )
-            end
+        if upper !== nothing && upper <= 1
+            _set_variable_upper_bound(
+                model,
+                info,
+                info.previous_upper_bound,
+            )
         end
     end
     info.type = BINARY

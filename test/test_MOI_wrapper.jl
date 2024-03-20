@@ -2187,6 +2187,130 @@ function test_name_to_constraint()
     return
 end
 
+function test_show()
+    model = Xpress.Optimizer()
+    @test sprint(show, model) == sprint(show, model.inner)
+    return
+end
+
+function test_empty_constraint_attributes()
+    model = Xpress.Optimizer()
+    x, c = MOI.add_variable(model, MOI.GreaterThan(0.0))
+    F, S = MOI.VariableIndex, MOI.GreaterThan{Float64}
+    ret = MOI.get(model, MOI.ListOfConstraintAttributesSet{F,S}())
+    @test ret == MOI.AbstractConstraintAttribute[]
+    return
+end
+
+function test_copy_to()
+    src = MOI.Utilities.Model{Float64}()
+    MOI.Utilities.loadfromstring!(
+        src,
+        """
+        variables: x, y
+        minobjective: 2.0 * x + y + 3.0
+        c1: x >= 0.0
+        c2: [x, y] in SOS1([1.0, 2.0])
+        """
+    )
+    model = Xpress.Optimizer()
+    index_map = MOI.copy_to(model, src)
+    ret = MOI.get(model, MOI.ListOfConstraintTypesPresent())
+    @test (MOI.VectorOfVariables, MOI.SOS1{Float64}) in ret
+    @test (MOI.VariableIndex, MOI.GreaterThan{Float64}) in ret
+    @test MOI.get(model, MOI.NumberOfVariables()) == 2
+    @test MOI.get(model, MOI.ObjectiveSense()) == MOI.MIN_SENSE
+    return
+end
+
+function test_existing_lower()
+    for set in (MOI.Semiinteger(3.0, 5.0), MOI.Semicontinuous(3.0, 5.0))
+        model = Xpress.Optimizer()
+        x = MOI.add_variable(model)
+        MOI.add_constraint(model, x, set)
+        @test_throws(
+            MOI.LowerBoundAlreadySet{typeof(set),MOI.GreaterThan{Float64}},
+            MOI.add_constraint(model, x, MOI.GreaterThan(0.0)),
+        )
+        @test_throws(
+            MOI.UpperBoundAlreadySet{typeof(set),MOI.LessThan{Float64}},
+            MOI.add_constraint(model, x, MOI.LessThan(0.0)),
+        )
+    end
+    return
+end
+
+function test_delete_less_than_zeroone()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    c_l = MOI.add_constraint(model, x, MOI.GreaterThan(0.0))
+    c_u = MOI.add_constraint(model, x, MOI.LessThan(1.0))
+    c_b = MOI.add_constraint(model, x, MOI.ZeroOne())
+    MOI.delete(model, c_u)
+    @test MOI.is_valid(model, c_l)
+    @test !MOI.is_valid(model, c_u)
+    @test MOI.is_valid(model, c_b)
+    return
+end
+
+function test_delete_greater_than_zeroone()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    c_l = MOI.add_constraint(model, x, MOI.GreaterThan(0.0))
+    c_u = MOI.add_constraint(model, x, MOI.LessThan(1.0))
+    c_b = MOI.add_constraint(model, x, MOI.ZeroOne())
+    MOI.delete(model, c_l)
+    @test !MOI.is_valid(model, c_l)
+    @test MOI.is_valid(model, c_u)
+    @test MOI.is_valid(model, c_b)
+    return
+end
+
+function test_delete_interval_zeroone()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    c_i = MOI.add_constraint(model, x, MOI.Interval(0.0, 1.0))
+    c_b = MOI.add_constraint(model, x, MOI.ZeroOne())
+    MOI.delete(model, c_i)
+    @test !MOI.is_valid(model, c_i)
+    @test MOI.is_valid(model, c_b)
+    return
+end
+
+function test_error_binary_bad_bounds()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.Interval(0.2, 1.0))
+    @test_throws(
+        ErrorException("The problem is infeasible"),
+        MOI.add_constraint(model, x, MOI.ZeroOne()),
+    )
+    return
+end
+
+function test_set_fixed_bound_of_soc()
+    model = Xpress.Optimizer()
+    x, _ = MOI.add_constrained_variables(model, MOI.SecondOrderCone(3))
+    c = MOI.add_constraint(model, x[1], MOI.EqualTo(1.0))
+    for set in (MOI.EqualTo(2.0), MOI.EqualTo(-1.0), MOI.EqualTo(-2.0))
+        MOI.set(model, MOI.ConstraintSet(), c, set)
+        @test MOI.get(model, MOI.ConstraintSet(), c) == set
+    end
+    return
+end
+
+function test_set_lower_bound_of_soc()
+    model = Xpress.Optimizer()
+    x, _ = MOI.add_constrained_variables(model, MOI.SecondOrderCone(3))
+    c = MOI.add_constraint(model, x[1], MOI.GreaterThan(1.0))
+    for value in (2.0, -1.0, -2.0, 2.0)
+        set = MOI.GreaterThan(value)
+        MOI.set(model, MOI.ConstraintSet(), c, set)
+        @test MOI.get(model, MOI.ConstraintSet(), c) == set
+    end
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()
