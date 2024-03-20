@@ -127,7 +127,6 @@ end
 
 mutable struct IISData
     stat::Cint
-    is_standard_iis::Bool
     rownumber::Int # number of rows participating in the IIS
     colnumber::Int # number of columns participating in the IIS
     miisrow::Vector{Cint} # index of the rows that participate
@@ -1463,21 +1462,9 @@ function MOI.add_constraint(
 ) where {S<:SCALAR_SETS}
     info = _info(model, f)
     if info.type == BINARY
-        lower, upper = _bounds(s)
-        if lower !== nothing
-            if lower > 1
-                error("The problem is infeasible")
-            end
-        end
-        if upper !== nothing
-            if upper < 0
-                error("The problem is infeasible")
-            end
-        end
-        if lower !== nothing && upper !== nothing
-            if (lower > 0 && upper < 1)
-                error("The problem is infeasible")
-            end
+        lower, upper = something.(_bounds(s), (0.0, 1.0))
+        if (1 < lower) || (upper < 0) || (0 < lower && upper < 1)
+            error("The problem is infeasible")
         end
     end
     if S <: MOI.LessThan{Float64}
@@ -1567,21 +1554,13 @@ function _set_variable_fixed_bound(model, info, value)
         # case above). Now we're setting this with a negative one, but there are
         # still some SOC constraints, so the negative upper bound jointly with
         # the SOC constraint will make the problem infeasible.
-        # error("???")
         @assert value < 0.0
         @checked Lib.XPRSchgbounds(
             model.inner,
-            Cint(1),
-            Ref(Cint(info.column - 1)),
-            Ref(UInt8('L')),
-            Ref(0.0),
-        )
-        @checked Lib.XPRSchgbounds(
-            model.inner,
-            Cint(1),
-            Ref(Cint(info.column - 1)),
-            Ref(UInt8('U')),
-            Ref(value),
+            2,
+            [Cint(info.column - 1), Cint(info.column - 1)],
+            [UInt8('L'), UInt8('U')],
+            [0.0, value],
         )
         info.lower_bound_if_soc = value
         return
@@ -1589,7 +1568,6 @@ function _set_variable_fixed_bound(model, info, value)
         # Previously, we had a negative lower bound. We're setting this with
         # another negative one, but there are still some SOC constraints.
         # this case will also lead to a infeasibility
-        # error("???")
         @assert info.lower_bound_if_soc < 0.0
         info.lower_bound_if_soc = value
         @checked Lib.XPRSchgbounds(
@@ -1883,20 +1861,9 @@ function MOI.add_constraint(
     info = _info(model, f)
     lower, upper = info.previous_lower_bound, info.previous_upper_bound
     if info.type == CONTINUOUS
-        if lower !== nothing
-            if lower > 1
-                error("The problem is infeasible")
-            end
-        end
-        if upper !== nothing
-            if upper < 0
-                error("The problem is infeasible")
-            end
-        end
-        if lower !== nothing && upper !== nothing
-            if (lower > 0 && upper < 1)
-                error("The problem is infeasible")
-            end
+        l, u = something(lower, 0.0), something(upper, 1.0)
+        if (l > 1) || (u < 0) || (l > 0 && u < 1)
+            error("The problem is infeasible")
         end
     end
     @checked Lib.XPRSchgcoltype(
@@ -1906,25 +1873,13 @@ function MOI.add_constraint(
         Ref(UInt8('B')),
     )
     if info.type == CONTINUOUS
-        # The function chgcoltype reset the variable bounds to [0, 1],
-        # so we need to add them again if they're set before.
-        if lower !== nothing
-            if lower >= 0
-                _set_variable_lower_bound(
-                    model,
-                    info,
-                    info.previous_lower_bound,
-                )
-            end
+        # The function chgcoltype reset the variable bounds to [0, 1], so we
+        # need to add them again if they're set before.
+        if lower !== nothing && lower >= 0
+            _set_variable_lower_bound(model, info, info.previous_lower_bound)
         end
-        if upper !== nothing
-            if upper <= 1
-                _set_variable_upper_bound(
-                    model,
-                    info,
-                    info.previous_upper_bound,
-                )
-            end
+        if upper !== nothing && upper <= 1
+            _set_variable_upper_bound(model, info, info.previous_upper_bound)
         end
     end
     info.type = BINARY
@@ -4033,45 +3988,32 @@ function MOI.add_constraint(
     if length(f.variables) != s.dimension
         error("Dimension of $(s) does not match number of terms in $(f)")
     end
-    N = s.dimension
-    vis = f.variables
-    # first check any variabel is alread in a (R)SOC
-    vs_info = _info.(model, vis)
-    has_v_in_soc = false
+    vs_info = _info.(model, f.variables)
     for v in vs_info
         if v.in_soc
-            has_v_in_soc = true
-            break
+            error(
+                "Variable $(v.index) already belongs a to SOC or RSOC constraint",
+            )
         end
-    end
-    if has_v_in_soc
-        list = MOI.VariableIndex[]
-        for i in 1:N
-            if vs_info[i].in_soc
-                push!(list, vis[i])
-            end
-        end
-        error("Variables $(list) already belong a to SOC or RSOC constraint")
     end
     # SOC is the cone: t ≥ ||x||₂ ≥ 0. In Xpress' quadratic form, this is
     # Σᵢ xᵢ² - t² <= 0 and t ≥ 0.
     # First, check the lower bound on t.
-    t_info = vs_info[1]
-    lb = _get_variable_lower_bound(model, t_info)
-    if isnan(t_info.lower_bound_if_soc) && lb < 0.0
-        t_info.lower_bound_if_soc = lb
+    lb = _get_variable_lower_bound(model, vs_info[1])
+    if isnan(vs_info[1].lower_bound_if_soc) && lb < 0.0
+        vs_info[1].lower_bound_if_soc = lb
         @checked Lib.XPRSchgbounds(
             model.inner,
             Cint(1),
-            Ref(Cint(t_info.column - 1)),
+            Ref(Cint(vs_info[1].column - 1)),
             Ref(UInt8('L')),
             Ref(0.0),
         )
     end
-    t_info.num_soc_constraints += 1
+    vs_info[1].num_soc_constraints += 1
     # Now add the quadratic constraint.
-    I = Cint[Cint(vs_info[i].column - 1) for i in 1:N]
-    V = fill(1.0, N)
+    I = Cint[Cint(vs_info[i].column - 1) for i in 1:s.dimension]
+    V = fill(1.0, s.dimension)
     V[1] = -1.0
     @checked Lib.XPRSaddrows(
         model.inner,
@@ -4089,18 +4031,10 @@ function MOI.add_constraint(
         Lib.XPRS_ORIGINALROWS,
         _,
     )::Int
-    @checked Lib.XPRSaddqmatrix(
-        model.inner,
-        ncons - 1,
-        Cint(length(I)),
-        I,
-        I,
-        V,
-    )
+    @checked Lib.XPRSaddqmatrix(model.inner, ncons - 1, length(I), I, I, V)
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
         ConstraintInfo(length(model.affine_constraint_info) + 1, s, SOC)
-    # set variables to SOC
     for v in vs_info
         v.in_soc = true
     end
@@ -4116,48 +4050,36 @@ function MOI.add_constraint(
     if length(f.variables) != s.dimension
         error("Dimension of $(s) does not match number of terms in $(f)")
     end
-    N = s.dimension
-    vis = f.variables
-    # first check any variable is already in a (R)SOC
-    vs_info = _info.(model, vis)
-    has_v_in_soc = false
+    vs_info = _info.(model, f.variables)
     for v in vs_info
         if v.in_soc
-            has_v_in_soc = true
-            break
+            error(
+                "Variable $(v.index) already belongs a to SOC or RSOC constraint",
+            )
         end
     end
-    if has_v_in_soc
-        list = MOI.VariableIndex[]
-        for i in 1:N
-            if vs_info[i].in_soc
-                push!(list, vis[i])
-            end
-        end
-        error("Variables $(list) already belong a to SOC or RSOC constraint")
-    end
-    # RSOC is the cone: 2tu ≥ ||x||₂^2 ≥ 0, t ≥ 0, u ≥ 0. In Xpress' quadratic form, this is
-    # Σᵢ xᵢ² - 2tu <= 0 and t ≥ 0, u ≥ 0.
+    # RSOC is the cone: 2tu ≥ ||x||₂^2 ≥ 0, t ≥ 0, u ≥ 0. In Xpress' quadratic
+    # form, this is
+    #   Σᵢ xᵢ² - 2tu <= 0 and t ≥ 0, u ≥ 0.
     # First, check the lower bound on t and u.
     for i in 1:2
-        t_info = vs_info[i]
-        lb = _get_variable_lower_bound(model, t_info)
-        if isnan(t_info.lower_bound_if_soc) && lb < 0.0
-            t_info.lower_bound_if_soc = lb
+        lb = _get_variable_lower_bound(model, vs_info[i])
+        if isnan(vs_info[i].lower_bound_if_soc) && lb < 0.0
+            vs_info[i].lower_bound_if_soc = lb
             @checked Lib.XPRSchgbounds(
                 model.inner,
                 Cint(1),
-                Ref(Cint(t_info.column - 1)),
+                Ref(Cint(vs_info[i].column - 1)),
                 Ref(UInt8('L')),
                 Ref(0.0),
             )
         end
-        t_info.num_soc_constraints += 1
+        vs_info[i].num_soc_constraints += 1
     end
     # Now add the quadratic constraint.
-    I = Cint[Cint(vs_info[i].column - 1) for i in 1:N if i != 2]
-    J = Cint[Cint(vs_info[i].column - 1) for i in 1:N if i != 1]
-    V = fill(1.0, N - 1)
+    I = Cint[Cint(vs_info[i].column - 1) for i in 1:s.dimension if i != 2]
+    J = Cint[Cint(vs_info[i].column - 1) for i in 1:s.dimension if i != 1]
+    V = fill(1.0, s.dimension - 1)
     V[1] = -1.0 # just the upper triangle
     @checked Lib.XPRSaddrows(
         model.inner,
@@ -4170,11 +4092,9 @@ function MOI.add_constraint(
         C_NULL,
         C_NULL,
     )
-    ncons = @_invoke Lib.XPRSgetintattrib(
-        model.inner,
-        Lib.XPRS_ORIGINALROWS,
-        _,
-    )::Int
+    ncons = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALROWS, _)::Int,
+    )
     @checked Lib.XPRSaddqmatrix(model.inner, ncons - 1, length(I), I, J, V)
     model.last_constraint_index += 1
     model.affine_constraint_info[model.last_constraint_index] =
@@ -4208,14 +4128,9 @@ function MOI.delete(
     # Reset the lower bound on the `t` variable.
     t_info = _info(model, f.variables[1])
     t_info.num_soc_constraints -= 1
-    if t_info.num_soc_constraints > 0
-        # Don't do anything. There are still SOC associated with this variable.
-        # This should not happen in Xpress
-        error("Error in Xpress' MathOptInteface SOC wrapper.")
-        return
-    elseif isnan(t_info.lower_bound_if_soc)
-        # Don't do anything. It must have a >0 lower bound anyway.
-        return
+    @assert t_info.num_soc_constraints == 0
+    if isnan(t_info.lower_bound_if_soc)
+        return  # Don't do anything. It must have a >0 lower bound anyway.
     end
     # There was a previous bound that we over-wrote, and it must have been
     # < 0 otherwise we wouldn't have needed to overwrite it.
@@ -4248,14 +4163,9 @@ function MOI.delete(
     for i in 1:2
         t_info = _info(model, f.variables[i])
         t_info.num_soc_constraints -= 1
-        if t_info.num_soc_constraints > 0
-            # Don't do anything. There are still SOC associated with this variable.
-            # This should not happen in Xpress
-            error("Error in Xpress' MathOptInteface SOC wrapper.")
-            continue
-        elseif isnan(t_info.lower_bound_if_soc)
-            # Don't do anything. It must have a >0 lower bound anyway.
-            continue
+        @assert t_info.num_soc_constraints == 0
+        if isnan(t_info.lower_bound_if_soc)
+            continue  # Don't do anything. It must have a >0 lower bound anyway.
         end
         # There was a previous bound that we over-wrote, and it must have been
         # < 0 otherwise we wouldn't have needed to overwrite it.
@@ -4383,64 +4293,35 @@ end
 ### IIS
 ###
 
-function getinfeasbounds(model::Optimizer)
-    nvars = length(model.variable_info)
-    lbs = Ref(0.0)
-    @checked Lib.XPRSgetlb(model.inner, lbs, Cint(0), Cint(nvars - 1))
-    ubs = Ref(0.0)
-    @checked Lib.XPRSgetub(model.inner, ubs, Cint(0), Cint(nvars - 1))
-    check_bounds = lbs .<= ubs
-    if sum(check_bounds) == nvars
-        error("There was an error in computation")
-    end
-    if model.moi_warnings
-        @warn "Xpress can't find IIS with invalid bounds, the constraints that keep the model infeasible can't be found, only the infeasible bounds will be available"
-    end
-    col = 0
-    ncols = 0
-    infeas_cols = Int[]
-    for check_col in check_bounds
-        if !check_col
-            push!(infeas_cols, col)
-            ncols += 1
-        end
-        col += 1
-    end
-    miiscol = Vector{Cint}(undef, ncols)
-    for col in 1:ncols
-        miiscol[col] = infeas_cols[col]
-    end
-    return ncols, miiscol
-end
-
 function getfirstiis(model::Optimizer)
-    iismode = Cint(1)
     status_code = Ref{Cint}(0)
-    @checked Lib.XPRSiisfirst(model.inner, iismode, status_code)
-    if status_code[] == 1
-        # The problem is actually feasible.
-        return IISData(
-            status_code[],
-            true,
-            0,
-            0,
-            Cint[],
-            Cint[],
-            UInt8[],
-            UInt8[],
-        )
+    @checked Lib.XPRSiisfirst(model.inner, 1, status_code)
+    if status_code[] == 1  # The problem is actually feasible.
+        return IISData(status_code[], 0, 0, Cint[], Cint[], UInt8[], UInt8[])
     elseif 2 <= status_code[] <= 3 # 2 = error, 3 = timeout
-        ncols, miiscol = getinfeasbounds(model)
-        return IISData(
-            status_code[],
-            false,
-            0,
-            ncols,
-            Cint[],
-            miiscol,
-            UInt8[],
-            UInt8[],
-        )
+        if model.moi_warnings
+            @warn(
+                "Xpress can't find IIS with invalid bounds, the constraints " *
+                "that keep the model infeasible can't be found, only the " *
+                "infeasible bounds will be available",
+            )
+        end
+        nvars = length(model.variable_info)
+        lbs, ubs = zeros(Cdouble, nvars), zeros(Cdouble, nvars)
+        @checked Lib.XPRSgetlb(model.inner, lbs, Cint(0), Cint(nvars - 1))
+        @checked Lib.XPRSgetub(model.inner, ubs, Cint(0), Cint(nvars - 1))
+        miiscol, colbndtype = Cint[], Cchar[]
+        for (col, (l, u)) in enumerate(zip(lbs, ubs))
+            if l > u
+                push!(miiscol, Cint(col - 1))
+                push!(colbndtype, Cchar('L'))
+                push!(miiscol, Cint(col - 1))
+                push!(colbndtype, Cchar('U'))
+            end
+        end
+        ncols = length(miiscol)
+        code = status_code[]
+        return IISData(code, 0, ncols, Cint[], miiscol, UInt8[], colbndtype)
     end
     # XPRESS' API works in two steps: first, retrieve the sizes of the arrays to
     # retrieve; then, the user is expected to allocate the needed memory,
@@ -4484,7 +4365,6 @@ function getfirstiis(model::Optimizer)
     )
     return IISData(
         status_code[],
-        true,
         nrows,
         ncols,
         miisrow,
@@ -4512,14 +4392,17 @@ end
 function MOI.get(model::Optimizer, ::MOI.ConflictStatus)
     if model.conflict === nothing
         return MOI.COMPUTE_CONFLICT_NOT_CALLED
-    elseif model.conflict.stat == 0 || !model.conflict.is_standard_iis
-        # Currently this condition (!model.conflict.is_standard_iis) is always false.
+    elseif model.conflict.stat == 0
         return MOI.CONFLICT_FOUND
     elseif model.conflict.stat == 1
         return MOI.NO_CONFLICT_EXISTS
     else
         # stat == 2 -> error
         # stat == 3 -> timeout
+        if model.conflict.colnumber > 0
+            # We can sometimes find a bound violation conflict
+            return MOI.CONFLICT_FOUND
+        end
         return MOI.NO_CONFLICT_FOUND
     end
 end
@@ -4539,14 +4422,13 @@ function MOI.get(
     return MOI.NOT_IN_CONFLICT
 end
 
-col_type_char(::Type{MOI.LessThan{Float64}}) = 'U'
-col_type_char(::Type{MOI.GreaterThan{Float64}}) = 'L'
-col_type_char(::Type{MOI.EqualTo{Float64}}) = 'F'
-# col_type_char(::Type{MOI.Interval{Float64}}) = 'T'
-col_type_char(::Type{MOI.ZeroOne}) = 'B'
-col_type_char(::Type{MOI.Integer}) = 'I'
-col_type_char(::Type{MOI.Semicontinuous{Float64}}) = 'S'
-col_type_char(::Type{MOI.Semiinteger{Float64}}) = 'R'
+col_type_char(::Type{MOI.LessThan{Float64}}) = (Cchar('U'),)
+col_type_char(::Type{MOI.GreaterThan{Float64}}) = (Cchar('L'),)
+col_type_char(::Type{MOI.EqualTo{Float64}}) = Cchar.(('F', 'L', 'U'))
+col_type_char(::Type{MOI.Interval{Float64}}) = Cchar.(('T', 'L', 'U'))
+col_type_char(::Type{MOI.Integer}) = (Cchar('I'),)
+col_type_char(::Type{MOI.Semicontinuous{Float64}}) = Cchar.(('S', 'L', 'U'))
+col_type_char(::Type{MOI.Semiinteger{Float64}}) = Cchar.(('R', 'L', 'U'))
 
 function MOI.get(
     model::Optimizer,
@@ -4554,32 +4436,9 @@ function MOI.get(
     index::MOI.ConstraintIndex{MOI.VariableIndex,S},
 ) where {S<:MOI.AbstractScalarSet}
     _ensure_conflict_computed(model)
-    _char = col_type_char(S)
     ref_col = _info(model, index).column - 1
-    for (idx, col) in enumerate(model.conflict.miiscol)
-        if col == ref_col && (
-            model.conflict.stat > 1 ||
-            Char(model.conflict.colbndtype[idx]) == _char
-        )
-            return MOI.IN_CONFLICT
-        end
-    end
-    return MOI.NOT_IN_CONFLICT
-end
-
-function MOI.get(
-    model::Optimizer,
-    ::MOI.ConstraintConflictStatus,
-    index::MOI.ConstraintIndex{MOI.VariableIndex,MOI.Interval{Float64}},
-)
-    _ensure_conflict_computed(model)
-    ref_col = _info(model, index).column - 1
-    for (idx, col) in enumerate(model.conflict.miiscol)
-        if col == ref_col && (
-            model.conflict.stat > 1 ||
-            Char(model.conflict.colbndtype[idx]) == 'U' ||
-            Char(model.conflict.colbndtype[idx]) == 'L'
-        )
+    for (bnd, col) in zip(model.conflict.colbndtype, model.conflict.miiscol)
+        if col == ref_col && bnd in col_type_char(S)
             return MOI.IN_CONFLICT
         end
     end
@@ -4593,13 +4452,11 @@ function MOI.get(
 )
     _ensure_conflict_computed(model)
     ref_col = _info(model, index).column - 1
-    for (idx, col) in enumerate(model.conflict.miiscol)
+    for (bnd, col) in zip(model.conflict.colbndtype, model.conflict.miiscol)
         if col == ref_col
-            if Char(model.conflict.colbndtype[idx]) == 'B'
+            if bnd == Cchar('B')
                 return MOI.IN_CONFLICT
-            elseif Char(model.conflict.colbndtype[idx]) == 'U'
-                return MOI.MAYBE_IN_CONFLICT
-            elseif Char(model.conflict.colbndtype[idx]) == 'L'
+            elseif bnd == Cchar('L') || bnd == Cchar('U')
                 return MOI.MAYBE_IN_CONFLICT
             end
         end
