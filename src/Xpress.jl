@@ -59,7 +59,6 @@ Xpress.initialize(;
 ```
 """
 function initialize(; kwargs...)
-    Libdl.dlopen(libxprs)
     userlic(; kwargs...)
     Lib.XPRSinit(C_NULL)
     # Calling XPRSfree is not necessary since XPRSdestroyprob is called in the
