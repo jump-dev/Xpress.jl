@@ -3,7 +3,7 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
+function _get_xpauthpath(xpauth_path = "", verbose::Bool = true)
     # The directory of the xprs shared object. This is the root from which we
     # search for licenses.
     libdir = dirname(libxprs)
@@ -41,16 +41,10 @@ function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
     )
 end
 
-"""
-    userlic(;
-        liccheck::Function = identity,
-        verbose::Bool = true,
-        xpauth_path::String = ""
-    )
-
-Performs license checking with `liccheck` validation function on dir
-`xpauth_path`.
-"""
+# Keep `userlic` for backwards compatibility. PSR have a customized setup for
+# managing licenses.
+#
+# New users should use `Xpress.initialize`.
 function userlic(;
     liccheck::Function = identity,
     verbose::Bool = true,
@@ -60,7 +54,7 @@ function userlic(;
     # Open and free xpauth.xpr (touches the file to release it). It's not
     # obvious why we need to touch the license file, but the code has done this
     # since https://github.com/jump-dev/Xpress.jl/pull/9.
-    path_lic = get_xpauthpath(xpauth_path, verbose)
+    path_lic = _get_xpauthpath(xpauth_path, verbose)
     touch(path_lic)
     # Pre-allocate storage for the license integer. For backward compatibility,
     # we use `Vector{Cint}`, because some users may have `liccheck` functions
