@@ -6783,11 +6783,11 @@ end
 =#
 
 function mip_solve_complete(stat)
-    return stat in [Lib.XPRS_MIP_INFEAS, Lib.XPRS_MIP_OPTIMAL]
+    return stat in (Lib.XPRS_MIP_INFEAS, Lib.XPRS_MIP_OPTIMAL)
 end
 
 function mip_solve_stopped(stat)
-    return stat in [Lib.XPRS_MIP_INFEAS, Lib.XPRS_MIP_OPTIMAL]
+    return stat in (Lib.XPRS_MIP_INFEAS, Lib.XPRS_MIP_OPTIMAL)
 end
 
 function fixinfinity(val::Float64)
