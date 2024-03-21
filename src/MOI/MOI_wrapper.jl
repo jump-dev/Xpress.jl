@@ -3096,48 +3096,21 @@ function _has_primal_ray(model::Optimizer)
     return has_Ray[] != 0
 end
 
+const _SOLSTATUS_MAP = Dict(
+    Lib.XPRS_SOLSTATUS_NOTFOUND => MOI.NO_SOLUTION,
+    Lib.XPRS_SOLSTATUS_OPTIMAL => MOI.FEASIBLE_POINT,
+    Lib.XPRS_SOLSTATUS_FEASIBLE => MOI.FEASIBLE_POINT,
+    Lib.XPRS_SOLSTATUS_INFEASIBLE => MOI.NO_SOLUTION,
+    Lib.XPRS_SOLSTATUS_UNBOUNDED => MOI.NO_SOLUTION,
+)
+
 function _cache_primal_status(model)
-    term_stat = MOI.get(model, MOI.TerminationStatus())
-    if term_stat == MOI.OPTIMAL || term_stat == MOI.LOCALLY_SOLVED
-        return MOI.FEASIBLE_POINT
-    elseif term_stat == MOI.LOCALLY_INFEASIBLE
-        return MOI.INFEASIBLE_POINT
-    elseif term_stat == MOI.DUAL_INFEASIBLE
-        if _has_primal_ray(model)
-            return MOI.INFEASIBILITY_CERTIFICATE
-        end
-    elseif is_mip(model)
-        stat = @_invoke Lib.XPRSgetintattrib(
-            model.inner,
-            Lib.XPRS_MIPSTATUS,
-            _,
-        )::Int
-        if stat == Lib.XPRS_MIP_NOT_LOADED
-            return MOI.NO_SOLUTION
-        elseif stat == Lib.XPRS_MIP_LP_NOT_OPTIMAL # - is a STOP
-            return MOI.NO_SOLUTION
-        elseif stat == Lib.XPRS_MIP_LP_OPTIMAL # - is a STOP
-            return MOI.INFEASIBLE_POINT
-        elseif stat == Lib.XPRS_MIP_NO_SOL_FOUND # - is a STOP
-            return MOI.NO_SOLUTION
-        elseif stat == Lib.XPRS_MIP_SOLUTION # - is a STOP
-            return MOI.FEASIBLE_POINT
-        elseif stat == Lib.XPRS_MIP_INFEAS
-            return MOI.INFEASIBLE_POINT
-        elseif stat == Lib.XPRS_MIP_OPTIMAL
-            return MOI.FEASIBLE_POINT
-        elseif stat == Lib.XPRS_MIP_UNBOUNDED
-            return MOI.NO_SOLUTION #? DUAL_INFEASIBLE?
-        end
+    stat =
+        @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_SOLSTATUS, _)::Int
+    if stat == Lib.XPRS_SOLSTATUS_UNBOUNDED && _has_primal_ray(model)
+        return MOI.INFEASIBILITY_CERTIFICATE
     end
-    if is_mip(model)
-        mip_sols =
-            @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_MIPSOLS, _)::Int
-        if mip_sols > 0
-            return MOI.FEASIBLE_POINT
-        end
-    end
-    return MOI.NO_SOLUTION
+    return _SOLSTATUS_MAP[stat]
 end
 
 function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
