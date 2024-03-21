@@ -119,6 +119,12 @@ function test_invoke_errors()
     return
 end
 
+function test_get_xpauth_path_fail()
+    @test isfile(Xpress.get_xpauthpath("", false))
+    @test_throws ErrorException Xpress.get_xpauthpath(@__DIR__, false)
+    return
+end
+
 end  # TestHelper
 
 TestHelper.runtests()
