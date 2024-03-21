@@ -80,7 +80,7 @@ function userlic(;
         p_buffer = pointer(buffer)
         GC.@preserve buffer begin
             Lib.XPRSgetlicerrmsg(p_buffer, 1024)
-            error(unsafe_string(p_buffer))
+            throw(XpressError(err, unsafe_string(p_buffer)))
         end
     elseif verbose
         type = err == 16 ? "Development" : "User"

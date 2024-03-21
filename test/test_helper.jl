@@ -119,9 +119,24 @@ function test_invoke_errors()
     return
 end
 
-function test_get_xpauth_path_fail()
+function test_licensing()
+    # Create a bogus license file
+    xpauth_path = mktempdir()
+    filename = joinpath(xpauth_path, "xpauth.xpr")
+    write(filename, "bogus_license")
+    # Test that passing `""` can find our current license. This should already
+    # be the case because we managed to install and start the tests...
     @test isfile(Xpress.get_xpauthpath("", false))
+    # Test that using the test directory cannot find a license.
     @test_throws ErrorException Xpress.get_xpauthpath(@__DIR__, false)
+    # Now're going to test checking for new licenses. To do so, we first need to
+    # free the current one:
+    Xpress.Lib.XPRSfree()
+    # Then, we can check that using the root fails to find a license
+    @test_throws Xpress.XpressError Xpress.userlic(; xpauth_path)
+    @test Xpress.Lib.XPRSinit(filename) != 0
+    # Now we need to re-initialize the license so that we can run other tests.
+    Xpress.initialize()
     return
 end
 
