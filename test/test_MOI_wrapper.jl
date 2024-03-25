@@ -8,7 +8,6 @@ module TestMOIWrapper
 using Xpress
 using Test
 
-import LinearAlgebra
 import MathOptInterface as MOI
 import Random
 
@@ -1651,7 +1650,7 @@ end
 
 function test_callback_preintsol()
     model, x, y = callback_simple_model()
-    data = 1.0 * LinearAlgebra.I(3)
+    data = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
     function foo(cb::Xpress.CallbackData)
         cb.data[1] = 98
         cols = Xpress.get_control_or_attribute(cb.model, "XPRS_COLS")
