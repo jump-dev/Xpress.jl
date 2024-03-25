@@ -10,7 +10,7 @@ MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 
 [compat]
 Libdl = "<0.0.1, 1.6"
-MathOptInterface = "1"
+MathOptInterface = "1.26"
 Test = "<0.0.1, 1.6"
 Xpress_jll = "=8.13.4, =9.3.0"
 julia = "1.6"

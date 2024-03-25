@@ -19,7 +19,13 @@ const CleverDicts = MOI.Utilities.CleverDicts
     EQUAL_TO,
 )
 
-@enum(ObjectiveType, SINGLE_VARIABLE, SCALAR_AFFINE, SCALAR_QUADRATIC)
+@enum(
+    ObjectiveType,
+    SINGLE_VARIABLE,
+    SCALAR_AFFINE,
+    SCALAR_QUADRATIC,
+    SCALAR_NONLINEAR,
+)
 
 @enum(CallbackState, CB_NONE, CB_GENERIC, CB_LAZY, CB_USER_CUT, CB_HEURISTIC)
 
@@ -1092,6 +1098,7 @@ function MOI.supports(
         MOI.VariableIndex,
         MOI.ScalarAffineFunction{Float64},
         MOI.ScalarQuadraticFunction{Float64},
+        MOI.ScalarNonlinearFunction,
     },
 }
     return true
@@ -1128,6 +1135,8 @@ function MOI.set(
     if model.objective_type == SCALAR_QUADRATIC
         # We need to zero out the existing quadratic objective.
         @checked Lib.XPRSdelqmatrix(model.inner, -1)
+    elseif model.objective_type == SCALAR_NONLINEAR
+        @checked Lib.XPRSnlpdelobjformula(model.inner)
     end
     num_vars = length(model.variable_info)
     # We zero all terms because we want to gurantee that the old terms
@@ -1184,7 +1193,7 @@ function MOI.set(
     ::MOI.ObjectiveFunction{F},
     f::F,
 ) where {F<:MOI.ScalarQuadraticFunction{Float64}}
-    # setting linear part also clears the existing quadratic terms
+    # setting linear part also clears the existing quadratic and nonlinear terms
     MOI.set(
         model,
         MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
@@ -1275,6 +1284,155 @@ function MOI.modify(
         Ref{Cint}(-1),
         Ref(-chg.new_constant),
     )
+    return
+end
+
+function MOI.set(
+    model::Optimizer,
+    ::MOI.ObjectiveFunction{MOI.ScalarNonlinearFunction},
+    f::MOI.ScalarNonlinearFunction,
+)
+    parsed, type, value = Cint(1), Cint[], Cdouble[]
+    _reverse_polish(model, f, type, value)
+    reverse!(type)
+    reverse!(value)
+    push!(type, Lib.XPRS_TOK_EOF)
+    push!(value, 0.0)
+    @show type, value
+    @checked Lib.XPRSnlpdelobjformula(model.inner)
+    @checked Lib.XPRSnlpchgobjformula(model.inner, parsed, type, value)
+    model.objective_type = SCALAR_NONLINEAR
+    model.is_objective_set = true
+    return
+end
+
+const _FUNCTION_MAP = Dict(
+    # Handled explicitly: Lib.XPRS_OP_UMINUS
+    :^ => (Lib.XPRS_TOK_OP, Lib.XPRS_OP_EXPONENT),
+    :* => (Lib.XPRS_TOK_OP, Lib.XPRS_OP_MULTIPLY),
+    :/ => (Lib.XPRS_TOK_OP, Lib.XPRS_OP_DIVIDE),
+    :+ => (Lib.XPRS_TOK_OP, Lib.XPRS_OP_PLUS),
+    :- => (Lib.XPRS_TOK_OP, Lib.XPRS_OP_MINUS),
+    # const XPRS_DEL_COMMA = 1
+    # const XPRS_DEL_COLON = 2
+    :log => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_LOG),
+    :log10 => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_LOG10),
+    # const XPRS_IFUN_LN = 15
+    :exp => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_EXP),
+    :abs => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_ABS),
+    :sqrt => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_SQRT),
+    :sin => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_SIN),
+    :cos => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_COS),
+    :tan => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_TAN),
+    :asin => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_ARCSIN),
+    :acos => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_ARCCOS),
+    :atan => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_ARCTAN),
+    :max => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_MIN),
+    :min => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_MAX),
+    # const XPRS_IFUN_PWL = 35
+    # Handled explicitly: XPRS_IFUN_SUM
+    # Handled explicitly: XPRS_IFUN_PROD
+    :sign => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_SIGN),
+    :erf => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_ERF),
+    :erfc => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_ERFC),
+)
+
+function _reverse_polish(
+    model::Optimizer,
+    f::MOI.ScalarNonlinearFunction,
+    type::Vector{Cint},
+    value::Vector{Cdouble},
+)
+    if f.head == :- && length(f.args) == 1
+        # Special handling for unary negation
+        push!(type, Lib.XPRS_TOK_OP)
+        push!(value, Lib.XPRS_OP_UMINUS)
+        for arg in reverse(f.args)
+            _reverse_polish(model, arg, type, value)
+        end
+        return
+    elseif f.head in (:+, :*) && length(f.args) != 2
+        # Special handling for non-binary sum and product
+        push!(type, Lib.XPRS_TOK_IFUN)
+        push!(value, f.head == :+ ? Lib.XPRS_IFUN_SUM : Lib.XPRS_IFUN_PROD)
+        push!(type, Lib.XPRS_TOK_LB)
+        push!(value, 0.0)
+        for arg in reverse(f.args)
+            _reverse_polish(model, arg, type, value)
+        end
+        push!(type, Lib.XPRS_TOK_RB)
+        push!(value, 0.0)
+        return
+    end
+    ret = get(_FUNCTION_MAP, f.head, nothing)
+    if ret === nothing
+        throw(MOI.UnsupportedNonlinearOperator(f.head))
+    elseif ret[1] == Lib.XPRS_TOK_OP
+        push!(type, ret[1])
+        push!(value, ret[2])
+        for arg in reverse(f.args)
+            _reverse_polish(model, arg, type, value)
+        end
+    else
+        @assert ret[1] == Lib.XPRS_TOK_IFUN
+        push!(type, ret[1])
+        push!(value, ret[2])
+        # XPRS_TOK_LB is not needed. Implied by XPRS_TOK_IFUN
+        for arg in reverse(f.args)
+            _reverse_polish(model, arg, type, value)
+        end
+        push!(type, Lib.XPRS_TOK_RB)
+        push!(value, 0.0)
+    end
+    return
+end
+
+function _reverse_polish(
+    ::Optimizer,
+    f::Real,
+    type::Vector{Cint},
+    value::Vector{Cdouble},
+)
+    push!(type, Lib.XPRS_TOK_CON)
+    push!(value, Cdouble(f))
+    return
+end
+
+function _reverse_polish(
+    model::Optimizer,
+    x::MOI.VariableIndex,
+    type::Vector{Cint},
+    value::Vector{Cdouble},
+)
+    push!(type, Lib.XPRS_TOK_COL)
+    push!(value, _info(model, x).column - 1)
+    return
+end
+
+function _reverse_polish(
+    model::Optimizer,
+    f::MOI.AbstractScalarFunction,
+    type::Vector{Cint},
+    value::Vector{Cdouble},
+)
+    _reverse_polish(model, convert(MOI.ScalarNonlinearFunction, f), type, value)
+    return
+end
+
+function MOI.get(
+    model::Optimizer,
+    ::MOI.ObjectiveFunction{MOI.ScalarNonlinearFunction},
+)
+    p_ntypes = Ref{Cint}()
+    @checked(
+        Lib.XPRSnlpgetobjformula(model.inner, 1, 0, p_ntypes, C_NULL, C_NULL)
+    )
+    maxtype = p_ntypes[]
+    type, value = zeros(Cint, maxtype), zeros(Cdouble, maxtype)
+    @checked(
+        Lib.XPRSnlpgetobjformula(model.inner, 1, maxtype, p_ntypes, type, value)
+    )
+    error("FIXME")
     return
 end
 
@@ -2890,11 +3048,13 @@ function MOI.optimize!(model::Optimizer)
         _set_MIP_start(model)
     end
     start_time = time()
-    if is_mip(model)
-        @checked Lib.XPRSmipoptimize(model.inner, model.solve_method)
-    else
-        @checked Lib.XPRSlpoptimize(model.inner, model.solve_method)
-    end
+    solvestatus, solstatus = Ref{Cint}(), Ref{Cint}()
+    @checked Lib.XPRSoptimize(
+        model.inner,
+        model.solve_method,
+        solvestatus,
+        solstatus,
+    )
     model.cached_solution.solve_time = time() - start_time
     check_cb_exception(model)
     # Should be almost a no-op if not needed. Might have minor overhead due to
@@ -3366,8 +3526,9 @@ end
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
-    attr = is_mip(model) ? Lib.XPRS_MIPOBJVAL : Lib.XPRS_LPOBJVAL
-    return @_invoke Lib.XPRSgetdblattrib(model.inner, attr, _)::Float64
+    return @_invoke(
+        Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_OBJVAL, _)::Float64
+    )
 end
 
 #=
@@ -4616,3 +4777,31 @@ function MOI.set(model::Optimizer, ::MOI.AbsoluteGapTolerance, value::Float64)
     setcontrol!(model.inner, "XPRS_MIPABSSTOP", value)
     return
 end
+
+#=
+    ScalarNonlinearFunction
+=#
+
+# function MOI.supports_constraint(
+#     ::Optimizer,
+#     ::MOI.ScalarNonlinearFunction,
+#     ::Union{
+#         MOI.LessThan{Float64},
+#         MOI.GreaterThan{Float64},
+#         MOI.EqualTo{Float64},
+#     },
+# )
+#     return true
+# end
+
+# function MOI.add_constraint(
+#     ::Optimizer,
+#     ::MOI.ScalarNonlinearFunction,
+#     ::Union{
+#         MOI.LessThan{Float64},
+#         MOI.GreaterThan{Float64},
+#         MOI.EqualTo{Float64},
+#     },
+# )
+#     return true
+# end
