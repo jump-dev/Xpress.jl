@@ -8,7 +8,6 @@ module Lib
 import ..Xpress
 const libxprs = Xpress.libxprs
 
-include("common.jl")
 include("xprs.jl")
 
 end  # Lib

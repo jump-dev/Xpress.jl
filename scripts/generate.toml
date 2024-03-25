@@ -1,0 +1,5 @@
+[general]
+library_name = "libxprs"
+output_file_path = "src/Lib/xprs.jl"
+print_using_CEnum = false
+extract_c_comment_style = "doxygen"
