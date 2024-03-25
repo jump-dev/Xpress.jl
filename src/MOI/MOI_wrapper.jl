@@ -976,14 +976,16 @@ function MOI.get(
     ::ForwardSensitivityOutputVariable,
     vi::MOI.VariableIndex,
 )
-    if is_mip(model) && model.moi_warnings
-        @warn "The problem is a MIP, it might fail to get correct sensitivities."
-    end
     if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL
         error("Model not optimized. Cannot get sensitivities.")
-    end
-    if model.forward_sensitivity_cache === nothing
+    elseif model.forward_sensitivity_cache === nothing
         error("Forward sensitivity cache not initiliazed correctly.")
+    end
+    optimize_type = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_OPTIMIZETYPEUSED, _)::Int
+    )
+    if optimize_type == Lib.XPRS_OPTIMIZETYPE_MIP && model.moi_warnings
+        @warn "The problem is a MIP, it might fail to get correct sensitivities."
     end
     if model.forward_sensitivity_cache.is_updated != true
         forward(model)
@@ -1016,14 +1018,16 @@ function MOI.get(
     ::BackwardSensitivityOutputConstraint,
     ci::MOI.ConstraintIndex,
 )
-    if is_mip(model) && model.moi_warnings
-        @warn "The problem is a MIP, it might fail to get correct sensitivities."
-    end
     if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL
         error("Model not optimized. Cannot get sensitivities.")
-    end
-    if model.backward_sensitivity_cache === nothing
+    elseif model.backward_sensitivity_cache === nothing
         error("Backward sensitivity cache not initiliazed correctly.")
+    end
+    optimize_type = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_OPTIMIZETYPEUSED, _)::Int
+    )
+    if optimize_type == Lib.XPRS_OPTIMIZETYPE_MIP && model.moi_warnings
+        @warn "The problem is a MIP, it might fail to get correct sensitivities."
     end
     if model.backward_sensitivity_cache.is_updated != true
         backward(model)
@@ -2824,16 +2828,6 @@ function check_cb_exception(model::Optimizer)
     return
 end
 
-function is_mip(model::Optimizer)
-    n = @_invoke(
-        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALMIPENTS, _)::Int,
-    )
-    nsos = @_invoke(
-        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALSETS, _)::Int,
-    )
-    return !model.solve_relaxation && n + nsos > 0
-end
-
 function _set_MIP_start(model)
     colind, solval = Cint[], Cdouble[]
     for info in values(model.variable_info)
@@ -2871,15 +2865,17 @@ function MOI.optimize!(model::Optimizer)
     )::Int
     rhs = Vector{Float64}(undef, ncons)
     @checked Lib.XPRSgetrhs(model.inner, rhs, Cint(0), Cint(ncons - 1))
-    if !model.ignore_start && is_mip(model)
+    if !model.ignore_start
         _set_MIP_start(model)
     end
     start_time = time()
-    if is_mip(model)
-        @checked Lib.XPRSmipoptimize(model.inner, model.solve_method)
-    else
-        @checked Lib.XPRSlpoptimize(model.inner, model.solve_method)
-    end
+    solvestatus, solstatus = Ref{Cint}(), Ref{Cint}()
+    @checked Lib.XPRSoptimize(
+        model.inner,
+        model.solve_method,
+        solvestatus,
+        solstatus,
+    )
     model.cached_solution.solve_time = time() - start_time
     check_cb_exception(model)
     # Should be almost a no-op if not needed. Might have minor overhead due to
@@ -2890,9 +2886,10 @@ function MOI.optimize!(model::Optimizer)
     model.termination_status = _cache_termination_status(model)
     model.primal_status = _cache_primal_status(model)
     model.dual_status = _cache_dual_status(model)
-    # TODO: add @checked here - must review statuses
-    if is_mip(model)
-        # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
+    optimize_type = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_OPTIMIZETYPEUSED, _)::Int
+    )
+    if optimize_type == Lib.XPRS_OPTIMIZETYPE_MIP
         Lib.XPRSgetmipsol(
             model.inner,
             model.cached_solution.variable_primal,
@@ -2901,6 +2898,7 @@ function MOI.optimize!(model::Optimizer)
         fill!(model.cached_solution.linear_dual, NaN)
         fill!(model.cached_solution.variable_dual, NaN)
     else
+        @assert optimize_type == Lib.XPRS_OPTIMIZETYPE_LP
         Lib.XPRSgetlpsol(
             model.inner,
             model.cached_solution.variable_primal,
@@ -3020,7 +3018,10 @@ function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
     _throw_if_optimize_in_progress(model, attr)
     stop =
         @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
-    if is_mip(model)
+    optimize_type = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_OPTIMIZETYPEUSED, _)::Int
+    )
+    if optimize_type == Lib.XPRS_OPTIMIZETYPE_MIP
         stat = @_invoke Lib.XPRSgetintattrib(
             model.inner,
             Lib.XPRS_MIPSTATUS,
@@ -3028,6 +3029,7 @@ function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
         )::Int
         return _MIPSTATUS[stat][1] * " - " * _STOPSTATUS[stop][1]
     else
+        @assert optimize_type == Lib.XPRS_OPTIMIZETYPE_LP
         stat = @_invoke Lib.XPRSgetintattrib(
             model.inner,
             Lib.XPRS_LPSTATUS,
@@ -3042,11 +3044,16 @@ function _cache_termination_status(model::Optimizer)
         @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
     if stop != Lib.XPRS_STOP_NONE && stop != Lib.XPRS_STOP_MIPGAP
         return _STOPSTATUS[stop][2]
-    elseif is_mip(model)
+    end
+    optimize_type = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_OPTIMIZETYPEUSED, _)::Int
+    )
+    if optimize_type == Lib.XPRS_OPTIMIZETYPE_MIP
         mipstatus = Lib.XPRS_MIPSTATUS
         stat = @_invoke Lib.XPRSgetintattrib(model.inner, mipstatus, _)::Int
         return _MIPSTATUS[stat][2]
     else
+        @assert optimize_type == Lib.XPRS_OPTIMIZETYPE_LP
         lpstatus = Lib.XPRS_LPSTATUS
         stat = @_invoke Lib.XPRSgetintattrib(model.inner, lpstatus, _)::Int
         return _LPSTATUS[stat][2]
@@ -3099,7 +3106,10 @@ function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
 end
 
 function _cache_dual_status(model)
-    if is_mip(model)
+    optimize_type = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_OPTIMIZETYPEUSED, _)::Int
+    )
+    if optimize_type != Lib.XPRS_OPTIMIZETYPE_LP
         return MOI.NO_SOLUTION
     end
     term_stat = MOI.get(model, MOI.TerminationStatus())
@@ -3352,8 +3362,9 @@ end
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
-    attr = is_mip(model) ? Lib.XPRS_MIPOBJVAL : Lib.XPRS_LPOBJVAL
-    return @_invoke Lib.XPRSgetdblattrib(model.inner, attr, _)::Float64
+    return @_invoke(
+        Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_OBJVAL, _)::Float64
+    )
 end
 
 #=
@@ -3362,7 +3373,11 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveBound)
     _throw_if_optimize_in_progress(model, attr)
-    attr = is_mip(model) ? Lib.XPRS_BESTBOUND : Lib.XPRS_LPOBJVAL
+    optimize_type = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_OPTIMIZETYPEUSED, _)::Int
+    )
+    is_mip = optimize_type == Lib.XPRS_OPTIMIZETYPE_MIP
+    attr = ifelse(is_mip, Lib.XPRS_BESTBOUND, Lib.XPRS_OBJVAL)
     return @_invoke Lib.XPRSgetdblattrib(model.inner, attr, _)::Float64
 end
 

@@ -1799,11 +1799,11 @@ function test_BackwardSensitivityOutputConstraint_error()
     c = MOI.add_constraint(model, 0.5 * x, MOI.EqualTo(0.0))
     attr = Xpress.BackwardSensitivityOutputConstraint()
     err = ErrorException("Model not optimized. Cannot get sensitivities.")
-    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, c))
+    @test_throws err MOI.get(model, attr, c)
     MOI.optimize!(model)
     err =
         ErrorException("Backward sensitivity cache not initiliazed correctly.")
-    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, c))
+    @test_throws err  MOI.get(model, attr, c)
     return
 end
 
@@ -1814,10 +1814,10 @@ function test_ForwardSensitivityOutputVariable_error()
     MOI.add_constraint(model, x, MOI.ZeroOne())
     attr = Xpress.ForwardSensitivityOutputVariable()
     err = ErrorException("Model not optimized. Cannot get sensitivities.")
-    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, x))
+    @test_throws err  MOI.get(model, attr, x)
     MOI.optimize!(model)
     err = ErrorException("Forward sensitivity cache not initiliazed correctly.")
-    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, x))
+    @test_throws err MOI.get(model, attr, x)
     return
 end
 
