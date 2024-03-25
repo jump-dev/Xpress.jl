@@ -7,7 +7,6 @@ module Xpress
 
 import Libdl
 import MathOptInterface as MOI
-import SparseArrays
 
 # Load in `deps.jl`, complaining if it does not exist
 const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")

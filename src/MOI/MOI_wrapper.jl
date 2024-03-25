@@ -2744,25 +2744,14 @@ function _get_sparse_sos(model)
     nnz = @_invoke(
         Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALSETMEMBERS, _)::Int
     )
-    nsos = @_invoke Lib.XPRSgetintattrib(
-        model.inner,
-        Lib.XPRS_ORIGINALSETS,
-        _,
-    )::Int
-    n = @_invoke Lib.XPRSgetintattrib(
-        model.inner,
-        Lib.XPRS_ORIGINALCOLS,
-        _,
-    )::Int
-
+    nsos = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALSETS, _)::Int
+    )
     settypes = Array{Cchar}(undef, nsos)
-    setstart = Array{Cint}(undef, nsos + 1)
-    setcols = Array{Cint}(undef, nnz)
-    setvals = Array{Float64}(undef, nnz)
-
-    intents = Ref{Cint}(0)
-    nsets = Ref{Cint}(0)
-
+    setstart = zeros(Cint, nsos + 1)
+    setcols = zeros(Cint, nnz)
+    setvals = zeros(Float64, nnz)
+    intents, nsets = Ref{Cint}(), Ref{Cint}()
     @checked Lib.XPRSgetglobal(
         model.inner,
         intents,
@@ -2775,20 +2764,7 @@ function _get_sparse_sos(model)
         setcols,
         setvals,
     )
-
-    setstart[end] = nnz
-
-    I = Array{Cint}(undef, nnz)
-    J = Array{Cint}(undef, nnz)
-    V = Array{Float64}(undef, nnz)
-    for i in 1:length(setstart)-1
-        for j in (setstart[i]+1):setstart[i+1]
-            I[j] = i
-            J[j] = setcols[j] + 1
-            V[j] = setvals[j]
-        end
-    end
-    return SparseArrays.sparse(I, J, V, nsets[], n)
+    return setstart, setcols, setvals
 end
 
 function MOI.get(
@@ -2796,8 +2772,9 @@ function MOI.get(
     ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables,S},
 ) where {S<:SOS}
-    A = _get_sparse_sos(model)
-    return S(A[_info(model, c).row, :].nzval)
+    setstart, setcols, setvals = _get_sparse_sos(model)
+    row = _info(model, c).row
+    return S(setvals[(setstart[row]+1):setstart[row+1]])
 end
 
 function MOI.get(
@@ -2805,11 +2782,11 @@ function MOI.get(
     ::MOI.ConstraintFunction,
     c::MOI.ConstraintIndex{MOI.VectorOfVariables,S},
 ) where {S<:SOS}
-    A = _get_sparse_sos(model)
-    indices = SparseArrays.nonzeroinds(A[_info(model, c).row, :])
-    return MOI.VectorOfVariables([
-        model.variable_info[CleverDicts.LinearIndex(i)].index for i in indices
-    ])
+    setstart, setcols, setvals = _get_sparse_sos(model)
+    row = _info(model, c).row
+    indices = (setstart[row]+1):setstart[row+1]
+    cols = CleverDicts.LinearIndex.(setcols[indices] .+ 1)
+    return MOI.VectorOfVariables([model.variable_info[c].index for c in cols])
 end
 
 ###
