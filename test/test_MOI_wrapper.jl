@@ -9,7 +9,6 @@ using Xpress
 using Test
 
 import MathOptInterface as MOI
-import Random
 
 function runtests()
     for name in names(@__MODULE__; all = true)
@@ -1194,8 +1193,7 @@ function callback_knapsack_model()
     x = MOI.add_variables(model, N)
     MOI.add_constraints(model, x, MOI.ZeroOne())
     MOI.set.(model, MOI.VariablePrimalStart(), x, 0.0)
-    Random.seed!(1)
-    item_weights, item_values = rand(N), rand(N)
+    item_weights, item_values = abs.(cos.(1:N)), abs.(sin.(1:N))
     MOI.add_constraint(
         model,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(item_weights, x), 0.0),

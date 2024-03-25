@@ -13,13 +13,11 @@ MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 Downloads = "<0.0.1, 1"
 Libdl = "<0.0.1, 1.6"
 MathOptInterface = "1"
-Random = "<0.0.1, 1.6"
 Test = "<0.0.1, 1.6"
 julia = "1.6"
 
 [extras]
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Random", "Test"]
+test = ["Test"]
