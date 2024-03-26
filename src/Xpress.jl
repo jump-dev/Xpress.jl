@@ -29,12 +29,39 @@ include("helper.jl")
 include("api.jl")
 include("license.jl")
 
-function initialize()
-    Libdl.dlopen(libxprs)
-    userlic()
+"""
+    initialize(;
+        liccheck::Function = identity,
+        verbose::Bool = true,
+        xpauth_path::String = ""
+    )
+
+Performs license checking with `liccheck` validation function on dir
+`xpauth_path`.
+
+This function must be called before any XPRS functions can be called.
+
+By default, `__init__` calls this with no keyword arguments.
+
+## Example
+
+```julia
+ENV["XPRESS_JL_NO_AUTO_INIT"] = true
+using Xpress
+liccheck(x::Vector{Cint}) = Cint[xor(x[1], 0x0123)]
+Xpress.initialize(;
+    liccheck = liccheck,
+    verbose = false,
+    xpauth_path = "/tmp/xpauth.xpr,
+)
+# Now you can use Xpress
+```
+"""
+function initialize(; kwargs...)
+    userlic(; kwargs...)
     Lib.XPRSinit(C_NULL)
-    # Calling free is not necessary since destroyprob is called
-    # in the finalizer.
+    # Calling XPRSfree is not necessary since XPRSdestroyprob is called in the
+    # finalizer.
     return
 end
 
