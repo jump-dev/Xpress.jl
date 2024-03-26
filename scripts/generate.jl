@@ -17,6 +17,26 @@ context = create_context(
 )
 build!(context)
 
+function replace_line_cstring(line, signature)
+    changes = getindex.(
+        signature,
+        findall(r"char(\s*?\*| [a-z0-9]+?\[\])", signature),
+    )
+    last_index = 1
+    outputs = String[]
+    for (change, range) in zip(changes, findall("Ptr{UInt8}", line))
+        push!(outputs, line[last_index:(first(range)-1)])
+        if endswith(change, "*")
+            push!(outputs, "Cstring")
+        else
+            push!(outputs, line[range])
+        end
+        last_index = last(range) + 1
+    end
+    push!(outputs, line[last_index:end])
+    return join(outputs)
+end
+
 function postprocess(filename)
     contents = read(filename, String);
     # Remove the deprecated if-else blocks
@@ -46,7 +66,7 @@ function postprocess(filename)
     # XPRSsetcheckedmode(int checkedmode)
     xprs_signatures = Dict{String,String}()
     for line in readlines(xprs_filename)
-        if (m = match(r"(XPRS[a-z0-9\_]+?)\(.+?\)", line)) !== nothing
+        if (m = match(r"XPRS_CC (XPRS[a-z0-9\_]+?)\(.+?\)", line)) !== nothing
             xprs_signatures[m.captures[1]] = m.match
         end
     end
@@ -85,11 +105,14 @@ function postprocess(filename)
             if occursin("Ptr{UInt8}", line)
                 # Replace Ptr{Cchar} with Cstring for backward compatibility
                 # with older versions of Xpress.jl
-                if (m = match(r"ccall\(\(:(XPRS.+?)\,", line)) !== nothing
-                    if occursin("char*", xprs_signatures[m.captures[1]])
-                        line = replace(line, "Ptr{UInt8}" => "Cstring")
-                    end
-                end
+                #
+                # We need to replace char* with Ptr{UInt8} and char[] with
+                # Cstring.
+                map = Dict("char*" => "Cstring", "char" => "Ptr{UInt8}")
+                m = match(r"ccall\(\(:(XPRS.+?)\,", line)
+                @assert m !== nothing
+                signature = xprs_signatures[m.captures[1]]
+                line = replace_line_cstring(line, signature)
             end
             if !(isempty(line) && isempty(last_line))
                 println(io, line)
