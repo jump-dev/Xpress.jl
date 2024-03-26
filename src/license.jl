@@ -51,11 +51,7 @@ function userlic(;
     xpauth_path::String = "",
 )
     verbose &= !haskey(ENV, "XPRESS_JL_NO_INFO")
-    # Open and free xpauth.xpr (touches the file to release it). It's not
-    # obvious why we need to touch the license file, but the code has done this
-    # since https://github.com/jump-dev/Xpress.jl/pull/9.
     path_lic = _get_xpauthpath(xpauth_path, verbose)
-    touch(path_lic)
     # Pre-allocate storage for the license integer. For backward compatibility,
     # we use `Vector{Cint}`, because some users may have `liccheck` functions
     # which rely on this.
