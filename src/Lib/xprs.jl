@@ -54,27 +54,27 @@ const XPRS_VECMAPDELTA = Cvoid
 # Struct does not exist in v33
 const XPRS_MULTIMAPDELTA = Cvoid
 
-struct var"##Ctag#318"
+struct var"##Ctag#352"
     data::NTuple{8, UInt8}
 end
 
 # Function does not exist in v33
-function Base.getproperty(x::Ptr{var"##Ctag#318"}, f::Symbol)
+function Base.getproperty(x::Ptr{var"##Ctag#352"}, f::Symbol)
     f === :integer && return Ptr{Cint}(x + 0)
     f === :real && return Ptr{Cdouble}(x + 0)
     return getfield(x, f)
 end
 
 # Function does not exist in v33
-function Base.getproperty(x::var"##Ctag#318", f::Symbol)
-    r = Ref{var"##Ctag#318"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#318"}, r)
+function Base.getproperty(x::var"##Ctag#352", f::Symbol)
+    r = Ref{var"##Ctag#352"}(x)
+    ptr = Base.unsafe_convert(Ptr{var"##Ctag#352"}, r)
     fptr = getproperty(ptr, f)
     GC.@preserve r unsafe_load(fptr)
 end
 
 # Function does not exist in v33
-function Base.setproperty!(x::Ptr{var"##Ctag#318"}, f::Symbol, v)
+function Base.setproperty!(x::Ptr{var"##Ctag#352"}, f::Symbol, v)
     unsafe_store!(getproperty(x, f), v)
 end
 
@@ -84,7 +84,7 @@ end
 
 # Function does not exist in v33
 function Base.getproperty(x::Ptr{xo_alltypes}, f::Symbol)
-    f === :value && return Ptr{var"##Ctag#318"}(x + 0)
+    f === :value && return Ptr{var"##Ctag#352"}(x + 0)
     f === :type && return Ptr{Cvoid}(x + 8)
     return getfield(x, f)
 end
@@ -114,7 +114,7 @@ function XPRScopycontrols(dest, src)
 end
 
 function XPRScopyprob(dest, src, name)
-    ccall((:XPRScopyprob, libxprs), Cint, (XPRSprob, XPRSprob, Ptr{UInt8}), dest, src, name)
+    ccall((:XPRScopyprob, libxprs), Cint, (XPRSprob, XPRSprob, Cstring), dest, src, name)
 end
 
 function XPRScreateprob(p_prob)
@@ -126,7 +126,7 @@ function XPRSdestroyprob(prob)
 end
 
 function XPRSinit(path)
-    ccall((:XPRSinit, libxprs), Cint, (Ptr{UInt8},), path)
+    ccall((:XPRSinit, libxprs), Cint, (Cstring,), path)
 end
 
 function XPRSfree()
@@ -134,11 +134,11 @@ function XPRSfree()
 end
 
 function XPRSgetlicerrmsg(buffer, maxbytes)
-    ccall((:XPRSgetlicerrmsg, libxprs), Cint, (Ptr{UInt8}, Cint), buffer, maxbytes)
+    ccall((:XPRSgetlicerrmsg, libxprs), Cint, (Cstring, Cint), buffer, maxbytes)
 end
 
 function XPRSlicense(p_i, p_c)
-    ccall((:XPRSlicense, libxprs), Cint, (Ptr{Cint}, Ptr{UInt8}), p_i, p_c)
+    ccall((:XPRSlicense, libxprs), Cint, (Ptr{Cint}, Cstring), p_i, p_c)
 end
 
 function XPRSbeginlicensing(p_notyet)
@@ -158,11 +158,11 @@ function XPRSgetcheckedmode(p_checkedmode)
 end
 
 function XPRSgetbanner(banner)
-    ccall((:XPRSgetbanner, libxprs), Cint, (Ptr{UInt8},), banner)
+    ccall((:XPRSgetbanner, libxprs), Cint, (Cstring,), banner)
 end
 
 function XPRSgetversion(version)
-    ccall((:XPRSgetversion, libxprs), Cint, (Ptr{UInt8},), version)
+    ccall((:XPRSgetversion, libxprs), Cint, (Cstring,), version)
 end
 
 # Function does not exist in v33
@@ -175,15 +175,15 @@ function XPRSgetdaysleft(p_daysleft)
 end
 
 function XPRSfeaturequery(feature, p_status)
-    ccall((:XPRSfeaturequery, libxprs), Cint, (Ptr{UInt8}, Ptr{Cint}), feature, p_status)
+    ccall((:XPRSfeaturequery, libxprs), Cint, (Cstring, Ptr{Cint}), feature, p_status)
 end
 
 function XPRSsetprobname(prob, probname)
-    ccall((:XPRSsetprobname, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, probname)
+    ccall((:XPRSsetprobname, libxprs), Cint, (XPRSprob, Cstring), prob, probname)
 end
 
 function XPRSsetlogfile(prob, filename)
-    ccall((:XPRSsetlogfile, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, filename)
+    ccall((:XPRSsetlogfile, libxprs), Cint, (XPRSprob, Cstring), prob, filename)
 end
 
 function XPRSsetdefaultcontrol(prob, control)
@@ -199,7 +199,7 @@ function XPRSinterrupt(prob, reason)
 end
 
 function XPRSgetprobname(prob, name)
-    ccall((:XPRSgetprobname, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, name)
+    ccall((:XPRSgetprobname, libxprs), Cint, (XPRSprob, Cstring), prob, name)
 end
 
 function XPRSsetintcontrol(prob, control, value)
@@ -215,7 +215,7 @@ function XPRSsetdblcontrol(prob, control, value)
 end
 
 function XPRSsetstrcontrol(prob, control, value)
-    ccall((:XPRSsetstrcontrol, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}), prob, control, value)
+    ccall((:XPRSsetstrcontrol, libxprs), Cint, (XPRSprob, Cint, Cstring), prob, control, value)
 end
 
 function XPRSgetintcontrol(prob, control, p_value)
@@ -231,11 +231,11 @@ function XPRSgetdblcontrol(prob, control, p_value)
 end
 
 function XPRSgetstrcontrol(prob, control, value)
-    ccall((:XPRSgetstrcontrol, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}), prob, control, value)
+    ccall((:XPRSgetstrcontrol, libxprs), Cint, (XPRSprob, Cint, Cstring), prob, control, value)
 end
 
 function XPRSgetstringcontrol(prob, control, value, maxbytes, p_nbytes)
-    ccall((:XPRSgetstringcontrol, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}, Cint, Ptr{Cint}), prob, control, value, maxbytes, p_nbytes)
+    ccall((:XPRSgetstringcontrol, libxprs), Cint, (XPRSprob, Cint, Cstring, Cint, Ptr{Cint}), prob, control, value, maxbytes, p_nbytes)
 end
 
 function XPRSgetintattrib(prob, attrib, p_value)
@@ -247,11 +247,11 @@ function XPRSgetintattrib64(prob, attrib, p_value)
 end
 
 function XPRSgetstrattrib(prob, attrib, value)
-    ccall((:XPRSgetstrattrib, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}), prob, attrib, value)
+    ccall((:XPRSgetstrattrib, libxprs), Cint, (XPRSprob, Cint, Cstring), prob, attrib, value)
 end
 
 function XPRSgetstringattrib(prob, attrib, value, maxbytes, p_nbytes)
-    ccall((:XPRSgetstringattrib, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}, Cint, Ptr{Cint}), prob, attrib, value, maxbytes, p_nbytes)
+    ccall((:XPRSgetstringattrib, libxprs), Cint, (XPRSprob, Cint, Cstring, Cint, Ptr{Cint}), prob, attrib, value, maxbytes, p_nbytes)
 end
 
 function XPRSgetdblattrib(prob, attrib, p_value)
@@ -259,11 +259,11 @@ function XPRSgetdblattrib(prob, attrib, p_value)
 end
 
 function XPRSgetcontrolinfo(prob, name, p_id, p_type)
-    ccall((:XPRSgetcontrolinfo, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}), prob, name, p_id, p_type)
+    ccall((:XPRSgetcontrolinfo, libxprs), Cint, (XPRSprob, Cstring, Ptr{Cint}, Ptr{Cint}), prob, name, p_id, p_type)
 end
 
 function XPRSgetattribinfo(prob, name, p_id, p_type)
-    ccall((:XPRSgetattribinfo, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}), prob, name, p_id, p_type)
+    ccall((:XPRSgetattribinfo, libxprs), Cint, (XPRSprob, Cstring, Ptr{Cint}, Ptr{Cint}), prob, name, p_id, p_type)
 end
 
 # Function does not exist in v33
@@ -306,23 +306,23 @@ function XPRSgetqobj(prob, objqcol1, objqcol2, p_objqcoef)
 end
 
 function XPRSreadprob(prob, filename, flags)
-    ccall((:XPRSreadprob, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, filename, flags)
+    ccall((:XPRSreadprob, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, filename, flags)
 end
 
 function XPRSloadlp(prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub)
-    ccall((:XPRSloadlp, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub)
+    ccall((:XPRSloadlp, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Cstring, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub)
 end
 
 function XPRSloadlp64(prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub)
-    ccall((:XPRSloadlp64, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub)
+    ccall((:XPRSloadlp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Cstring, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub)
 end
 
 function XPRSloadqp(prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef)
-    ccall((:XPRSloadqp, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef)
+    ccall((:XPRSloadqp, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Cstring, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef)
 end
 
 function XPRSloadqp64(prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef)
-    ccall((:XPRSloadqp64, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef)
+    ccall((:XPRSloadqp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Cstring, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef)
 end
 
 # Function does not exist in v33
@@ -382,11 +382,11 @@ function XPRSscale(prob, rowscale, colscale)
 end
 
 function XPRSreaddirs(prob, filename)
-    ccall((:XPRSreaddirs, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, filename)
+    ccall((:XPRSreaddirs, libxprs), Cint, (XPRSprob, Cstring), prob, filename)
 end
 
 function XPRSwritedirs(prob, filename)
-    ccall((:XPRSwritedirs, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, filename)
+    ccall((:XPRSwritedirs, libxprs), Cint, (XPRSprob, Cstring), prob, filename)
 end
 
 # Function does not exist in v33
@@ -469,32 +469,32 @@ function XPRSgetscale(prob, rowscale, colscale)
 end
 
 function XPRSlpoptimize(prob, flags)
-    ccall((:XPRSlpoptimize, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, flags)
+    ccall((:XPRSlpoptimize, libxprs), Cint, (XPRSprob, Cstring), prob, flags)
 end
 
 function XPRSmipoptimize(prob, flags)
-    ccall((:XPRSmipoptimize, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, flags)
+    ccall((:XPRSmipoptimize, libxprs), Cint, (XPRSprob, Cstring), prob, flags)
 end
 
 # Function does not exist in v33
 function XPRSoptimize(prob, flags, solvestatus, solstatus)
-    ccall((:XPRSoptimize, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}), prob, flags, solvestatus, solstatus)
+    ccall((:XPRSoptimize, libxprs), Cint, (XPRSprob, Cstring, Ptr{Cint}, Ptr{Cint}), prob, flags, solvestatus, solstatus)
 end
 
 function XPRSreadslxsol(prob, filename, flags)
-    ccall((:XPRSreadslxsol, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, filename, flags)
+    ccall((:XPRSreadslxsol, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, filename, flags)
 end
 
 function XPRSalter(prob, filename)
-    ccall((:XPRSalter, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, filename)
+    ccall((:XPRSalter, libxprs), Cint, (XPRSprob, Cstring), prob, filename)
 end
 
 function XPRSreadbasis(prob, filename, flags)
-    ccall((:XPRSreadbasis, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, filename, flags)
+    ccall((:XPRSreadbasis, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, filename, flags)
 end
 
 function XPRSreadbinsol(prob, filename, flags)
-    ccall((:XPRSreadbinsol, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, filename, flags)
+    ccall((:XPRSreadbinsol, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, filename, flags)
 end
 
 function XPRSgetinfeas(prob, p_nprimalcols, p_nprimalrows, p_ndualrows, p_ndualcols, x, slack, duals, djs)
@@ -514,20 +514,20 @@ function XPRScrossoverlpsol(prob, p_status)
 end
 
 function XPRStune(prob, flags)
-    ccall((:XPRStune, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, flags)
+    ccall((:XPRStune, libxprs), Cint, (XPRSprob, Cstring), prob, flags)
 end
 
 # Function does not exist in v33
 function XPRStuneprobsetfile(prob, setfile, ifmip, sense)
-    ccall((:XPRStuneprobsetfile, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint), prob, setfile, ifmip, sense)
+    ccall((:XPRStuneprobsetfile, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint), prob, setfile, ifmip, sense)
 end
 
 function XPRStunerwritemethod(prob, methodfile)
-    ccall((:XPRStunerwritemethod, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, methodfile)
+    ccall((:XPRStunerwritemethod, libxprs), Cint, (XPRSprob, Cstring), prob, methodfile)
 end
 
 function XPRStunerreadmethod(prob, methodfile)
-    ccall((:XPRStunerreadmethod, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, methodfile)
+    ccall((:XPRStunerreadmethod, libxprs), Cint, (XPRSprob, Cstring), prob, methodfile)
 end
 
 function XPRSgetbarnumstability(prob, colstab, rowstab)
@@ -622,23 +622,23 @@ function XPRSgetmqobj64(prob, start, colind, objqcoef, maxcoefs, p_ncoefs, first
 end
 
 function XPRSwritebasis(prob, filename, flags)
-    ccall((:XPRSwritebasis, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, filename, flags)
+    ccall((:XPRSwritebasis, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, filename, flags)
 end
 
 function XPRSwritesol(prob, filename, flags)
-    ccall((:XPRSwritesol, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, filename, flags)
+    ccall((:XPRSwritesol, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, filename, flags)
 end
 
 function XPRSwritebinsol(prob, filename, flags)
-    ccall((:XPRSwritebinsol, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, filename, flags)
+    ccall((:XPRSwritebinsol, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, filename, flags)
 end
 
 function XPRSwriteprtsol(prob, filename, flags)
-    ccall((:XPRSwriteprtsol, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, filename, flags)
+    ccall((:XPRSwriteprtsol, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, filename, flags)
 end
 
 function XPRSwriteslxsol(prob, filename, flags)
-    ccall((:XPRSwriteslxsol, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, filename, flags)
+    ccall((:XPRSwriteslxsol, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, filename, flags)
 end
 
 function XPRSgetpresolvesol(prob, x, slack, duals, djs)
@@ -690,7 +690,7 @@ function XPRSiisall(prob)
 end
 
 function XPRSiiswrite(prob, iis, filename, filetype, flags)
-    ccall((:XPRSiiswrite, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}, Cint, Ptr{UInt8}), prob, iis, filename, filetype, flags)
+    ccall((:XPRSiiswrite, libxprs), Cint, (XPRSprob, Cint, Cstring, Cint, Cstring), prob, iis, filename, filetype, flags)
 end
 
 function XPRSiisisolations(prob, iis)
@@ -797,11 +797,11 @@ end
 
 # Function does not exist in v33
 function XPRSsaveas(prob, sSaveFileName)
-    ccall((:XPRSsaveas, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, sSaveFileName)
+    ccall((:XPRSsaveas, libxprs), Cint, (XPRSprob, Cstring), prob, sSaveFileName)
 end
 
 function XPRSrestore(prob, probname, flags)
-    ccall((:XPRSrestore, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, probname, flags)
+    ccall((:XPRSrestore, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, probname, flags)
 end
 
 function XPRSpivot(prob, enter, leave)
@@ -813,15 +813,15 @@ function XPRSloadlpsol(prob, x, slack, duals, djs, p_status)
 end
 
 function XPRSlogfilehandler(xprsobj, cbdata, thread, msg, msgtype, msgcode)
-    ccall((:XPRSlogfilehandler, libxprs), Cint, (XPRSobject, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{UInt8}, Cint, Cint), xprsobj, cbdata, thread, msg, msgtype, msgcode)
+    ccall((:XPRSlogfilehandler, libxprs), Cint, (XPRSobject, Ptr{Cvoid}, Ptr{Cvoid}, Cstring, Cint, Cint), xprsobj, cbdata, thread, msg, msgtype, msgcode)
 end
 
 function XPRSrepairweightedinfeas(prob, p_status, lepref, gepref, lbpref, ubpref, phase2, delta, flags)
-    ccall((:XPRSrepairweightedinfeas, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, UInt8, Cdouble, Ptr{UInt8}), prob, p_status, lepref, gepref, lbpref, ubpref, phase2, delta, flags)
+    ccall((:XPRSrepairweightedinfeas, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, UInt8, Cdouble, Cstring), prob, p_status, lepref, gepref, lbpref, ubpref, phase2, delta, flags)
 end
 
 function XPRSrepairweightedinfeasbounds(prob, p_status, lepref, gepref, lbpref, ubpref, lerelax, gerelax, lbrelax, ubrelax, phase2, delta, flags)
-    ccall((:XPRSrepairweightedinfeasbounds, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, UInt8, Cdouble, Ptr{UInt8}), prob, p_status, lepref, gepref, lbpref, ubpref, lerelax, gerelax, lbrelax, ubrelax, phase2, delta, flags)
+    ccall((:XPRSrepairweightedinfeasbounds, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, UInt8, Cdouble, Cstring), prob, p_status, lepref, gepref, lbpref, ubpref, lerelax, gerelax, lbrelax, ubrelax, phase2, delta, flags)
 end
 
 function XPRSrepairinfeas(prob, p_status, penalty, phase2, flags, lepref, gepref, lbpref, ubpref, delta)
@@ -833,15 +833,15 @@ function XPRSbasisstability(prob, type, norm, scaled, p_value)
 end
 
 function XPRSgetindex(prob, type, name, p_index)
-    ccall((:XPRSgetindex, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}, Ptr{Cint}), prob, type, name, p_index)
+    ccall((:XPRSgetindex, libxprs), Cint, (XPRSprob, Cint, Cstring, Ptr{Cint}), prob, type, name, p_index)
 end
 
 function XPRSgetlasterror(prob, errmsg)
-    ccall((:XPRSgetlasterror, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, errmsg)
+    ccall((:XPRSgetlasterror, libxprs), Cint, (XPRSprob, Cstring), prob, errmsg)
 end
 
 function XPRSgetobjecttypename(xprsobj, p_name)
-    ccall((:XPRSgetobjecttypename, libxprs), Cint, (XPRSobject, Ptr{Ptr{UInt8}}), xprsobj, p_name)
+    ccall((:XPRSgetobjecttypename, libxprs), Cint, (XPRSobject, Ptr{Cstring}), xprsobj, p_name)
 end
 
 function XPRSgetprimalray(prob, ray, p_hasray)
@@ -926,7 +926,7 @@ function XPRSgetpivots(prob, enter, outlist, x, p_objval, p_npivots, maxpivots)
 end
 
 function XPRSwriteprob(prob, filename, flags)
-    ccall((:XPRSwriteprob, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}), prob, filename, flags)
+    ccall((:XPRSwriteprob, libxprs), Cint, (XPRSprob, Cstring, Cstring), prob, filename, flags)
 end
 
 function XPRScalcslacks(prob, solution, slacks)
@@ -971,7 +971,7 @@ function XPRSgetnamelist(prob, type, names, maxbytes, p_nbytes, first, last)
 end
 
 function XPRSaddmipsol(prob, length, solval, colind, name)
-    ccall((:XPRSaddmipsol, libxprs), Cint, (XPRSprob, Cint, Ptr{Cdouble}, Ptr{Cint}, Ptr{UInt8}), prob, length, solval, colind, name)
+    ccall((:XPRSaddmipsol, libxprs), Cint, (XPRSprob, Cint, Ptr{Cdouble}, Ptr{Cint}, Cstring), prob, length, solval, colind, name)
 end
 
 function XPRSgetcutslack(prob, cutind, p_slack)
@@ -1831,7 +1831,7 @@ function XPRS_ge_getdebugmode(p_debugmode)
 end
 
 function XPRS_ge_getlasterror(p_msgcode, msg, maxbytes, p_nbytes)
-    ccall((:XPRS_ge_getlasterror, libxprs), Cint, (Ptr{Cint}, Ptr{UInt8}, Cint, Ptr{Cint}), p_msgcode, msg, maxbytes, p_nbytes)
+    ccall((:XPRS_ge_getlasterror, libxprs), Cint, (Ptr{Cint}, Cstring, Cint, Ptr{Cint}), p_msgcode, msg, maxbytes, p_nbytes)
 end
 
 # Function does not exist in v33
@@ -1877,7 +1877,7 @@ function XPRS_msp_getslack(msp, prob_to_rank_against, iSolutionId, iSolutionIdSt
 end
 
 function XPRS_msp_loadsol(msp, iSolutionId, x, nCols, sSolutionName, bNameModifiedForUniqueness, iSolutionIdOfExistingDuplicatePreventedLoad)
-    ccall((:XPRS_msp_loadsol, libxprs), Cint, (XPRSmipsolpool, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}), msp, iSolutionId, x, nCols, sSolutionName, bNameModifiedForUniqueness, iSolutionIdOfExistingDuplicatePreventedLoad)
+    ccall((:XPRS_msp_loadsol, libxprs), Cint, (XPRSmipsolpool, Ptr{Cint}, Ptr{Cdouble}, Cint, Cstring, Ptr{Cint}, Ptr{Cint}), msp, iSolutionId, x, nCols, sSolutionName, bNameModifiedForUniqueness, iSolutionIdOfExistingDuplicatePreventedLoad)
 end
 
 function XPRS_msp_delsol(msp, iSolutionId, iSolutionIdStatus_)
@@ -1957,27 +1957,27 @@ function XPRS_msp_setdblcontrol(msp, iControlId, Val)
 end
 
 function XPRS_msp_setsolname(msp, iSolutionId, sNewSolutionBaseName, bNameModifiedForUniqueness, iSolutionIdStatus_)
-    ccall((:XPRS_msp_setsolname, libxprs), Cint, (XPRSmipsolpool, Cint, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}), msp, iSolutionId, sNewSolutionBaseName, bNameModifiedForUniqueness, iSolutionIdStatus_)
+    ccall((:XPRS_msp_setsolname, libxprs), Cint, (XPRSmipsolpool, Cint, Cstring, Ptr{Cint}, Ptr{Cint}), msp, iSolutionId, sNewSolutionBaseName, bNameModifiedForUniqueness, iSolutionIdStatus_)
 end
 
 function XPRS_msp_getsolname(msp, iSolutionId, _sname, _iStringBufferBytes, _iBytesInInternalString, iSolutionIdStatus_)
-    ccall((:XPRS_msp_getsolname, libxprs), Cint, (XPRSmipsolpool, Cint, Ptr{UInt8}, Cint, Ptr{Cint}, Ptr{Cint}), msp, iSolutionId, _sname, _iStringBufferBytes, _iBytesInInternalString, iSolutionIdStatus_)
+    ccall((:XPRS_msp_getsolname, libxprs), Cint, (XPRSmipsolpool, Cint, Cstring, Cint, Ptr{Cint}, Ptr{Cint}), msp, iSolutionId, _sname, _iStringBufferBytes, _iBytesInInternalString, iSolutionIdStatus_)
 end
 
 function XPRS_msp_findsolbyname(msp, sSolutionName, iSolutionId)
-    ccall((:XPRS_msp_findsolbyname, libxprs), Cint, (XPRSmipsolpool, Ptr{UInt8}, Ptr{Cint}), msp, sSolutionName, iSolutionId)
+    ccall((:XPRS_msp_findsolbyname, libxprs), Cint, (XPRSmipsolpool, Cstring, Ptr{Cint}), msp, sSolutionName, iSolutionId)
 end
 
 function XPRS_msp_writeslxsol(msp, prob_context, iSolutionId, iSolutionIdStatus_, sFileName, sFlags)
-    ccall((:XPRS_msp_writeslxsol, libxprs), Cint, (XPRSmipsolpool, XPRSprob, Cint, Ptr{Cint}, Ptr{UInt8}, Ptr{UInt8}), msp, prob_context, iSolutionId, iSolutionIdStatus_, sFileName, sFlags)
+    ccall((:XPRS_msp_writeslxsol, libxprs), Cint, (XPRSmipsolpool, XPRSprob, Cint, Ptr{Cint}, Cstring, Cstring), msp, prob_context, iSolutionId, iSolutionIdStatus_, sFileName, sFlags)
 end
 
 function XPRS_msp_readslxsol(msp, col_name_list, sFileName, sFlags, iSolutionId_Beg, iSolutionId_End)
-    ccall((:XPRS_msp_readslxsol, libxprs), Cint, (XPRSmipsolpool, XPRSnamelist, Ptr{UInt8}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}), msp, col_name_list, sFileName, sFlags, iSolutionId_Beg, iSolutionId_End)
+    ccall((:XPRS_msp_readslxsol, libxprs), Cint, (XPRSmipsolpool, XPRSnamelist, Cstring, Cstring, Ptr{Cint}, Ptr{Cint}), msp, col_name_list, sFileName, sFlags, iSolutionId_Beg, iSolutionId_End)
 end
 
 function XPRS_msp_getlasterror(msp, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    ccall((:XPRS_msp_getlasterror, libxprs), Cint, (XPRSmipsolpool, Ptr{Cint}, Ptr{UInt8}, Cint, Ptr{Cint}), msp, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+    ccall((:XPRS_msp_getlasterror, libxprs), Cint, (XPRSmipsolpool, Ptr{Cint}, Cstring, Cint, Ptr{Cint}), msp, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
 end
 
 function XPRS_msp_setcbmsghandler(msp, msghandler, data)
@@ -2009,11 +2009,11 @@ function XPRSdelqmatrix(prob, row)
 end
 
 function XPRSloadqcqp(prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoef, rowqcol1, rowqcol2, rowqcoef)
-    ccall((:XPRSloadqcqp, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoef, rowqcol1, rowqcol2, rowqcoef)
+    ccall((:XPRSloadqcqp, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Cstring, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoef, rowqcol1, rowqcol2, rowqcoef)
 end
 
 function XPRSloadqcqp64(prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoef, rowqcol1, rowqcol2, rowqcoef)
-    ccall((:XPRSloadqcqp64, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoef, rowqcol1, rowqcol2, rowqcoef)
+    ccall((:XPRSloadqcqp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Cstring, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoef, rowqcol1, rowqcol2, rowqcoef)
 end
 
 # Function does not exist in v33
@@ -2103,15 +2103,15 @@ function XPRS_mse_setdblcontrol(mse, iAttribId, Val)
 end
 
 function XPRS_mse_getlasterror(mse, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
-    ccall((:XPRS_mse_getlasterror, libxprs), Cint, (XPRSmipsolenum, Ptr{Cint}, Ptr{UInt8}, Cint, Ptr{Cint}), mse, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
+    ccall((:XPRS_mse_getlasterror, libxprs), Cint, (XPRSmipsolenum, Ptr{Cint}, Cstring, Cint, Ptr{Cint}), mse, iMsgCode, _msg, _iStringBufferBytes, _iBytesInInternalString)
 end
 
 function XPRS_mse_setsolbasename(mse, sSolutionBaseName)
-    ccall((:XPRS_mse_setsolbasename, libxprs), Cint, (XPRSmipsolenum, Ptr{UInt8}), mse, sSolutionBaseName)
+    ccall((:XPRS_mse_setsolbasename, libxprs), Cint, (XPRSmipsolenum, Cstring), mse, sSolutionBaseName)
 end
 
 function XPRS_mse_getsolbasename(mse, _sname, _iStringBufferBytes, _iBytesInInternalString)
-    ccall((:XPRS_mse_getsolbasename, libxprs), Cint, (XPRSmipsolenum, Ptr{UInt8}, Cint, Ptr{Cint}), mse, _sname, _iStringBufferBytes, _iBytesInInternalString)
+    ccall((:XPRS_mse_getsolbasename, libxprs), Cint, (XPRSmipsolenum, Cstring, Cint, Ptr{Cint}), mse, _sname, _iStringBufferBytes, _iBytesInInternalString)
 end
 
 function XPRS_mse_setcbgetsolutiondiff(mse, mse_getsolutiondiff, data)
@@ -2199,7 +2199,7 @@ function XPRS_bo_getid(bo, p_id)
 end
 
 function XPRS_bo_getlasterror(bo, p_msgcode, msg, maxbytes, p_nbytes)
-    ccall((:XPRS_bo_getlasterror, libxprs), Cint, (XPRSbranchobject, Ptr{Cint}, Ptr{UInt8}, Cint, Ptr{Cint}), bo, p_msgcode, msg, maxbytes, p_nbytes)
+    ccall((:XPRS_bo_getlasterror, libxprs), Cint, (XPRSbranchobject, Ptr{Cint}, Cstring, Cint, Ptr{Cint}), bo, p_msgcode, msg, maxbytes, p_nbytes)
 end
 
 function XPRS_bo_validate(bo, p_status)
@@ -2208,17 +2208,17 @@ end
 
 # Function does not exist in v33
 function XPRSmsaddjob(prob, description, ninitial, colind, initial, nintcontrols, intcontrolid, intcontrolval, ndblcontrols, dblcontrolid, dblcontrolval, data)
-    ccall((:XPRSmsaddjob, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Cint, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cvoid}), prob, description, ninitial, colind, initial, nintcontrols, intcontrolid, intcontrolval, ndblcontrols, dblcontrolid, dblcontrolval, data)
+    ccall((:XPRSmsaddjob, libxprs), Cint, (XPRSprob, Cstring, Cint, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Cint, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cvoid}), prob, description, ninitial, colind, initial, nintcontrols, intcontrolid, intcontrolval, ndblcontrols, dblcontrolid, dblcontrolval, data)
 end
 
 # Function does not exist in v33
 function XPRSmsaddpreset(prob, description, preset, maxjobs, data)
-    ccall((:XPRSmsaddpreset, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint, Ptr{Cvoid}), prob, description, preset, maxjobs, data)
+    ccall((:XPRSmsaddpreset, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{Cvoid}), prob, description, preset, maxjobs, data)
 end
 
 # Function does not exist in v33
 function XPRSmsaddcustompreset(prob, description, preset, maxjobs, ninitial, colind, initial, nintcontrols, intcontrolid, intcontrolval, ndblcontrols, dblcontrolid, dblcontrolval, data)
-    ccall((:XPRSmsaddcustompreset, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint, Cint, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Cint, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cvoid}), prob, description, preset, maxjobs, ninitial, colind, initial, nintcontrols, intcontrolid, intcontrolval, ndblcontrols, dblcontrolid, dblcontrolval, data)
+    ccall((:XPRSmsaddcustompreset, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Cint, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Cint, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cvoid}), prob, description, preset, maxjobs, ninitial, colind, initial, nintcontrols, intcontrolid, intcontrolval, ndblcontrols, dblcontrolid, dblcontrolval, data)
 end
 
 # Function does not exist in v33
@@ -2238,7 +2238,7 @@ end
 
 # Function does not exist in v33
 function XPRSnlpoptimize(prob, flags)
-    ccall((:XPRSnlpoptimize, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, flags)
+    ccall((:XPRSnlpoptimize, libxprs), Cint, (XPRSprob, Cstring), prob, flags)
 end
 
 # Function does not exist in v33
@@ -2278,7 +2278,7 @@ end
 
 # Function does not exist in v33
 function XPRSnlpadduserfunction(prob, funcname, functype, nin, nout, options, _function, data, p_type)
-    ccall((:XPRSnlpadduserfunction, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint, Cint, Cint, XPRSfunctionptr, Ptr{Cvoid}, Ptr{Cint}), prob, funcname, functype, nin, nout, options, _function, data, p_type)
+    ccall((:XPRSnlpadduserfunction, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Cint, Cint, XPRSfunctionptr, Ptr{Cvoid}, Ptr{Cint}), prob, funcname, functype, nin, nout, options, _function, data, p_type)
 end
 
 # Function does not exist in v33
@@ -2288,7 +2288,7 @@ end
 
 # Function does not exist in v33
 function XPRSnlpimportlibfunc(prob, libname, funcname, p_function, p_status)
-    ccall((:XPRSnlpimportlibfunc, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Ptr{UInt8}, XPRSfunctionptraddr, Ptr{Cint}), prob, libname, funcname, p_function, p_status)
+    ccall((:XPRSnlpimportlibfunc, libxprs), Cint, (XPRSprob, Cstring, Cstring, XPRSfunctionptraddr, Ptr{Cint}), prob, libname, funcname, p_function, p_status)
 end
 
 # Function does not exist in v33
@@ -2298,7 +2298,7 @@ end
 
 # Function does not exist in v33
 function XPRSnlpchgformulastr(prob, row, formula)
-    ccall((:XPRSnlpchgformulastr, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}), prob, row, formula)
+    ccall((:XPRSnlpchgformulastr, libxprs), Cint, (XPRSprob, Cint, Cstring), prob, row, formula)
 end
 
 # Function does not exist in v33
@@ -2328,7 +2328,7 @@ end
 
 # Function does not exist in v33
 function XPRSnlpgetformulastr(prob, row, formula, maxbytes, p_nbytes)
-    ccall((:XPRSnlpgetformulastr, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}, Cint, Ptr{Cint}), prob, row, formula, maxbytes, p_nbytes)
+    ccall((:XPRSnlpgetformulastr, libxprs), Cint, (XPRSprob, Cint, Cstring, Cint, Ptr{Cint}), prob, row, formula, maxbytes, p_nbytes)
 end
 
 # Function does not exist in v33
@@ -2358,7 +2358,7 @@ end
 
 # Function does not exist in v33
 function XPRSslpgetcoefstr(prob, row, col, p_factor, formula, maxbytes, p_nbytes)
-    ccall((:XPRSslpgetcoefstr, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Ptr{UInt8}, Cint, Ptr{Cint}), prob, row, col, p_factor, formula, maxbytes, p_nbytes)
+    ccall((:XPRSslpgetcoefstr, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Cstring, Cint, Ptr{Cint}), prob, row, col, p_factor, formula, maxbytes, p_nbytes)
 end
 
 # Function does not exist in v33
@@ -2373,7 +2373,7 @@ end
 
 # Function does not exist in v33
 function XPRSslpchgcoefstr(prob, row, col, factor, formula)
-    ccall((:XPRSslpchgcoefstr, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Ptr{UInt8}), prob, row, col, factor, formula)
+    ccall((:XPRSslpchgcoefstr, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Cstring), prob, row, col, factor, formula)
 end
 
 # Function does not exist in v33
@@ -2552,11 +2552,11 @@ function XPRSremovecbsepnode(prob, sepnode, data)
 end
 
 function XPRSminim(prob, flags)
-    ccall((:XPRSminim, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, flags)
+    ccall((:XPRSminim, libxprs), Cint, (XPRSprob, Cstring), prob, flags)
 end
 
 function XPRSmaxim(prob, flags)
-    ccall((:XPRSmaxim, libxprs), Cint, (XPRSprob, Ptr{UInt8}), prob, flags)
+    ccall((:XPRSmaxim, libxprs), Cint, (XPRSprob, Cstring), prob, flags)
 end
 
 function XPRSbasiscondition(prob, p_cond, p_scaledcond)
@@ -2564,7 +2564,7 @@ function XPRSbasiscondition(prob, p_cond, p_scaledcond)
 end
 
 function XPRSrefinemipsol(prob, options, flags, solution, refined, p_status)
-    ccall((:XPRSrefinemipsol, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}), prob, options, flags, solution, refined, p_status)
+    ccall((:XPRSrefinemipsol, libxprs), Cint, (XPRSprob, Cint, Cstring, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}), prob, options, flags, solution, refined, p_status)
 end
 
 function XPRSgetnamelistobject(prob, type, p_nml)
@@ -2600,7 +2600,7 @@ function XPRS_nml_removenames(nml, first, last)
 end
 
 function XPRS_nml_findname(nml, name, p_index)
-    ccall((:XPRS_nml_findname, libxprs), Cint, (XPRSnamelist, Ptr{UInt8}, Ptr{Cint}), nml, name, p_index)
+    ccall((:XPRS_nml_findname, libxprs), Cint, (XPRSnamelist, Cstring, Ptr{Cint}), nml, name, p_index)
 end
 
 function XPRS_nml_copynames(dest, src)
@@ -2608,7 +2608,7 @@ function XPRS_nml_copynames(dest, src)
 end
 
 function XPRS_nml_getlasterror(nml, p_msgcode, msg, maxbytes, p_nbytes)
-    ccall((:XPRS_nml_getlasterror, libxprs), Cint, (XPRSnamelist, Ptr{Cint}, Ptr{UInt8}, Cint, Ptr{Cint}), nml, p_msgcode, msg, maxbytes, p_nbytes)
+    ccall((:XPRS_nml_getlasterror, libxprs), Cint, (XPRSnamelist, Ptr{Cint}, Cstring, Cint, Ptr{Cint}), nml, p_msgcode, msg, maxbytes, p_nbytes)
 end
 
 function XPRSgetsol(prob, x, slack, duals, djs)
@@ -2633,22 +2633,22 @@ end
 
 # Function does not exist in v33
 function XPRSnlpchgformulastring(prob, row, formula)
-    ccall((:XPRSnlpchgformulastring, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}), prob, row, formula)
+    ccall((:XPRSnlpchgformulastring, libxprs), Cint, (XPRSprob, Cint, Cstring), prob, row, formula)
 end
 
 # Function does not exist in v33
 function XPRSnlpgetformulastring(prob, row, formula, maxbytes)
-    ccall((:XPRSnlpgetformulastring, libxprs), Cint, (XPRSprob, Cint, Ptr{UInt8}, Cint), prob, row, formula, maxbytes)
+    ccall((:XPRSnlpgetformulastring, libxprs), Cint, (XPRSprob, Cint, Cstring, Cint), prob, row, formula, maxbytes)
 end
 
 # Function does not exist in v33
 function XPRSslpgetccoef(prob, row, col, p_factor, formula, maxbytes)
-    ccall((:XPRSslpgetccoef, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Ptr{UInt8}, Cint), prob, row, col, p_factor, formula, maxbytes)
+    ccall((:XPRSslpgetccoef, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Cstring, Cint), prob, row, col, p_factor, formula, maxbytes)
 end
 
 # Function does not exist in v33
 function XPRSslpchgccoef(prob, row, col, factor, formula)
-    ccall((:XPRSslpchgccoef, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Ptr{UInt8}), prob, row, col, factor, formula)
+    ccall((:XPRSslpchgccoef, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Cstring), prob, row, col, factor, formula)
 end
 
 """

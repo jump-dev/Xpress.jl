@@ -5,13 +5,13 @@
 
 using Clang.Generators
 
-# Copy the appropriate xprs.h file to the scripts directory, or edit this line.
+# Copy the appropriate xprs.h file to the scripts directory and edit these lines.
 
-old_xprs = joinpath(@__DIR__, "xprs33.01.12.h")
-xprs = joinpath(@__DIR__, "xprs42.01.05.h")
+old_xprs_filename = joinpath(@__DIR__, "xprs33.01.12.h")
+xprs_filename = joinpath(@__DIR__, "xprs42.01.05.h")
 
 context = create_context(
-    [xprs],
+    [xprs_filename],
     get_default_args(),
     load_options(joinpath(@__DIR__, "generate.toml")),
 )
@@ -32,16 +32,20 @@ function postprocess(filename)
     end
     # Remove the cenum block
     contents = replace(contents, r"\@cenum.+?end\s+"s => "")
-    # Replace Ptr{Cchar} with Cstring for backward compatibility with older
-    # versions of Xpress.jl
-    # contents = replace(contents, "Ptr{Cchar}" => "Cstring")
     # For backwards compatibility, older versions of Xpress.jl used UInt8
     # instead of Cchar.
     contents = replace(contents, "Cchar" => "UInt8")
     write(filename, contents)
     # Add comments to any symbols which are new in the current version
     lines = readlines(filename)
-    old_xprs_contents = read(old_xprs, String);
+    old_xprs_contents = read(old_xprs_filename, String);
+    # XPRSsetcheckedmode(int checkedmode)
+    xprs_signatures = Dict{String,String}()
+    for line in readlines(xprs_filename)
+        if (m = match(r"(XPRS[a-z0-9\_]+?)\(.+?\)", line)) !== nothing
+            xprs_signatures[m.captures[1]] = m.match
+        end
+    end
     open(filename, "w") do io
         header = """
         # Copyright (c) 2016: Joaquim Garcia, and contributors
@@ -72,6 +76,15 @@ function postprocess(filename)
                 m = match(r"function (.+)\(", line)
                 if m !== nothing && !occursin(m[1], old_xprs_contents)
                     println(io, "# Function does not exist in v33")
+                end
+            end
+            if occursin("Ptr{UInt8}", line)
+                # Replace Ptr{Cchar} with Cstring for backward compatibility
+                # with older versions of Xpress.jl
+                if (m = match(r"ccall\(\(:(XPRS.+?)\,", line)) !== nothing
+                    if occursin("char*", xprs_signatures[m.captures[1]])
+                        line = replace(line, "Ptr{UInt8}" => "Cstring")
+                    end
                 end
             end
             if !(isempty(line) && isempty(last_line))
