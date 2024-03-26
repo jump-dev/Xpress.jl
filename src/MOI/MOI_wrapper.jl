@@ -2752,18 +2752,33 @@ function _get_sparse_sos(model)
     setcols = zeros(Cint, nnz)
     setvals = zeros(Float64, nnz)
     intents, nsets = Ref{Cint}(), Ref{Cint}()
-    @checked Lib.XPRSgetglobal(
-        model.inner,
-        intents,
-        nsets,
-        C_NULL,
-        C_NULL,
-        C_NULL,
-        settypes,
-        setstart,
-        setcols,
-        setvals,
-    )
+    if get_version() >= v"41.01"
+        @checked Lib.XPRSgetmipentities(
+            model.inner,
+            intents,
+            nsets,
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            settypes,
+            setstart,
+            setcols,
+            setvals,
+        )
+    else
+        @checked Lib.XPRSgetglobal(
+            model.inner,
+            intents,
+            nsets,
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            settypes,
+            setstart,
+            setcols,
+            setvals,
+        )
+    end
     return setstart, setcols, setvals
 end
 
