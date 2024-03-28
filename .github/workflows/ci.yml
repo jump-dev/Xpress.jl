@@ -37,8 +37,7 @@ jobs:
       - shell: julia --project=. --color=yes {0}
         run: |
           import Pkg
-          version = ENV["XPRESS_JLL_VERSION"]
-          Pkg.add(Pkg.PackageSpec("Xpress_jll"; version = version))
+          Pkg.add(; name = "Xpress_jll", version = ENV["XPRESS_JLL_VERSION"])
         env:
           XPRESS_JLL_VERSION: ${{ matrix.XPRESS_JLL_VERSION }}
       - uses: julia-actions/julia-runtest@v1
