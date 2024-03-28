@@ -3,7 +3,6 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-import Downloads
 import Libdl
 
 const DEPS_FILE = joinpath(dirname(@__FILE__), "deps.jl")
@@ -41,24 +40,6 @@ function local_installation()
     """)
 end
 
-function ci_installation()
-    url = if Sys.islinux()
-        "https://anaconda.org/fico-xpress/xpress/9.3.0/download/linux-64/xpress-9.3.0-py310ha14b774_0.tar.bz2"
-    else
-        @assert Sys.isapple()
-        "https://anaconda.org/fico-xpress/xpress/9.3.0/download/osx-64/xpress-9.3.0-py310h9b76c6a_0.tar.bz2"
-    end
-    Downloads.download(url, "xpress.tar.bz2")
-    run(`tar -xjf xpress.tar.bz2`)
-    root = "lib/python3.10/site-packages/xpress"
-    run(`cp $root/license/community-xpauth.xpr $root/lib/xpauth.xpr`)
-    if Sys.islinux()
-        run(`cp $root/lib/libxprs.so.42 $root/lib/libxprs.so`)
-    end
-    write_deps_file(joinpath(@__DIR__, root, "lib"))
-    return
-end
-
 if isfile(DEPS_FILE)
     rm(DEPS_FILE)
 end
@@ -67,8 +48,6 @@ if haskey(ENV, "XPRESS_JL_SKIP_LIB_CHECK")
     # Skip!
 elseif get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") == "true"
     write_deps_file("julia_registryci_automerge")
-elseif get(ENV, "CI", "") == "true"
-    ci_installation()
 else
     local_installation()
 end
