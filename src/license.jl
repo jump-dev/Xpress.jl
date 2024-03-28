@@ -3,114 +3,78 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-# lic checking file
-# -----------------
-
-# license check empty function
-# ----------------------------
-function emptyliccheck(lic::Vector{Cint})
-    return lic
-end
-
-function touchlic(path)
-    f = open(path)
-    return close(f)
-end
-
-function get_xpauthpath(xpauth_path = "", verbose::Bool = true)
+function _get_xpauthpath(xpauth_path = "", verbose::Bool = true)
+    # The directory of the xprs shared object. This is the root from which we
+    # search for licenses.
+    libdir = dirname(libxprs)
     XPAUTH = "xpauth.xpr"
-
-    candidates = []
-
-    # user sent the complete path
-    push!(candidates, xpauth_path)
-
-    # user sent directory
-    push!(candidates, joinpath(xpauth_path, XPAUTH))
-
-    # default env (not metioned in manual)
-    if haskey(ENV, "XPAUTH_PATH")
-        xpauth_path = replace(ENV["XPAUTH_PATH"], "\"" => "")
-        push!(candidates, joinpath(xpauth_path, XPAUTH))
-    end
-
-    # default lib dir
-    if haskey(ENV, "XPRESSDIR")
-        xpressdir = replace(ENV["XPRESSDIR"], "\"" => "")
-        push!(candidates, joinpath(xpressdir, "bin", XPAUTH))
-    end
-
-    # user´s lib dir
-    push!(candidates, joinpath(dirname(dirname(libxprs)), "bin", XPAUTH))
-
-    for i in candidates
-        if isfile(i)
-            if verbose && !haskey(ENV, "XPRESS_JL_NO_INFO")
-                @info("Xpress: Found license file $i")
-            end
-            return i
+    # Search in absolute path given by the user (assuming it was a file), and as
+    # a directory by appending XPAUTH.
+    candidates = [xpauth_path, joinpath(xpauth_path, XPAUTH)]
+    # Search in the directories of the XPAUTH_PATH and XPRESSDIR environnment
+    # variables.
+    for key in ("XPAUTH_PATH", "XPRESSDIR")
+        if haskey(ENV, key)
+            push!(candidates, joinpath(replace(ENV[key], "\"" => ""), XPAUTH))
         end
     end
-
+    # Search in `xpress/lib/../bin/xpauth.xpr`. This is a common location on
+    # Windows.
+    push!(candidates, joinpath(dirname(libdir), "bin", XPAUTH))
+    for candidate in candidates
+        # We assume a relative root directory of the shared library. If
+        # `candidate` is an absolute path, thhen joinpath will ignore libdir and
+        # return candidate.
+        filename = joinpath(libdir, candidate)
+        # If the file exists, we assume it is a license. We don't attempt to
+        # validate the contents of the file.
+        if isfile(filename)
+            if verbose && !haskey(ENV, "XPRESS_JL_NO_INFO")
+                @info("Xpress: Found license file $filename")
+            end
+            return filename
+        end
+    end
     return error(
-        "Could not find xpauth.xpr license file. Check XPRESSDIR or XPAUTH_PATH environment variables.",
+        "Could not find xpauth.xpr license file. Set the `XPRESSDIR` or " *
+        "`XPAUTH_PATH` environment variables.",
     )
 end
-"""
-    userlic(; liccheck::Function = emptyliccheck, xpauth_path::String = "" )
-Performs license chhecking with `liccheck` validation function on dir `xpauth_path`
-"""
+
+# Keep `userlic` for backwards compatibility. PSR have a customized setup for
+# managing licenses.
+#
+# New users should use `Xpress.initialize`.
 function userlic(;
+    liccheck::Function = identity,
     verbose::Bool = true,
-    liccheck::Function = emptyliccheck,
     xpauth_path::String = "",
 )
-
-    # change directory to reach all libs
-    initdir = pwd()
-    if isdir(dirname(libxprs))
-        cd(dirname(libxprs))
-    end
-
-    # open and free xpauth.xpr (touches the file to release it)
-    path_lic = get_xpauthpath(xpauth_path, verbose)
-    touchlic(path_lic)
-
-    # pre allocate vars
-    lic = Cint[1]
-    slicmsg = path_lic #xpauth_path == "dh" ? Array{Cchar}(undef, 1024*8) :
-
-    # FIRST call do xprslicense to get BASE LIC
-    Lib.XPRSlicense(lic, slicmsg)
-
-    # convert BASE LIC to GIVEN LIC
-    lic = liccheck(lic)
-
-    # Send GIVEN LIC to XPRESS lib
-    buffer = Array{Cchar}(undef, 1024 * 8)
-    buffer_p = pointer(buffer)
-    ierr = GC.@preserve buffer begin
-        Lib.XPRSlicense(lic, Cstring(buffer_p))
-    end
-
-    # check LIC TYPE
-    if ierr == 16
-        # DEVELOPER
-        if verbose && !haskey(ENV, "XPRESS_JL_NO_INFO")
-            @info("Xpress: Development license detected.")
-        end
-    elseif ierr != 0
-        # FAIL
+    verbose &= !haskey(ENV, "XPRESS_JL_NO_INFO")
+    path_lic = _get_xpauthpath(xpauth_path, verbose)
+    # Pre-allocate storage for the license integer. For backward compatibility,
+    # we use `Vector{Cint}`, because some users may have `liccheck` functions
+    # which rely on this.
+    license = Cint[1]
+    # First, call XPRSlicense to populate `license` with an integer. We don't
+    # check the return code.
+    _ = Lib.XPRSlicense(license, path_lic)
+    # Then, for some licenses, we need to modify the license integer by a
+    # secret password.
+    license = liccheck(license)
+    # Now, we need to send the password back to Xpress.
+    err = Lib.XPRSlicense(license, path_lic)
+    if !(err == 16 || err == 0)
         @info("Xpress: Failed to find working license.")
-        error(getlicerrmsg())
-    else
-        # USER
-        if verbose && !haskey(ENV, "XPRESS_JL_NO_INFO")
-            @info("Xpress: User license detected.")
-            @info(unsafe_string(pointer(slicmsg)))
+        buffer = Vector{Cchar}(undef, 1024 * 8)
+        p_buffer = pointer(buffer)
+        GC.@preserve buffer begin
+            Lib.XPRSgetlicerrmsg(p_buffer, 1024)
+            throw(XpressError(err, unsafe_string(p_buffer)))
         end
+    elseif verbose
+        type = err == 16 ? "Development" : "User"
+        @info("Xpress: $type license detected.")
     end
-
-    # go back to initial folder
-    return cd(initdir)
+    return
 end
