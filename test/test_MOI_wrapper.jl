@@ -1045,6 +1045,9 @@ function test_name_empty_names()
 end
 
 function test_dummy_nlp()
+    if Xpress.get_version() < v"41"
+        return
+    end
     model = Xpress.Optimizer(; OUTPUTLOG = 0)
     x = MOI.add_variables(model, 2)
     c = [1.0, 2.0]

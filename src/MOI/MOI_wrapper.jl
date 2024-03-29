@@ -482,7 +482,7 @@ function MOI.supports(model::Optimizer, attr::MOI.RawOptimizerAttribute)
     end
     p_id, p_type = Ref{Cint}(), Ref{Cint}()
     ret = Lib.XPRSgetcontrolinfo(model.inner, attr.name, p_id, p_type)
-    if ret != 0
+    if ret != 0 || p_type[] == Lib.XPRS_TYPE_NOTDEFINED
         ret = Lib.XPRSgetattribinfo(model.inner, attr.name, p_id, p_type)
     end
     p_type_fail = p_type[] in (Lib.XPRS_TYPE_NOTDEFINED, Lib.XPRS_TYPE_INT64)
@@ -3073,21 +3073,20 @@ function _has_primal_ray(model::Optimizer)
     return has_Ray[] != 0
 end
 
-const _SOLSTATUS_MAP = Dict(
-    Lib.XPRS_SOLSTATUS_NOTFOUND => MOI.NO_SOLUTION,
-    Lib.XPRS_SOLSTATUS_OPTIMAL => MOI.FEASIBLE_POINT,
-    Lib.XPRS_SOLSTATUS_FEASIBLE => MOI.FEASIBLE_POINT,
-    Lib.XPRS_SOLSTATUS_INFEASIBLE => MOI.NO_SOLUTION,
-    Lib.XPRS_SOLSTATUS_UNBOUNDED => MOI.NO_SOLUTION,
-)
-
 function _cache_primal_status(model)
-    stat =
-        @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_SOLSTATUS, _)::Int
-    if stat == Lib.XPRS_SOLSTATUS_UNBOUNDED && _has_primal_ray(model)
+    if _has_primal_ray(model)
         return MOI.INFEASIBILITY_CERTIFICATE
     end
-    return _SOLSTATUS_MAP[stat]
+    dict, attr = if is_mip(model)
+        _MIPSTATUS, Lib.XPRS_MIPSTATUS
+    else
+        _LPSTATUS, Lib.XPRS_LPSTATUS
+    end
+    stat = @_invoke Lib.XPRSgetintattrib(model.inner, attr, _)::Int
+    if dict[stat][2] in (MOI.OPTIMAL, MOI.LOCALLY_SOLVED)
+        return MOI.FEASIBLE_POINT
+    end
+    return MOI.NO_SOLUTION
 end
 
 function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
