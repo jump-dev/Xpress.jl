@@ -5,10 +5,8 @@
 
 import Xpress_jll
 ENV["XPRESS_JL_LIBRARY"] = Xpress_jll.libxprs
-if haskey(ENV, "XPRESS_JL_COMMUNITY_XPAUTH_XPR")
+if isfile(joinpath(dirname(@__DIR__), "xpauth.xpr"))
     ENV["XPAUTH_PATH"] = dirname(@__DIR__)
-    contents = ENV["XPRESS_JL_COMMUNITY_XPAUTH_XPR"]
-    write(joinpath(dirname(@__DIR__), "xpauth.xpr"), contents)
 end
 
 using Test
