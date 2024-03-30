@@ -18,6 +18,7 @@ jobs:
         version: ['1.6', '1']  # Test against LTS and current minor release
         os: [ubuntu-latest, macOS-latest, windows-latest]
         arch: [x64]
+        # If updating most recent version, change shell script below
         XPRESS_JLL_VERSION: ['8.13.4', '9.3.0']
         include:
          - version: '1'
@@ -37,14 +38,15 @@ jobs:
       - shell: julia --project=. --color=yes {0}
         run: |
           import Pkg
-          Pkg.add("Xpress_jll")
+          Pkg.add(; name = "Xpress_jll", version = "9.3.0")
           import Xpress_jll
-          # Assume Pkg has installed the latest version with a valid community
-          # license. Copy it to the current directory.
-          license_dir = joinpath(dirname(dirname(Xpress_jll.libxprs)), "license")
-          cp(joinpath(license_dir, "community-xpauth.xpr"), "xpauth.xpr")
-          # Now install the specific version of Xpress
-          Pkg.add(; name = "Xpress_jll", version = ENV["XPRESS_JLL_VERSION"])
+          # Older licenses may have expired. Copy 9.3.0 license to cwd and then
+          # install specific version.
+          if ENV["XPRESS_JLL_VERSION"] != "9.3.0"
+              license_dir = joinpath(dirname(dirname(Xpress_jll.libxprs)), "license")
+              cp(joinpath(license_dir, "community-xpauth.xpr"), "xpauth.xpr")
+              Pkg.add(; name = "Xpress_jll", version = ENV["XPRESS_JLL_VERSION"])
+          end
         env:
           XPRESS_JLL_VERSION: ${{ matrix.XPRESS_JLL_VERSION }}
       - uses: julia-actions/julia-runtest@v1
