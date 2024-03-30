@@ -41,10 +41,8 @@ jobs:
           import Xpress_jll
           # Assume Pkg has installed the latest version with a valid community
           # license. Copy it to the current directory.
-          write(
-              "xpauth.xpr",
-              joinpath(dirname(dirname(Xpress_jll.libxprs)), "license", "community-xpauth.xpr"),
-          )
+          license_dir = joinpath(dirname(dirname(Xpress_jll.libxprs)), "license")
+          cp(joinpath(license_dir, "community-xpauth.xpr"), "xpauth.xpr")
           # Now install the specific version of Xpress
           Pkg.add(; name = "Xpress_jll", version = ENV["XPRESS_JLL_VERSION"])
         env:
