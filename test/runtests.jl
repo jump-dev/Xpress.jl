@@ -13,8 +13,8 @@ using Test
 using Xpress
 
 function test_licensing()
-    if haskey(ENV, "XPAUTH_PATH") || haskey(ENV, "XPRESSDIR")
-        return  # Skip for non-standand licenses
+    if any(k -> haskey(ENV, k), ("XPAUTH_PATH", "XPRESSDIR", "XPRESS_JL_LIBRARY"))
+        return  # Skip for non-standard licenses
     end
     # Create a bogus license file
     xpauth_path = mktempdir()
