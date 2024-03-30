@@ -36,6 +36,8 @@ jobs:
           XPRESS_JL_SKIP_LIB_CHECK: "true"
       - shell: julia --project=. --color=yes {0}
         run: |
+          import Pkg
+          Pkg.add("Xpress_jll")
           import Xpress_jll
           # Assume Pkg has installed the latest version with a valid community
           # license. Copy it to the current directory.
@@ -44,7 +46,6 @@ jobs:
               joinpath(dirname(dirname(Xpress_jll.libxprs)), "license", "community-xpauth.xpr"),
           )
           # Now install the specific version of Xpress
-          import Pkg
           Pkg.add(; name = "Xpress_jll", version = ENV["XPRESS_JLL_VERSION"])
         env:
           XPRESS_JLL_VERSION: ${{ matrix.XPRESS_JLL_VERSION }}
