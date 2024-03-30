@@ -13,6 +13,9 @@ using Test
 using Xpress
 
 function test_licensing()
+    if haskey(ENV, "XPAUTH_PATH") || haskey(ENV, "XPRESSDIR")
+        return  # Skip for non-standand licenses
+    end
     # Create a bogus license file
     xpauth_path = mktempdir()
     filename = joinpath(xpauth_path, "xpauth.xpr")
@@ -35,7 +38,7 @@ end
 @testset "test_licensing" begin
     # It is important that we test this first, so that there no XpressProblem
     # objects with finalizers that may get run during the function call.
-    # test_licensing()
+    test_licensing()
 end
 
 println(Xpress.get_banner())
