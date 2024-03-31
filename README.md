@@ -79,7 +79,8 @@ for more details.
 
 By default, `Xpress_jll` includes a limited size community license. If you have
 purchased a license for FICO Xpress, you should additionally set the
-`XPAUTH_PATH` environment variable to point to your license file.
+`XPAUTH_PATH` environment variable to point to the directory of your license
+file.
 
 ```julia
 import Xpress_jll
@@ -91,7 +92,8 @@ using Xpress
 ```
 
 If you plan to use Xpress_jll, `Pkg.add("Xpress")` will fail because it cannot
-find a local installation of Xpress. Therefore, you should
+find a local installation of Xpress. Therefore, you should set
+`XPRESS_JL_SKIP_LIB_CHECK` before installing.
 
 ## Use with JuMP
 
