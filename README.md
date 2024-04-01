@@ -95,6 +95,12 @@ If you plan to use Xpress_jll, `Pkg.add("Xpress")` will fail because it cannot
 find a local installation of Xpress. Therefore, you should set
 `XPRESS_JL_SKIP_LIB_CHECK` before installing.
 
+The community license that is shipped with `Xpress_jll`, has an expiration date.
+If usage fails because of the community license expiration date, please update
+to more recent version of `Xpress_jll`. If an older version of `Xpress_jll` is
+required for reproducibility issues, you should obtain and manually specify a
+license via the `XPAUTH_PATH` environment variable.
+
 ## Use with JuMP
 
 To use Xpress with JuMP, use:
