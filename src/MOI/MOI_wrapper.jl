@@ -3050,10 +3050,14 @@ const _NLPSTATUS = Dict(
         ("1 Solution found ( XSLP_NLPSTATUS_SOLUTION)", MOI.LOCALLY_SOLVED),
     Lib.XPRS_NLPSTATUS_OPTIMAL =>
         ("2 Globally optimal ( XSLP_NLPSTATUS_OPTIMAL)", MOI.OPTIMAL),
-    Lib.XPRS_NLPSTATUS_NOSOLUTION =>
-        ("3 No solution found ( XSLP_NLPSTATUS_NOSOLUTION)", MOI.OTHER_ERROR),
-    Lib.XPRS_NLPSTATUS_INFEASIBLE =>
-        ("4 Proven infeasible ( XSLP_NLPSTATUS_INFEASIBLE)", MOI.INFEASIBLE),
+    Lib.XPRS_NLPSTATUS_NOSOLUTION => (
+        "3 No solution found ( XSLP_NLPSTATUS_NOSOLUTION)",
+        MOI.OTHER_ERROR,
+    ),
+    Lib.XPRS_NLPSTATUS_INFEASIBLE => (
+        "4 Proven infeasible ( XSLP_NLPSTATUS_INFEASIBLE)",
+        MOI.INFEASIBLE,
+    ),
     Lib.XPRS_NLPSTATUS_UNBOUNDED => (
         "5 Locally unbounded ( XSLP_NLPSTATUS_UNBOUNDED)",
         MOI.DUAL_INFEASIBLE,
@@ -4855,7 +4859,7 @@ function MOI.add_constraint(
     @checked Lib.XPRSnlpaddformulas(
         model.inner,
         1,                      # ncoefs,
-        Cint[row - 1],          # rowind,
+        Cint[row-1],            # rowind,
         Cint[0, length(type)],  # formulastart,
         parsed,
         type,
