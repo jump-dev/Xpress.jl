@@ -55,10 +55,6 @@ function postprocess(filename)
     # For backwards compatibility, older versions of Xpress.jl used UInt8
     # instead of Cchar.
     contents = replace(contents, "Cchar" => "UInt8")
-    # For backwards compatibility, older versions of Xpress.jl used Cint
-    # instead of Clong.
-    # TODO(odow): this is wrong. Fix me in a separate PR.
-    contents = replace(contents, "Clong" => "Cint")
     write(filename, contents)
     # Add comments to any symbols which are new in the current version
     lines = readlines(filename)
