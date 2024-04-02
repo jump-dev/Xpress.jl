@@ -3585,7 +3585,7 @@ end
 _function_enums(::Type{<:MOI.ScalarAffineFunction}) = (AFFINE,)
 _function_enums(::Type{<:MOI.ScalarQuadraticFunction}) = (QUADRATIC,)
 _function_enums(::Type{<:MOI.VectorAffineFunction}) = (INDICATOR,)
-_function_enums(::Type{<:MOI.VectorOfVariables}) = (SOS, RSOC)
+_function_enums(::Type{<:MOI.VectorOfVariables}) = (SOC, RSOC)
 
 function MOI.get(
     model::Optimizer,
