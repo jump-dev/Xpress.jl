@@ -2098,7 +2098,6 @@ function test_ListOfConstraintIndices()
     return
 end
 
-
 function test_ListOfConstraintTypesPresent()
     model = Xpress.Optimizer()
     sets = (
