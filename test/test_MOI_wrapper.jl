@@ -2090,7 +2090,7 @@ end
 function test_ListOfConstraintIndices()
     model = Xpress.Optimizer()
     x = MOI.add_variable(model)
-    c = MOI.add_constraint(model, 1.0 * x[1], MOI.LessThan(0.0))
+    c = MOI.add_constraint(model, 1.0 * x, MOI.LessThan(0.0))
     F, S = MOI.ScalarAffineFunction{Float64}, MOI.LessThan{Float64}
     G = MOI.ScalarQuadraticFunction{Float64}
     @test MOI.get(model, MOI.ListOfConstraintIndices{F,S}()) == [c]
