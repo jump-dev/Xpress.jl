@@ -1196,7 +1196,7 @@ function MOI.set(
     ::MOI.ObjectiveFunction{F},
     f::F,
 ) where {F<:MOI.ScalarQuadraticFunction{Float64}}
-    # setting linear part also clears the existing quadratic and nonlinear terms
+    # setting linear part also clears the existing quadratic terms
     MOI.set(
         model,
         MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
@@ -3428,7 +3428,13 @@ end
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
-    attr = is_mip(model) ? Lib.XPRS_MIPOBJVAL : Lib.XPRS_LPOBJVAL
+    attr = if model.has_nlp_constraints
+        Lib.XPRS_NLPOBJVAL
+    elseif is_mip(model)
+        Lib.XPRS_MIPOBJVAL
+    else
+        Lib.XPRS_LPOBJVAL
+    end
     return @_invoke Lib.XPRSgetdblattrib(model.inner, attr, _)::Float64
 end
 

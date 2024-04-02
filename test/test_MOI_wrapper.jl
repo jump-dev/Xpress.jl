@@ -2510,6 +2510,7 @@ function test_nlp_constraint_log()
     t_val = MOI.get(model, MOI.VariablePrimal(), t)
     @test ≈(x_val, 2.0; atol = 1e-6)
     @test ≈(t_val, log(x_val); atol = 1e-6)
+    @test ≈(MOI.get(model, MOI.ObjectiveValue()), t_val; atol = 1e-6)
     return
 end
 
