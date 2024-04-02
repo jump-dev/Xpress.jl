@@ -2491,6 +2491,28 @@ function test_conflict_infeasible_bounds()
     return
 end
 
+function test_nlp_constraint_log()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    t = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.LessThan(2.0))
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    f = 1.0 * t
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    g = MOI.ScalarNonlinearFunction(
+        :-,
+        Any[MOI.ScalarNonlinearFunction(:log, Any[x]), t],
+    )
+    MOI.add_constraint(model, g, MOI.GreaterThan(0.0))
+    MOI.optimize!(model)
+    x_val = MOI.get(model, MOI.VariablePrimal(), x)
+    t_val = MOI.get(model, MOI.VariablePrimal(), t)
+    @test ≈(x_val, 2.0; atol = 1e-6)
+    @test ≈(t_val, log(x_val); atol = 1e-6)
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()

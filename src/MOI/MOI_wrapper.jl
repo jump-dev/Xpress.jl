@@ -7,7 +7,16 @@ const CleverDicts = MOI.Utilities.CleverDicts
 
 @enum(VariableType, CONTINUOUS, BINARY, INTEGER, SEMIINTEGER, SEMICONTINUOUS)
 
-@enum(ConstraintType, AFFINE, INDICATOR, QUADRATIC, SOC, RSOC, SOS_SET)
+@enum(
+    ConstraintType,
+    AFFINE,
+    INDICATOR,
+    QUADRATIC,
+    SOC,
+    RSOC,
+    SOS_SET,
+    SCALAR_NONLINEAR,
+)
 
 @enum(
     BoundType,
@@ -239,6 +248,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     params::Dict{Any,Any}
 
+    has_nlp_constraints::Bool
+
     function Optimizer(; kwargs...)
         model = new()
         model.params = Dict{Any,Any}()
@@ -334,6 +345,7 @@ function MOI.empty!(model::Optimizer)
     for (name, value) in model.params
         MOI.set(model, name, value)
     end
+    model.has_nlp_constraints = false
     return
 end
 
@@ -2890,7 +2902,9 @@ function MOI.optimize!(model::Optimizer)
         _set_MIP_start(model)
     end
     start_time = time()
-    if is_mip(model)
+    if model.has_nlp_constraints
+        @checked Lib.XPRSnlpoptimize(model.inner, model.solve_method)
+    elseif is_mip(model)
         @checked Lib.XPRSmipoptimize(model.inner, model.solve_method)
     else
         @checked Lib.XPRSlpoptimize(model.inner, model.solve_method)
@@ -2906,7 +2920,15 @@ function MOI.optimize!(model::Optimizer)
     model.primal_status = _cache_primal_status(model)
     model.dual_status = _cache_dual_status(model)
     # TODO: add @checked here - must review statuses
-    if is_mip(model)
+    if model.has_nlp_constraints
+        Lib.XPRSgetnlpsol(
+            model.inner,
+            model.cached_solution.variable_primal,
+            model.cached_solution.linear_primal,
+            model.cached_solution.linear_dual,
+            model.cached_solution.variable_dual,
+        )
+    elseif is_mip(model)
         # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
         Lib.XPRSgetmipsol(
             model.inner,
@@ -3019,6 +3041,33 @@ const _LPSTATUS = Dict(
     ),
 )
 
+const _NLPSTATUS = Dict(
+    Lib.XPRS_NLPSTATUS_UNSTARTED => (
+        "0 Optimization unstarted ( XSLP_NLPSTATUS_UNSTARTED)",
+        MOI.OPTIMIZE_NOT_CALLED,
+    ),
+    Lib.XPRS_NLPSTATUS_SOLUTION =>
+        ("1 Solution found ( XSLP_NLPSTATUS_SOLUTION)", MOI.LOCALLY_SOLVED),
+    Lib.XPRS_NLPSTATUS_OPTIMAL =>
+        ("2 Globally optimal ( XSLP_NLPSTATUS_OPTIMAL)", MOI.OPTIMAL),
+    Lib.XPRS_NLPSTATUS_NOSOLUTION =>
+        ("3 No solution found ( XSLP_NLPSTATUS_NOSOLUTION)", MOI.OTHER_ERROR),
+    Lib.XPRS_NLPSTATUS_INFEASIBLE =>
+        ("4 Proven infeasible ( XSLP_NLPSTATUS_INFEASIBLE)", MOI.INFEASIBLE),
+    Lib.XPRS_NLPSTATUS_UNBOUNDED => (
+        "5 Locally unbounded ( XSLP_NLPSTATUS_UNBOUNDED)",
+        MOI.DUAL_INFEASIBLE,
+    ),
+    Lib.XPRS_NLPSTATUS_UNFINISHED => (
+        "6 Not yet solved to completion ( XSLP_NLPSTATUS_UNFINISHED)",
+        MOI.OTHER_ERROR,
+    ),
+    Lib.XPRS_NLPSTATUS_UNSOLVED => (
+        "7 Could not be solved due to numerical issues ( XSLP_NLPSTATUS_UNSOLVED)",
+        MOI.NUMERICAL_ERROR,
+    ),
+)
+
 const _STOPSTATUS = Dict(
     Lib.XPRS_STOP_NONE =>
         ("no interruption - the solve completed normally", MOI.OPTIMAL),
@@ -3035,7 +3084,14 @@ function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
     _throw_if_optimize_in_progress(model, attr)
     stop =
         @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
-    if is_mip(model)
+    if model.has_nlp_constraints
+        stat = @_invoke Lib.XPRSgetintattrib(
+            model.inner,
+            Lib.XPRS_NLPSTATUS,
+            _,
+        )::Int
+        return _NLPSTATUS[stat][1] * " - " * _STOPSTATUS[stop][1]
+    elseif is_mip(model)
         stat = @_invoke Lib.XPRSgetintattrib(
             model.inner,
             Lib.XPRS_MIPSTATUS,
@@ -3057,6 +3113,10 @@ function _cache_termination_status(model::Optimizer)
         @_invoke Lib.XPRSgetintattrib(model.inner, Lib.XPRS_STOPSTATUS, _)::Int
     if stop != Lib.XPRS_STOP_NONE && stop != Lib.XPRS_STOP_MIPGAP
         return _STOPSTATUS[stop][2]
+    elseif model.has_nlp_constraints
+        nlpstatus = Lib.XPRS_NLPSTATUS
+        stat = @_invoke Lib.XPRSgetintattrib(model.inner, nlpstatus, _)::Int
+        return _NLPSTATUS[stat][2]
     elseif is_mip(model)
         mipstatus = Lib.XPRS_MIPSTATUS
         stat = @_invoke Lib.XPRSgetintattrib(model.inner, mipstatus, _)::Int
@@ -3092,7 +3152,9 @@ function _cache_primal_status(model)
     if _has_primal_ray(model)
         return MOI.INFEASIBILITY_CERTIFICATE
     end
-    dict, attr = if is_mip(model)
+    dict, attr = if model.has_nlp_constraints
+        _NLPSTATUS, Lib.XPRS_NLPSTATUS
+    elseif is_mip(model)
         _MIPSTATUS, Lib.XPRS_MIPSTATUS
     else
         _LPSTATUS, Lib.XPRS_LPSTATUS
@@ -3584,6 +3646,7 @@ end
 
 _function_enums(::Type{<:MOI.ScalarAffineFunction}) = (AFFINE,)
 _function_enums(::Type{<:MOI.ScalarQuadraticFunction}) = (QUADRATIC,)
+_function_enums(::Type{<:MOI.ScalarNonlinearFunction}) = (SCALAR_NONLINEAR,)
 _function_enums(::Type{<:MOI.VectorAffineFunction}) = (INDICATOR,)
 _function_enums(::Type{<:MOI.VectorOfVariables}) = (SOC, RSOC)
 
@@ -3594,6 +3657,7 @@ function MOI.get(
     F<:Union{
         MOI.ScalarAffineFunction{Float64},
         MOI.ScalarQuadraticFunction{Float64},
+        MOI.ScalarNonlinearFunction,
         MOI.VectorAffineFunction{Float64},
         MOI.VectorOfVariables,
     },
@@ -3666,12 +3730,14 @@ function MOI.get(model::Optimizer, ::MOI.ListOfConstraintTypesPresent)
             )
         elseif info.type == SOC
             push!(constraints, (MOI.VectorOfVariables, MOI.SecondOrderCone))
-        else
-            @assert info.type == RSOC
+        elseif info.type == RSOC
             push!(
                 constraints,
                 (MOI.VectorOfVariables, MOI.RotatedSecondOrderCone),
             )
+        else
+            @assert info.type == SCALAR_NONLINEAR
+            push!(constraints, (MOI.ScalarNonlinearFunction, typeof(info.set)))
         end
     end
     for info in values(model.sos_constraint_info)
@@ -4642,9 +4708,9 @@ const _FUNCTION_MAP = Dict(
     :- => (Lib.XPRS_TOK_OP, Lib.XPRS_OP_MINUS),
     # const XPRS_DEL_COMMA = 1
     # const XPRS_DEL_COLON = 2
-    :log => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_LOG),
+    # const XPRS_IFUN_LOG = 13
     :log10 => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_LOG10),
-    # const XPRS_IFUN_LN = 15
+    :log => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_LN),
     :exp => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_EXP),
     :abs => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_ABS),
     :sqrt => (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_SQRT),
@@ -4747,13 +4813,46 @@ function _reverse_polish(
 end
 
 function MOI.add_constraint(
-    ::Optimizer,
-    ::MOI.ScalarNonlinearFunction,
-    ::Union{
+    model::Optimizer,
+    f::MOI.ScalarNonlinearFunction,
+    s::Union{
         MOI.LessThan{Float64},
         MOI.GreaterThan{Float64},
         MOI.EqualTo{Float64},
     },
 )
-    return true
+    F, S = typeof(f), typeof(s)
+    model.last_constraint_index += 1
+    row = length(model.affine_constraint_info) + 1
+    model.affine_constraint_info[model.last_constraint_index] =
+        ConstraintInfo(row, s, SCALAR_NONLINEAR)
+    sense, rhs = _sense_and_rhs(s)
+    @checked Lib.XPRSaddrows(
+        model.inner,
+        1,
+        0,
+        Ref{UInt8}(sense),
+        Ref(rhs),
+        C_NULL,
+        Cint[0],
+        Cint[],
+        Cdouble[],
+    )
+    parsed, type, value = Cint(1), Cint[], Cdouble[]
+    _reverse_polish(model, f, type, value)
+    reverse!(type)
+    reverse!(value)
+    push!(type, Lib.XPRS_TOK_EOF)
+    push!(value, 0.0)
+    @checked Lib.XPRSnlpaddformulas(
+        model.inner,
+        1,                      # ncoefs,
+        Cint[row - 1],          # rowind,
+        Cint[0, length(type)],  # formulastart,
+        parsed,
+        type,
+        value,
+    )
+    model.has_nlp_constraints = true
+    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
 end
