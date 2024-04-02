@@ -13,16 +13,13 @@ const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
 
 if isfile(depsjl_path)
     include(depsjl_path)
-elseif !haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
-    error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
+    global libxprs = joinpath(
+        xpressdlpath,
+        string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext),
+    )
 else
-    const xpressdlpath = ""
+    global libxprs = ""
 end
-
-const libxprs = joinpath(
-    xpressdlpath,
-    string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext),
-)
 
 include("Lib/Lib.jl")
 include("helper.jl")
@@ -69,6 +66,12 @@ include("MOI/MOI_wrapper.jl")
 include("MOI/MOI_callbacks.jl")
 
 function __init__()
+    if haskey(ENV, "XPRESS_JL_LIBRARY")
+        global libxprs = ENV["XPRESS_JL_LIBRARY"]
+        Lib.set_libxprs(libxprs)
+    elseif isempty(libxprs) && !haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
+        error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
+    end
     if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT") &&
        get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") != "true"
         initialize()

@@ -27,6 +27,11 @@ The underlying solver is a closed-source commercial product for which you must
 
 First, obtain a license of Xpress and install Xpress solver, following the
 [instructions on the FICO website](https://www.fico.com/products/fico-xpress-solver).
+Ensure that the `XPRESSDIR` license variable is set to the install location by
+checking the output of:
+```julia
+julia> ENV["XPRESSDIR"]
+```
 
 Then, install this package using:
 ```julia
@@ -46,12 +51,55 @@ import Pkg
 Pkg.add("Xpress")
 ```
 
+### Skipping installation
+
 By default, building Xpress.jl will fail if the Xpress library is not found.
+
 This may not be desirable in certain cases, for example when part of a package's
 test suite uses Xpress as an optional test dependency, but Xpress cannot be
-installed on a CI server running the test suite. To support this use case, the
-`XPRESS_JL_SKIP_LIB_CHECK` environment variable may be set (to any value) to
-make Xpress.jl installable (but not usable).
+installed on a CI server running the test suite.
+
+To skip the error, set the `XPRESS_JL_SKIP_LIB_CHECK` environment variable to
+`true` to make Xpress.jl installable (but not usable).
+
+```julia
+ENV["XPRESS_JL_SKIP_LIB_CHECK"] = true
+import Pkg
+Pkg.add("Xpress")
+```
+
+## Use with Xpress_jll
+
+Instead of manually installing Xpress, you can use the binaries provided by the
+[Xpress_jll.jl](https://github.com/jump-dev/Xpress_jll.jl) package.
+
+By using Xpress_jll, you agree to certain license conditions. See the
+[Xpress_jll.jl README](https://github.com/jump-dev/Xpress_jll.jl/tree/master?tab=readme-ov-file#license)
+for more details.
+
+By default, `Xpress_jll` includes a limited size community license. If you have
+purchased a license for FICO Xpress, you should additionally set the
+`XPAUTH_PATH` environment variable to point to the directory of your license
+file.
+
+```julia
+import Xpress_jll
+# This environment variable must be set _before_ loading Xpress.jl
+ENV["XPRESS_JL_LIBRARY"] = Xpress_jll.libxprs
+# Optional: point to the directory of your xpauth.xpr license file
+ENV["XPAUTH_PATH"] = "/path/to/directory"
+using Xpress
+```
+
+If you plan to use Xpress_jll, `Pkg.add("Xpress")` will fail because it cannot
+find a local installation of Xpress. Therefore, you should set
+`XPRESS_JL_SKIP_LIB_CHECK` before installing.
+
+The community license that is shipped with `Xpress_jll`, has an expiration date.
+If usage fails because of the community license expiration date, please update
+to more recent version of `Xpress_jll`. If an older version of `Xpress_jll` is
+required for reproducibility issues, you should obtain and manually specify a
+license via the `XPAUTH_PATH` environment variable.
 
 ## Use with JuMP
 
@@ -102,6 +150,8 @@ current implementation should be considered experimental.
  - `XPRESS_JL_NO_DEPS_ERROR`: Disable error when do deps.jl file is found.
  - `XPRESS_JL_NO_AUTO_INIT`: Disable automatic run of `Xpress.initialize()`.
    Specially useful for explicitly loading the dynamic library.
+ - `XPRESS_JL_LIBRARY`: Provide a custom path to `libxprs`
+ - `XPAUTH_PATH`: Provide a custom path to the license file
 
 ## C API
 

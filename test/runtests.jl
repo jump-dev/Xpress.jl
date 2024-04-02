@@ -3,10 +3,19 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
+import Xpress_jll
+ENV["XPRESS_JL_LIBRARY"] = Xpress_jll.libxprs
+if isfile(joinpath(dirname(@__DIR__), "xpauth.xpr"))
+    ENV["XPAUTH_PATH"] = dirname(@__DIR__)
+end
+
 using Test
 using Xpress
 
 function test_licensing()
+    if any(k -> haskey(ENV, k), ("XPAUTH_PATH", "XPRESSDIR", "XPRESS_JL_LIBRARY"))
+        return  # Skip for non-standard licenses
+    end
     # Create a bogus license file
     xpauth_path = mktempdir()
     filename = joinpath(xpauth_path, "xpauth.xpr")
