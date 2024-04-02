@@ -4693,6 +4693,8 @@ end
     ScalarNonlinearFunction
 =#
 
+_supports_nonlinear() = get_version() >= v"41"
+
 function MOI.supports_constraint(
     ::Optimizer,
     ::MOI.ScalarNonlinearFunction,
@@ -4702,7 +4704,7 @@ function MOI.supports_constraint(
         MOI.EqualTo{Float64},
     },
 )
-    return true
+    return get_version() >= v"41"
 end
 
 const _FUNCTION_MAP = Dict(
