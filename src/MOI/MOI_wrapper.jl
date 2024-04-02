@@ -4527,7 +4527,6 @@ function _get_variable_names(model)
     # buffer = Array{Cchar}(undef, num_variables * 8 * (NAMELENGTH + 1))
     buffer_p = pointer(buffer)
     GC.@preserve buffer begin
-        out = Cstring(buffer_p)
         @checked Lib.XPRSgetnames(
             model.inner,
             Cint(2),
@@ -4548,7 +4547,6 @@ function _get_constraint_names(model)
     # buffer = Array{Cchar}(undef, num_constraints * 8 * (NAMELENGTH + 1))
     buffer_p = pointer(buffer)
     GC.@preserve buffer begin
-        out = Cstring(buffer_p)
         @checked Lib.XPRSgetnames(
             model.inner,
             Cint(1),

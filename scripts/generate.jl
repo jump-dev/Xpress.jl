@@ -17,26 +17,6 @@ context = create_context(
 )
 build!(context)
 
-function replace_line_cstring(line, signature)
-    changes = getindex.(
-        signature,
-        findall(r"char(\s*?\*| [a-z0-9]+?\[\])", signature),
-    )
-    last_index = 1
-    outputs = String[]
-    for (change, range) in zip(changes, findall("Ptr{UInt8}", line))
-        push!(outputs, line[last_index:(first(range)-1)])
-        if endswith(change, "*")
-            push!(outputs, "Cstring")
-        else
-            push!(outputs, line[range])
-        end
-        last_index = last(range) + 1
-    end
-    push!(outputs, line[last_index:end])
-    return join(outputs)
-end
-
 function postprocess(filename)
     contents = read(filename, String);
     # Remove the deprecated if-else blocks
@@ -97,18 +77,6 @@ function postprocess(filename)
                 if m !== nothing && !occursin(m[1], old_xprs_contents)
                     println(io, "# Function does not exist in v33")
                 end
-            end
-            if occursin("Ptr{UInt8}", line)
-                # Replace Ptr{Cchar} with Cstring for backward compatibility
-                # with older versions of Xpress.jl
-                #
-                # We need to replace char* with Ptr{UInt8} and char[] with
-                # Cstring.
-                map = Dict("char*" => "Cstring", "char" => "Ptr{UInt8}")
-                m = match(r"ccall\(\(:(XPRS.+?)\,", line)
-                @assert m !== nothing
-                signature = xprs_signatures[m.captures[1]]
-                line = replace_line_cstring(line, signature)
             end
             if !(isempty(line) && isempty(last_line))
                 println(io, line)

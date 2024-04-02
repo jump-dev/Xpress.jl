@@ -90,7 +90,7 @@ end
 function _invoke(f::Function, pos::Int, ::Type{String}, args...)
     buffer = Array{Cchar}(undef, 1024)
     GC.@preserve buffer begin
-        out = Cstring(pointer(buffer))
+        out = pointer(buffer)
         args = collect(Any, args)
         insert!(args, pos, out)
         if (r = f(args...)) != 0
