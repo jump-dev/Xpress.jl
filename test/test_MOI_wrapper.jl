@@ -64,7 +64,7 @@ function test_runtests()
             "_GeometricMeanCone_",
             # Xpress cannot handle nonconvex quadratic constraint
             "test_quadratic_nonconvex_",
-            # Nonlinear tests
+            # Nonlinear tests because these return LOCALLY_SOLVED
             "test_nonlinear_duals",
             "test_nonlinear_expression_",
         ],
@@ -74,7 +74,7 @@ function test_runtests()
         MOI.Test.Config(;
             atol = 1e-3,
             rtol = 1e-3,
-            exclude = Any[MOI.ConstraintDual, MOI.ConstraintPrimal],
+            exclude = Any[MOI.ConstraintDual],
             optimal_status = MOI.LOCALLY_SOLVED,
         );
         include = [
@@ -2600,6 +2600,44 @@ function test_nlp_constraint_product()
     MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
     g = MOI.ScalarNonlinearFunction(:*, Any[x, 2.0, x])
     MOI.add_constraint(model, g, MOI.LessThan(3.0))
+    MOI.optimize!(model)
+    @test ≈(MOI.get(model, MOI.VariablePrimal(), x), sqrt(3 / 2); atol = 1e-3)
+    @test ≈(MOI.get(model, MOI.ObjectiveValue()), sqrt(3 / 2); atol = 1e-3)
+    return
+end
+
+function test_nlp_get_constraint_by_name()
+    if !Xpress._supports_nonlinear()
+        return
+    end
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    g = MOI.ScalarNonlinearFunction(:*, Any[x, 2.0, x])
+    c = MOI.add_constraint(model, g, MOI.LessThan(3.0))
+    MOI.set(model, MOI.ConstraintName(), c, "c")
+    d = MOI.get(model, MOI.ConstraintIndex, "c")
+    @test d == c
+    return
+end
+
+function test_nlp_constraint_delete()
+    if !Xpress._supports_nonlinear()
+        return
+    end
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    f = 1.0 * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    g_bad = MOI.ScalarNonlinearFunction(:exp, Any[x])
+    c_bad = MOI.add_constraint(model, g, MOI.GreaterThan(20.0))
+    g = MOI.ScalarNonlinearFunction(:*, Any[x, 2.0, x])
+    MOI.add_constraint(model, g, MOI.LessThan(3.0))
+    @test MOI.is_valid(model, c_bad)
+    MOI.delete(model, c_bad)
+    @test !MOI.is_valid(model, c_bad)
     MOI.optimize!(model)
     @test ≈(MOI.get(model, MOI.VariablePrimal(), x), sqrt(3 / 2); atol = 1e-3)
     @test ≈(MOI.get(model, MOI.ObjectiveValue()), sqrt(3 / 2); atol = 1e-3)

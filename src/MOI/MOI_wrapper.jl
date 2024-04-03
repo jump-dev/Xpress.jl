@@ -4879,6 +4879,8 @@ function MOI.delete(
     return
 end
 
+# This seemed to return wrong answers, likely because it is locally solving to
+# the local SLP solution, not the dual solution expected by, e.g., Ipopt?
 # function MOI.get(
 #     model::Optimizer,
 #     attr::MOI.ConstraintDual,
