@@ -2334,6 +2334,7 @@ function MOI.supports(
         MOI.VectorAffineFunction{Float64},
         MOI.ScalarAffineFunction{Float64},
         MOI.ScalarQuadraticFunction{Float64},
+        MOI.ScalarNonlinearFunction,
         MOI.VectorOfVariables,
     },
 }
@@ -2349,6 +2350,7 @@ function MOI.get(
         MOI.VectorAffineFunction{Float64},
         MOI.ScalarAffineFunction{Float64},
         MOI.ScalarQuadraticFunction{Float64},
+        MOI.ScalarNonlinearFunction,
         MOI.VectorOfVariables,
     },
 }
@@ -2365,6 +2367,7 @@ function MOI.set(
         MOI.VectorAffineFunction{Float64},
         MOI.ScalarAffineFunction{Float64},
         MOI.ScalarQuadraticFunction{Float64},
+        MOI.ScalarNonlinearFunction,
         MOI.VectorOfVariables,
     },
 }
