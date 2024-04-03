@@ -4820,7 +4820,6 @@ function MOI.add_constraint(
         MOI.EqualTo{Float64},
     },
 )
-    F, S = typeof(f), typeof(s)
     model.last_constraint_index += 1
     row = length(model.affine_constraint_info) + 1
     model.affine_constraint_info[model.last_constraint_index] =
@@ -4843,17 +4842,15 @@ function MOI.add_constraint(
     reverse!(value)
     push!(type, Lib.XPRS_TOK_EOF)
     push!(value, 0.0)
-    @checked Lib.XPRSnlpaddformulas(
+    @checked Lib.XPRSnlpchgformula(
         model.inner,
-        1,                      # ncoefs,
-        Cint[row-1],            # rowind,
-        Cint[0, length(type)],  # formulastart,
+        row - 1,
         parsed,
         type,
         value,
     )
     model.has_nlp_constraints = true
-    return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
+    return MOI.ConstraintIndex{typeof(f),typeof(s)}(model.last_constraint_index)
 end
 
 function MOI.delete(
