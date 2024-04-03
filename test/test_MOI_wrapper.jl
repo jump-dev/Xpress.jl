@@ -910,7 +910,7 @@ function infeasible_problem()
     return x, [c1, c2, c3], model
 end
 
-function testname_pass_empty()
+function test_name_pass_empty()
     model = Xpress.Optimizer()
     Xpress._pass_names_to_solver(model)
     @test Xpress._get_variable_names(model) == String[]
@@ -918,7 +918,7 @@ function testname_pass_empty()
     return
 end
 
-function testname_pass_very_long_variable()
+function test_name_pass_very_long_variable()
     model = Xpress.Optimizer()
     x = MOI.add_variable(model)
     MOI.set(model, MOI.VariableName(), x, "abc"^64)
@@ -927,7 +927,7 @@ function testname_pass_very_long_variable()
     return
 end
 
-function testname_pass_very_long_constraint()
+function test_name_pass_very_long_constraint()
     model = Xpress.Optimizer()
     x = MOI.add_variable(model)
     c = MOI.add_constraint(model, 1.0 * x, MOI.EqualTo(0.0))
