@@ -4701,11 +4701,13 @@ _supports_nonlinear() = get_version() >= v"41"
 
 function MOI.supports_constraint(
     ::Optimizer,
-    ::MOI.ScalarNonlinearFunction,
-    ::Union{
-        MOI.LessThan{Float64},
-        MOI.GreaterThan{Float64},
-        MOI.EqualTo{Float64},
+    ::Type{MOI.ScalarNonlinearFunction},
+    ::Type{
+        <:Union{
+            MOI.LessThan{Float64},
+            MOI.GreaterThan{Float64},
+            MOI.EqualTo{Float64},
+        },
     },
 )
     return get_version() >= v"41"
