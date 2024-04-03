@@ -2092,6 +2092,7 @@ function _info(
     F<:Union{
         MOI.ScalarAffineFunction{Float64},
         MOI.ScalarQuadraticFunction{Float64},
+        MOI.ScalarNonlinearFunction,
         MOI.VectorAffineFunction{Float64},
         MOI.VectorOfVariables,
     },
@@ -2119,7 +2120,7 @@ function MOI.is_valid(
     if info === nothing
         return false
     end
-    return info.type in _function_enum(F) && typeof(info.set) == S
+    return info.type in _function_enums(F) && typeof(info.set) == S
 end
 
 function MOI.add_constraint(
