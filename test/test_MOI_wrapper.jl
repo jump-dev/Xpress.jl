@@ -51,13 +51,12 @@ function test_Basic_Parameters()
 end
 
 function test_runtests()
-    optimizer = Xpress.Optimizer(; OUTPUTLOG = 0)
-    model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
+    model = MOI.instantiate(Xpress.Optimizer; with_bridge_type = Float64)
     MOI.set(model, MOI.Silent(), true)
     MOI.Test.runtests(
         model,
         MOI.Test.Config(; atol = 1e-3, rtol = 1e-3);
-        exclude = String[
+        exclude = [
             # tested with PRESOLVE=0 below
             "_SecondOrderCone_",
             "test_constraint_PrimalStart_DualStart_SecondOrderCone",
@@ -65,11 +64,27 @@ function test_runtests()
             "_GeometricMeanCone_",
             # Xpress cannot handle nonconvex quadratic constraint
             "test_quadratic_nonconvex_",
+            # Nonlinear tests
+            "test_nonlinear_duals",
+            "test_nonlinear_expression_",
         ],
     )
-
-    optimizer_no_presolve = Xpress.Optimizer(; OUTPUTLOG = 0, PRESOLVE = 0)
-    model = MOI.Bridges.full_bridge_optimizer(optimizer_no_presolve, Float64)
+    MOI.Test.runtests(
+        model,
+        MOI.Test.Config(;
+            atol = 1e-3,
+            rtol = 1e-3,
+            exclude = Any[MOI.ConstraintDual, MOI.ConstraintPrimal],
+            optimal_status = MOI.LOCALLY_SOLVED,
+        );
+        include = [
+            "test_nonlinear_duals",
+            "test_nonlinear_expression_",
+        ],
+        # This test is actually MOI.OPTIMAL. It's okay to ignore for now.
+        exclude = ["test_nonlinear_expression_overrides_objective"],
+    )
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     MOI.Test.runtests(
         model,
         MOI.Test.Config(;

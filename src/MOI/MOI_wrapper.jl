@@ -2215,7 +2215,6 @@ function MOI.delete(
         MOI.VectorAffineFunction{Float64},
         MOI.ScalarAffineFunction{Float64},
         MOI.ScalarQuadraticFunction{Float64},
-        MOI.ScalarNonlinearFunction,
     },
 }
     row = _info(model, c).row
@@ -2434,9 +2433,11 @@ function _rebuild_name_to_constraint_index_util(model::Optimizer, dict)
                 MOI.VectorAffineFunction{Float64}
             elseif info.type == SOC
                 MOI.VectorOfVariables
-            else
-                @assert info.type == RSOC
+            elseif info.type == RSOC
                 MOI.VectorOfVariables
+            else
+                @assert info.type == SCALAR_NONLINEAR
+                MOI.ScalarNonlinearFunction
             end
             model.name_to_constraint_index[info.name] =
                 MOI.ConstraintIndex{F,typeof(info.set)}(index)
@@ -3188,7 +3189,7 @@ function _cache_dual_status(model)
         return MOI.NO_SOLUTION
     end
     term_stat = MOI.get(model, MOI.TerminationStatus())
-    if term_stat == MOI.OPTIMAL
+    if term_stat in (MOI.OPTIMAL, MOI.LOCALLY_SOLVED)
         return MOI.FEASIBLE_POINT
     elseif term_stat == MOI.INFEASIBLE
         if _has_dual_ray(model)
@@ -4859,4 +4860,43 @@ function MOI.add_constraint(
     )
     model.has_nlp_constraints = true
     return MOI.ConstraintIndex{F,S}(model.last_constraint_index)
+end
+
+function MOI.delete(
+    model::Optimizer,
+    c::MOI.ConstraintIndex{MOI.ScalarNonlinearFunction,<:Any},
+)
+    row = _info(model, c).row
+    @checked Lib.XPRSnlpdelformulas(model.inner, 1, Ref{Cint}(row - 1))
+    @checked Lib.XPRSdelrows(model.inner, 1, Ref{Cint}(row - 1))
+    for (key, info) in model.affine_constraint_info
+        if info.row > row
+            info.row -= 1
+        end
+    end
+    delete!(model.affine_constraint_info, c.value)
+    model.name_to_constraint_index = nothing
+    return
+end
+
+# function MOI.get(
+#     model::Optimizer,
+#     attr::MOI.ConstraintDual,
+#     c::MOI.ConstraintIndex{MOI.ScalarNonlinearFunction,<:Any},
+# )
+#     _throw_if_optimize_in_progress(model, attr)
+#     MOI.check_result_index_bounds(model, attr)
+#     row = _info(model, c).row
+#     return _dual_multiplier(model) * model.cached_solution.linear_dual[row]
+# end
+
+function MOI.get(
+    model::Optimizer,
+    attr::MOI.ConstraintPrimal,
+    c::MOI.ConstraintIndex{MOI.ScalarNonlinearFunction,<:Any},
+)
+    _throw_if_optimize_in_progress(model, attr)
+    MOI.check_result_index_bounds(model, attr)
+    row = _info(model, c).row
+    return model.cached_solution.linear_primal[row]
 end
