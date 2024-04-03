@@ -4756,21 +4756,15 @@ function _reverse_polish(
     type::Vector{Cint},
     value::Vector{Cdouble},
 )
-    if f.head == :- && length(f.args) == 1  # Special handling for unary -
-        push!(type, Lib.XPRS_TOK_OP)
-        push!(value, Lib.XPRS_OP_UMINUS)
-        for arg in reverse(f.args)
-            _reverse_polish(model, arg, type, value)
-        end
-        return
-    end
     ret = get(_FUNCTION_MAP, f.head, nothing)
     if ret === nothing
         throw(MOI.UnsupportedNonlinearOperator(f.head))
-    elseif f.head == :+ && length(f.args) != 2 # Special handling for n-ary +
+    elseif f.head == :+ && length(f.args) != 2  # Special handling for n-ary +
         ret = (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_SUM)
-    elseif f.head == :* && length(f.args) != 2 # Special handling for n-ary *
+    elseif f.head == :* && length(f.args) != 2  # Special handling for n-ary *
         ret = (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_PROD)
+    elseif f.head == :- && length(f.args) == 1  # Special handling for unary -
+        ret = (Lib.XPRS_TOK_OP, Lib.XPRS_OP_UMINUS)
     end
     push!(type, ret[1])
     push!(value, ret[2])
