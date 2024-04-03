@@ -3582,21 +3582,26 @@ function MOI.get(
     return sort!(indices; by = x -> x.value)
 end
 
+_function_enums(::Type{<:MOI.ScalarAffineFunction}) = (AFFINE,)
+_function_enums(::Type{<:MOI.ScalarQuadraticFunction}) = (QUADRATIC,)
+_function_enums(::Type{<:MOI.VectorAffineFunction}) = (INDICATOR,)
+_function_enums(::Type{<:MOI.VectorOfVariables}) = (SOC, RSOC)
+
 function MOI.get(
     model::Optimizer,
     ::MOI.ListOfConstraintIndices{F,S},
 ) where {
-    S,
     F<:Union{
         MOI.ScalarAffineFunction{Float64},
-        MOI.VectorAffineFunction{Float64},
         MOI.ScalarQuadraticFunction{Float64},
+        MOI.VectorAffineFunction{Float64},
         MOI.VectorOfVariables,
     },
+    S,
 }
     indices = MOI.ConstraintIndex{F,S}[]
     for (key, info) in model.affine_constraint_info
-        if typeof(info.set) == S
+        if info.type in _function_enums(F) && typeof(info.set) == S
             push!(indices, MOI.ConstraintIndex{F,S}(key))
         end
     end
