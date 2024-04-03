@@ -2215,6 +2215,7 @@ function MOI.delete(
         MOI.VectorAffineFunction{Float64},
         MOI.ScalarAffineFunction{Float64},
         MOI.ScalarQuadraticFunction{Float64},
+        MOI.ScalarNonlinearFunction,
     },
 }
     row = _info(model, c).row
