@@ -1045,7 +1045,7 @@ function test_name_empty_names()
 end
 
 function test_dummy_nlp()
-    if Xpress._supports_nonlinear()
+    if !Xpress._supports_nonlinear()
         return
     end
     model = Xpress.Optimizer(; OUTPUTLOG = 0)
@@ -2492,7 +2492,7 @@ function test_conflict_infeasible_bounds()
 end
 
 function test_nlp_constraint_log()
-    if Xpress._supports_nonlinear()
+    if !Xpress._supports_nonlinear()
         return
     end
     model = Xpress.Optimizer()
