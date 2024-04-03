@@ -4748,43 +4748,29 @@ function _reverse_polish(
     type::Vector{Cint},
     value::Vector{Cdouble},
 )
-    if f.head == :- && length(f.args) == 1
-        # Special handling for unary negation
+    if f.head == :- && length(f.args) == 1  # Special handling for unary -
         push!(type, Lib.XPRS_TOK_OP)
         push!(value, Lib.XPRS_OP_UMINUS)
         for arg in reverse(f.args)
             _reverse_polish(model, arg, type, value)
         end
         return
-    elseif f.head in (:+, :*) && length(f.args) != 2
-        # Special handling for non-binary sum and product
-        push!(type, Lib.XPRS_TOK_IFUN)
-        push!(value, f.head == :+ ? Lib.XPRS_IFUN_SUM : Lib.XPRS_IFUN_PROD)
-        # XPRS_TOK_LB is not needed. Implied by XPRS_TOK_IFUN
-        for arg in reverse(f.args)
-            _reverse_polish(model, arg, type, value)
-        end
-        push!(type, Lib.XPRS_TOK_RB)
-        push!(value, 0.0)
-        return
     end
     ret = get(_FUNCTION_MAP, f.head, nothing)
     if ret === nothing
         throw(MOI.UnsupportedNonlinearOperator(f.head))
-    elseif ret[1] == Lib.XPRS_TOK_OP
-        push!(type, ret[1])
-        push!(value, ret[2])
-        for arg in reverse(f.args)
-            _reverse_polish(model, arg, type, value)
-        end
-    else
-        @assert ret[1] == Lib.XPRS_TOK_IFUN
-        push!(type, ret[1])
-        push!(value, ret[2])
-        # XPRS_TOK_LB is not needed. Implied by XPRS_TOK_IFUN
-        for arg in reverse(f.args)
-            _reverse_polish(model, arg, type, value)
-        end
+    elseif f.head == :+ && length(f.args) != 2 # Special handling for n-ary +
+        ret = (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_SUM)
+    elseif f.head == :* && length(f.args) != 2 # Special handling for n-ary *
+        ret = (Lib.XPRS_TOK_IFUN, Lib.XPRS_IFUN_PROD)
+    end
+    push!(type, ret[1])
+    push!(value, ret[2])
+    for arg in reverse(f.args)
+        _reverse_polish(model, arg, type, value)
+    end
+    if ret[1] == Lib.XPRS_TOK_IFUN
+        # XPRS_TOK_LB is not needed because it is implied by XPRS_TOK_IFUN
         push!(type, Lib.XPRS_TOK_RB)
         push!(value, 0.0)
     end
