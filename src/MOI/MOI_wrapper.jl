@@ -560,19 +560,18 @@ end
 
 MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
 
-function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Real)
-    # positive values would mean that its stops after `limit` seconds
-    # iff there is already a MIP solution available.
-    MOI.set(model, MOI.RawOptimizerAttribute("MAXTIME"), -floor(Int32, limit))
+function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, lim::Union{Real,Nothing})
+    # 0     No time limit.
+    # n > 0 If an integer solution has been found, stop MIP search after n ...
+    # n < 0 Stop in LP or MIP search after n seconds.
+    n = -floor(Cint, something(lim, 0.0))
+    MOI.set(model, MOI.RawOptimizerAttribute("MAXTIME"), n)
     return
 end
 
 function MOI.get(model::Optimizer, ::MOI.TimeLimitSec)
-    # MOI.attribute_value_type(MOI.TimeLimitSec()) = Union{Nothing, Float64}
-    return convert(
-        Float64,
-        -MOI.get(model, MOI.RawOptimizerAttribute("MAXTIME")),
-    )
+    ret = MOI.get(model, MOI.RawOptimizerAttribute("MAXTIME"))
+    return convert(Float64, -ret)
 end
 
 MOI.supports_incremental_interface(::Optimizer) = true
