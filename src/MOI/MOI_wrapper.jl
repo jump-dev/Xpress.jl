@@ -4842,13 +4842,7 @@ function MOI.add_constraint(
     reverse!(value)
     push!(type, Lib.XPRS_TOK_EOF)
     push!(value, 0.0)
-    @checked Lib.XPRSnlpchgformula(
-        model.inner,
-        row - 1,
-        parsed,
-        type,
-        value,
-    )
+    @checked Lib.XPRSnlpchgformula(model.inner, row - 1, parsed, type, value)
     model.has_nlp_constraints = true
     return MOI.ConstraintIndex{typeof(f),typeof(s)}(model.last_constraint_index)
 end
