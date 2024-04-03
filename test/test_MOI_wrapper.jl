@@ -896,152 +896,98 @@ function test_multiple_modifications()
 end
 
 function infeasible_problem()
-    c = [1.0, 1.0]
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("MOI_POST_SOLVE"), false)
+    x = MOI.add_variables(model, 2)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    f = 1.0 * x[1] + 1.0 * x[2]
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    c1 = MOI.add_constraint(model, 1.0 * x[1], MOI.GreaterThan(5.0))
+    c2 = MOI.add_constraint(model, 1.0 * x[1], MOI.LessThan(2.0))
+    c3 = MOI.add_constraint(model, 1.0 * x[2], MOI.GreaterThan(10.0))
+    MOI.optimize!(model)
+    return x, [c1, c2, c3], model
+end
 
-    optimizer = Xpress.Optimizer(; OUTPUTLOG = 0)
-    MOI.set(optimizer, MOI.RawOptimizerAttribute("MOI_POST_SOLVE"), false)
+function testname_pass_empty()
+    model = Xpress.Optimizer()
+    Xpress._pass_names_to_solver(model)
+    @test Xpress._get_variable_names(model) == String[]
+    @test Xpress._get_constraint_names(model) == String[]
+    return
+end
 
-    x = MOI.add_variables(optimizer, 2)
+function testname_pass_very_long_variable()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    MOI.set(model, MOI.VariableName(), x, "abc"^64)
+    @test_logs (:warn,) Xpress._pass_names_to_solver(model)
+    @test Xpress._get_variable_names(model) == ["C1"]
+    return
+end
 
-    MOI.set(
-        optimizer,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
-    )
-
-    MOI.set(optimizer, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-
-    c1 = MOI.add_constraint(
-        optimizer,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.0], x), 0.0),
-        MOI.GreaterThan(5.0),
-    )
-
-    c2 = MOI.add_constraint(
-        optimizer,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.0], x), 0.0),
-        MOI.LessThan(2.0),
-    )
-
-    c3 = MOI.add_constraint(
-        optimizer,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([0.0, 1.0], x), 0.0),
-        MOI.GreaterThan(10.0),
-    )
-
-    MOI.optimize!(optimizer)
-
-    variables = x
-    constraints = [c1, c2, c3]
-
-    return variables, constraints, optimizer
+function testname_pass_very_long_constraint()
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    c = MOI.add_constraint(model, 1.0 * x, MOI.EqualTo(0.0))
+    MOI.set(model, MOI.ConstraintName(), c, "abc"^64)
+    @test_logs (:warn,) Xpress._pass_names_to_solver(model)
+    @test Xpress._get_constraint_names(model) == ["R1"]
+    return
 end
 
 function test_name_constraints()
-
-    # create problem
-    variables, constraints, optimizer = infeasible_problem()
-
-    # name variables and constraints
-    MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x2"])
-    MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "constraint1")
-    MOI.set(optimizer, MOI.ConstraintName(), constraints[2], "constraint2")
-    MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3")
-
-    # name inner model
-    Xpress._pass_names_to_solver(optimizer)
-
-    # check names
-    variable_names = Xpress._get_variable_names(optimizer)
-    constraint_names = Xpress._get_constraint_names(optimizer)
-
-    @test length(variable_names) == 2
-    @test length(constraint_names) == 3
-
-    @test variable_names[1] == "x1"
-    @test variable_names[2] == "x2"
-    @test constraint_names[1] == "constraint1"
-    @test constraint_names[2] == "constraint2"
-    @test constraint_names[3] == "constraint3"
-
-    return nothing
+    variables, constraints, model = infeasible_problem()
+    MOI.set(model, MOI.VariableName(), variables, ["x1", "x2"])
+    MOI.set(model, MOI.ConstraintName(), constraints[1], "constraint1")
+    MOI.set(model, MOI.ConstraintName(), constraints[2], "constraint2")
+    MOI.set(model, MOI.ConstraintName(), constraints[3], "constraint3")
+    Xpress._pass_names_to_solver(model)
+    variable_names = Xpress._get_variable_names(model)
+    constraint_names = Xpress._get_constraint_names(model)
+    @test variable_names == ["x1", "x2"]
+    @test constraint_names == ["constraint1", "constraint2", "constraint3"]
+    return
 end
 
 function test_name_constraints_with_the_same_name()
-
-    # create problem
-    variables, constraints, optimizer = infeasible_problem()
-
-    # name variables and constraints
-    MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x2"])
-    MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "same")
-    MOI.set(optimizer, MOI.ConstraintName(), constraints[2], "same")
-    MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3")
-
-    # name inner model
-    Xpress._pass_names_to_solver(optimizer)
-
-    # check names
-    variable_names = Xpress._get_variable_names(optimizer)
-    constraint_names = Xpress._get_constraint_names(optimizer)
-
-    @test variable_names[1] == "x1"
-    @test variable_names[2] == "x2"
-    @test (
-        (constraint_names[1] == "same" && constraint_names[2] == "R2") ||
-        (constraint_names[2] == "same" && constraint_names[1] == "R1")
-    )
-    @test constraint_names[3] == "constraint3"
-
-    return nothing
+    variables, constraints, model = infeasible_problem()
+    MOI.set(model, MOI.VariableName(), variables, ["x1", "x2"])
+    MOI.set(model, MOI.ConstraintName(), constraints[1], "same")
+    MOI.set(model, MOI.ConstraintName(), constraints[2], "same")
+    MOI.set(model, MOI.ConstraintName(), constraints[3], "constraint3")
+    @test_logs (:warn,) Xpress._pass_names_to_solver(model)
+    variable_names = Xpress._get_variable_names(model)
+    constraint_names = Xpress._get_constraint_names(model)
+    @test variable_names == ["x1", "x2"]
+    @test constraint_names == ["same", "R2", "constraint3"] ||
+          constraint_names == ["R1", "same", "constraint3"]
+    return
 end
 
 function test_name_variables_with_the_same_name()
-
-    # create problem
-    variables, constraints, optimizer = infeasible_problem()
-
-    # name variables and constraints
-    MOI.set(optimizer, MOI.VariableName(), variables, ["x1", "x1"])
-    MOI.set(optimizer, MOI.ConstraintName(), constraints[1], "constraint1")
-    MOI.set(optimizer, MOI.ConstraintName(), constraints[2], "constraint2")
-    MOI.set(optimizer, MOI.ConstraintName(), constraints[3], "constraint3")
-
-    # name inner model
-    Xpress._pass_names_to_solver(optimizer)
-
-    # check names
-    variable_names = Xpress._get_variable_names(optimizer)
-    constraint_names = Xpress._get_constraint_names(optimizer)
-
-    @test variable_names[1] == "x1"
-    @test variable_names[2] == "C2"
-    @test constraint_names[1] == "constraint1"
-    @test constraint_names[2] == "constraint2"
-    @test constraint_names[3] == "constraint3"
-
-    return nothing
+    variables, constraints, model = infeasible_problem()
+    MOI.set(model, MOI.VariableName(), variables, ["x1", "x1"])
+    MOI.set(model, MOI.ConstraintName(), constraints[1], "constraint1")
+    MOI.set(model, MOI.ConstraintName(), constraints[2], "constraint2")
+    MOI.set(model, MOI.ConstraintName(), constraints[3], "constraint3")
+    @test_logs (:warn,) Xpress._pass_names_to_solver(model)
+    variable_names = Xpress._get_variable_names(model)
+    constraint_names = Xpress._get_constraint_names(model)
+    @test variable_names == ["x1", "C2"]
+    @test constraint_names == ["constraint1", "constraint2", "constraint3"]
+    return
 end
 
 function test_name_empty_names()
-
-    # create problem
-    variables, constraints, optimizer = infeasible_problem()
-
-    # name inner model
-    Xpress._pass_names_to_solver(optimizer)
-
-    # check names
-    variable_names = Xpress._get_variable_names(optimizer)
-    constraint_names = Xpress._get_constraint_names(optimizer)
-
-    @test variable_names[1] == "C1"
-    @test variable_names[2] == "C2"
-    @test constraint_names[1] == "R1"
-    @test constraint_names[2] == "R2"
-    @test constraint_names[3] == "R3"
-
-    return nothing
+    variables, constraints, model = infeasible_problem()
+    Xpress._pass_names_to_solver(model)
+    variable_names = Xpress._get_variable_names(model)
+    constraint_names = Xpress._get_constraint_names(model)
+    @test variable_names == ["C1", "C2"]
+    @test constraint_names == ["R1", "R2", "R3"]
+    return
 end
 
 function test_dummy_nlp()
