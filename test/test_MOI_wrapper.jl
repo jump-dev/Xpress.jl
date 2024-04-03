@@ -2632,7 +2632,7 @@ function test_nlp_constraint_delete()
     f = 1.0 * x
     MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
     g_bad = MOI.ScalarNonlinearFunction(:exp, Any[x])
-    c_bad = MOI.add_constraint(model, g, MOI.GreaterThan(20.0))
+    c_bad = MOI.add_constraint(model, g_bad, MOI.GreaterThan(20.0))
     g = MOI.ScalarNonlinearFunction(:*, Any[x, 2.0, x])
     MOI.add_constraint(model, g, MOI.LessThan(3.0))
     @test MOI.is_valid(model, c_bad)
