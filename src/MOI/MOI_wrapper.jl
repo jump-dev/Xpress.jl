@@ -4760,8 +4760,7 @@ function _reverse_polish(
         # Special handling for non-binary sum and product
         push!(type, Lib.XPRS_TOK_IFUN)
         push!(value, f.head == :+ ? Lib.XPRS_IFUN_SUM : Lib.XPRS_IFUN_PROD)
-        push!(type, Lib.XPRS_TOK_LB)
-        push!(value, 0.0)
+        # XPRS_TOK_LB is not needed. Implied by XPRS_TOK_IFUN
         for arg in reverse(f.args)
             _reverse_polish(model, arg, type, value)
         end
