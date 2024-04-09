@@ -51,13 +51,12 @@ function test_Basic_Parameters()
 end
 
 function test_runtests()
-    optimizer = Xpress.Optimizer(; OUTPUTLOG = 0)
-    model = MOI.Bridges.full_bridge_optimizer(optimizer, Float64)
+    model = MOI.instantiate(Xpress.Optimizer; with_bridge_type = Float64)
     MOI.set(model, MOI.Silent(), true)
     MOI.Test.runtests(
         model,
         MOI.Test.Config(; atol = 1e-3, rtol = 1e-3);
-        exclude = String[
+        exclude = [
             # tested with PRESOLVE=0 below
             "_SecondOrderCone_",
             "test_constraint_PrimalStart_DualStart_SecondOrderCone",
@@ -65,11 +64,27 @@ function test_runtests()
             "_GeometricMeanCone_",
             # Xpress cannot handle nonconvex quadratic constraint
             "test_quadratic_nonconvex_",
+            # Nonlinear tests because these return LOCALLY_SOLVED
+            "test_nonlinear_duals",
+            "test_nonlinear_expression_",
         ],
     )
-
-    optimizer_no_presolve = Xpress.Optimizer(; OUTPUTLOG = 0, PRESOLVE = 0)
-    model = MOI.Bridges.full_bridge_optimizer(optimizer_no_presolve, Float64)
+    MOI.Test.runtests(
+        model,
+        MOI.Test.Config(;
+            atol = 1e-3,
+            rtol = 1e-3,
+            exclude = Any[MOI.ConstraintDual],
+            optimal_status = MOI.LOCALLY_SOLVED,
+        );
+        include = [
+            "test_nonlinear_duals",
+            "test_nonlinear_expression_",
+        ],
+        # This test is actually MOI.OPTIMAL. It's okay to ignore for now.
+        exclude = ["test_nonlinear_expression_overrides_objective"],
+    )
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     MOI.Test.runtests(
         model,
         MOI.Test.Config(;
@@ -991,7 +1006,7 @@ function test_name_empty_names()
 end
 
 function test_dummy_nlp()
-    if Xpress.get_version() < v"41"
+    if !Xpress._supports_nonlinear()
         return
     end
     model = Xpress.Optimizer(; OUTPUTLOG = 0)
@@ -2434,6 +2449,144 @@ function test_conflict_infeasible_bounds()
     @test MOI.get(model, attr, c0) == MOI.NOT_IN_CONFLICT
     @test MOI.get(model, attr, c1) == MOI.IN_CONFLICT
     @test MOI.get(model, attr, c2) == MOI.IN_CONFLICT
+    return
+end
+
+function test_nlp_constraint_log()
+    if !Xpress._supports_nonlinear()
+        return
+    end
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    t = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.LessThan(2.0))
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    f = 1.0 * t
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    g = MOI.ScalarNonlinearFunction(
+        :-,
+        Any[MOI.ScalarNonlinearFunction(:log, Any[x]), t],
+    )
+    c = MOI.add_constraint(model, g, MOI.GreaterThan(0.0))
+    MOI.optimize!(model)
+    F, S = MOI.ScalarNonlinearFunction, MOI.GreaterThan{Float64}
+    @test MOI.supports_constraint(model, F, S)
+    @test (F, S) in MOI.get(model, MOI.ListOfConstraintTypesPresent())
+    @test c in MOI.get(model, MOI.ListOfConstraintIndices{F,S}())
+    x_val = MOI.get(model, MOI.VariablePrimal(), x)
+    t_val = MOI.get(model, MOI.VariablePrimal(), t)
+    @test MOI.get(model, MOI.RawStatusString()) ==
+          "1 Solution found ( XSLP_NLPSTATUS_SOLUTION) - no interruption - the solve completed normally"
+    @test ≈(x_val, 2.0; atol = 1e-6)
+    @test ≈(t_val, log(x_val); atol = 1e-6)
+    @test ≈(MOI.get(model, MOI.ObjectiveValue()), t_val; atol = 1e-6)
+    return
+end
+
+function test_nlp_constraint_unsupported_nonlinear_operator()
+    if !Xpress._supports_nonlinear()
+        return
+    end
+    model = Xpress.Optimizer()
+    x = MOI.add_variable(model)
+    f = MOI.ScalarNonlinearFunction(:foo, Any[x])
+    @test_throws(
+        MOI.UnsupportedNonlinearOperator(:foo),
+        MOI.add_constraint(model, f, MOI.GreaterThan(0.0)),
+    )
+    return
+end
+
+function test_nlp_constraint_unary_negation()
+    if !Xpress._supports_nonlinear()
+        return
+    end
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    f = 1.0 * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    g = MOI.ScalarNonlinearFunction(:-, Any[x])
+    MOI.add_constraint(model, g, MOI.GreaterThan(-2.0))
+    MOI.optimize!(model)
+    @test ≈(MOI.get(model, MOI.VariablePrimal(), x), 2.0; atol = 1e-3)
+    @test ≈(MOI.get(model, MOI.ObjectiveValue()), 2.0; atol = 1e-3)
+    return
+end
+
+function test_nlp_constraint_scalar_affine_function()
+    if !Xpress._supports_nonlinear()
+        return
+    end
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    f = 1.2 * x + 1.3
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    g = MOI.ScalarNonlinearFunction(:-, Any[1.5 * x + 2.0])
+    MOI.add_constraint(model, g, MOI.GreaterThan(-6.0))
+    MOI.optimize!(model)
+    @test ≈(MOI.get(model, MOI.VariablePrimal(), x), 2 + 2 / 3; atol = 1e-3)
+    @test ≈(MOI.get(model, MOI.ObjectiveValue()), 4.5; atol = 1e-3)
+    return
+end
+
+function test_nlp_constraint_product()
+    if !Xpress._supports_nonlinear()
+        return
+    end
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    f = 1.0 * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    g = MOI.ScalarNonlinearFunction(:*, Any[x, 2.0, x])
+    MOI.add_constraint(model, g, MOI.LessThan(3.0))
+    MOI.optimize!(model)
+    @test ≈(MOI.get(model, MOI.VariablePrimal(), x), sqrt(3 / 2); atol = 1e-3)
+    @test ≈(MOI.get(model, MOI.ObjectiveValue()), sqrt(3 / 2); atol = 1e-3)
+    return
+end
+
+function test_nlp_get_constraint_by_name()
+    if !Xpress._supports_nonlinear()
+        return
+    end
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    g = MOI.ScalarNonlinearFunction(:*, Any[x, 2.0, x])
+    c = MOI.add_constraint(model, g, MOI.LessThan(3.0))
+    MOI.set(model, MOI.ConstraintName(), c, "c")
+    d = MOI.get(model, MOI.ConstraintIndex, "c")
+    @test d == c
+    return
+end
+
+function test_nlp_constraint_delete()
+    if !Xpress._supports_nonlinear()
+        return
+    end
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    f = 1.0 * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    g_bad = MOI.ScalarNonlinearFunction(:exp, Any[x])
+    c_bad = MOI.add_constraint(model, g_bad, MOI.GreaterThan(20.0))
+    g = MOI.ScalarNonlinearFunction(:*, Any[x, 2.0, x])
+    MOI.add_constraint(model, g, MOI.LessThan(3.0))
+    @test MOI.is_valid(model, c_bad)
+    MOI.delete(model, c_bad)
+    @test !MOI.is_valid(model, c_bad)
+    MOI.optimize!(model)
+    @test ≈(MOI.get(model, MOI.VariablePrimal(), x), sqrt(3 / 2); atol = 1e-3)
+    @test ≈(MOI.get(model, MOI.ObjectiveValue()), sqrt(3 / 2); atol = 1e-3)
     return
 end
 
