@@ -16,6 +16,12 @@ The Xpress wrapper for Julia is community driven and not officially supported
 by FICO Xpress. If you are a commercial customer interested in official support
 for Julia from FICO Xpress, let them know.
 
+## Getting help
+
+If you need help, please ask a question on the [JuMP community forum](https://jump.dev/forum).
+
+If you have a reproducible example of a bug, please [open a GitHub issue](https://github.com/jump-dev/Xpress.jl/issues/new).
+
 ## License
 
 `Xpress.jl` is licensed under the [MIT License](https://github.com/jump-dev/Xpress.jl/blob/master/LICENSE.md).
