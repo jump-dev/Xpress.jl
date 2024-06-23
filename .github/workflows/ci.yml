@@ -19,12 +19,12 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         arch: [x64]
         # If updating most recent version, change shell script below
-        XPRESS_JLL_VERSION: ['8.13.4', '9.3.0']
+        XPRESS_JLL_VERSION: ['8.14.0', '9.4.1']
         include:
          - version: '1'
            os: macos-14
            arch: aarch64
-           XPRESS_JLL_VERSION: '9.3.0'
+           XPRESS_JLL_VERSION: '9.4.1'
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
@@ -37,12 +37,13 @@ jobs:
           XPRESS_JL_SKIP_LIB_CHECK: "true"
       - shell: julia --project=. --color=yes {0}
         run: |
+          LATEST_VERSION = "9.4.1"
           import Pkg
-          Pkg.add(; name = "Xpress_jll", version = "9.3.0")
+          Pkg.add(; name = "Xpress_jll", version = LATEST_VERSION)
           import Xpress_jll
-          # Older licenses may have expired. Copy 9.3.0 license to cwd and then
+          # Older licenses may have expired. Copy license to cwd and then
           # install specific version.
-          if ENV["XPRESS_JLL_VERSION"] != "9.3.0"
+          if ENV["XPRESS_JLL_VERSION"] != LATEST_VERSION
               license_dir = joinpath(dirname(dirname(Xpress_jll.libxprs)), "license")
               cp(joinpath(license_dir, "community-xpauth.xpr"), "xpauth.xpr")
               Pkg.add(; name = "Xpress_jll", version = ENV["XPRESS_JLL_VERSION"])
