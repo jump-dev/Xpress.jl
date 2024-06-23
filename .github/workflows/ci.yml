@@ -38,6 +38,7 @@ jobs:
       - shell: julia --project=. --color=yes {0}
         run: |
           write("xpauth.xpr", ENV["XPRESS_JL_COMMUNITY_XPAUTH_XPR"])
+          import Pkg
           Pkg.add(; name = "Xpress_jll", version = ENV["XPRESS_JLL_VERSION"])
         env:
           XPRESS_JL_COMMUNITY_XPAUTH_XPR: ${{ secrets.XPRESS_JL_COMMUNITY_XPAUTH_XPR }}
