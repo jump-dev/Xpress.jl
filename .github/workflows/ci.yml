@@ -37,18 +37,10 @@ jobs:
           XPRESS_JL_SKIP_LIB_CHECK: "true"
       - shell: julia --project=. --color=yes {0}
         run: |
-          LATEST_VERSION = "9.4.1"
-          import Pkg
-          Pkg.add(; name = "Xpress_jll", version = LATEST_VERSION)
-          import Xpress_jll
-          # Older licenses may have expired. Copy license to cwd and then
-          # install specific version.
-          if ENV["XPRESS_JLL_VERSION"] != LATEST_VERSION
-              license_dir = joinpath(dirname(dirname(Xpress_jll.libxprs)), "license")
-              cp(joinpath(license_dir, "community-xpauth.xpr"), "xpauth.xpr")
-              Pkg.add(; name = "Xpress_jll", version = ENV["XPRESS_JLL_VERSION"])
-          end
+          write("xpauth.xpr", ENV["XPRESS_JL_COMMUNITY_XPAUTH_XPR"])
+          Pkg.add(; name = "Xpress_jll", version = ENV["XPRESS_JLL_VERSION"])
         env:
+          XPRESS_JL_COMMUNITY_XPAUTH_XPR: ${{ secrets.XPRESS_JL_COMMUNITY_XPAUTH_XPR }}
           XPRESS_JLL_VERSION: ${{ matrix.XPRESS_JLL_VERSION }}
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
