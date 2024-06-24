@@ -15,7 +15,10 @@ function _get_xpauthpath(xpauth_path = "", verbose::Bool = true)
     # variables.
     for key in ("XPAUTH_PATH", "XPRESSDIR")
         if haskey(ENV, key)
+            # With the default filename
             push!(candidates, joinpath(replace(ENV[key], "\"" => ""), XPAUTH))
+            # and without
+            push!(candidates, replace(ENV[key], "\"" => ""))
         end
     end
     # Search in `xpress/lib/../bin/xpauth.xpr`. This is a common location on
