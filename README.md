@@ -132,10 +132,54 @@ default, `logfile = ""` (console).
 
 ## Callbacks
 
-Solver specific and solver independent callbacks are working in
-[MathOptInterface](https://github.com/jump-dev/MathOptInterface.jl) and,
-consequently, in [JuMP](https://github.com/jump-dev/JuMP.jl). However, the
-current implementation should be considered experimental.
+Here is an example using Xpress's solver-specific callbacks.
+
+```julia
+using JuMP, Xpress, Test
+
+model = direct_model(Xpress.Optimizer())
+@variable(model, 0 <= x <= 2.5, Int)
+@variable(model, 0 <= y <= 2.5, Int)
+@objective(model, Max, y)
+function my_callback_function(cb_data)
+    prob = cb_data.model
+    p_value = Ref{Cint}(0)
+    ret = Xpress.Lib.XPRSgetintattrib(prob, Xpress.Lib.XPRS_MIPINFEAS, p_value)
+    if p_value[] > 0
+        return  # There are integer infeasibilities. The solution is fractional.
+    end
+    p_obj, p_bound = Ref{Cdouble}(), Ref{Cdouble}()
+    Xpress.Lib.XPRSgetdblattrib(prob, Xpress.Lib.XPRS_MIPBESTOBJVAL, p_obj)
+    Xpress.Lib.XPRSgetdblattrib(prob, Xpress.Lib.XPRS_BESTBOUND, p_bound)
+    rel_gap = abs((p_obj[] - p_bound[]) / p_obj[])
+    @info "Relative gap = $rel_gap"
+    # Before querying `callback_value`, you must call:
+    Xpress.get_cb_solution(unsafe_backend(model), cb_data.model)
+    x_val = callback_value(cb_data, x)
+    y_val = callback_value(cb_data, y)
+    # You can submit solver-independent MathOptInterface attributes such as
+    # lazy constraints, user-cuts, and heuristic solutions.
+    if y_val - x_val > 1 + 1e-6
+        con = @build_constraint(y - x <= 1)
+        MOI.submit(model, MOI.LazyConstraint(cb_data), con)
+    elseif y_val + x_val > 3 + 1e-6
+        con = @build_constraint(y + x <= 3)
+        MOI.submit(model, MOI.LazyConstraint(cb_data), con)
+    end
+    if rand() < 0.1
+        # You can terminate the callback as follows:
+        Xpress.Lib.XPRSinterrupt(cb_data.model, 1234)
+    end
+    return
+end
+set_attribute(model, Xpress.CallbackFunction(), my_callback_function)
+set_attribute(model, "HEUREMPHASIS", 0)
+optimize!(model)
+@test termination_status(model) == MOI.OPTIMAL
+@test primal_status(model) == MOI.FEASIBLE_POINT
+@test value(x) == 1
+@test value(y) == 2
+```
 
 ## Environment variables
 
