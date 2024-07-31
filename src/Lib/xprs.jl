@@ -3274,6 +3274,15 @@ const XPRS_BARALG = 8315
 
 const XPRS_SIFTING = 8319
 
+# Struct does not exist in v43
+const XPRS_TREEPRESOLVE = 8320
+
+# Struct does not exist in v43
+const XPRS_TREEPRESOLVE_KEEPBASIS = 8321
+
+# Struct does not exist in v43
+const XPRS_TREEPRESOLVEOPS = 8322
+
 const XPRS_LPLOGSTYLE = 8326
 
 const XPRS_RANDOMSEED = 8328
@@ -3402,6 +3411,15 @@ const XPRS_SIFTSWITCH = 8425
 # Struct does not exist in v33
 const XPRS_HEUREMPHASIS = 8427
 
+# Struct does not exist in v43
+const XPRS_COMPUTEMATX = 8428
+
+# Struct does not exist in v43
+const XPRS_COMPUTEMATX_IIS = 8429
+
+# Struct does not exist in v43
+const XPRS_COMPUTEMATX_IISMAXTIME = 8430
+
 # Struct does not exist in v33
 const XPRS_BARREFITER = 8431
 
@@ -3423,6 +3441,9 @@ const XPRS_IOTIMEOUT = 8442
 # Struct does not exist in v33
 const XPRS_AUTOCUTTING = 8446
 
+# Struct does not exist in v43
+const XPRS_GLOBALNUMINITNLPCUTS = 8449
+
 # Struct does not exist in v33
 const XPRS_CALLBACKCHECKTIMEDELAY = 8451
 
@@ -3434,6 +3455,9 @@ const XPRS_MULTIOBJLOG = 8458
 
 # Struct does not exist in v33
 const XPRS_BACKGROUNDMAXTHREADS = 8461
+
+# Struct does not exist in v43
+const XPRS_GLOBALLSHEURSTRATEGY = 8464
 
 # Struct does not exist in v33
 const XPRS_GLOBALSPATIALBRANCHIFPREFERORIG = 8465
@@ -3465,6 +3489,18 @@ const XPRS_BACKGROUNDSELECT = 8463
 
 # Struct does not exist in v33
 const XPRS_HEURSEARCHBACKGROUNDSELECT = 8477
+
+const XPRS_HEURSEARCHCOPYCONTROLS = 8480
+
+const XPRS_GLOBALNLPCUTS = 8481
+
+const XPRS_GLOBALTREENLPCUTS = 8482
+
+const XPRS_BARHGOPS = 8483
+
+const XPRS_BARHMAXRESTARTS = 8484
+
+const XPRS_MCFCUTSTRATEGY = 8486
 
 const XPRS_MATRIXNAME = 3001
 
@@ -3609,6 +3645,8 @@ const XPRS_MIPTHREADID = 1037
 
 const XPRS_ALGORITHM = 1049
 
+const XPRS_CROSSOVERITER = 1051
+
 # Struct does not exist in v33
 const XPRS_SOLSTATUS = 1053
 
@@ -3726,6 +3764,10 @@ const XPRS_GLOBALNLPINFEAS = 1403
 
 # Struct does not exist in v33
 const XPRS_IISSOLSTATUS = 1406
+
+const XPRS_INPUTROWS = 1408
+
+const XPRS_INPUTCOLS = 1409
 
 const XPRS_BARITER = 5001
 
