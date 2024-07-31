@@ -8,16 +8,16 @@
 File automatically generated with script:
 Xpress.jl/scripts/build_param_control_dicts.jl
 
-Last build: 2023-04-05T15:30:42.197
+Last build: 2024-07-31T21:27:17.533
 
-Optimizer version: 41.1.3
+Optimizer version: 43.1.1
 
 Banner from lib:
 ###
 
 Banner from header (xprs.h):
- * (c) Copyright Fair Isaac Corporation 1983-2023. All rights reserved     *
- * For FICO Xpress Optimizer v41.01.03                                     *
+ * (c) Copyright Fair Isaac Corporation 1983-2024. All rights reserved     *
+ * For FICO Xpress Optimizer v43.01.01                                     *
 
 =#
 
@@ -111,10 +111,13 @@ const DOUBLE_CONTROLS = Dict{String,Int32}(
     "MIPRESTARTFACTOR" => 7145,
     "BAROBJPERTURB" => 7146,
     "CPIALPHA" => 7149,
+    "GLOBALSPATIALBRANCHPROPAGATIONEFFORT" => 7152,
+    "GLOBALSPATIALBRANCHCUTTINGEFFORT" => 7153,
     "GLOBALBOUNDINGBOX" => 7154,
     "TIMELIMIT" => 7158,
     "SOLTIMELIMIT" => 7159,
     "REPAIRINFEASTIMELIMIT" => 7160,
+    "BARHGEXTRAPOLATE" => 7166,
 )
 
 const INTEGER_CONTROLS = Dict{String,Int32}(
@@ -217,6 +220,7 @@ const INTEGER_CONTROLS = Dict{String,Int32}(
     "BRANCHCHOICE" => 8162,
     "BARREGULARIZE" => 8163,
     "SBSELECT" => 8164,
+    "IISLOG" => 8165,
     "LOCALCHOICE" => 8170,
     "LOCALBACKTRACK" => 8171,
     "DUALSTRATEGY" => 8174,
@@ -267,6 +271,7 @@ const INTEGER_CONTROLS = Dict{String,Int32}(
     "MIPRAMPUP" => 8255,
     "MAXLOCALBACKTRACK" => 8257,
     "USERSOLHEURISTIC" => 8258,
+    "PRECONVERTOBJTOCONS" => 8260,
     "FORCEPARALLELDUAL" => 8265,
     "BACKTRACKTIE" => 8266,
     "BRANCHDISJ" => 8267,
@@ -287,14 +292,14 @@ const INTEGER_CONTROLS = Dict{String,Int32}(
     "CORESPERCPU" => 8296,
     "RESOURCESTRATEGY" => 8297,
     "CLAMPING" => 8301,
-    "SLEEPONTHREADWAIT" => 8302,
+    "SLEEPONTHREADWAIT" => 8302, # kept for compatibility
     "PREDUPROW" => 8307,
     "CPUPLATFORM" => 8312,
     "BARALG" => 8315,
     "SIFTING" => 8319,
-    "TREEPRESOLVE" => 8320, # Not in v38, kept for backwards compatibility.
-    "TREEPRESOLVE_KEEPBASIS" => 8321, # Not in v38, kept for backwards compatibility.
-    "TREEPRESOLVEOPS" => 8322, # Not in v38, kept for backwards compatibility.
+    "TREEPRESOLVE" => 8320, # kept for compatibility
+    "TREEPRESOLVE_KEEPBASIS" => 8321, # kept for compatibility
+    "TREEPRESOLVEOPS" => 8322, # kept for compatibility
     "LPLOGSTYLE" => 8326,
     "RANDOMSEED" => 8328,
     "TREEQCCUTS" => 8331,
@@ -322,7 +327,7 @@ const INTEGER_CONTROLS = Dict{String,Int32}(
     "TUNERVERBOSE" => 8370,
     "TUNEROUTPUT" => 8372,
     "PREANALYTICCENTER" => 8374,
-    "NETCUTS" => 8382,
+    "NETCUTS" => 8382, # kept for compatibility
     "LPFLAGS" => 8385,
     "MIPKAPPAFREQ" => 8386,
     "OBJSCALEFACTOR" => 8387,
@@ -349,9 +354,9 @@ const INTEGER_CONTROLS = Dict{String,Int32}(
     "OUTPUTCONTROLS" => 8424,
     "SIFTSWITCH" => 8425,
     "HEUREMPHASIS" => 8427,
-    "COMPUTEMATX" => 8428,
-    "COMPUTEMATX_IIS" => 8429,
-    "COMPUTEMATX_IISMAXTIME" => 8430,
+    "COMPUTEMATX" => 8428, # kept for compatibility
+    "COMPUTEMATX_IIS" => 8429, # kept for compatibility
+    "COMPUTEMATX_IISMAXTIME" => 8430, # kept for compatibility
     "BARREFITER" => 8431,
     "COMPUTELOG" => 8434,
     "SIFTPRESOLVEOPS" => 8435,
@@ -360,15 +365,30 @@ const INTEGER_CONTROLS = Dict{String,Int32}(
     "IOTIMEOUT" => 8442,
     "MAXSTALLTIME" => 8443, # kept for compatibility
     "AUTOCUTTING" => 8446,
+    "GLOBALNUMINITNLPCUTS" => 8449,
     "CALLBACKCHECKTIMEDELAY" => 8451,
     "MULTIOBJOPS" => 8457,
     "MULTIOBJLOG" => 8458,
+    "BACKGROUNDMAXTHREADS" => 8461,
+    "GLOBALLSHEURSTRATEGY" => 8464,
     "GLOBALSPATIALBRANCHIFPREFERORIG" => 8465,
     "PRECONFIGURATION" => 8470,
     "FEASIBILITYJUMP" => 8471,
+    "IISOPS" => 8472,
+    "RLTCUTS" => 8476,
+    "ALTERNATIVEREDCOSTS" => 8478,
+    "HEURSHIFTPROP" => 8479,
+    "HEURSEARCHCOPYCONTROLS" => 8480,
+    "GLOBALNLPCUTS" => 8481,
+    "GLOBALTREENLPCUTS" => 8482,
+    "BARHGOPS" => 8483,
+    "BARHGMAXRESTARTS" => 8484,
+    "MCFCUTSTRATEGY" => 8486,
     "EXTRAELEMS" => 8006,
     "EXTRAPRESOLVE" => 8037, # kept for compatibility
     "EXTRASETELEMS" => 8191,
+    "BACKGROUNDSELECT" => 8463,
+    "HEURSEARCHBACKGROUNDSELECT" => 8477,
 )
 
 const STRING_ATTRIBUTES = Dict{String,Int32}(
@@ -445,6 +465,7 @@ const INTEGER_ATTRIBUTES = Dict{String,Int32}(
     "BRANCHVAR" => 1036,
     "MIPTHREADID" => 1037,
     "ALGORITHM" => 1049,
+    "CROSSOVERITER" => 1051,
     "SOLSTATUS" => 1053,
     "TIME" => 1122, # kept for compatibility
     "ORIGINALROWS" => 1124,
@@ -477,6 +498,7 @@ const INTEGER_ATTRIBUTES = Dict{String,Int32}(
     "CORESDETECTED" => 1260,
     "PHYSICALCORESDETECTED" => 1261,
     "PHYSICALCORESPERCPUDETECTED" => 1262,
+    "OPTIMIZETYPEUSED" => 1268,
     "BARSING" => 1281,
     "BARSINGR" => 1282,
     "PRESOLVEINDEX" => 1284,
@@ -496,6 +518,9 @@ const INTEGER_ATTRIBUTES = Dict{String,Int32}(
     "SOLVEDOBJS" => 1399,
     "OBJSTOSOLVE" => 1400,
     "GLOBALNLPINFEAS" => 1403,
+    "IISSOLSTATUS" => 1406,
+    "INPUTROWS" => 1408,
+    "INPUTCOLS" => 1409,
     "BARITER" => 5001,
     "BARDENSECOL" => 5004,
     "BARCROSSOVER" => 5005,
