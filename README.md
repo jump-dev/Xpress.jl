@@ -1,6 +1,6 @@
 # Xpress.jl
 
-[![Build Status](https://github.com/jump-dev/Xpress.jl/workflows/CI/badge.svg?branch=master)](https://github.com/jump-dev/Xpress.jl/actions?query=workflow%3ACI)
+[![Build Status](https://github.com/jump-dev/Xpress.jl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/jump-dev/Xpress.jl/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/jump-dev/Xpress.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jump-dev/Xpress.jl)
 
 [Xpress.jl](https://github.com/jump-dev/Xpress.jl) is a wrapper for the [FICO Xpress Solver](https://www.fico.com/products/fico-xpress-solver).
