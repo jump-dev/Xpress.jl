@@ -103,7 +103,8 @@ To use Xpress with JuMP, use:
 ```julia
 using JuMP, Xpress
 model = Model(Xpress.Optimizer)
-set_optimizer(model, "PRESOLVE", 0)
+# Modify options, for example:
+set_attribute(model, "PRESOLVE", 0)
 ```
 
 ## Options
