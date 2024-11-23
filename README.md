@@ -96,6 +96,15 @@ If you plan to use Xpress_jll, `Pkg.add("Xpress")` will fail because it cannot
 find a local installation of Xpress. Therefore, you should set
 `XPRESS_JL_SKIP_LIB_CHECK` before installing.
 
+To add a specific version of Xpress with `Xpress_jll` do:
+
+```julia
+import Pkg
+Pkg.add(name = "Xpress_jll", rev = "v8.14.0")
+```
+
+If the version is not found, please open and issue at https://github.com/jump-dev/Xpress_jll.jl
+
 ## Use with JuMP
 
 To use Xpress with JuMP, use:

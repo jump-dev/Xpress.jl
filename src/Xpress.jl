@@ -73,7 +73,7 @@ function __init__()
         error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
     end
     if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT") &&
-       get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") != "true"
+        get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") != "true"
         initialize()
     end
     return
