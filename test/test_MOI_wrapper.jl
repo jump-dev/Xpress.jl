@@ -65,8 +65,7 @@ function test_runtests()
             # Xpress cannot handle nonconvex quadratic constraint
             "test_quadratic_nonconvex_",
             # Nonlinear tests because these return LOCALLY_SOLVED
-            "test_nonlinear_duals",
-            "test_nonlinear_expression_",
+            "test_nonlinear_",
         ],
     )
     MOI.Test.runtests(
@@ -77,10 +76,7 @@ function test_runtests()
             exclude = Any[MOI.ConstraintDual],
             optimal_status = MOI.LOCALLY_SOLVED,
         );
-        include = [
-            "test_nonlinear_duals",
-            "test_nonlinear_expression_",
-        ],
+        include = ["test_nonlinear_"],
         # This test is actually MOI.OPTIMAL. It's okay to ignore for now.
         exclude = ["test_nonlinear_expression_overrides_objective"],
     )
