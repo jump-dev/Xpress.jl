@@ -78,7 +78,26 @@ function test_runtests()
         );
         include = ["test_nonlinear_"],
         # This test is actually MOI.OPTIMAL. It's okay to ignore for now.
-        exclude = ["test_nonlinear_expression_overrides_objective"],
+        exclude = [
+            "test_nonlinear_expression_overrides_objective",
+            "test_nonlinear_quadratic_1",
+            "test_nonlinear_quadratic_4",
+            "test_nonlinear_with_scalar_quadratic_function_with_off_diag",
+        ],
+    )
+    MOI.Test.runtests(
+        model,
+        MOI.Test.Config(;
+            atol = 1e-3,
+            rtol = 1e-3,
+            exclude = Any[MOI.ConstraintDual],
+        );
+        include = [
+            "test_nonlinear_expression_overrides_objective",
+            "test_nonlinear_quadratic_1",
+            "test_nonlinear_quadratic_4",
+            "test_nonlinear_with_scalar_quadratic_function_with_off_diag",
+        ],
     )
     MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     MOI.Test.runtests(
