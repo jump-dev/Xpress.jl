@@ -96,7 +96,9 @@ function test_runtests()
             "test_nonlinear_expression_overrides_objective",
             "test_nonlinear_quadratic_1",
             "test_nonlinear_quadratic_4",
-            "test_nonlinear_with_scalar_quadratic_function_with_off_diag",
+            # TODO(odow): this test triggers a segfault in
+            # MathOptInterface/actions/workflows/solvertests.yml
+            # "test_nonlinear_with_scalar_quadratic_function_with_off_diag",
         ],
     )
     MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
