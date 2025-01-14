@@ -2907,13 +2907,33 @@ function MOI.optimize!(model::Optimizer)
         _set_MIP_start(model)
     end
     start_time = time()
-    if model.has_nlp_constraints
-        @checked Lib.XPRSnlpoptimize(model.inner, model.solve_method)
-    elseif is_mip(model)
-        @checked Lib.XPRSmipoptimize(model.inner, model.solve_method)
+
+    version = getversion()
+    # Verson 41.01 introduces XPRSoptimize as a more general optimization routine,
+    # automatically selecting the algorithm based on the presence of mip entities and
+    # nonlinear constraints
+    if version >= v"41.01"
+        solvestatus = Ref{Int32}()
+        solstatus = Ref{Int32}()
+        @checked Lib.XPRSoptimize(
+            model.inner,
+            model.solve_method,
+            solvestatus,
+            solstatus,
+        )
+        opt_used = getattribute(model.inner, "XPRS_OPTIMIZETYPEUSED")
+        # 0: LP solver, 1: MIP solver, 2: Local nonlinear solver, 3: Global nonlinear solver
+        model.has_nlp_constraints = (opt_used == 2 || opt_used == 3)
     else
-        @checked Lib.XPRSlpoptimize(model.inner, model.solve_method)
+        if model.has_nlp_constraints
+            @checked Lib.XPRSnlpoptimize(model.inner, model.solve_method)
+        elseif is_mip(model)
+            @checked Lib.XPRSmipoptimize(model.inner, model.solve_method)
+        else
+            @checked Lib.XPRSlpoptimize(model.inner, model.solve_method)
+        end
     end
+
     model.cached_solution.solve_time = time() - start_time
     check_cb_exception(model)
     # Should be almost a no-op if not needed. Might have minor overhead due to
@@ -2924,33 +2944,81 @@ function MOI.optimize!(model::Optimizer)
     model.termination_status = _cache_termination_status(model)
     model.primal_status = _cache_primal_status(model)
     model.dual_status = _cache_dual_status(model)
-    # TODO: add @checked here - must review statuses
-    if model.has_nlp_constraints
-        Lib.XPRSgetnlpsol(
+
+    # XPRSgetnlpsol and XPRSgetmippsol are deprecated as of version 44.01
+    # XPRSgetsolution is also recommended instead of XPRSgetlpsol also after solving LPs
+    if version >= v"44.01"
+        sol_status = Ref{Int32}()
+        ncols = getattribute(model.inner, "XPRS_INPUTCOLS")
+        @checked Lib.XPRSgetsolution(
             model.inner,
+            sol_status,
             model.cached_solution.variable_primal,
+            0,
+            ncols - 1,
+        )
+        slack_status = Ref{Int32}()
+        nrows = getattribute(model.inner, "XPRS_INPUTROWS")
+        @checked Lib.XPRSgetslacks(
+            model.inner,
+            slack_status,
             model.cached_solution.linear_primal,
+            0,
+            nrows - 1,
+        )
+        dual_status = Ref{Int32}()
+        @checked Lib.XPRSgetduals(
+            model.inner,
+            dual_status,
             model.cached_solution.linear_dual,
-            model.cached_solution.variable_dual,
+            0,
+            nrows - 1,
         )
-    elseif is_mip(model)
-        # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
-        Lib.XPRSgetmipsol(
+        # Check if dual values are not available (MIP or global solves)
+        if dual_status[] == Lib.XPRS_SOLSTATUS_NOTFOUND
+            fill!(model.cached_solution.linear_dual, NaN)
+        end
+        redcost_status = Ref{Int32}()
+        @checked Lib.XPRSgetredcosts(
             model.inner,
-            model.cached_solution.variable_primal,
-            model.cached_solution.linear_primal,
+            redcost_status,
+            model.cached_solution.variable_dual,
+            0,
+            ncols - 1,
         )
-        fill!(model.cached_solution.linear_dual, NaN)
-        fill!(model.cached_solution.variable_dual, NaN)
+        if redcost_status[] == Lib.XPRS_SOLSTATUS_NOTFOUND
+            fill!(model.cached_solution.variable_dual, NaN)
+        end
     else
-        Lib.XPRSgetlpsol(
-            model.inner,
-            model.cached_solution.variable_primal,
-            model.cached_solution.linear_primal,
-            model.cached_solution.linear_dual,
-            model.cached_solution.variable_dual,
-        )
+        # TODO: add @checked here - must review statuses
+        if model.has_nlp_constraints
+            Lib.XPRSgetnlpsol(
+                model.inner,
+                model.cached_solution.variable_primal,
+                model.cached_solution.linear_primal,
+                model.cached_solution.linear_dual,
+                model.cached_solution.variable_dual,
+            )
+        elseif is_mip(model)
+            # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
+            Lib.XPRSgetmipsol(
+                model.inner,
+                model.cached_solution.variable_primal,
+                model.cached_solution.linear_primal,
+            )
+            fill!(model.cached_solution.linear_dual, NaN)
+            fill!(model.cached_solution.variable_dual, NaN)
+        else
+            Lib.XPRSgetlpsol(
+                model.inner,
+                model.cached_solution.variable_primal,
+                model.cached_solution.linear_primal,
+                model.cached_solution.linear_dual,
+                model.cached_solution.variable_dual,
+            )
+        end
     end
+
     model.cached_solution.linear_primal .=
         rhs .- model.cached_solution.linear_primal
     status = MOI.get(model, MOI.PrimalStatus())
