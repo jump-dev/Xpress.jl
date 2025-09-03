@@ -57,6 +57,8 @@ function test_runtests()
         model,
         MOI.Test.Config(; atol = 1e-3, rtol = 1e-3);
         exclude = [
+            # An upstream bug in Xpress@9.7.0
+            "test_solve_conflict_bound_bound",
             # tested with PRESOLVE=0 below
             "_SecondOrderCone_",
             "test_constraint_PrimalStart_DualStart_SecondOrderCone",
