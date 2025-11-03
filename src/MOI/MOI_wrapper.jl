@@ -1065,7 +1065,7 @@ function _zero_objective(model::Optimizer)
     @checked Lib.XPRSchgobj(
         model.inner,
         num_vars,
-        collect(Cint(0):Cint(num_vars-1)),
+        collect(Cint(0):Cint(num_vars - 1)),
         zeros(Float64, num_vars),
     )
     @checked Lib.XPRSchgobj(model.inner, Cint(1), Ref{Cint}(-1), Ref(0.0))
@@ -1160,7 +1160,7 @@ function MOI.set(
     @checked Lib.XPRSchgobj(
         model.inner,
         Cint(num_vars),
-        collect(Cint(0):Cint(num_vars-1)),
+        collect(Cint(0):Cint(num_vars - 1)),
         obj,
     )
     @checked Lib.XPRSchgobj(
@@ -1254,7 +1254,7 @@ function MOI.get(
     I = Array{Cint}(undef, triangle_nnz)
     J = Array{Cint}(undef, triangle_nnz)
     V = Array{Float64}(undef, triangle_nnz)
-    for i in 1:(length(mstart)-1)
+    for i in 1:length(mstart)-1
         for j in (mstart[i]+1):mstart[i+1]
             I[j] = i
             J[j] = mclind[j] + 1
@@ -1274,10 +1274,11 @@ function MOI.get(
             ),
         )
     end
-    affine_terms = MOI.get(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-    ).terms
+    affine_terms =
+        MOI.get(
+            model,
+            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        ).terms
     constant =
         @_invoke Lib.XPRSgetdblattrib(model.inner, Lib.XPRS_OBJRHS, _)::Float64
     return MOI.ScalarQuadraticFunction(q_terms, affine_terms, constant)
@@ -2189,8 +2190,8 @@ function MOI.add_constraints(
         senses[i], rhss[i] = _sense_and_rhs(si)
         row_starts[i+1] = row_starts[i] + length(fi.terms)
         _indices_and_coefficients(
-            view(columns, (row_starts[i]+1):row_starts[i+1]),
-            view(coefficients, (row_starts[i]+1):row_starts[i+1]),
+            view(columns, row_starts[i]+1:row_starts[i+1]),
+            view(coefficients, row_starts[i]+1:row_starts[i+1]),
             model,
             fi,
         )
