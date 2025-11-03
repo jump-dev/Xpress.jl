@@ -54,28 +54,37 @@ const XPRS_VECMAPDELTA = Cvoid
 # Struct does not exist in v33
 const XPRS_MULTIMAPDELTA = Cvoid
 
-struct var"##Ctag#226"
+struct var"##Ctag#235"
     data::NTuple{8, UInt8}
 end
 
 # Function does not exist in v33
-function Base.getproperty(x::Ptr{var"##Ctag#226"}, f::Symbol)
+function Base.getproperty(x::Ptr{var"##Ctag#235"}, f::Symbol)
     f === :integer && return Ptr{Cint}(x + 0)
     f === :real && return Ptr{Cdouble}(x + 0)
     return getfield(x, f)
 end
 
 # Function does not exist in v33
-function Base.getproperty(x::var"##Ctag#226", f::Symbol)
-    r = Ref{var"##Ctag#226"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#226"}, r)
+function Base.getproperty(x::var"##Ctag#235", f::Symbol)
+    r = Ref{var"##Ctag#235"}(x)
+    ptr = Base.unsafe_convert(Ptr{var"##Ctag#235"}, r)
     fptr = getproperty(ptr, f)
     GC.@preserve r unsafe_load(fptr)
 end
 
 # Function does not exist in v33
-function Base.setproperty!(x::Ptr{var"##Ctag#226"}, f::Symbol, v)
+function Base.setproperty!(x::Ptr{var"##Ctag#235"}, f::Symbol, v)
     unsafe_store!(getproperty(x, f), v)
+end
+
+# Function does not exist in v33
+function Base.propertynames(x::var"##Ctag#235", private::Bool = false)
+    (:integer, :real, if private
+            fieldnames(typeof(x))
+        else
+            ()
+        end...)
 end
 
 struct xo_alltypes
@@ -84,7 +93,7 @@ end
 
 # Function does not exist in v33
 function Base.getproperty(x::Ptr{xo_alltypes}, f::Symbol)
-    f === :value && return Ptr{var"##Ctag#226"}(x + 0)
+    f === :value && return Ptr{var"##Ctag#235"}(x + 0)
     f === :type && return Ptr{Cvoid}(x + 8)
     return getfield(x, f)
 end
@@ -102,7 +111,15 @@ function Base.setproperty!(x::Ptr{xo_alltypes}, f::Symbol, v)
     unsafe_store!(getproperty(x, f), v)
 end
 
-# Struct does not exist in v33
+# Function does not exist in v33
+function Base.propertynames(x::xo_alltypes, private::Bool = false)
+    (:value, :type, if private
+            fieldnames(typeof(x))
+        else
+            ()
+        end...)
+end
+
 const XPRSalltype = xo_alltypes
 
 function XPRScopycallbacks(dest, src)
@@ -681,6 +698,11 @@ function XPRSiisnext(prob, p_status)
     ccall((:XPRSiisnext, libxprs), Cint, (XPRSprob, Ptr{Cint}), prob, p_status)
 end
 
+# Function does not exist in v33
+function XPRSiisprint(prob, iis)
+    ccall((:XPRSiisprint, libxprs), Cint, (XPRSprob, Cint), prob, iis)
+end
+
 function XPRSiisstatus(prob, p_niis, nrows, ncols, suminfeas, numinfeas)
     ccall((:XPRSiisstatus, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}), prob, p_niis, nrows, ncols, suminfeas, numinfeas)
 end
@@ -796,8 +818,8 @@ function XPRSsave(prob)
 end
 
 # Function does not exist in v33
-function XPRSsaveas(prob, sSaveFileName)
-    ccall((:XPRSsaveas, libxprs), Cint, (XPRSprob, Cstring), prob, sSaveFileName)
+function XPRSsaveas(prob, filename)
+    ccall((:XPRSsaveas, libxprs), Cint, (XPRSprob, Cstring), prob, filename)
 end
 
 function XPRSrestore(prob, probname, flags)
@@ -832,6 +854,21 @@ function XPRSbasisstability(prob, type, norm, scaled, p_value)
     ccall((:XPRSbasisstability, libxprs), Cint, (XPRSprob, Cint, Cint, Cint, Ptr{Cdouble}), prob, type, norm, scaled, p_value)
 end
 
+# Function does not exist in v33
+function XPRSaddobj(prob, ncols, colind, objcoef, priority, weight)
+    ccall((:XPRSaddobj, libxprs), Cint, (XPRSprob, Cint, Ptr{Cint}, Ptr{Cdouble}, Cint, Cdouble), prob, ncols, colind, objcoef, priority, weight)
+end
+
+# Function does not exist in v33
+function XPRSchgobjn(prob, objidx, ncols, colind, objcoef)
+    ccall((:XPRSchgobjn, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cint}, Ptr{Cdouble}), prob, objidx, ncols, colind, objcoef)
+end
+
+# Function does not exist in v33
+function XPRSdelobj(prob, objidx)
+    ccall((:XPRSdelobj, libxprs), Cint, (XPRSprob, Cint), prob, objidx)
+end
+
 function XPRSgetindex(prob, type, name, p_index)
     ccall((:XPRSgetindex, libxprs), Cint, (XPRSprob, Cint, Cstring, Ptr{Cint}), prob, type, name, p_index)
 end
@@ -842,6 +879,16 @@ end
 
 function XPRSgetobjecttypename(xprsobj, p_name)
     ccall((:XPRSgetobjecttypename, libxprs), Cint, (XPRSobject, Ptr{Cstring}), xprsobj, p_name)
+end
+
+# Function does not exist in v33
+function XPRSgetmipentities(prob, p_nentities, p_nsets, coltype, colind, limit, settype, start, setcols, refval)
+    ccall((:XPRSgetmipentities, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, p_nentities, p_nsets, coltype, colind, limit, settype, start, setcols, refval)
+end
+
+# Function does not exist in v33
+function XPRSgetmipentities64(prob, p_nentities, p_nsets, coltype, colind, limit, settype, start, setcols, refval)
+    ccall((:XPRSgetmipentities64, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}, Ptr{UInt8}, Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}), prob, p_nentities, p_nsets, coltype, colind, limit, settype, start, setcols, refval)
 end
 
 function XPRSgetprimalray(prob, ray, p_hasray)
@@ -866,6 +913,16 @@ end
 
 function XPRSgetbasisval(prob, row, col, p_rowstat, p_colstat)
     ccall((:XPRSgetbasisval, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cint}, Ptr{Cint}), prob, row, col, p_rowstat, p_colstat)
+end
+
+# Function does not exist in v33
+function XPRSaddmanagedcuts(prob, globalvalid, ncuts, rowtype, rhs, start, colind, cutcoef)
+    ccall((:XPRSaddmanagedcuts, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, globalvalid, ncuts, rowtype, rhs, start, colind, cutcoef)
+end
+
+# Function does not exist in v33
+function XPRSaddmanagedcuts64(prob, globalvalid, ncuts, rowtype, rhs, start, colind, cutcoef)
+    ccall((:XPRSaddmanagedcuts64, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cdouble}), prob, globalvalid, ncuts, rowtype, rhs, start, colind, cutcoef)
 end
 
 function XPRSaddcuts(prob, ncuts, cuttype, rowtype, rhs, start, colind, cutcoef)
@@ -917,6 +974,10 @@ function XPRSpresolverow(prob, rowtype, norigcoefs, origcolind, origrowcoef, ori
 end
 
 # Function does not exist in v33
+function XPRSpresolvesol(prob, origx, prex)
+    ccall((:XPRSpresolvesol, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Ptr{Cdouble}), prob, origx, prex)
+end
+
 function XPRSpostsolvesol(prob, prex, origx)
     ccall((:XPRSpostsolvesol, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Ptr{Cdouble}), prob, prex, origx)
 end
@@ -982,6 +1043,26 @@ function XPRSgetcutmap(prob, ncuts, cutind, cutmap)
     ccall((:XPRSgetcutmap, libxprs), Cint, (XPRSprob, Cint, Ptr{XPRScut}, Ptr{Cint}), prob, ncuts, cutind, cutmap)
 end
 
+# Function does not exist in v33
+function XPRSgetsolution(prob, status, x, first, last)
+    ccall((:XPRSgetsolution, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, status, x, first, last)
+end
+
+# Function does not exist in v33
+function XPRSgetslacks(prob, status, slacks, first, last)
+    ccall((:XPRSgetslacks, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, status, slacks, first, last)
+end
+
+# Function does not exist in v33
+function XPRSgetduals(prob, status, duals, first, last)
+    ccall((:XPRSgetduals, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, status, duals, first, last)
+end
+
+# Function does not exist in v33
+function XPRSgetredcosts(prob, status, djs, first, last)
+    ccall((:XPRSgetredcosts, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, status, djs, first, last)
+end
+
 function XPRSgetlpsol(prob, x, slack, duals, djs)
     ccall((:XPRSgetlpsol, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, x, slack, duals, djs)
 end
@@ -996,6 +1077,46 @@ end
 
 function XPRSgetmipsolval(prob, col, row, p_x, p_slack)
     ccall((:XPRSgetmipsolval, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Ptr{Cdouble}), prob, col, row, p_x, p_slack)
+end
+
+# Function does not exist in v33
+function XPRSgetcallbacksolution(prob, p_available, x, first, last)
+    ccall((:XPRSgetcallbacksolution, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, p_available, x, first, last)
+end
+
+# Function does not exist in v33
+function XPRSgetcallbackslacks(prob, p_available, slacks, first, last)
+    ccall((:XPRSgetcallbackslacks, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, p_available, slacks, first, last)
+end
+
+# Function does not exist in v33
+function XPRSgetcallbackduals(prob, p_available, duals, first, last)
+    ccall((:XPRSgetcallbackduals, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, p_available, duals, first, last)
+end
+
+# Function does not exist in v33
+function XPRSgetcallbackredcosts(prob, p_available, djs, first, last)
+    ccall((:XPRSgetcallbackredcosts, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, p_available, djs, first, last)
+end
+
+# Function does not exist in v33
+function XPRSgetcallbackpresolvesolution(prob, p_available, x, first, last)
+    ccall((:XPRSgetcallbackpresolvesolution, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, p_available, x, first, last)
+end
+
+# Function does not exist in v33
+function XPRSgetcallbackpresolveslacks(prob, p_available, slacks, first, last)
+    ccall((:XPRSgetcallbackpresolveslacks, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, p_available, slacks, first, last)
+end
+
+# Function does not exist in v33
+function XPRSgetcallbackpresolveduals(prob, p_available, duals, first, last)
+    ccall((:XPRSgetcallbackpresolveduals, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, p_available, duals, first, last)
+end
+
+# Function does not exist in v33
+function XPRSgetcallbackpresolveredcosts(prob, p_available, djs, first, last)
+    ccall((:XPRSgetcallbackpresolveredcosts, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cdouble}, Cint, Cint), prob, p_available, djs, first, last)
 end
 
 function XPRSchgobj(prob, ncols, colind, objcoef)
@@ -1482,6 +1603,25 @@ function XPRSremovecbchecktime(prob, checktime, data)
 end
 
 # Function does not exist in v33
+function XPRSsetcbcutround(prob, cutround, data)
+    ccall((:XPRSsetcbcutround, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, cutround, data)
+end
+
+# Function does not exist in v33
+function XPRSgetcbcutround(prob, cutround, data)
+    ccall((:XPRSgetcbcutround, libxprs), Cint, (XPRSprob, Ptr{Ptr{Cvoid}}, Ptr{Ptr{Cvoid}}), prob, cutround, data)
+end
+
+# Function does not exist in v33
+function XPRSaddcbcutround(prob, cutround, data, priority)
+    ccall((:XPRSaddcbcutround, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}, Cint), prob, cutround, data, priority)
+end
+
+# Function does not exist in v33
+function XPRSremovecbcutround(prob, cutround, data)
+    ccall((:XPRSremovecbcutround, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, cutround, data)
+end
+
 function XPRSsetcbslpcascadeend(prob, slpcascadeend, data)
     ccall((:XPRSsetcbslpcascadeend, libxprs), Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cvoid}), prob, slpcascadeend, data)
 end
@@ -2008,12 +2148,12 @@ function XPRSdelqmatrix(prob, row)
     ccall((:XPRSdelqmatrix, libxprs), Cint, (XPRSprob, Cint), prob, row)
 end
 
-function XPRSloadqcqp(prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoef, rowqcol1, rowqcol2, rowqcoef)
-    ccall((:XPRSloadqcqp, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoef, rowqcol1, rowqcol2, rowqcoef)
+function XPRSloadqcqp(prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoefs, rowqcol1, rowqcol2, rowqcoef)
+    ccall((:XPRSloadqcqp, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoefs, rowqcol1, rowqcol2, rowqcoef)
 end
 
-function XPRSloadqcqp64(prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoef, rowqcol1, rowqcol2, rowqcoef)
-    ccall((:XPRSloadqcqp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoef, rowqcol1, rowqcol2, rowqcoef)
+function XPRSloadqcqp64(prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoefs, rowqcol1, rowqcol2, rowqcoef)
+    ccall((:XPRSloadqcqp64, libxprs), Cint, (XPRSprob, Cstring, Cint, Cint, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Clong, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Clong}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}), prob, probname, ncols, nrows, rowtype, rhs, rng, objcoef, start, collen, rowind, rowcoef, lb, ub, nobjqcoefs, objqcol1, objqcol2, objqcoef, nqrows, qrowind, nrowqcoefs, rowqcol1, rowqcol2, rowqcoef)
 end
 
 # Function does not exist in v33
@@ -2651,6 +2791,46 @@ function XPRSslpchgccoef(prob, row, col, factor, formula)
     ccall((:XPRSslpchgccoef, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Cstring), prob, row, col, factor, formula)
 end
 
+# Function does not exist in v33
+function XPRSgetlpsolval(prob, col, row, p_x, p_slack, p_dual, p_dj)
+    ccall((:XPRSgetlpsolval, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, col, row, p_x, p_slack, p_dual, p_dj)
+end
+
+# Function does not exist in v33
+function XPRSgetmipsol(prob, x, slack)
+    ccall((:XPRSgetmipsol, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Ptr{Cdouble}), prob, x, slack)
+end
+
+# Function does not exist in v33
+function XPRSgetmipsolval(prob, col, row, p_x, p_slack)
+    ccall((:XPRSgetmipsolval, libxprs), Cint, (XPRSprob, Cint, Cint, Ptr{Cdouble}, Ptr{Cdouble}), prob, col, row, p_x, p_slack)
+end
+
+# Function does not exist in v33
+function XPRSgetnlpsol(prob, x, slack, duals, djs)
+    ccall((:XPRSgetnlpsol, libxprs), Cint, (XPRSprob, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), prob, x, slack, duals, djs)
+end
+
+# Function does not exist in v33
+function XPRSaddsetnames(prob, names, first, last)
+    ccall((:XPRSaddsetnames, libxprs), Cint, (XPRSprob, Ptr{UInt8}, Cint, Cint), prob, names, first, last)
+end
+
+# Function does not exist in v33
+function XPRSunloadprob(prob)
+    ccall((:XPRSunloadprob, libxprs), Cint, (XPRSprob,), prob)
+end
+
+# Function does not exist in v33
+function XPRSalter(prob, filename)
+    ccall((:XPRSalter, libxprs), Cint, (XPRSprob, Cstring), prob, filename)
+end
+
+# Function does not exist in v33
+function XPRSgetbarnumstability(prob, colstab, rowstab)
+    ccall((:XPRSgetbarnumstability, libxprs), Cint, (XPRSprob, Ptr{Cint}, Ptr{Cint}), prob, colstab, rowstab)
+end
+
 """
     XPRSfixglobals(prob, options)
 
@@ -2712,18 +2892,17 @@ const XPRS_MAXINT = 2147483647
 const XPRS_MAXBANNERLENGTH = 512
 
 # Struct does not exist in v33
-const XPVERSION_MAJOR = 42
+const XPVERSION_MAJOR = 46
 
 # Struct does not exist in v33
 const XPVERSION_MINOR = 1
 
 # Struct does not exist in v33
-const XPVERSION_BUILD = 5
+const XPVERSION_BUILD = 1
 
 # Struct does not exist in v33
-const XPVERSION_FULL = 420105
+const XPVERSION_FULL = 460101
 
-# Struct does not exist in v33
 const XPRS_MAXMESSAGELENGTH = 512
 
 const XPRS_MPSRHSNAME = 6001
@@ -2926,6 +3105,24 @@ const XPRS_SOLTIMELIMIT = 7159
 # Struct does not exist in v33
 const XPRS_REPAIRINFEASTIMELIMIT = 7160
 
+# Struct does not exist in v33
+const XPRS_BARHGEXTRAPOLATE = 7166
+
+# Struct does not exist in v33
+const XPRS_WORKLIMIT = 7167
+
+# Struct does not exist in v33
+const XPRS_CALLBACKCHECKTIMEWORKDELAY = 7169
+
+# Struct does not exist in v33
+const XPRS_PREROOTWORKLIMIT = 7172
+
+# Struct does not exist in v33
+const XPRS_PREROOTEFFORT = 7173
+
+# Struct does not exist in v33
+const XPRS_BARHGRELTOL = 7177
+
 const XPRS_EXTRAROWS = 8004
 
 const XPRS_EXTRACOLS = 8005
@@ -2948,7 +3145,12 @@ const XPRS_INVERTMIN = 8015
 
 const XPRS_MAXNODE = 8018
 
-const XPRS_MAXTIME = 8020
+# Struct does not exist in v33
+const XPRS_MAXTIME = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
+            8020
+        else
+            8020
+        end
 
 const XPRS_MAXMIPSOL = 8021
 
@@ -2975,7 +3177,12 @@ const XPRS_OUTPUTLOG = 8035
 
 const XPRS_BARSOLUTION = 8038
 
-const XPRS_CACHESIZE = 8043
+# Struct does not exist in v33
+const XPRS_CACHESIZE = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
+            8043
+        else
+            8043
+        end
 
 const XPRS_CROSSOVER = 8044
 
@@ -3020,7 +3227,8 @@ const XPRS_AUTOPERTURB = 8084
 
 const XPRS_DENSECOLLIMIT = 8086
 
-const XPRS_CALLBACKFROMMASTERTHREAD = 8090
+# Struct does not exist in v33
+const XPRS_CALLBACKFROMMAINTHREAD = 8090
 
 const XPRS_MAXMCOEFFBUFFERELEMS = 8091
 
@@ -3128,7 +3336,11 @@ const XPRS_LOCALBACKTRACK = 8171
 
 const XPRS_DUALSTRATEGY = 8174
 
-const XPRS_L1CACHE = 8175
+const XPRS_L1CACHE = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
+            8175
+        else
+            8175
+        end
 
 const XPRS_HEURDIVESTRATEGY = 8177
 
@@ -3138,7 +3350,11 @@ const XPRS_BARSTART = 8180
 
 const XPRS_PRESOLVEPASSES = 8183
 
-const XPRS_BARNUMSTABILITY = 8186
+const XPRS_BARNUMSTABILITY = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
+            8186
+        else
+            8186
+        end
 
 const XPRS_BARORDERTHREADS = 8187
 
@@ -3204,7 +3420,11 @@ const XPRS_MAXTREEFILESIZE = 8245
 const XPRS_PRECLIQUESTRATEGY = 8247
 
 # Struct does not exist in v33
-const XPRS_REPAIRINFEASMAXTIME = 8250
+const XPRS_REPAIRINFEASMAXTIME = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
+            8250
+        else
+            8250
+        end
 
 const XPRS_IFCHECKCONVEXITY = 8251
 
@@ -3264,7 +3484,11 @@ const XPRS_RESOURCESTRATEGY = 8297
 # Struct does not exist in v33
 const XPRS_CLAMPING = 8301
 
-const XPRS_SLEEPONTHREADWAIT = 8302
+const XPRS_SLEEPONTHREADWAIT = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
+            8302
+        else
+            8302
+        end
 
 const XPRS_PREDUPROW = 8307
 
@@ -3273,6 +3497,9 @@ const XPRS_CPUPLATFORM = 8312
 const XPRS_BARALG = 8315
 
 const XPRS_SIFTING = 8319
+
+# Struct does not exist in v33
+const XPRS_BARKEEPLASTSOL = 8323
 
 # Struct does not exist in v43
 const XPRS_TREEPRESOLVE = 8320
@@ -3334,9 +3561,13 @@ const XPRS_TUNEROUTPUT = 8372
 
 const XPRS_PREANALYTICCENTER = 8374
 
-const XPRS_NETCUTS = 8382
-
 # Struct does not exist in v33
+const XPRS_NETCUTS = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
+            8382
+        else
+            8382
+        end
+
 const XPRS_LPFLAGS = 8385
 
 # Struct does not exist in v33
@@ -3490,6 +3721,9 @@ const XPRS_BACKGROUNDSELECT = 8463
 # Struct does not exist in v33
 const XPRS_HEURSEARCHBACKGROUNDSELECT = 8477
 
+# Struct does not exist in v33
+const XPRS_HEURSEARCHCOPYCONTROLS = 8480
+
 const XPRS_HEURSEARCHCOPYCONTROLS = 8480
 
 const XPRS_GLOBALNLPCUTS = 8481
@@ -3498,15 +3732,56 @@ const XPRS_GLOBALTREENLPCUTS = 8482
 
 const XPRS_BARHGOPS = 8483
 
-const XPRS_BARHMAXRESTARTS = 8484
+# Struct does not exist in v33
+const XPRS_BARHGMAXRESTARTS = 8484
 
 const XPRS_MCFCUTSTRATEGY = 8486
+
+# Struct does not exist in v33
+const XPRS_PREROOTTHREADS = 8490
+
+# Struct does not exist in v33
+const XPRS_BARITERATIVE = 8492
+
+# Struct does not exist in v33
+const XPRS_GLOBALPRESOLVEOBBT = 8494
+
+# Struct does not exist in v33
+const XPRS_SDPCUTSTRATEGY = 8497
+
+# Struct does not exist in v33
+const XPRS_DETERMINISTICLOG = 8505
+
+# Struct does not exist in v33
+const XPRS_BARHGGPU = 8506
+
+# Struct does not exist in v33
+const XPRS_BARHGPRECISION = 8507
+
+# Struct does not exist in v33
+const XPRS_BARHGGPUBLOCKSIZE = 8508
+
+# Struct does not exist in v33
+const XPRS_GPUPLATFORM = 8510
+
+const XPRS_EXTRAELEMS = 8006
+
+const XPRS_EXTRASETELEMS = 8191
+
+const XPRS_BACKGROUNDSELECT = 8463
+
+const XPRS_HEURSEARCHBACKGROUNDSELECT = 8477
 
 const XPRS_MATRIXNAME = 3001
 
 const XPRS_BOUNDNAME = 3002
 
-const XPRS_OBJNAME = 3003
+# Struct does not exist in v33
+const XPRS_OBJNAME = if XPRSdeprecatedattrib == XPRSdeprecatedattrib
+            3003
+        else
+            3003
+        end
 
 const XPRS_RHSNAME = 3004
 
@@ -3579,6 +3854,9 @@ const XPRS_CPISCALEFACTOR = 2117
 # Struct does not exist in v33
 const XPRS_OBJVAL = 2118
 
+# Struct does not exist in v33
+const XPRS_WORK = 2120
+
 const XPRS_BARPRIMALOBJ = 4001
 
 const XPRS_BARDUALOBJ = 4002
@@ -3649,6 +3927,9 @@ const XPRS_CROSSOVERITER = 1051
 
 # Struct does not exist in v33
 const XPRS_SOLSTATUS = 1053
+
+# Struct does not exist in v33
+const XPRS_CUTROUNDS = 1121
 
 const XPRS_ORIGINALROWS = 1124
 
@@ -3913,6 +4194,8 @@ const XPRS_NLPEVALUATE = 12334
 const XPRS_NLPPRESOLVE = 12344
 
 # Struct does not exist in v33
+const XPRS_SLPLOG = 12346
+
 const XPRS_LOCALSOLVER = 12352
 
 # Struct does not exist in v33
@@ -4087,6 +4370,12 @@ const XPRS_SLPVCOUNT = 12356
 const XPRS_SLPVLIMIT = 12357
 
 # Struct does not exist in v33
+const XPRS_SLPSCALE = 12367
+
+# Struct does not exist in v33
+const XPRS_SLPSCALECOUNT = 12368
+
+# Struct does not exist in v33
 const XPRS_SLPECFCHECK = 12369
 
 # Struct does not exist in v33
@@ -4205,6 +4494,9 @@ const XPRS_NLPVALIDATIONTARGET_K = 12210
 
 # Struct does not exist in v33
 const XPRS_NLPVALIDATIONFACTOR = 12211
+
+# Struct does not exist in v33
+const XPRS_NLPRELTOLBOUNDTHRESHOLD = 12215
 
 # Struct does not exist in v33
 const XPRS_SLPDAMP = 12103
@@ -4807,6 +5099,9 @@ const XPRS_KNITRO_PARAM_MSSEED = 101066
 const XPRS_KNITRO_PARAM_BAR_RELAXCONS = 101077
 
 # Struct does not exist in v33
+const XPRS_KNITRO_PARAM_SOLTYPE = 101161
+
+# Struct does not exist in v33
 const XPRS_KNITRO_PARAM_MIP_METHOD = 102001
 
 # Struct does not exist in v33
@@ -4924,10 +5219,14 @@ const XPRS_DEL_COMMA = 1
 const XPRS_DEL_COLON = 2
 
 # Struct does not exist in v33
-const XPRS_IFUN_LOG = 13
+const XPRS_IFUN_LOG10 = 14
 
 # Struct does not exist in v33
-const XPRS_IFUN_LOG10 = 14
+const XPRS_IFUN_LOG = if XPRSdeprecatedconstant == XPRSdeprecatedconstant
+            XPRS_IFUN_LOG10
+        else
+            XPRS_IFUN_LOG10
+        end
 
 # Struct does not exist in v33
 const XPRS_IFUN_LN = 15
@@ -5083,7 +5382,7 @@ const XPRS_SLPCONVERGEBIT_VALIDATION_K = 0x1000
 const XPRS_SLPCONVERGEBIT_NOQUADCHECK = 0x2000
 
 # Struct does not exist in v33
-const XPRS_SLPCONVERGEBIT_ECF_BEFORE_SOL = 0x4000
+const XPRS_SLPCONVERGEBIT_REQUIRE_OTOL_R = 0x8000
 
 # Struct does not exist in v33
 const XPRS_SLPHASNOCOEFS = 0x01
@@ -5248,7 +5547,11 @@ const XPRS_SLPALLROWERRORVECTORS = 0x0200
 const XPRS_SLPNOUPDATEIFONLYIV = 0x0400
 
 # Struct does not exist in v33
-const XPRS_SLPNOFORMULADOMAINIV = 0x0800
+const XPRS_SLPNOFORMULADOMAINIV = if XPRSdeprecatedconstant == XPRSdeprecatedconstant
+            0x0800
+        else
+            0x0800
+        end
 
 # Struct does not exist in v33
 const XPRS_SLPSKIPIVLPHEURISTICS = 0x1000
@@ -5815,6 +6118,12 @@ const XPRS_SLPCOLINFO_SBDUAL = 8
 const XPRS_SLPCOLINFO_LPVALUE = 9
 
 # Struct does not exist in v33
+const XPRS_SLPCOLINFO_DETROW = 10
+
+# Struct does not exist in v33
+const XPRS_SLPCOLINFO_CONVERGENCESTATUS = 11
+
+# Struct does not exist in v33
 const XPRS_USERFUNCTION_MAP = 1
 
 # Struct does not exist in v33
@@ -5933,6 +6242,18 @@ const XPRS_IIS_COMPLETED = 2
 const XPRS_IIS_UNFINISHED = 3
 
 # Struct does not exist in v33
+const XPRS_SOLAVAILABLE_NOTFOUND = 0
+
+# Struct does not exist in v33
+const XPRS_SOLAVAILABLE_OPTIMAL = 1
+
+# Struct does not exist in v33
+const XPRS_SOLAVAILABLE_FEASIBLE = 2
+
+# Struct does not exist in v33
+const XPRS_OPTIMIZETYPE_NONE = -1
+
+# Struct does not exist in v33
 const XPRS_OPTIMIZETYPE_LP = 0
 
 # Struct does not exist in v33
@@ -5992,6 +6313,12 @@ const XPRS_STOP_LICENSELOST = 11
 
 # Struct does not exist in v33
 const XPRS_STOP_NUMERICALERROR = 13
+
+# Struct does not exist in v33
+const XPRS_STOP_WORKLIMIT = 14
+
+# Struct does not exist in v33
+const XPRS_STOP_NEXTOBJECTIVE = 15
 
 const XPRS_ANA_AUTOMATIC = -1
 
@@ -6061,15 +6388,40 @@ const XPRS_HEURSEARCH_LOCAL_SEARCH_NODE_NEIGHBOURHOOD = 1
 
 const XPRS_HEURSEARCH_LOCAL_SEARCH_SOLUTION_NEIGHBOURHOOD = 2
 
-const XPRS_HEURSTRATEGY_AUTOMATIC = -1
+# Struct does not exist in v33
+const XPRS_HEURSTRATEGY_AUTOMATIC = if XPRSdeprecatedenum == XPRSdeprecatedenum
+            -1
+        else
+            -1
+        end
 
-const XPRS_HEURSTRATEGY_NONE = 0
+# Struct does not exist in v33
+const XPRS_HEURSTRATEGY_NONE = if XPRSdeprecatedenum == XPRSdeprecatedenum
+            0
+        else
+            0
+        end
 
-const XPRS_HEURSTRATEGY_BASIC = 1
+# Struct does not exist in v33
+const XPRS_HEURSTRATEGY_BASIC = if XPRSdeprecatedenum == XPRSdeprecatedenum
+            1
+        else
+            1
+        end
 
-const XPRS_HEURSTRATEGY_ENHANCED = 2
+# Struct does not exist in v33
+const XPRS_HEURSTRATEGY_ENHANCED = if XPRSdeprecatedenum == XPRSdeprecatedenum
+            2
+        else
+            2
+        end
 
-const XPRS_HEURSTRATEGY_EXTENSIVE = 3
+# Struct does not exist in v33
+const XPRS_HEURSTRATEGY_EXTENSIVE = if XPRSdeprecatedenum == XPRSdeprecatedenum
+            3
+        else
+            3
+        end
 
 const XPRS_NODESELECTION_LOCAL_FIRST = 1
 
@@ -6085,9 +6437,9 @@ const XPRS_OUTPUTLOG_NO_OUTPUT = 0
 
 const XPRS_OUTPUTLOG_FULL_OUTPUT = 1
 
-const XPRS_OUTPUTLOG_ERRORS_AND_WARNINGS = 2
+const XPRS_OUTPUTLOG_ERRORS_AND_WARNINGS = 3
 
-const XPRS_OUTPUTLOG_ERRORS = 3
+const XPRS_OUTPUTLOG_ERRORS = 4
 
 const XPRS_PREPROBING_AUTOMATIC = -1
 
@@ -6123,11 +6475,25 @@ const XPRS_PRESOLVEOPS_NOGLOBALDOMAINCHANGE = 1024
 
 const XPRS_PRESOLVEOPS_NOADVANCEDIPREDUCTIONS = 2048
 
+# Struct does not exist in v33
+const XPRS_PRESOLVEOPS_NOINTEGERELIMINATIONS = 4096
+
+# Struct does not exist in v33
+const XPRS_PRESOLVEOPS_NOSOLUTIONENUMERATION = 8192
+
 const XPRS_PRESOLVEOPS_LINEARLYDEPENDANTROWREMOVAL = 16384
 
 const XPRS_PRESOLVEOPS_NOINTEGERVARIABLEANDSOSDETECTION = 32768
 
 # Struct does not exist in v33
+const XPRS_PRESOLVEOPS_NOIMPLIEDBOUNDS = 65536
+
+# Struct does not exist in v33
+const XPRS_PRESOLVEOPS_NOCLIQUEPRESOLVE = 131072
+
+# Struct does not exist in v33
+const XPRS_PRESOLVEOPS_NOMOD2REDUCTIONS = 262144
+
 const XPRS_PRESOLVEOPS_NODUALREDONGLOBALS = 536870912
 
 const XPRS_PRESOLVESTATE_PROBLEMLOADED = 1 << 0
@@ -6147,16 +6513,12 @@ const XPRS_MIPPRESOLVE_ALLOW_CHANGE_BOUNDS = 8
 # Struct does not exist in v33
 const XPRS_MIPPRESOLVE_DUAL_REDUCTIONS = 16
 
-# Struct does not exist in v33
 const XPRS_MIPPRESOLVE_GLOBAL_COEFFICIENT_TIGHTENING = 32
 
-# Struct does not exist in v33
 const XPRS_MIPPRESOLVE_OBJECTIVE_BASED_REDUCTIONS = 64
 
-# Struct does not exist in v33
 const XPRS_MIPPRESOLVE_ALLOW_TREE_RESTART = 128
 
-# Struct does not exist in v33
 const XPRS_MIPPRESOLVE_SYMMETRY_REDUCTIONS = 256
 
 const XPRS_PRESOLVE_NOPRIMALINFEASIBILITY = -1
@@ -6634,6 +6996,128 @@ const XPRS_IISOPS_DELAYED = 1024
 # Struct does not exist in v33
 const XPRS_IISOPS_CONSTRAINT = 2048
 
+# Struct does not exist in v33
+const XPRS_USERSOLSTATUS_NOT_CHECKED = 0
+
+# Struct does not exist in v33
+const XPRS_USERSOLSTATUS_ACCEPTED_FEASIBLE = 1
+
+# Struct does not exist in v33
+const XPRS_USERSOLSTATUS_ACCEPTED_OPTIMIZED = 2
+
+# Struct does not exist in v33
+const XPRS_USERSOLSTATUS_SEARCHED_SOL = 3
+
+# Struct does not exist in v33
+const XPRS_USERSOLSTATUS_SEARCHED_NOSOL = 4
+
+# Struct does not exist in v33
+const XPRS_USERSOLSTATUS_REJECTED_INFEAS_NOSEARCH = 5
+
+# Struct does not exist in v33
+const XPRS_USERSOLSTATUS_REJECTED_PARTIAL_NOSEARCH = 6
+
+# Struct does not exist in v33
+const XPRS_USERSOLSTATUS_REJECTED_FAILED_OPTIMIZE = 7
+
+# Struct does not exist in v33
+const XPRS_USERSOLSTATUS_DROPPED = 8
+
+# Struct does not exist in v33
+const XPRS_USERSOLSTATUS_REJECTED_CUTOFF = 9
+
+const XPRS_GLOBALLSHEURSTRATEGY_DEFAULT = -1
+
+# Struct does not exist in v33
+const XPRS_GLOBALLSHEURSTRATEGY_NONE = 0
+
+# Struct does not exist in v33
+const XPRS_GLOBALLSHEURSTRATEGY_CONSERVATIVE = 1
+
+# Struct does not exist in v33
+const XPRS_GLOBALLSHEURSTRATEGY_MODERATE = 2
+
+# Struct does not exist in v33
+const XPRS_GLOBALLSHEURSTRATEGY_AGGRESSIVE = 3
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_ASYM_AVG = 1
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_START_L1 = 2
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_START_L2 = 4
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_START_LINF = 8
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_RESTART_L2 = 16
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_OMEGA_CONTRACT = 32
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_OMEGA_INF = 64
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_MAX_OBJSCALE = 128
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_NO_OBJSCALE = 256
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_HPDHG = 512
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_HBASE = 1024
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_UNWEIGHTED_AVERAGE = 2048
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_RESTART_NOSCALE = 4096
+
+# Struct does not exist in v33
+const XPRS_BARHGOPS_RESTART_OMEGA = 8192
+
+# Struct does not exist in v33
+const XPRS_BASISSTATUS_NONBASIC_LOWER = 0
+
+# Struct does not exist in v33
+const XPRS_BASISSTATUS_BASIC = 1
+
+# Struct does not exist in v33
+const XPRS_BASISSTATUS_NONBASIC_UPPER = 2
+
+# Struct does not exist in v33
+const XPRS_BASISSTATUS_SUPERBASIC = 3
+
+# Struct does not exist in v33
+const XPRS_SDPCUTSTRATEGY_DEFAULT = -1
+
+# Struct does not exist in v33
+const XPRS_SDPCUTSTRATEGY_NONE = 0
+
+# Struct does not exist in v33
+const XPRS_SDPCUTSTRATEGY_CONSERVATIVE = 1
+
+# Struct does not exist in v33
+const XPRS_SDPCUTSTRATEGY_MODERATE = 2
+
+# Struct does not exist in v33
+const XPRS_SDPCUTSTRATEGY_AGGRESSIVE = 3
+
+# Struct does not exist in v33
+const XPRS_BARHGPRECISION_AUTOMATIC = -1
+
+# Struct does not exist in v33
+const XPRS_BARHGPRECISION_SINGLE = 0
+
+# Struct does not exist in v33
+const XPRS_BARHGPRECISION_DOUBLE = 1
+
 const XPRS_ISUSERSOLUTION = 0x01
 
 const XPRS_ISREPROCESSEDUSERSOLUTION = 0x02
@@ -6646,3 +7130,6 @@ const XPRS_GLOBALFILEUSAGE = XPRS_TREEFILEUSAGE
 const XPRS_GLOBALFILELOGINTERVAL = XPRS_TREEFILELOGINTERVAL
 
 const XPRS_MAXGLOBALFILESIZE = XPRS_MAXTREEFILESIZE
+
+# Struct does not exist in v33
+const XPRS_CALLBACKFROMMASTERTHREAD = XPRS_CALLBACKFROMMAINTHREAD
