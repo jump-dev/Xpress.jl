@@ -8,16 +8,17 @@
 File automatically generated with script:
 Xpress.jl/scripts/build_param_control_dicts.jl
 
-Last build: 2024-07-31T21:27:17.533
+Last build: 2025-11-03T14:03:41.356
 
-Optimizer version: 43.1.1
+Optimizer version: 46.1.1
 
 Banner from lib:
-###
+FICO Xpress Solver 64bit v9.8.0 Oct 21 2025
+(c) Copyright Fair Isaac Corporation 1983-2025. All rights reserved
 
 Banner from header (xprs.h):
- * (c) Copyright Fair Isaac Corporation 1983-2024. All rights reserved     *
- * For FICO Xpress Optimizer v43.01.01                                     *
+ * (c) Copyright Fair Isaac Corporation 1983-2025. All rights reserved     *
+ * For FICO Xpress Optimizer v46.01.01                                     *
 
 =#
 
@@ -118,6 +119,11 @@ const DOUBLE_CONTROLS = Dict{String,Int32}(
     "SOLTIMELIMIT" => 7159,
     "REPAIRINFEASTIMELIMIT" => 7160,
     "BARHGEXTRAPOLATE" => 7166,
+    "WORKLIMIT" => 7167,
+    "CALLBACKCHECKTIMEWORKDELAY" => 7169,
+    "PREROOTWORKLIMIT" => 7172,
+    "PREROOTEFFORT" => 7173,
+    "BARHGRELTOL" => 7177,
 )
 
 const INTEGER_CONTROLS = Dict{String,Int32}(
@@ -168,7 +174,8 @@ const INTEGER_CONTROLS = Dict{String,Int32}(
     "BREADTHFIRST" => 8082,
     "AUTOPERTURB" => 8084,
     "DENSECOLLIMIT" => 8086,
-    "CALLBACKFROMMASTERTHREAD" => 8090,
+    "CALLBACKFROMMASTERTHREAD" => 8090, # kept for compatibility
+    "CALLBACKFROMMAINTHREAD" => 8090,
     "MAXMCOEFFBUFFERELEMS" => 8091,
     "REFINEOPS" => 8093,
     "LPREFINEITERLIMIT" => 8094,
@@ -300,6 +307,7 @@ const INTEGER_CONTROLS = Dict{String,Int32}(
     "TREEPRESOLVE" => 8320, # kept for compatibility
     "TREEPRESOLVE_KEEPBASIS" => 8321, # kept for compatibility
     "TREEPRESOLVEOPS" => 8322, # kept for compatibility
+    "BARKEEPLASTSOL" => 8323,
     "LPLOGSTYLE" => 8326,
     "RANDOMSEED" => 8328,
     "TREEQCCUTS" => 8331,
@@ -384,6 +392,15 @@ const INTEGER_CONTROLS = Dict{String,Int32}(
     "BARHGOPS" => 8483,
     "BARHGMAXRESTARTS" => 8484,
     "MCFCUTSTRATEGY" => 8486,
+    "PREROOTTHREADS" => 8490,
+    "BARITERATIVE" => 8492,
+    "GLOBALPRESOLVEOBBT" => 8494,
+    "SDPCUTSTRATEGY" => 8497,
+    "DETERMINISTICLOG" => 8505,
+    "BARHGGPU" => 8506,
+    "BARHGPRECISION" => 8507,
+    "BARHGGPUBLOCKSIZE" => 8508,
+    "GPUPLATFORM" => 8510,
     "EXTRAELEMS" => 8006,
     "EXTRAPRESOLVE" => 8037, # kept for compatibility
     "EXTRASETELEMS" => 8191,
@@ -429,6 +446,7 @@ const DOUBLE_ATTRIBUTES = Dict{String,Int32}(
     "OBSERVEDPRIMALINTEGRAL" => 2106,
     "CPISCALEFACTOR" => 2117,
     "OBJVAL" => 2118,
+    "WORK" => 2120,
     "BARPRIMALOBJ" => 4001,
     "BARDUALOBJ" => 4002,
     "BARPRIMALINF" => 4003,
@@ -468,6 +486,7 @@ const INTEGER_ATTRIBUTES = Dict{String,Int32}(
     "CROSSOVERITER" => 1051,
     "SOLSTATUS" => 1053,
     "TIME" => 1122, # kept for compatibility
+    "CUTROUNDS" => 1121,
     "ORIGINALROWS" => 1124,
     "CALLBACKCOUNT_OPTNODE" => 1136,
     "CALLBACKCOUNT_CUTMGR" => 1137,
