@@ -2945,11 +2945,7 @@ const XPRS_INVERTMIN = 8015
 const XPRS_MAXNODE = 8018
 
 # Struct does not exist in v33
-const XPRS_MAXTIME = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
-            8020
-        else
-            8020
-        end
+const XPRS_MAXTIME = 8020
 
 const XPRS_MAXMIPSOL = 8021
 
@@ -2977,11 +2973,7 @@ const XPRS_OUTPUTLOG = 8035
 const XPRS_BARSOLUTION = 8038
 
 # Struct does not exist in v33
-const XPRS_CACHESIZE = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
-            8043
-        else
-            8043
-        end
+const XPRS_CACHESIZE = 8043
 
 const XPRS_CROSSOVER = 8044
 
@@ -3136,11 +3128,7 @@ const XPRS_LOCALBACKTRACK = 8171
 const XPRS_DUALSTRATEGY = 8174
 
 # Struct does not exist in v33
-const XPRS_L1CACHE = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
-            8175
-        else
-            8175
-        end
+const XPRS_L1CACHE = 8175
 
 const XPRS_HEURDIVESTRATEGY = 8177
 
@@ -3151,11 +3139,7 @@ const XPRS_BARSTART = 8180
 const XPRS_PRESOLVEPASSES = 8183
 
 # Struct does not exist in v33
-const XPRS_BARNUMSTABILITY = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
-            8186
-        else
-            8186
-        end
+const XPRS_BARNUMSTABILITY = 8186
 
 const XPRS_BARORDERTHREADS = 8187
 
@@ -3221,11 +3205,7 @@ const XPRS_MAXTREEFILESIZE = 8245
 const XPRS_PRECLIQUESTRATEGY = 8247
 
 # Struct does not exist in v33
-const XPRS_REPAIRINFEASMAXTIME = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
-            8250
-        else
-            8250
-        end
+const XPRS_REPAIRINFEASMAXTIME = 8250
 
 const XPRS_IFCHECKCONVEXITY = 8251
 
@@ -3286,11 +3266,7 @@ const XPRS_RESOURCESTRATEGY = 8297
 const XPRS_CLAMPING = 8301
 
 # Struct does not exist in v33
-const XPRS_SLEEPONTHREADWAIT = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
-            8302
-        else
-            8302
-        end
+const XPRS_SLEEPONTHREADWAIT = 8302
 
 const XPRS_PREDUPROW = 8307
 
@@ -3355,11 +3331,7 @@ const XPRS_TUNEROUTPUT = 8372
 const XPRS_PREANALYTICCENTER = 8374
 
 # Struct does not exist in v33
-const XPRS_NETCUTS = if XPRSdeprecatedcontrol == XPRSdeprecatedcontrol
-            8382
-        else
-            8382
-        end
+const XPRS_NETCUTS = 8382
 
 # Struct does not exist in v33
 const XPRS_LPFLAGS = 8385
@@ -3556,11 +3528,7 @@ const XPRS_MATRIXNAME = 3001
 const XPRS_BOUNDNAME = 3002
 
 # Struct does not exist in v33
-const XPRS_OBJNAME = if XPRSdeprecatedattrib == XPRSdeprecatedattrib
-            3003
-        else
-            3003
-        end
+const XPRS_OBJNAME = 3003
 
 const XPRS_RHSNAME = 3004
 
@@ -5002,11 +4970,7 @@ const XPRS_DEL_COLON = 2
 const XPRS_IFUN_LOG10 = 14
 
 # Struct does not exist in v33
-const XPRS_IFUN_LOG = if XPRSdeprecatedconstant == XPRSdeprecatedconstant
-            XPRS_IFUN_LOG10
-        else
-            XPRS_IFUN_LOG10
-        end
+const XPRS_IFUN_LOG = XPRS_IFUN_LOG10
 
 # Struct does not exist in v33
 const XPRS_IFUN_LN = 15
@@ -5327,11 +5291,7 @@ const XPRS_SLPALLROWERRORVECTORS = 0x0200
 const XPRS_SLPNOUPDATEIFONLYIV = 0x0400
 
 # Struct does not exist in v33
-const XPRS_SLPNOFORMULADOMAINIV = if XPRSdeprecatedconstant == XPRSdeprecatedconstant
-            0x0800
-        else
-            0x0800
-        end
+const XPRS_SLPNOFORMULADOMAINIV = 0x0800
 
 # Struct does not exist in v33
 const XPRS_SLPSKIPIVLPHEURISTICS = 0x1000
@@ -6169,39 +6129,19 @@ const XPRS_HEURSEARCH_LOCAL_SEARCH_NODE_NEIGHBOURHOOD = 1
 const XPRS_HEURSEARCH_LOCAL_SEARCH_SOLUTION_NEIGHBOURHOOD = 2
 
 # Struct does not exist in v33
-const XPRS_HEURSTRATEGY_AUTOMATIC = if XPRSdeprecatedenum == XPRSdeprecatedenum
-            -1
-        else
-            -1
-        end
+const XPRS_HEURSTRATEGY_AUTOMATIC = -1
 
 # Struct does not exist in v33
-const XPRS_HEURSTRATEGY_NONE = if XPRSdeprecatedenum == XPRSdeprecatedenum
-            0
-        else
-            0
-        end
+const XPRS_HEURSTRATEGY_NONE = 0
 
 # Struct does not exist in v33
-const XPRS_HEURSTRATEGY_BASIC = if XPRSdeprecatedenum == XPRSdeprecatedenum
-            1
-        else
-            1
-        end
+const XPRS_HEURSTRATEGY_BASIC = 1
 
 # Struct does not exist in v33
-const XPRS_HEURSTRATEGY_ENHANCED = if XPRSdeprecatedenum == XPRSdeprecatedenum
-            2
-        else
-            2
-        end
+const XPRS_HEURSTRATEGY_ENHANCED = 2
 
 # Struct does not exist in v33
-const XPRS_HEURSTRATEGY_EXTENSIVE = if XPRSdeprecatedenum == XPRSdeprecatedenum
-            3
-        else
-            3
-        end
+const XPRS_HEURSTRATEGY_EXTENSIVE = 3
 
 const XPRS_NODESELECTION_LOCAL_FIRST = 1
 
