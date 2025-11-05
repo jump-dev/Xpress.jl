@@ -71,6 +71,10 @@ function test_runtests()
             "test_nonlinear_",
         ],
     )
+    # For Xpress >= 46, use local solver for consistent NLP behavior
+    if Xpress.get_version() >= v"46"
+        MOI.set(model, MOI.RawOptimizerAttribute("NLPSOLVER"), 1)
+    end
     MOI.Test.runtests(
         model,
         MOI.Test.Config(;
@@ -2478,6 +2482,10 @@ function test_nlp_constraint_log()
     end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
+    # For Xpress >= 46, use local solver for consistent NLP behavior
+    if Xpress.get_version() >= v"46"
+        MOI.set(model, MOI.RawOptimizerAttribute("NLPSOLVER"), 1)
+    end
     x = MOI.add_variable(model)
     t = MOI.add_variable(model)
     MOI.add_constraint(model, x, MOI.LessThan(2.0))
@@ -2524,6 +2532,10 @@ function test_nlp_constraint_unary_negation()
     end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
+    # For Xpress >= 46, use local solver for consistent NLP behavior
+    if Xpress.get_version() >= v"46"
+        MOI.set(model, MOI.RawOptimizerAttribute("NLPSOLVER"), 1)
+    end
     x = MOI.add_variable(model)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     f = 1.0 * x
@@ -2542,6 +2554,10 @@ function test_nlp_constraint_scalar_affine_function()
     end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
+    # For Xpress >= 46, use local solver for consistent NLP behavior
+    if Xpress.get_version() >= v"46"
+        MOI.set(model, MOI.RawOptimizerAttribute("NLPSOLVER"), 1)
+    end
     x = MOI.add_variable(model)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     f = 1.2 * x + 1.3
@@ -2560,6 +2576,10 @@ function test_nlp_constraint_product()
     end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
+    # For Xpress >= 46, use local solver for consistent NLP behavior
+    if Xpress.get_version() >= v"46"
+        MOI.set(model, MOI.RawOptimizerAttribute("NLPSOLVER"), 1)
+    end
     x = MOI.add_variable(model)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     f = 1.0 * x
@@ -2593,6 +2613,10 @@ function test_nlp_constraint_delete()
     end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
+    # For Xpress >= 46, use local solver for consistent NLP behavior
+    if Xpress.get_version() >= v"46"
+        MOI.set(model, MOI.RawOptimizerAttribute("NLPSOLVER"), 1)
+    end
     x = MOI.add_variable(model)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     f = 1.0 * x

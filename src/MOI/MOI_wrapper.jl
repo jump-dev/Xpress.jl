@@ -250,6 +250,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     has_nlp_constraints::Bool
 
+    xpress_version::VersionNumber
     function Optimizer(; kwargs...)
         model = new()
         model.params = Dict{Any,Any}()
@@ -272,6 +273,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
             CleverDicts.CleverDict{MOI.VariableIndex,VariableInfo}()
         model.affine_constraint_info = Dict{Int,ConstraintInfo}()
         model.sos_constraint_info = Dict{Int,ConstraintInfo}()
+        model.xpress_version = VersionNumber(0)
         MOI.empty!(model)  # inner is initialized here
         return model
     end
@@ -284,8 +286,15 @@ function MOI.empty!(model::Optimizer)
     for (name, value) in model.params
         MOI.set(model, name, value)
     end
+    model.xpress_version = Xpress.get_version()
     MOI.set(model, MOI.RawOptimizerAttribute("MPSNAMELENGTH"), 64)
-    MOI.set(model, MOI.RawOptimizerAttribute("CALLBACKFROMMASTERTHREAD"), 1)
+    callback_main_thread = if model.xpress_version >= VersionNumber((46, 0, 0))
+        "CALLBACKFROMMAINTHREAD"
+    else
+        # Kept for compatibility with older versions
+        "CALLBACKFROMMASTERTHREAD"
+    end
+    MOI.set(model, MOI.RawOptimizerAttribute(callback_main_thread), 1)
     MOI.set(
         model,
         MOI.RawOptimizerAttribute("XPRESS_WARNING_WINDOWS"),
@@ -489,6 +498,7 @@ function MOI.supports(model::Optimizer, attr::MOI.RawOptimizerAttribute)
         "MOI_WARNINGS",
         "MOI_SOLVE_MODE",
         "XPRESS_WARNING_WINDOWS",
+        "NLPSOLVER",
     )
         return true
     end
@@ -525,6 +535,13 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
         model.log_level = value
         setcontrol!(model.inner, "OUTPUTLOG", value)
         reset_message_callback(model)
+    elseif param == MOI.RawOptimizerAttribute("NLPSOLVER")
+        # NLPSOLVER control added in v46, not recognized by name lookup
+        @checked Lib.XPRSsetintcontrol(
+            model.inner,
+            Lib.XPRS_NLPSOLVER,
+            Cint(value),
+        )
     else
         setcontrol!(model.inner, param.name, value)
     end
