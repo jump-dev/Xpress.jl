@@ -498,6 +498,7 @@ function MOI.supports(model::Optimizer, attr::MOI.RawOptimizerAttribute)
         "MOI_WARNINGS",
         "MOI_SOLVE_MODE",
         "XPRESS_WARNING_WINDOWS",
+        "NLPSOLVER",
     )
         return true
     end
@@ -534,6 +535,13 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
         model.log_level = value
         setcontrol!(model.inner, "OUTPUTLOG", value)
         reset_message_callback(model)
+    elseif param == MOI.RawOptimizerAttribute("NLPSOLVER")
+        # NLPSOLVER control added in v46, not recognized by name lookup
+        @checked Lib.XPRSsetintcontrol(
+            model.inner,
+            Lib.XPRS_NLPSOLVER,
+            Cint(value),
+        )
     else
         setcontrol!(model.inner, param.name, value)
     end
