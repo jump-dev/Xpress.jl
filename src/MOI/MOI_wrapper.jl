@@ -2883,6 +2883,16 @@ function is_mip(model::Optimizer)
     return !model.solve_relaxation && n + nsos > 0
 end
 
+function _has_quadratic_terms(model::Optimizer)
+    qobj = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALQELEMS, _)::Int,
+    )
+    qcon = @_invoke(
+        Lib.XPRSgetintattrib(model.inner, Lib.XPRS_ORIGINALQCELEMS, _)::Int,
+    )
+    return qobj > 0 || qcon > 0
+end
+
 function _set_MIP_start(model)
     colind, solval = Cint[], Cdouble[]
     for info in values(model.variable_info)
@@ -2924,10 +2934,30 @@ function MOI.optimize!(model::Optimizer)
         _set_MIP_start(model)
     end
     start_time = time()
-    if model.has_nlp_constraints
-        @checked Lib.XPRSnlpoptimize(model.inner, model.solve_method)
+    has_quadratic = _has_quadratic_terms(model)
+    if has_quadratic &&
+       MOI.supports(model, MOI.RawOptimizerAttribute("NLPSOLVER"))
+        MOI.set(
+            model,
+            MOI.RawOptimizerAttribute("NLPSOLVER"),
+            Lib.XPRS_NLPSOLVER_GLOBAL,
+        )
+    end
+    if has_quadratic && model.xpress_version >= v"41.01"
+        solvestatus = Ref{Int32}()
+        solstatus = Ref{Int32}()
+        @checked Lib.XPRSoptimize(
+            model.inner,
+            model.solve_method,
+            solvestatus,
+            solstatus,
+        )
+        opt_used = getattribute(model.inner, "XPRS_OPTIMIZETYPEUSED")
+        model.has_nlp_constraints = (opt_used == 2 || opt_used == 3)
     elseif is_mip(model)
         @checked Lib.XPRSmipoptimize(model.inner, model.solve_method)
+    elseif model.has_nlp_constraints
+        @checked Lib.XPRSnlpoptimize(model.inner, model.solve_method)
     else
         @checked Lib.XPRSlpoptimize(model.inner, model.solve_method)
     end
@@ -2992,6 +3022,38 @@ function MOI.optimize!(model::Optimizer)
         )
         model.cached_solution.has_dual_certificate = _has_dual_ray(model)
     end
+    if model.moi_warnings && MOI.get(model, MOI.ResultCount()) == 0
+        _warn_no_solution_status(model)
+    end
+    return
+end
+
+function _warn_no_solution_status(model::Optimizer)
+    stop = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_STOPSTATUS,
+        _,
+    )::Int
+    lpstat = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_LPSTATUS,
+        _,
+    )::Int
+    mipstat = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_MIPSTATUS,
+        _,
+    )::Int
+    nlpstat = @_invoke Lib.XPRSgetintattrib(
+        model.inner,
+        Lib.XPRS_NLPSTATUS,
+        _,
+    )::Int
+    @warn(
+        "No solution available after optimize. Xpress statuses: " *
+        "STOPSTATUS=$(stop), LPSTATUS=$(lpstat), MIPSTATUS=$(mipstat), " *
+        "NLPSTATUS=$(nlpstat).",
+    )
     return
 end
 
