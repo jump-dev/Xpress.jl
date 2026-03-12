@@ -3022,38 +3022,6 @@ function MOI.optimize!(model::Optimizer)
         )
         model.cached_solution.has_dual_certificate = _has_dual_ray(model)
     end
-    if model.moi_warnings && MOI.get(model, MOI.ResultCount()) == 0
-        _warn_no_solution_status(model)
-    end
-    return
-end
-
-function _warn_no_solution_status(model::Optimizer)
-    stop = @_invoke Lib.XPRSgetintattrib(
-        model.inner,
-        Lib.XPRS_STOPSTATUS,
-        _,
-    )::Int
-    lpstat = @_invoke Lib.XPRSgetintattrib(
-        model.inner,
-        Lib.XPRS_LPSTATUS,
-        _,
-    )::Int
-    mipstat = @_invoke Lib.XPRSgetintattrib(
-        model.inner,
-        Lib.XPRS_MIPSTATUS,
-        _,
-    )::Int
-    nlpstat = @_invoke Lib.XPRSgetintattrib(
-        model.inner,
-        Lib.XPRS_NLPSTATUS,
-        _,
-    )::Int
-    @warn(
-        "No solution available after optimize. Xpress statuses: " *
-        "STOPSTATUS=$(stop), LPSTATUS=$(lpstat), MIPSTATUS=$(mipstat), " *
-        "NLPSTATUS=$(nlpstat).",
-    )
     return
 end
 
