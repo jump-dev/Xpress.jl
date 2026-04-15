@@ -54,8 +54,8 @@ function process(FILE)
 
     dict = Dict(
         i => Any[] for i in [
-            (j, k) for j in [Int32, String, Float64],
-            k in [MainAttribute, MainControl]
+            (j, k) for
+            j in [Int32, String, Float64], k in [MainAttribute, MainControl]
         ]
     )
 

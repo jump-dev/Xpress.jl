@@ -13,7 +13,10 @@ using Test
 using Xpress
 
 function test_licensing()
-    if any(k -> haskey(ENV, k), ("XPAUTH_PATH", "XPRESSDIR", "XPRESS_JL_LIBRARY"))
+    if any(
+        k -> haskey(ENV, k),
+        ("XPAUTH_PATH", "XPRESSDIR", "XPRESS_JL_LIBRARY"),
+    )
         return  # Skip for non-standard licenses
     end
     # Create a bogus license file

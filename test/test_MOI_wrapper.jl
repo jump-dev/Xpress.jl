@@ -1737,12 +1737,11 @@ function Forward(model::DispatchModel, ϵ::Float64 = 1.0)
         model.c_demand,
         ϵ,
     )
-    dual =
-        MOI.get.(
-            model.optimizer,
-            Xpress.ForwardSensitivityOutputVariable(),
-            variables,
-        )
+    dual = MOI.get.(
+        model.optimizer,
+        Xpress.ForwardSensitivityOutputVariable(),
+        variables,
+    )
     return vcat(primal, dual)
 end
 
@@ -2562,7 +2561,7 @@ function test_nlp_constraint_scalar_affine_function()
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     f = 1.2 * x + 1.3
     MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
-    g = MOI.ScalarNonlinearFunction(:-, Any[1.5 * x + 2.0])
+    g = MOI.ScalarNonlinearFunction(:-, Any[1.5*x+2.0])
     MOI.add_constraint(model, g, MOI.GreaterThan(-6.0))
     MOI.optimize!(model)
     @test ≈(MOI.get(model, MOI.VariablePrimal(), x), 2 + 2 / 3; atol = 1e-3)
