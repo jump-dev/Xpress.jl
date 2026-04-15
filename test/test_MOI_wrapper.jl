@@ -22,9 +22,12 @@ function runtests()
 end
 
 function test_Basic_Parameters()
-    optimizer = Xpress.Optimizer(; OUTPUTLOG = 0)
+    optimizer = Xpress.Optimizer()
+    MOI.set(optimizer, MOI.Silent(), true)
     @test MOI.get(optimizer, MOI.RawOptimizerAttribute("logfile")) == ""
-    optimizer = Xpress.Optimizer(; OUTPUTLOG = 0, logfile = "output.log")
+    optimizer = Xpress.Optimizer()
+    MOI.set(optimizer, MOI.Silent(), true)
+    MOI.set(optimizer, MOI.RawOptimizerAttribute("logfile"), "output.log")
     @test MOI.get(optimizer, MOI.RawOptimizerAttribute("logfile")) ==
           "output.log"
     @test MOI.set(optimizer, MOI.TimeLimitSec(), 100) === nothing
@@ -130,7 +133,8 @@ function test_Binaryfixing()
     @testset "Binary Equal to 1" begin
         T = Float64
         config = MOI.Test.Config(; atol = 1e-3, rtol = 1e-3)
-        model = Xpress.Optimizer(; OUTPUTLOG = 0)
+        model = Xpress.Optimizer()
+        MOI.set(model, MOI.Silent(), true)
         x = MOI.add_variable(model)
         MOI.add_constraint(model, x, MOI.EqualTo(T(1)))
         f = MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(T(1), x)], T(0))
@@ -148,7 +152,8 @@ function test_Binaryfixing()
     @testset "Binary Equal to 1 - delete constraint" begin
         T = Float64
         config = MOI.Test.Config(; atol = 1e-3, rtol = 1e-3)
-        model = Xpress.Optimizer(; OUTPUTLOG = 0)
+        model = Xpress.Optimizer()
+        MOI.set(model, MOI.Silent(), true)
         x = MOI.add_variable(model)
         MOI.add_constraint(model, x, MOI.ZeroOne())
         c1 = MOI.add_constraint(model, x, MOI.EqualTo(T(1)))
@@ -168,7 +173,10 @@ end
 function test_Conflicts()
     @testset "Binary" begin
         T = Float64
-        model = Xpress.Optimizer(; OUTPUTLOG = 0, DEFAULTALG = 3, PRESOLVE = 0)
+        model = Xpress.Optimizer()
+        MOI.set(model, MOI.Silent(), true)
+        MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
+        MOI.set(model, MOI.RawOptimizerAttribute("DEFAULTALG"), 3)
         x, c1 = MOI.add_constrained_variable(model, MOI.ZeroOne())
         c2 = MOI.add_constraint(
             model,
@@ -190,8 +198,10 @@ function test_Conflicts()
     end
     for warning in [true, false]
         @testset "Variable bounds" begin
-            model =
-                Xpress.Optimizer(; OUTPUTLOG = 0, DEFAULTALG = 3, PRESOLVE = 0)
+            model = Xpress.Optimizer()
+            MOI.set(model, MOI.Silent(), true)
+            MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
+            MOI.set(model, MOI.RawOptimizerAttribute("DEFAULTALG"), 3)
             MOI.set(model, MOI.RawOptimizerAttribute("MOI_WARNINGS"), warning)
             x = MOI.add_variable(model)
             c1 = MOI.add_constraint(model, x, MOI.GreaterThan(2.0))
@@ -217,7 +227,8 @@ function test_Conflicts()
     end
 
     @testset "Two conflicting constraints (GreaterThan, LessThan)" begin
-        model = Xpress.Optimizer(; OUTPUTLOG = 0)
+        model = Xpress.Optimizer()
+        MOI.set(model, MOI.Silent(), true)
         x = MOI.add_variable(model)
         y = MOI.add_variable(model)
         b1 = MOI.add_constraint(
@@ -265,7 +276,8 @@ function test_Conflicts()
     end
 
     @testset "Two conflicting constraints (EqualTo)" begin
-        model = Xpress.Optimizer(; OUTPUTLOG = 0)
+        model = Xpress.Optimizer()
+        MOI.set(model, MOI.Silent(), true)
         x = MOI.add_variable(model)
         y = MOI.add_variable(model)
         b1 = MOI.add_constraint(
@@ -313,7 +325,8 @@ function test_Conflicts()
     end
 
     @testset "Variables outside conflict" begin
-        model = Xpress.Optimizer(; OUTPUTLOG = 0)
+        model = Xpress.Optimizer()
+        MOI.set(model, MOI.Silent(), true)
         x = MOI.add_variable(model)
         y = MOI.add_variable(model)
         z = MOI.add_variable(model)
@@ -368,7 +381,8 @@ function test_Conflicts()
     end
 
     @testset "No conflict" begin
-        model = Xpress.Optimizer(; OUTPUTLOG = 0)
+        model = Xpress.Optimizer()
+        MOI.set(model, MOI.Silent(), true)
         x = MOI.add_variable(model)
         c1 = MOI.add_constraint(
             model,
@@ -403,7 +417,9 @@ end
 # Xpress can only obtain primal and dual rays without presolve. Check more on
 # https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSgetprimalray.html
 function test_Farkas_Dual_Min()
-    model = Xpress.Optimizer(; OUTPUTLOG = 0, PRESOLVE = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.set(model, MOI.ObjectiveFunction{MOI.VariableIndex}(), x[1])
@@ -426,7 +442,9 @@ function test_Farkas_Dual_Min()
 end
 
 function test_Farkas_Dual_Min_Interval()
-    model = Xpress.Optimizer(; OUTPUTLOG = 0, PRESOLVE = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.set(model, MOI.ObjectiveFunction{MOI.VariableIndex}(), x[1])
@@ -449,7 +467,9 @@ function test_Farkas_Dual_Min_Interval()
 end
 
 function test_Farkas_Dual_Min_Equalto()
-    model = Xpress.Optimizer(; OUTPUTLOG = 0, PRESOLVE = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.set(model, MOI.ObjectiveFunction{MOI.VariableIndex}(), x[1])
@@ -472,7 +492,9 @@ function test_Farkas_Dual_Min_Equalto()
 end
 
 function test_Farkas_Dual_Min_2()
-    model = Xpress.Optimizer(; OUTPUTLOG = 0, PRESOLVE = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.set(
@@ -499,7 +521,9 @@ function test_Farkas_Dual_Min_2()
 end
 
 function test_Farkas_Dual_Max()
-    model = Xpress.Optimizer(; OUTPUTLOG = 0, PRESOLVE = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     MOI.set(model, MOI.ObjectiveFunction{MOI.VariableIndex}(), x[1])
@@ -522,7 +546,9 @@ function test_Farkas_Dual_Max()
 end
 
 function test_Farkas_Dual_Max_2()
-    model = Xpress.Optimizer(; OUTPUTLOG = 0, PRESOLVE = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     MOI.set(
@@ -550,7 +576,8 @@ end
 
 function test_Delete_equality_constraint_in_binary_variable()
     atol = rtol = 1e-6
-    model = Xpress.Optimizer(; OUTPUTLOG = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
     # an example on mixed integer programming
     #
     #   maximize 1.1x + 2 y + 5 z
@@ -641,7 +668,8 @@ end
 
 function test_Binary_Variables_Infeasibility()
     atol = rtol = 1e-6
-    model = Xpress.Optimizer(; OUTPUTLOG = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
     v = MOI.add_variable(model)
 
     infeas_err = ErrorException("The problem is infeasible")
@@ -774,16 +802,14 @@ function test_MIP_Start()
     ]
     profit = weight .- (5.0,)
     capacity = 10000.0
-    model = Xpress.Optimizer(;
-        OUTPUTLOG = 0,
-        HEURSTRATEGY = 0,
-        HEUREMPHASIS = 0,
-        CUTSTRATEGY = 0,
-        PRESOLVE = 0,
-        MIPPRESOLVE = 0,
-        PRESOLVEOPS = 0,
-        # USERSOLHEURISTIC = 1,
-    )
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("HEURSTRATEGY"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("HEUREMPHASIS"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("CUTSTRATEGY"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("MIPPRESOLVE"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVEOPS"), 0)
     # The variables: x[1:100], Bin
     x, _ = MOI.add_constrained_variables(model, fill(MOI.ZeroOne(), 100))
     # The objective function: maximize sum(profit' * x)
@@ -873,7 +899,8 @@ function test_MIP_Start()
 end
 
 function test_multiple_modifications()
-    model = Xpress.Optimizer(; OUTPUTLOG = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
 
     x = MOI.add_variables(model, 3)
 
@@ -1033,7 +1060,8 @@ function test_dummy_nlp()
     if !Xpress._supports_nonlinear()
         return
     end
-    model = Xpress.Optimizer(; OUTPUTLOG = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
     x = MOI.add_variables(model, 2)
     c = [1.0, 2.0]
     MOI.set(
@@ -1115,7 +1143,8 @@ function test_dummy_nlp()
 end
 
 function test_multiple_modifications2()
-    model = Xpress.Optimizer(; OUTPUTLOG = 0)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
 
     x = MOI.add_variable(model)
 
@@ -1140,14 +1169,12 @@ function test_multiple_modifications2()
 end
 
 function callback_simple_model()
-    model = Xpress.Optimizer(;
-        PRESOLVE = 0,
-        CUTSTRATEGY = 0,
-        HEUREMPHASIS = 0,
-        HEURSTRATEGY = 0,
-        SYMMETRY = 0,
-        OUTPUTLOG = 0,
-    )
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("HEURSTRATEGY"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("HEUREMPHASIS"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("CUTSTRATEGY"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     MOI.Utilities.loadfromstring!(
         model,
         """
@@ -1165,17 +1192,16 @@ function callback_simple_model()
 end
 
 function callback_knapsack_model()
-    model = Xpress.Optimizer(;
-        OUTPUTLOG = 0,
-        HEURSTRATEGY = 0, # before v41
-        HEUREMPHASIS = 0,
-        CUTSTRATEGY = 0,
-        PRESOLVE = 0,
-        MIPPRESOLVE = 0,
-        PRESOLVEOPS = 0,
-        MIPTHREADS = 1,
-        THREADS = 1,
-    )
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("HEURSTRATEGY"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("HEUREMPHASIS"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("CUTSTRATEGY"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("MIPPRESOLVE"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVEOPS"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("MIPTHREADS"), 1)
+    MOI.set(model, MOI.RawOptimizerAttribute("THREADS"), 1)
     MOI.set(model, MOI.NumberOfThreads(), 2)
     N = 30
     x = MOI.add_variables(model, N)
@@ -1676,7 +1702,9 @@ function GenerateModel_VariableIndex()
     g_sup = [10.0, 20.0, 30.0]
     c_g = [1.0, 3.0, 5.0]
     c_Df = 10.0
-    model = Xpress.Optimizer(; PRESOLVE = 0, logfile = "outputXpress_SV.log")
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("logfile"), "outputXpress_SV.log")
     g = MOI.add_variables(model, I)
     Df = MOI.add_variable(model)
     c_limit_inf = MOI.add_constraint.(model, g, MOI.GreaterThan(0.0))
@@ -1703,7 +1731,9 @@ function GenerateModel_ScalarAffineFunction()
     g_sup = [10.0, 20.0, 30.0]
     c_g = [1.0, 3.0, 5.0]
     c_Df = 10.0
-    model = Xpress.Optimizer(; PRESOLVE = 0, logfile = "outputXpress_SAF.log")
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("logfile"), "outputXpress_SAF.log")
     g = MOI.add_variables(model, I)
     Df = MOI.add_variable(model)
     c_limit_inf = MOI.add_constraint.(model, 1.0 .* g, MOI.GreaterThan(0.0))
