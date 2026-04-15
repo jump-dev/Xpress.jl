@@ -23,7 +23,6 @@ end
 
 @info "Running tests with $(Xpress.libxprs)"
 
-println(Xpress.get_banner())
 println("Optimizer version: $(Xpress.get_version())")
 
 @testset "$f" for f in filter!(f -> startswith(f, "test_"), readdir(@__DIR__))

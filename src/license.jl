@@ -52,14 +52,39 @@ function _get_xpauthpath(xpauth_path = "", verbose::Bool = true)
     )
 end
 
-# Keep `userlic` for backwards compatibility. PSR have a customized setup for
-# managing licenses.
-#
-# New users should use `Xpress.initialize`.
-function userlic(;
+"""
+    initialize(;
+        liccheck::Function = identity,
+        verbose::Bool = true,
+        xpauth_path::String = ""
+    )
+
+Performs license checking with `liccheck` validation function on dir
+`xpauth_path`.
+
+This function must be called before any XPRS functions can be called.
+
+By default, `__init__` calls this with no keyword arguments.
+
+## Example
+
+```julia
+ENV["XPRESS_JL_NO_AUTO_INIT"] = true
+using Xpress
+liccheck(x::Vector{Cint}) = Cint[xor(x[1], 0x0123)]
+Xpress.initialize(;
+    liccheck = liccheck,
+    verbose = false,
+    xpauth_path = "/tmp/xpauth.xpr,
+)
+# Now you can use Xpress
+```
+"""
+function initialize(;
     liccheck::Function = identity,
     verbose::Bool = true,
     xpauth_path::String = "",
+    call_init::Bool = true,
 )
     verbose &= !haskey(ENV, "XPRESS_JL_NO_INFO")
     path_lic = _get_xpauthpath(xpauth_path, verbose)
@@ -69,23 +94,32 @@ function userlic(;
     license = Cint[1]
     # First, call XPRSlicense to populate `license` with an integer. We don't
     # check the return code.
-    _ = Lib.XPRSlicense(license, path_lic)
+    _ = XPRSlicense(license, path_lic)
     # Then, for some licenses, we need to modify the license integer by a
     # secret password.
     license = liccheck(license)
     # Now, we need to send the password back to Xpress.
-    err = Lib.XPRSlicense(license, path_lic)
+    err = XPRSlicense(license, path_lic)
     if !(err == 16 || err == 0)
         @info("Xpress: Failed to find working license.")
         buffer = Vector{Cchar}(undef, 1024 * 8)
         p_buffer = pointer(buffer)
         GC.@preserve buffer begin
-            Lib.XPRSgetlicerrmsg(p_buffer, 1024)
+            _ = XPRSgetlicerrmsg(p_buffer, 1024)
             throw(XpressError(err, unsafe_string(p_buffer)))
         end
     elseif verbose
         type = err == 16 ? "Development" : "User"
         @info("Xpress: $type license detected.")
     end
+    if call_init
+        _ = XPRSinit(C_NULL)
+    end
     return
 end
+
+# Keep `userlic` for backwards compatibility. PSR have a customized setup for
+# managing licenses.
+#
+# New users should use `Xpress.initialize`.
+userlic(; kwargs...) = initialize(; call_init = false, kwargs...)

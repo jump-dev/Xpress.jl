@@ -1,6 +1,7 @@
 Manifest.toml
 *.pdf
 *.mps
+*.log
 *.lp
 *.sublime-workspace
 *.bat
@@ -10,3 +11,4 @@ Manifest.toml
 deps/*.tar.bz2
 deps/lib
 deps/info
+xpauth.xpr

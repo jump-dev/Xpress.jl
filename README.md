@@ -154,13 +154,13 @@ model = direct_model(Xpress.Optimizer())
 function my_callback_function(cb_data)
     prob = cb_data.model
     p_value = Ref{Cint}(0)
-    ret = Xpress.Lib.XPRSgetintattrib(prob, Xpress.Lib.XPRS_MIPINFEAS, p_value)
+    ret = XPRSgetintattrib(prob, XPRS_MIPINFEAS, p_value)
     if p_value[] > 0
         return  # There are integer infeasibilities. The solution is fractional.
     end
     p_obj, p_bound = Ref{Cdouble}(), Ref{Cdouble}()
-    Xpress.Lib.XPRSgetdblattrib(prob, Xpress.Lib.XPRS_MIPBESTOBJVAL, p_obj)
-    Xpress.Lib.XPRSgetdblattrib(prob, Xpress.Lib.XPRS_BESTBOUND, p_bound)
+    XPRSgetdblattrib(prob, XPRS_MIPBESTOBJVAL, p_obj)
+    XPRSgetdblattrib(prob, XPRS_BESTBOUND, p_bound)
     rel_gap = abs((p_obj[] - p_bound[]) / p_obj[])
     @info "Relative gap = $rel_gap"
     # Before querying `callback_value`, you must call:
@@ -178,7 +178,7 @@ function my_callback_function(cb_data)
     end
     if rand() < 0.1
         # You can terminate the callback as follows:
-        Xpress.Lib.XPRSinterrupt(cb_data.model, 1234)
+        XPRSinterrupt(cb_data.model, 1234)
     end
     return
 end
@@ -204,7 +204,7 @@ optimize!(model)
 
 ## C API
 
-The C API can be accessed via `Xpress.Lib.XPRSxx` functions, where the names and
+The C API can be accessed via `Xpress.XPRSxx` functions, where the names and
 arguments are identical to the C API.
 
 See the [Xpress documentation](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML)
