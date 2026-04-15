@@ -3,46 +3,25 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-import Xpress_jll
-ENV["XPRESS_JL_LIBRARY"] = Xpress_jll.libxprs
-if isfile(joinpath(dirname(@__DIR__), "xpauth.xpr"))
-    ENV["XPAUTH_PATH"] = dirname(@__DIR__)
-end
-
 using Test
-using Xpress
 
-function test_licensing()
-    if any(
-        k -> haskey(ENV, k),
-        ("XPAUTH_PATH", "XPRESSDIR", "XPRESS_JL_LIBRARY"),
-    )
-        return  # Skip for non-standard licenses
+if haskey(ENV, "XPRESS_JL_LOCAL")
+    # When testing the local installation, also test that manually initializing
+    # the license works.
+    ENV["XPRESS_JL_NO_AUTO_INIT"] = true
+    using Xpress
+    xpauth = joinpath(dirname(dirname(Xpress.libxprs)), "custom-xpauth.xpr")
+    Xpress.initialize(; verbose = true, xpauth_path = xpauth)
+else
+    import Xpress_jll
+    ENV["XPRESS_JL_LIBRARY"] = Xpress_jll.libxprs
+    if isfile(joinpath(dirname(@__DIR__), "xpauth.xpr"))
+        ENV["XPAUTH_PATH"] = dirname(@__DIR__)
     end
-    # Create a bogus license file
-    xpauth_path = mktempdir()
-    filename = joinpath(xpauth_path, "xpauth.xpr")
-    write(filename, "bogus_license")
-    # Test that passing `""` can find our current license. This should already
-    # be the case because we managed to install and start the tests...
-    @test isfile(Xpress._get_xpauthpath("", false))
-    # Test that using the test directory cannot find a license.
-    @test_throws ErrorException Xpress._get_xpauthpath(@__DIR__, false)
-    # Now're going to test checking for new licenses. To do so, we first need to
-    # free the current one:
-    Xpress.Lib.XPRSfree()
-    # Then, we can check that using the root fails to find a license
-    @test_throws Xpress.XpressError Xpress.initialize(; xpauth_path)
-    # Now we need to re-initialize the license so that we can run other tests.
-    Xpress.initialize()
-    return
+    using Xpress
 end
 
-@testset "test_licensing" begin
-    # It is important that we test this first, so that there no XpressProblem
-    # objects with finalizers that may get run during the function call.
-    test_licensing()
-end
+@info "Running tests with $(Xpress.libxprs)"
 
 println(Xpress.get_banner())
 println("Optimizer version: $(Xpress.get_version())")

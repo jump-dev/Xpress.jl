@@ -21,6 +21,23 @@ function runtests()
     return
 end
 
+function test_licensing()
+    if !haskey(ENV, "XPRESS_JL_LOCAL")
+        return
+    end
+    xpauth_path = mktempdir()
+    write(joinpath(xpauth_path, "xpauth.xpr"), "bogus_license")
+    @test_throws(
+        ErrorException(
+            "Could not find xpauth.xpr license file. Set the `XPRESSDIR` or " *
+            "`XPAUTH_PATH` environment variables.",
+        ),
+        Xpress._get_xpauthpath(@__DIR__, false),
+    )
+    @test isfile(Xpress._get_xpauthpath(xpauth_path, false))
+    return
+end
+
 function test_show_xpress_error()
     msg = "help"
     for code in (1, 2, 4, 8, 16, 32, 64, 128)

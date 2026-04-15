@@ -7,6 +7,10 @@ import Libdl
 
 const DEPS_FILE = joinpath(dirname(@__FILE__), "deps.jl")
 
+if isfile(DEPS_FILE)
+    rm(DEPS_FILE)
+end
+
 function write_deps_file(path)
     open(DEPS_FILE, "w") do io
         return print(io, "const xpressdlpath = \"$(escape_string(path))\"")
@@ -15,20 +19,15 @@ function write_deps_file(path)
 end
 
 function local_installation()
-    lib_name = string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext)
+    lib_name = Sys.iswindows() ? "xprs.dll" : "libxprs.$(Libdl.dlext)"
     paths_to_try = String["", @__DIR__]
     if haskey(ENV, "XPRESSDIR")
-        push!(
-            paths_to_try,
-            joinpath(ENV["XPRESSDIR"], Sys.iswindows() ? "bin" : "lib"),
-        )
+        libdir = joinpath(ENV["XPRESSDIR"], Sys.iswindows() ? "bin" : "lib")
+        push!(paths_to_try, libdir)
     end
     for dir in paths_to_try
-        path = joinpath(dir, lib_name)
-        if Libdl.dlopen_e(path) != C_NULL
-            @info("Found $path")
-            write_deps_file(dir)
-            return
+        if Libdl.dlopen_e(joinpath(dir, lib_name)) != C_NULL
+            return write_deps_file(dir)
         end
     end
     return error("""
@@ -38,10 +37,6 @@ function local_installation()
 
     Note that Xpress must be obtained separately from fico.com.
     """)
-end
-
-if isfile(DEPS_FILE)
-    rm(DEPS_FILE)
 end
 
 if haskey(ENV, "XPRESS_JL_SKIP_LIB_CHECK")
