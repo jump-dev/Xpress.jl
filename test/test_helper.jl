@@ -75,13 +75,22 @@ function test_XpressProblem_show()
 end
 
 function test_checked()
-    if Xpress.get_version() < v"41.0.0"
-        return
-    end
     prob = Xpress.XpressProblem()
     msg = "Xpress internal error:\n\n85 Error: File not found: .\n"
     ret = XPRSreadprob(prob, "", "")
     @test_throws Xpress.XpressError(85, msg) Xpress._check(prob, ret)
+    return
+end
+
+function test_validate_version()
+    @test Xpress._validate_version(v"41.0.1") === nothing
+    version = v"40.0.0"
+    @test_throws(
+        ErrorException(
+            "Unsupported Xpress version: $version. We require Xpress v41.0.0 (v9) or above",
+        ),
+        Xpress._validate_version(version),
+    )
     return
 end
 

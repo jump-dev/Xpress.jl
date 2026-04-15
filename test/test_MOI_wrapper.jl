@@ -1057,9 +1057,6 @@ function test_name_empty_names()
 end
 
 function test_dummy_nlp()
-    if !Xpress._supports_nonlinear()
-        return
-    end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
     x = MOI.add_variables(model, 2)
@@ -1808,11 +1805,13 @@ function test_BackwardSensitivityOutputConstraint_error()
     c = MOI.add_constraint(model, 0.5 * x, MOI.EqualTo(0.0))
     attr = Xpress.BackwardSensitivityOutputConstraint()
     err = ErrorException("Model not optimized. Cannot get sensitivities.")
-    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, c))
+    @test_throws(err, MOI.get(model, attr, c))
     MOI.optimize!(model)
     err =
-        ErrorException("Backward sensitivity cache not initiliazed correctly.")
-    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, c))
+        ErrorException("Backward sensitivity cache not initialized correctly.")
+    @test_throws(err, MOI.get(model, attr, c))
+    MOI.set(model, Xpress.BackwardSensitivityInputVariable(), x, 1.0)
+    @test_logs (:warn,) MOI.get(model, attr, c)
     return
 end
 
@@ -1821,12 +1820,15 @@ function test_ForwardSensitivityOutputVariable_error()
     MOI.set(model, MOI.Silent(), true)
     x = MOI.add_variable(model)
     MOI.add_constraint(model, x, MOI.ZeroOne())
+    c = MOI.add_constraint(model, 1.0 * x, MOI.EqualTo(1.0))
     attr = Xpress.ForwardSensitivityOutputVariable()
     err = ErrorException("Model not optimized. Cannot get sensitivities.")
-    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, x))
+    @test_throws(err, MOI.get(model, attr, x))
     MOI.optimize!(model)
-    err = ErrorException("Forward sensitivity cache not initiliazed correctly.")
-    @test_logs (:warn,) @test_throws(err, MOI.get(model, attr, x))
+    err = ErrorException("Forward sensitivity cache not initialized correctly.")
+    @test_throws(err, MOI.get(model, attr, x))
+    MOI.set(model, Xpress.ForwardSensitivityInputConstraint(), c, 1.0)
+    @test_logs (:warn,) MOI.get(model, attr, x)
     return
 end
 
@@ -2498,9 +2500,6 @@ function test_conflict_infeasible_bounds()
 end
 
 function test_nlp_constraint_log()
-    if !Xpress._supports_nonlinear()
-        return
-    end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
     # For Xpress >= 46, use local solver for consistent NLP behavior
@@ -2534,9 +2533,6 @@ function test_nlp_constraint_log()
 end
 
 function test_nlp_constraint_unsupported_nonlinear_operator()
-    if !Xpress._supports_nonlinear()
-        return
-    end
     model = Xpress.Optimizer()
     x = MOI.add_variable(model)
     f = MOI.ScalarNonlinearFunction(:foo, Any[x])
@@ -2548,9 +2544,6 @@ function test_nlp_constraint_unsupported_nonlinear_operator()
 end
 
 function test_nlp_constraint_unary_negation()
-    if !Xpress._supports_nonlinear()
-        return
-    end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
     # For Xpress >= 46, use local solver for consistent NLP behavior
@@ -2570,9 +2563,6 @@ function test_nlp_constraint_unary_negation()
 end
 
 function test_nlp_constraint_scalar_affine_function()
-    if !Xpress._supports_nonlinear()
-        return
-    end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
     # For Xpress >= 46, use local solver for consistent NLP behavior
@@ -2592,9 +2582,6 @@ function test_nlp_constraint_scalar_affine_function()
 end
 
 function test_nlp_constraint_product()
-    if !Xpress._supports_nonlinear()
-        return
-    end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
     # For Xpress >= 46, use local solver for consistent NLP behavior
@@ -2614,9 +2601,6 @@ function test_nlp_constraint_product()
 end
 
 function test_nlp_get_constraint_by_name()
-    if !Xpress._supports_nonlinear()
-        return
-    end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
     x = MOI.add_variable(model)
@@ -2629,9 +2613,6 @@ function test_nlp_get_constraint_by_name()
 end
 
 function test_nlp_constraint_delete()
-    if !Xpress._supports_nonlinear()
-        return
-    end
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
     # For Xpress >= 46, use local solver for consistent NLP behavior
@@ -2652,6 +2633,28 @@ function test_nlp_constraint_delete()
     MOI.optimize!(model)
     @test ≈(MOI.get(model, MOI.VariablePrimal(), x), sqrt(3 / 2); atol = 1e-3)
     @test ≈(MOI.get(model, MOI.ObjectiveValue()), sqrt(3 / 2); atol = 1e-3)
+    return
+end
+
+function test_issue_274()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variables(model, 2)
+    MOI.add_constraint.(model, x, MOI.GreaterThan(0.0))
+    f = 1.0 * x[1] + 1.0 * x[2]
+    MOI.add_constraint(model, f + 1.0 * x[1] * x[2], MOI.LessThan(5.0))
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    MOI.optimize!(model)
+    status = MOI.get(model, MOI.TerminationStatus())
+    y = MOI.get(model, MOI.VariablePrimal(), x)
+    if status == MOI.OPTIMAL
+        @test y == [5.0, 0.0] || y == [0.0, 5.0]
+    else
+        @test status == MOI.LOCALLY_SOLVED
+        @test ≈(MOI.get(model, MOI.ObjectiveValue()), sum(y); atol = 1e-3)
+        @test ≈(y[1] + y[2] + y[1] * y[2], 5.0; atol = 1e-3)
+    end
     return
 end
 

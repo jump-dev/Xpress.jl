@@ -15,6 +15,15 @@ let _DEPS_JL = joinpath(dirname(@__DIR__), "deps", "deps.jl")
     end
 end
 
+function _validate_version(version::VersionNumber)
+    if version < v"41"
+        error(
+            "Unsupported Xpress version: $version. We require Xpress v41.0.0 (v9) or above",
+        )
+    end
+    return
+end
+
 function __init__()
     if haskey(ENV, "XPRESS_JL_LIBRARY")
         global libxprs = ENV["XPRESS_JL_LIBRARY"]
@@ -24,6 +33,7 @@ function __init__()
     if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT") &&
        get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") != "true"
         initialize()
+        _validate_version(get_version())
     end
     return
 end
