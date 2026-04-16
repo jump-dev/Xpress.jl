@@ -34,7 +34,7 @@ function _get_xpauthpath(xpauth_path = "", verbose::Bool = true)
     )
     for candidate in candidates
         # We assume a relative root directory of the shared library. If
-        # `candidate` is an absolute path, thhen joinpath will ignore libdir and
+        # `candidate` is an absolute path, then joinpath will ignore libdir and
         # return candidate.
         filename = joinpath(libdir, candidate)
         # If the file exists, we assume it is a license. We don't attempt to
