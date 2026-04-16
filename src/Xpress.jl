@@ -5,20 +5,14 @@
 
 module Xpress
 
-import Libdl
 import MathOptInterface as MOI
 
-# Load in `deps.jl`, complaining if it does not exist
-const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
-
-if isfile(depsjl_path)
-    include(depsjl_path)
-    global libxprs = joinpath(
-        xpressdlpath,
-        string(Sys.iswindows() ? "" : "lib", "xprs", ".", Libdl.dlext),
-    )
-else
-    global libxprs = ""
+let _DEPS_JL = joinpath(dirname(@__DIR__), "deps", "deps.jl")
+    if isfile(_DEPS_JL)
+        include(_DEPS_JL)
+    else
+        global libxprs = ""
+    end
 end
 
 include("Lib/Lib.jl")
