@@ -13,7 +13,7 @@ end
 
 function write_deps_file(filename)
     open(DEPS_FILE, "w") do io
-        return print(io, "const libxprs = \"$(escape_string(filename))\"")
+        return print(io, "libxprs = \"$(escape_string(filename))\"")
     end
     return
 end
