@@ -11,23 +11,23 @@ if isfile(DEPS_FILE)
     rm(DEPS_FILE)
 end
 
-function write_deps_file(path)
+function write_deps_file(filename)
     open(DEPS_FILE, "w") do io
-        return print(io, "const xpressdlpath = \"$(escape_string(path))\"")
+        return print(io, "const libxprs = \"$(escape_string(filename))\"")
     end
     return
 end
 
 function local_installation()
     lib_name = Sys.iswindows() ? "xprs.dll" : "libxprs.$(Libdl.dlext)"
-    paths_to_try = String["", @__DIR__]
+    paths_to_try = String[lib_name, joinpath(@__DIR__, lib_name)]
     if haskey(ENV, "XPRESSDIR")
         libdir = joinpath(ENV["XPRESSDIR"], Sys.iswindows() ? "bin" : "lib")
-        push!(paths_to_try, libdir)
+        push!(paths_to_try, joinpath(libdir, lib_name))
     end
-    for dir in paths_to_try
-        if Libdl.dlopen_e(joinpath(dir, lib_name)) != C_NULL
-            return write_deps_file(dir)
+    for filename in paths_to_try
+        if Libdl.dlopen_e(filename) != C_NULL
+            return write_deps_file(filename)
         end
     end
     return error("""
