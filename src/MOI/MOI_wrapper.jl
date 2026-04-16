@@ -300,30 +300,7 @@ function MOI.empty!(model::Optimizer)
         MOI.RawOptimizerAttribute("XPRESS_WARNING_WINDOWS"),
         model.show_warning,
     )
-    log_level = model.log_level
-    # silently load a empty model - to avoid useless printing
-    if log_level != 0
-        MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
-    end
-    @checked Lib.XPRSloadlp(
-        model.inner,
-        "",
-        0,
-        0,
-        C_NULL,
-        C_NULL,
-        C_NULL,
-        C_NULL,
-        C_NULL,
-        C_NULL,
-        C_NULL,
-        C_NULL,
-        C_NULL,
-        C_NULL,
-    )
-    if log_level != 0
-        MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), log_level)
-    end
+    MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), model.log_level)
     model.name = ""
     model.objective_type = SCALAR_AFFINE
     model.is_objective_set = false
