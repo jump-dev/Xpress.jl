@@ -169,9 +169,24 @@ function _setcboptnode_wrapper(
     ptr_user_data::Ptr{Cvoid},
     feas::Ptr{Cint},
 )
-    user_data = unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
-    inner = XpressProblem(ptr_inner; finalize_env = false)
-    user_data.callback(CallbackData(user_data.model, user_data.data, inner))
+    user_data =
+        unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
+    try
+        reenable_sigint() do
+            inner = XpressProblem(ptr_inner; finalize_env = false)
+            user_data.callback(
+                CallbackData(user_data.model, user_data.data, inner),
+            )
+            return
+        end
+    catch ex
+        if ex isa InterruptException
+            XPRSinterrupt(user_data.model, XPRS_STOP_CTRLC)
+        else
+            XPRSinterrupt(user_data.model, XPRS_STOP_USER)
+            rethrow(ex)
+        end
+    end
     return Cint(0)
 end
 
