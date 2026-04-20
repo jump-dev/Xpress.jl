@@ -244,7 +244,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     has_generic_callback::Bool
     callback_data::Union{Nothing,Tuple{Ptr{Nothing},_CallbackUserData}}
-    message_callback::Union{Nothing,Tuple{Ptr{Nothing},_CallbackUserData}}
+    message_callback::Union{Nothing,Base.RefValue{Bool}}
 
     params::Dict{Any,Any}
 
@@ -538,6 +538,21 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
     return
 end
 
+function _XPRSaddcbmessage_inner(
+    ::XPRSprob,  # cbprob
+    cbdata::Ptr{Bool},
+    msg::Ptr{Cchar},
+    ::Cint,  # msglen
+    msgtype::Cint,
+)
+    show_warning = unsafe_load(cbdata)[]
+    if (msgtype == 1) || (msgtype == 3 && show_warning)
+        println(unsafe_string(msg))
+    end
+    flush(stdout)
+    return Cint(0)
+end
+
 function reset_message_callback(model)
     if model.message_callback !== nothing
         # remove all message callbacks
@@ -546,7 +561,15 @@ function reset_message_callback(model)
         model.message_callback = nothing
     end
     if isempty(model.inner.logfile) && model.log_level != 0
-        model.message_callback = setoutputcb!(model.inner, model.show_warning)
+        callback_ptr = @cfunction(
+            _XPRSaddcbmessage_inner,
+            Cint,
+            (XPRSprob, Ptr{Bool}, Ptr{Cchar}, Cint, Cint)
+        )
+        show_warning_p = Ref{Bool}(model.show_warning)
+        ret = XPRSaddcbmessage(model, callback_ptr, show_warning_p, 0)
+        _check(model, ret)
+        model.message_callback = show_warning_p
     end
     return
 end
