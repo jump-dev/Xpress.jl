@@ -34,17 +34,17 @@ function Base.showerror(io::IO, err::XpressError)
 end
 
 mutable struct XpressProblem
-    ptr::Lib.XPRSprob
+    ptr::XPRSprob
     logfile::String
 
     function XpressProblem(
-        ptr::Lib.XPRSprob = C_NULL;
+        ptr::XPRSprob = C_NULL;
         finalize_env::Bool = true,
         logfile = "",
     )
         if ptr === C_NULL
-            ref = Ref{Lib.XPRSprob}()
-            Lib.XPRScreateprob(ref)
+            ref = Ref{XPRSprob}()
+            _ = XPRScreateprob(ref)
             ptr = ref[]
         end
         if ptr == C_NULL
@@ -54,10 +54,10 @@ mutable struct XpressProblem
         end
         model = new(ptr, logfile)
         if !isempty(logfile)
-            Lib.XPRSsetlogfile(model, logfile)
+            _ = XPRSsetlogfile(model, logfile)
         end
         if finalize_env
-            finalizer(Lib.XPRSdestroyprob, model)
+            finalizer(XPRSdestroyprob, model)
         end
         return model
     end
@@ -67,151 +67,27 @@ Base.cconvert(::Type{Ptr{Cvoid}}, prob::XpressProblem) = prob
 
 Base.unsafe_convert(::Type{Ptr{Cvoid}}, prob::XpressProblem) = prob.ptr
 
-function _invoke(f::Function, pos::Int, ::Type{Int}, args...)
-    out = Ref{Cint}(0)
-    args = collect(args)
-    insert!(args, pos, out)
-    if (r = f(args...)) != 0
-        throw(XpressError(r, "Unable to invoke $f"))
+function _check(prob, ret::Cint)
+    if ret != 0
+        buffer = Array{Cchar}(undef, 1024)
+        GC.@preserve buffer begin
+            out = Cstring(pointer(buffer))
+            _ = XPRSgetlasterror(prob, out)
+            msg = lstrip(unsafe_string(out), ['?'])
+            throw(XpressError(ret, "Xpress internal error:\n\n$msg.\n"))
+        end
     end
-    return out[]
+    return
 end
 
-function _invoke(f::Function, pos::Int, ::Type{Float64}, args...)
-    out = Ref{Float64}(0.0)
-    args = collect(args)
-    insert!(args, pos, out)
-    if (r = f(args...)) != 0
-        throw(XpressError(r, "Unable to invoke $f"))
-    end
-    return out[]
-end
-
-function _invoke(f::Function, pos::Int, ::Type{String}, args...)
+function get_version()
     buffer = Array{Cchar}(undef, 1024)
     GC.@preserve buffer begin
         out = Cstring(pointer(buffer))
-        args = collect(Any, args)
-        insert!(args, pos, out)
-        if (r = f(args...)) != 0
-            throw(XpressError(r, "Unable to invoke $f"))
-        end
-        return unsafe_string(out)
+        _ = XPRSgetversion(out)
+        return VersionNumber(unsafe_string(out))
     end
 end
-
-macro _invoke(expr)
-    @assert Meta.isexpr(expr, :(::)) "macro argument must have return type declaration"
-    f, return_type = expr.args
-    @assert Meta.isexpr(f, :call) "macro argument must have a function call"
-    invoke_expr = Expr(:call, _invoke, f.args[1], 0, return_type)
-    for i in 2:length(f.args)
-        if f.args[i] == :_
-            invoke_expr.args[3] = i - 1
-        else
-            push!(invoke_expr.args, esc(f.args[i]))
-        end
-    end
-    return invoke_expr
-end
-
-"""
-    @checked f(prob)
-
-Lets you invoke a lower level `Lib` function and check that Xpress does not
-error.
-
-Use this macro to minimize repetition and increase readability.
-
-The first argument must be a object that can be cast into an Xpress pointer,
-e.g., `Ptr{XpressProblem}`.
-
-This is passed to `get_xpress_error_message(xprs_ptr)` to get the error message.
-
-## Example
-
-```julia
-@checked Lib.XPRSsetprobname(prob, name)
-```
-"""
-macro checked(expr)
-    @assert expr.head == :call "Can only use @checked on function calls"
-    @assert (expr.args[1].head == :(.)) && (expr.args[1].args[1] == :Lib) "Can only use @checked on Lib.\$function"
-    @assert length(expr.args) >= 2 "Lib.\$function must be contain atleast one argument and the first argument must be of type XpressProblem"
-    prob = expr.args[2]
-    return quote
-        val = $(esc(expr))::Cint
-        if val != 0
-            e = get_xpress_error_message($(esc(prob)))
-            throw(XpressError(val, "Xpress internal error:\n\n$e.\n"))
-        end
-    end
-end
-
-function get_xpress_error_message(prob)
-    return lstrip(@_invoke(Lib.XPRSgetlasterror(prob, _)::String), ['?'])
-end
-
-function getattribute(prob::XpressProblem, name::String)
-    p_id, p_type = Ref{Cint}(), Ref{Cint}()
-    Lib.XPRSgetattribinfo(prob, name, p_id, p_type)
-    if p_type[] == Lib.XPRS_TYPE_INT
-        return @_invoke Lib.XPRSgetintattrib(prob, p_id[], _)::Int
-        # TODO(odow):
-        #   @_invoke doesn't support Int64 attributes
-        # elseif p_type[] == Lib.XPRS_TYPE_INT64
-        #     return @_invoke Lib.XPRSgetintattrib64(prob, p_id[], _)::Int64
-    elseif p_type[] == Lib.XPRS_TYPE_DOUBLE
-        return @_invoke Lib.XPRSgetdblattrib(prob, p_id[], _)::Float64
-    elseif p_type[] == Lib.XPRS_TYPE_STRING
-        return @_invoke Lib.XPRSgetstrattrib(prob, p_id[], _)::String
-    end
-    return error("Unrecognized attribute: $name")
-end
-
-function getcontrol(prob::XpressProblem, name::String)
-    p_id, p_type = Ref{Cint}(), Ref{Cint}()
-    Lib.XPRSgetcontrolinfo(prob, name, p_id, p_type)
-    if p_type[] == Lib.XPRS_TYPE_INT
-        return @_invoke Lib.XPRSgetintcontrol(prob, p_id[], _)::Int
-        # elseif p_type[] == Lib.XPRS_TYPE_INT64
-        #     return @_invoke Lib.XPRSgetintcontrol64(prob, p_id[], _)::Int64
-    elseif p_type[] == Lib.XPRS_TYPE_DOUBLE
-        return @_invoke Lib.XPRSgetdblcontrol(prob, p_id[], _)::Float64
-    elseif p_type[] == Lib.XPRS_TYPE_STRING
-        return @_invoke Lib.XPRSgetstrcontrol(prob, p_id[], _)::String
-    end
-    return error("Unrecognized control: $name")
-end
-
-function get_control_or_attribute(prob::XpressProblem, name::String)
-    p_id, p_type = Ref{Cint}(), Ref{Cint}()
-    Lib.XPRSgetcontrolinfo(prob, name, p_id, p_type)
-    if p_type[] != Lib.XPRS_TYPE_NOTDEFINED
-        return getcontrol(prob, name)
-    end
-    return getattribute(prob, name)
-end
-
-function setcontrol!(prob::XpressProblem, name::String, val)
-    p_id, p_type = Ref{Cint}(), Ref{Cint}()
-    Lib.XPRSgetcontrolinfo(prob, name, p_id, p_type)
-    if p_type[] == Lib.XPRS_TYPE_INT
-        Lib.XPRSsetintcontrol(prob, p_id[], Int32(val))
-        # elseif p_type[] == Lib.XPRS_TYPE_INT64
-        #     Lib.XPRSsetintcontrol64(prob, p_id[], Int64(val))
-    elseif p_type[] == Lib.XPRS_TYPE_DOUBLE
-        Lib.XPRSsetdblcontrol(prob, p_id[], Float64(val))
-    elseif p_type[] == Lib.XPRS_TYPE_STRING
-        Lib.XPRSsetstrcontrol(prob, p_id[], String(val))
-    else
-        return error("Unrecognized control: $name")
-    end
-end
-
-get_banner() = @_invoke Lib.XPRSgetbanner(_)::String
-
-get_version() = VersionNumber(@_invoke Lib.XPRSgetversion(_)::String)
 
 """
     show(io::IO, prob::XpressProblem)
@@ -219,24 +95,35 @@ get_version() = VersionNumber(@_invoke Lib.XPRSgetversion(_)::String)
 Prints a simplified problem description
 """
 function Base.show(io::IO, prob::XpressProblem)
-    m = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int
-    sensei = @_invoke Lib.XPRSgetdblattrib(prob, Lib.XPRS_OBJSENSE, _)::Float64
-    sense = sensei == Lib.XPRS_OBJ_MINIMIZE ? :minimize : :maximize
-    qcons = @_invoke Lib.XPRSgetintattrib(
-        prob,
-        Lib.XPRS_ORIGINALQCONSTRAINTS,
-        _,
-    )::Int
-    ncons = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALROWS, _)::Int
-    qcelems =
-        @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQCELEMS, _)::Int
-    qelems =
-        @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALQELEMS, _)::Int
-    nnz = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ELEMS, _)::Int
+    pInt, pFloat = Ref{Cint}(0), Ref{Cdouble}(0.0)
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALCOLS, pInt)
+    _check(prob, ret)
+    m = pInt[]
+    ret = XPRSgetdblattrib(prob, XPRS_OBJSENSE, pFloat)
+    _check(prob, ret)
+    sense = pFloat[] == XPRS_OBJ_MINIMIZE ? :minimize : :maximize
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALQCONSTRAINTS, pInt)
+    _check(prob, ret)
+    qcons = pInt[]
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALROWS, pInt)
+    _check(prob, ret)
+    ncons = pInt[]
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALQCELEMS, pInt)
+    _check(prob, ret)
+    qcelems = pInt[]
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALQELEMS, pInt)
+    _check(prob, ret)
+    qelems = pInt[]
+    ret = XPRSgetintattrib(prob, XPRS_ELEMS, pInt)
+    _check(prob, ret)
+    nnz = pInt[]
     problem_type = ifelse(qcons > 0, "QCP", ifelse(qelems > 0, "QP", "LP"))
-    nsos = @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALSETS, _)::Int
-    mipents =
-        @_invoke Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALMIPENTS, _)::Int
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALSETS, pInt)
+    _check(prob, ret)
+    nsos = pInt[]
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALMIPENTS, pInt)
+    _check(prob, ret)
+    mipents = pInt[]
     suffix = ifelse(mipents + nsos > 0, " (MIP)", "")
     print(
         io,
@@ -278,7 +165,7 @@ function Base.unsafe_convert(::Type{Ptr{Cvoid}}, x::_CallbackUserData)
 end
 
 function _setcboptnode_wrapper(
-    ptr_inner::Lib.XPRSprob,
+    ptr_inner::XPRSprob,
     ptr_user_data::Ptr{Cvoid},
     feas::Ptr{Cint},
 )
@@ -299,12 +186,12 @@ function set_callback_optnode!(
         (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint})
     )
     user_data = _CallbackUserData(callback, model, data)
-    Lib.XPRSaddcboptnode(model.ptr, callback_ptr, user_data, 0)
+    _ = XPRSaddcboptnode(model.ptr, callback_ptr, user_data, 0)
     return callback_ptr, user_data
 end
 
 function _setcbpreintsol_wrapper(
-    ptr_model::Lib.XPRSprob,
+    ptr_model::XPRSprob,
     ptr_user_data::Ptr{Cvoid},
     ::Ptr{Cint},
     ::Ptr{Cint},
@@ -327,12 +214,12 @@ function set_callback_preintsol!(
         (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble})
     )
     user_data = _CallbackUserData(callback, model, data)
-    Lib.XPRSaddcbpreintsol(model.ptr, callback_ptr, user_data, 0)
+    _ = XPRSaddcbpreintsol(model.ptr, callback_ptr, user_data, 0)
     return callback_ptr, user_data
 end
 
 function _addcboutput2screen_wrapper(
-    ::Lib.XPRSprob,
+    ::XPRSprob,
     ptr_user_data::Ptr{Cvoid},
     msg::Ptr{Cchar},
     ::Cint,
@@ -358,6 +245,6 @@ function setoutputcb!(model::XpressProblem, show_warning::Bool)
         (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint)
     )
     user_data = _CallbackUserData(() -> nothing, model, show_warning)
-    Lib.XPRSaddcbmessage(model.ptr, callback_ptr, user_data, 0)
+    _ = XPRSaddcbmessage(model.ptr, callback_ptr, user_data, 0)
     return callback_ptr, user_data
 end

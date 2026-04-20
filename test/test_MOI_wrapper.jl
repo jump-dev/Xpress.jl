@@ -878,7 +878,7 @@ function test_MIP_Start()
     # postsolve is necessary otherwise a new call to MOI.optimize will
     # trigger error 707 ("707 Error: Function cannot be called during the
     # global search, except in callbacks.").
-    # Xpress.Lib.XPRSpostsolve(model.inner)
+    # XPRSpostsolve(model.inner)
 
     MOI.set(model, MOI.RawOptimizerAttribute("MAXNODE"), 1)
 
@@ -1096,37 +1096,32 @@ function test_dummy_nlp()
     x_sol = MOI.get.(model, MOI.VariablePrimal(), x)
     @test x_sol == [0.0, 10.0]
 
-    ret =
-        Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 5 * x1 - 3")
+    ret = XPRSnlpchgformulastring(model.inner, Cint(0), "- 5 * x1 - 3")
     @test ret == 0
-    ret = Xpress.Lib.XPRSnlpchgformulastring(model.inner, Cint(0), "- 3.14")
+    ret = XPRSnlpchgformulastring(model.inner, Cint(0), "- 3.14")
     @test ret == 0
 
     solvestatus = Ref{Cint}(0)
     solstatus = Ref{Cint}(0)
-    ret = Xpress.Lib.XPRSoptimize(model.inner, "", solvestatus, solstatus)
+    ret = XPRSoptimize(model.inner, "", solvestatus, solstatus)
     @test ret == 0
 
     xx = Array{Float64}(undef, 2)
     slack = Array{Float64}(undef, 2)
     duals = Array{Float64}(undef, 2)
     djs = Array{Float64}(undef, 2)
-    ret = Xpress.Lib.XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
+    ret = XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
     @test ret == 0
     @test xx == [3.14, 10]
     @test slack == [0, 0]
 
-    ret = Xpress.Lib.XPRSnlpchgformulastring(
-        model.inner,
-        Cint(0),
-        "- 0.5 * x1 - 3",
-    )
+    ret = XPRSnlpchgformulastring(model.inner, Cint(0), "- 0.5 * x1 - 3")
     @test ret == 0
 
     # to optimize NLPs we need: XPRSoptimize
     solvestatus = Ref{Cint}(0)
     solstatus = Ref{Cint}(0)
-    ret = Xpress.Lib.XPRSoptimize(model.inner, "", solvestatus, solstatus)
+    ret = XPRSoptimize(model.inner, "", solvestatus, solstatus)
     @test ret == 0
 
     # to get solution values from NLP we need: XPRSgetnlpsol
@@ -1134,7 +1129,7 @@ function test_dummy_nlp()
     slack = Array{Float64}(undef, 2)
     duals = Array{Float64}(undef, 2)
     djs = Array{Float64}(undef, 2)
-    ret = Xpress.Lib.XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
+    ret = XPRSgetnlpsol(model.inner, xx, slack, duals, djs)
     @test ret == 0
     @test xx == [6, 10]
     @test slack == [0, 0]
@@ -1543,11 +1538,9 @@ function test_callback_function_UserCut()
         Xpress.CallbackFunction(),
         (cb_data) -> begin
             push!(cb_calls)
-
-            if Xpress.get_control_or_attribute(
-                cb_data.model,
-                "XPRS_CALLBACKCOUNT_OPTNODE",
-            ) > 1
+            pInt = Ref{Cint}(0)
+            XPRSgetintattrib(cb_data.model, XPRS_CALLBACKCOUNT_OPTNODE, pInt)
+            if pInt[] > 1
                 return
             end
             Xpress.get_cb_solution(model, cb_data.model)
@@ -1584,10 +1577,9 @@ function test_callback_function_HeuristicSolution()
         model,
         Xpress.CallbackFunction(),
         (cb_data) -> begin
-            if Xpress.get_control_or_attribute(
-                cb_data.model,
-                "XPRS_CALLBACKCOUNT_OPTNODE",
-            ) > 1
+            pInt = Ref{Cint}(0)
+            XPRSgetintattrib(cb_data.model, XPRS_CALLBACKCOUNT_OPTNODE, pInt)
+            if pInt[] > 1
                 return
             end
             Xpress.get_cb_solution(model, cb_data.model)
@@ -1665,12 +1657,12 @@ function test_callback_preintsol()
     data = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
     function foo(cb::Xpress.CallbackData)
         cb.data[1] = 98
-        cols = Xpress.get_control_or_attribute(cb.model, "XPRS_COLS")
-        rows = Xpress.get_control_or_attribute(cb.model, "XPRS_ROWS")
-        Xpress.get_control_or_attribute(cb.model, "XPRS_BESTBOUND")
-        ans_variable_primal = Vector{Float64}(undef, Int(cols))
-        ans_linear_primal = Vector{Float64}(undef, Int(cols))
-        Xpress.Lib.XPRSgetlpsol(
+        pInt = Ref{Cint}(0)
+        XPRSgetintattrib(cb.model, XPRS_COLS, pInt)
+        cols = pInt[]
+        ans_variable_primal = Vector{Float64}(undef, cols)
+        ans_linear_primal = Vector{Float64}(undef, cols)
+        XPRSgetlpsol(
             cb.model,
             ans_variable_primal,
             ans_linear_primal,

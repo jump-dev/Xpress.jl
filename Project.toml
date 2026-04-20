@@ -1,8 +1,8 @@
 name = "Xpress"
 uuid = "9e70acf3-d6c9-5be6-b5bd-4e2c73e3e054"
+version = "0.17.2"
 authors = ["Joaquim Dias Garcia <joaquim@psr-inc.com>, Dheepak Krishnamurthy <me@kdheepak.com>, Jose Daniel Lara <jdlara@berkeley.edu>"]
 url = "https://github.com/jump-dev/Xpress.jl"
-version = "0.17.2"
 
 [deps]
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -12,7 +12,7 @@ MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 Libdl = "1"
 MathOptInterface = "1.26"
 Test = "1"
-Xpress_jll = "8.13, 9"
+Xpress_jll = "9"
 julia = "1.10"
 
 [extras]

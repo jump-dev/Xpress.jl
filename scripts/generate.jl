@@ -119,4 +119,4 @@ function postprocess(filename)
     return
 end
 
-postprocess("src/Lib/xprs.jl")
+postprocess("src/libxprs.jl")

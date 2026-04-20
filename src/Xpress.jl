@@ -15,54 +15,9 @@ let _DEPS_JL = joinpath(dirname(@__DIR__), "deps", "deps.jl")
     end
 end
 
-include("Lib/Lib.jl")
-include("helper.jl")
-include("api.jl")
-include("license.jl")
-
-"""
-    initialize(;
-        liccheck::Function = identity,
-        verbose::Bool = true,
-        xpauth_path::String = ""
-    )
-
-Performs license checking with `liccheck` validation function on dir
-`xpauth_path`.
-
-This function must be called before any XPRS functions can be called.
-
-By default, `__init__` calls this with no keyword arguments.
-
-## Example
-
-```julia
-ENV["XPRESS_JL_NO_AUTO_INIT"] = true
-using Xpress
-liccheck(x::Vector{Cint}) = Cint[xor(x[1], 0x0123)]
-Xpress.initialize(;
-    liccheck = liccheck,
-    verbose = false,
-    xpauth_path = "/tmp/xpauth.xpr,
-)
-# Now you can use Xpress
-```
-"""
-function initialize(; kwargs...)
-    userlic(; kwargs...)
-    Lib.XPRSinit(C_NULL)
-    # Calling XPRSfree is not necessary since XPRSdestroyprob is called in the
-    # finalizer.
-    return
-end
-
-include("MOI/MOI_wrapper.jl")
-include("MOI/MOI_callbacks.jl")
-
 function __init__()
     if haskey(ENV, "XPRESS_JL_LIBRARY")
         global libxprs = ENV["XPRESS_JL_LIBRARY"]
-        Lib.set_libxprs(libxprs)
     elseif isempty(libxprs) && !haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
         error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
     end
@@ -71,6 +26,19 @@ function __init__()
         initialize()
     end
     return
+end
+
+include("libxprs.jl")
+include("helper.jl")
+include("license.jl")
+include("MOI/MOI_wrapper.jl")
+include("MOI/MOI_callbacks.jl")
+
+# Xpress exports all `XPRSxxx` symbols. If you don't want all of these symbols
+# in your environment, then use `import Xpress` instead of `using Xpress`.
+
+for sym in filter(s -> startswith("$s", "XPRS"), names(@__MODULE__; all = true))
+    @eval export $sym
 end
 
 export CallbackData

@@ -8,8 +8,6 @@ module TestHelper
 using Xpress
 using Test
 
-import Xpress.Lib as Lib
-
 function runtests()
     for name in names(@__MODULE__; all = true)
         if startswith("$(name)", "test_")
@@ -57,33 +55,6 @@ function test_xpress_problem_logfile()
     return
 end
 
-function test_getattribute_error()
-    p = Xpress.XpressProblem()
-    @test_throws(
-        ErrorException("Unrecognized attribute: bad"),
-        Xpress.getattribute(p, "bad"),
-    )
-    return
-end
-
-function test_getcontrol_error()
-    p = Xpress.XpressProblem()
-    @test_throws(
-        ErrorException("Unrecognized control: bad"),
-        Xpress.getcontrol(p, "bad"),
-    )
-    return
-end
-
-function test_setcontrol_error()
-    p = Xpress.XpressProblem()
-    @test_throws(
-        ErrorException("Unrecognized control: bad"),
-        Xpress.setcontrol!(p, "bad", false),
-    )
-    return
-end
-
 function test_XpressProblem_show()
     p = Xpress.XpressProblem()
     target = """
@@ -109,31 +80,8 @@ function test_checked()
     end
     prob = Xpress.XpressProblem()
     msg = "Xpress internal error:\n\n85 Error: File not found: .\n"
-    @test_throws(
-        Xpress.XpressError(85, msg),
-        Xpress.@checked(Lib.XPRSreadprob(prob, "", "")),
-    )
-    return
-end
-
-function test_invoke_errors()
-    prob = C_NULL
-    @test_throws(
-        Xpress.XpressError,
-        Xpress.@_invoke(
-            Lib.XPRSgetintattrib(prob, Lib.XPRS_ORIGINALCOLS, _)::Int,
-        ),
-    )
-    @test_throws(
-        Xpress.XpressError,
-        Xpress.@_invoke(
-            Lib.XPRSgetdblattrib(prob, Lib.XPRS_OBJSENSE, _)::Float64,
-        ),
-    )
-    @test_throws(
-        Xpress.XpressError,
-        Xpress.@_invoke(Lib.XPRSgetlasterror(prob, _)::String)
-    )
+    ret = XPRSreadprob(prob, "", "")
+    @test_throws Xpress.XpressError(85, msg) Xpress._check(prob, ret)
     return
 end
 
