@@ -28,14 +28,21 @@ function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
         model.callback_data = nothing
     end
     model.has_generic_callback = true
-    model.callback_data = set_callback_optnode!(
-        model.inner,
-        (cb_data) -> begin
-            model.callback_state = CB_GENERIC
-            f(cb_data)
-            model.callback_state = CB_NONE
-        end,
-    )
+    function callback(cb_data)
+        model.callback_state = CB_GENERIC
+        try
+            reenable_sigint(() -> f(cb_data))
+        catch ex
+            if ex isa InterruptException
+                _ = XPRSinterrupt(model, XPRS_STOP_CTRLC)
+            else
+                callback_exception(model, cb_data, ex)
+            end
+        end
+        model.callback_state = CB_NONE
+        return
+    end
+    model.callback_data = set_callback_optnode!(model.inner, callback)
     return
 end
 

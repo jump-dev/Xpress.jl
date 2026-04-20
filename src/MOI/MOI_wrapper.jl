@@ -3025,7 +3025,7 @@ function MOI.optimize!(model::Optimizer)
     check_cb_exception(model)
     # Should be almost a no-op if not needed. Might have minor overhead due to
     # memory being freed
-    if model.post_solve
+    if true # model.post_solve
         ret = XPRSpostsolve(model.inner)
         _check(model, ret)
     end

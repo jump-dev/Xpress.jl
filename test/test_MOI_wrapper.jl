@@ -866,14 +866,14 @@ end
 function callback_knapsack_model()
     model = Xpress.Optimizer()
     MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
-    MOI.set(model, MOI.RawOptimizerAttribute("HEURSTRATEGY"), 0)
+    # MOI.set(model, MOI.RawOptimizerAttribute("HEURSTRATEGY"), 0)
     MOI.set(model, MOI.RawOptimizerAttribute("HEUREMPHASIS"), 0)
     MOI.set(model, MOI.RawOptimizerAttribute("CUTSTRATEGY"), 0)
     MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
-    MOI.set(model, MOI.RawOptimizerAttribute("MIPPRESOLVE"), 0)
-    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVEOPS"), 0)
-    MOI.set(model, MOI.RawOptimizerAttribute("MIPTHREADS"), 1)
-    MOI.set(model, MOI.RawOptimizerAttribute("THREADS"), 1)
+    # MOI.set(model, MOI.RawOptimizerAttribute("MIPPRESOLVE"), 0)
+    # MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVEOPS"), 0)
+    # MOI.set(model, MOI.RawOptimizerAttribute("MIPTHREADS"), 1)
+    # MOI.set(model, MOI.RawOptimizerAttribute("THREADS"), 1)
     MOI.set(model, MOI.NumberOfThreads(), 2)
     N = 30
     x = MOI.add_variables(model, N)
@@ -2316,6 +2316,22 @@ function test_issue_274()
         @test ≈(MOI.get(model, MOI.ObjectiveValue()), sum(y); atol = 1e-3)
         @test ≈(y[1] + y[2] + y[1] * y[2], 5.0; atol = 1e-3)
     end
+    return
+end
+
+function test_AAA_InterruptException()
+    model, x, item_weights = callback_knapsack_model()
+    interrupt_thrown = false
+    function my_callback(cb)
+        if !interrupt_thrown
+            interrupt_thrown = true
+            throw(InterruptException())
+        end
+        return
+    end
+    MOI.set(model, Xpress.CallbackFunction(), my_callback)
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.INTERRUPTED
     return
 end
 
