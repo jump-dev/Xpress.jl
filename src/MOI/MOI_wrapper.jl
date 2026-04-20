@@ -248,9 +248,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     params::Dict{Any,Any}
 
-    has_nlp_constraints::Bool
-
-    xpress_version::VersionNumber
     function Optimizer(; kwargs...)
         model = new()
         model.params = Dict{Any,Any}()
@@ -273,8 +270,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
             CleverDicts.CleverDict{MOI.VariableIndex,VariableInfo}()
         model.affine_constraint_info = Dict{Int,ConstraintInfo}()
         model.sos_constraint_info = Dict{Int,ConstraintInfo}()
-        model.xpress_version = VersionNumber(0)
-        MOI.empty!(model)  # inner is initialized here
+        MOI.empty!(model)
         return model
     end
 end
@@ -288,9 +284,8 @@ function MOI.empty!(model::Optimizer)
     for (name, value) in model.params
         MOI.set(model, name, value)
     end
-    model.xpress_version = Xpress.get_version()
     MOI.set(model, MOI.RawOptimizerAttribute("MPSNAMELENGTH"), 64)
-    callback_main_thread = if model.xpress_version >= VersionNumber((46, 0, 0))
+    callback_main_thread = if get_version() >= v"46"
         "CALLBACKFROMMAINTHREAD"
     else
         # Kept for compatibility with older versions
@@ -333,7 +328,6 @@ function MOI.empty!(model::Optimizer)
     for (name, value) in model.params
         MOI.set(model, name, value)
     end
-    model.has_nlp_constraints = false
     return
 end
 
@@ -1081,14 +1075,16 @@ function MOI.get(
     ::ForwardSensitivityOutputVariable,
     vi::MOI.VariableIndex,
 )
-    if is_mip(model) && model.moi_warnings
-        @warn "The problem is a MIP, it might fail to get correct sensitivities."
-    end
     if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL
         error("Model not optimized. Cannot get sensitivities.")
+    elseif model.forward_sensitivity_cache === nothing
+        error("Forward sensitivity cache not initialized correctly.")
     end
-    if model.forward_sensitivity_cache === nothing
-        error("Forward sensitivity cache not initiliazed correctly.")
+    pInt = Ref{Cint}(0)
+    ret = XPRSgetintattrib(model, XPRS_OPTIMIZETYPEUSED, pInt)
+    _check(model, ret)
+    if pInt[] == XPRS_OPTIMIZETYPE_MIP && model.moi_warnings
+        @warn "The problem is a MIP, it might fail to get correct sensitivities."
     end
     if model.forward_sensitivity_cache.is_updated != true
         forward(model)
@@ -1126,14 +1122,16 @@ function MOI.get(
     ::BackwardSensitivityOutputConstraint,
     ci::MOI.ConstraintIndex,
 )
-    if is_mip(model) && model.moi_warnings
-        @warn "The problem is a MIP, it might fail to get correct sensitivities."
-    end
     if MOI.get(model, MOI.TerminationStatus()) != MOI.OPTIMAL
         error("Model not optimized. Cannot get sensitivities.")
+    elseif model.backward_sensitivity_cache === nothing
+        error("Backward sensitivity cache not initialized correctly.")
     end
-    if model.backward_sensitivity_cache === nothing
-        error("Backward sensitivity cache not initiliazed correctly.")
+    pInt = Ref{Cint}(0)
+    ret = XPRSgetintattrib(model, XPRS_OPTIMIZETYPEUSED, pInt)
+    _check(model, ret)
+    if pInt[] == XPRS_OPTIMIZETYPE_MIP && model.moi_warnings
+        @warn "The problem is a MIP, it might fail to get correct sensitivities."
     end
     if model.backward_sensitivity_cache.is_updated != true
         backward(model)
@@ -2882,35 +2880,19 @@ function _get_sparse_sos(model)
     setcols = zeros(Cint, nnz)
     setvals = zeros(Float64, nnz)
     intents, nsets = Ref{Cint}(), Ref{Cint}()
-    if get_version() >= v"41.01"
-        ret = XPRSgetmipentities(
-            model,
-            intents,
-            nsets,
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            settypes,
-            setstart,
-            setcols,
-            setvals,
-        )
-        _check(model, ret)
-    else
-        ret = XPRSgetglobal(
-            model,
-            intents,
-            nsets,
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            settypes,
-            setstart,
-            setcols,
-            setvals,
-        )
-        _check(model, ret)
-    end
+    ret = XPRSgetmipentities(
+        model,
+        intents,
+        nsets,
+        C_NULL,
+        C_NULL,
+        C_NULL,
+        settypes,
+        setstart,
+        setcols,
+        setvals,
+    )
+    _check(model, ret)
     return setstart, setcols, setvals
 end
 
@@ -2990,8 +2972,7 @@ function _set_MIP_start(model)
             push!(solval, info.start)
         end
     end
-    nnz = length(colind)
-    if nnz > 0
+    if (nnz = length(colind)) > 0
         ret = XPRSaddmipsol(model, nnz, solval, colind, C_NULL)
         _check(model, ret)
     end
@@ -3026,16 +3007,8 @@ function MOI.optimize!(model::Optimizer)
         _set_MIP_start(model)
     end
     start_time = time()
-    if model.has_nlp_constraints
-        ret = XPRSnlpoptimize(model, model.solve_method)
-        _check(model, ret)
-    elseif is_mip(model)
-        ret = XPRSmipoptimize(model, model.solve_method)
-        _check(model, ret)
-    else
-        ret = XPRSlpoptimize(model, model.solve_method)
-        _check(model, ret)
-    end
+    solvestatusP, solstatusP = Ref{Cint}(0), Ref{Cint}(0)
+    ret = XPRSoptimize(model, model.solve_method, solvestatusP, solstatusP)
     model.cached_solution.solve_time = time() - start_time
     check_cb_exception(model)
     # Should be almost a no-op if not needed. Might have minor overhead due to
@@ -3047,33 +3020,34 @@ function MOI.optimize!(model::Optimizer)
     model.termination_status = _cache_termination_status(model)
     model.primal_status = _cache_primal_status(model)
     model.dual_status = _cache_dual_status(model)
-    # TODO: add @checked here - must review statuses
-    if model.has_nlp_constraints
-        _ = XPRSgetnlpsol(
-            model,
-            model.cached_solution.variable_primal,
-            model.cached_solution.linear_primal,
-            model.cached_solution.linear_dual,
-            model.cached_solution.variable_dual,
-        )
-    elseif is_mip(model)
-        # TODO @checked (only works if not in [MOI.NO_SOLUTION, MOI.INFEASIBILITY_CERTIFICATE, MOI.INFEASIBLE_POINT])
-        _ = XPRSgetmipsol(
-            model,
-            model.cached_solution.variable_primal,
-            model.cached_solution.linear_primal,
-        )
-        fill!(model.cached_solution.linear_dual, NaN)
-        fill!(model.cached_solution.variable_dual, NaN)
-    else
-        _ = XPRSgetlpsol(
-            model,
-            model.cached_solution.variable_primal,
-            model.cached_solution.linear_primal,
-            model.cached_solution.linear_dual,
-            model.cached_solution.variable_dual,
-        )
-    end
+    _ = XPRSgetsolution(
+        model,
+        solstatusP,
+        model.cached_solution.variable_primal,
+        0,
+        length(model.cached_solution.variable_primal) - 1,
+    )
+    _ = XPRSgetslacks(
+        model,
+        solstatusP,
+        model.cached_solution.linear_primal,
+        0,
+        length(model.cached_solution.linear_primal) - 1,
+    )
+    _ = XPRSgetduals(
+        model,
+        solstatusP,
+        model.cached_solution.linear_dual,
+        0,
+        length(model.cached_solution.linear_dual) - 1,
+    )
+    _ = XPRSgetredcosts(
+        model,
+        solstatusP,
+        model.cached_solution.variable_dual,
+        0,
+        length(model.cached_solution.variable_dual) - 1,
+    )
     model.cached_solution.linear_primal .=
         rhs .- model.cached_solution.linear_primal
     status = MOI.get(model, MOI.PrimalStatus())
@@ -3215,18 +3189,21 @@ function MOI.get(model::Optimizer, attr::MOI.RawStatusString)
     ret = XPRSgetintattrib(model, XPRS_STOPSTATUS, pInt)
     _check(model, ret)
     stop_status = " - " * _STOPSTATUS[pInt[]][1]
-    if model.has_nlp_constraints
-        ret = XPRSgetintattrib(model, XPRS_NLPSTATUS, pInt)
+    pInt = Ref{Cint}(0)
+    ret = XPRSgetintattrib(model, XPRS_OPTIMIZETYPEUSED, pInt)
+    _check(model, ret)
+    if pInt[] == XPRS_OPTIMIZETYPE_LP
+        ret = XPRSgetintattrib(model, XPRS_LPSTATUS, pInt)
         _check(model, ret)
-        return _NLPSTATUS[pInt[]][1] * stop_status
-    elseif is_mip(model)
+        return _LPSTATUS[pInt[]][1] * stop_status
+    elseif pInt[] == XPRS_OPTIMIZETYPE_MIP
         ret = XPRSgetintattrib(model, XPRS_MIPSTATUS, pInt)
         _check(model, ret)
         return _MIPSTATUS[pInt[]][1] * stop_status
     else
-        ret = XPRSgetintattrib(model, XPRS_LPSTATUS, pInt)
+        ret = XPRSgetintattrib(model, XPRS_NLPSTATUS, pInt)
         _check(model, ret)
-        return _LPSTATUS[pInt[]][1] * stop_status
+        return _NLPSTATUS[pInt[]][1] * stop_status
     end
 end
 
@@ -3237,18 +3214,22 @@ function _cache_termination_status(model::Optimizer)
     stop = pInt[]
     if stop != XPRS_STOP_NONE && stop != XPRS_STOP_MIPGAP
         return _STOPSTATUS[stop][2]
-    elseif model.has_nlp_constraints
-        ret = XPRSgetintattrib(model, XPRS_NLPSTATUS, pInt)
+    end
+    pInt = Ref{Cint}(0)
+    ret = XPRSgetintattrib(model, XPRS_OPTIMIZETYPEUSED, pInt)
+    _check(model, ret)
+    if pInt[] == XPRS_OPTIMIZETYPE_LP
+        ret = XPRSgetintattrib(model, XPRS_LPSTATUS, pInt)
         _check(model, ret)
-        return _NLPSTATUS[pInt[]][2]
-    elseif is_mip(model)
+        return _LPSTATUS[pInt[]][2]
+    elseif pInt[] == XPRS_OPTIMIZETYPE_MIP
         ret = XPRSgetintattrib(model, XPRS_MIPSTATUS, pInt)
         _check(model, ret)
         return _MIPSTATUS[pInt[]][2]
     else
-        ret = XPRSgetintattrib(model, XPRS_LPSTATUS, pInt)
+        ret = XPRSgetintattrib(model, XPRS_NLPSTATUS, pInt)
         _check(model, ret)
-        return _LPSTATUS[pInt[]][2]
+        return _NLPSTATUS[pInt[]][2]
     end
 end
 
@@ -3278,12 +3259,15 @@ function _cache_primal_status(model)
     if _has_primal_ray(model)
         return MOI.INFEASIBILITY_CERTIFICATE
     end
-    dict, attr = if model.has_nlp_constraints
-        _NLPSTATUS, XPRS_NLPSTATUS
-    elseif is_mip(model)
+    pInt = Ref{Cint}(0)
+    ret = XPRSgetintattrib(model, XPRS_OPTIMIZETYPEUSED, pInt)
+    _check(model, ret)
+    dict, attr = if pInt[] == XPRS_OPTIMIZETYPE_LP
+        _LPSTATUS, XPRS_LPSTATUS
+    elseif pInt[] == XPRS_OPTIMIZETYPE_MIP
         _MIPSTATUS, XPRS_MIPSTATUS
     else
-        _LPSTATUS, XPRS_LPSTATUS
+        _NLPSTATUS, XPRS_NLPSTATUS
     end
     pInt = Ref{Cint}(0)
     ret = XPRSgetintattrib(model, attr, pInt)
@@ -3303,7 +3287,10 @@ function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
 end
 
 function _cache_dual_status(model)
-    if is_mip(model)
+    pInt = Ref{Cint}(0)
+    ret = XPRSgetintattrib(model, XPRS_OPTIMIZETYPEUSED, pInt)
+    _check(model, ret)
+    if pInt[] == XPRS_OPTIMIZETYPE_MIP
         return MOI.NO_SOLUTION
     end
     term_stat = MOI.get(model, MOI.TerminationStatus())
@@ -3558,15 +3545,8 @@ end
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
-    attr = if model.has_nlp_constraints
-        XPRS_NLPOBJVAL
-    elseif is_mip(model)
-        XPRS_MIPOBJVAL
-    else
-        XPRS_LPOBJVAL
-    end
     pDouble = Ref{Cdouble}(0.0)
-    ret = XPRSgetdblattrib(model, attr, pDouble)
+    ret = XPRSgetdblattrib(model, XPRS_OBJVAL, pDouble)
     _check(model, ret)
     return pDouble[]
 end
@@ -3577,9 +3557,8 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.ObjectiveBound)
     _throw_if_optimize_in_progress(model, attr)
-    attr = is_mip(model) ? XPRS_BESTBOUND : XPRS_LPOBJVAL
     pDouble = Ref{Cdouble}(0.0)
-    ret = XPRSgetdblattrib(model, attr, pDouble)
+    ret = XPRSgetdblattrib(model, XPRS_BESTBOUND, pDouble)
     _check(model, ret)
     return pDouble[]
 end
@@ -4838,8 +4817,6 @@ end
     ScalarNonlinearFunction
 =#
 
-_supports_nonlinear() = get_version() >= v"41"
-
 function MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.ScalarNonlinearFunction},
@@ -4851,7 +4828,7 @@ function MOI.supports_constraint(
         },
     },
 )
-    return get_version() >= v"41"
+    return true
 end
 
 const _FUNCTION_MAP = Dict(
@@ -4980,7 +4957,6 @@ function MOI.add_constraint(
     push!(value, 0.0)
     ret = XPRSnlpchgformula(model, row - 1, parsed, type, value)
     _check(model, ret)
-    model.has_nlp_constraints = true
     return MOI.ConstraintIndex{typeof(f),typeof(s)}(model.last_constraint_index)
 end
 
