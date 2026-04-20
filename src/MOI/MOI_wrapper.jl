@@ -2988,6 +2988,19 @@ function MOI.optimize!(model::Optimizer)
         end
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
         model.has_generic_callback = false # because it is set as true in the above
+    elseif !model.has_generic_callback && is_mip(model)
+        # From the docstring of disable_sigint, "External functions that do not
+        # call julia code or julia runtime automatically disable sigint during
+        # their execution." We don't want this though! We want to be able to
+        # SIGINT Xpress, and then catch it as an interrupt. As a hack, until
+        # Julia introduces an interruptible ccall --- which it likely won't
+        # https://github.com/JuliaLang/julia/issues/2622 --- set a null
+        # callback.
+        #
+        # But we also set this callback only for MIP models, because otherwise
+        # Xpress doesn't compute things like infeasibility certificates for LPs.
+        MOI.set(model, CallbackFunction(), (cb_data) -> nothing)
+        model.has_generic_callback = false
     end
     pre_solve_reset(model)
     # cache rhs: must be done before hand because it cant be
@@ -3004,7 +3017,10 @@ function MOI.optimize!(model::Optimizer)
     end
     start_time = time()
     solvestatusP, solstatusP = Ref{Cint}(0), Ref{Cint}(0)
-    ret = XPRSoptimize(model, model.solve_method, solvestatusP, solstatusP)
+    disable_sigint() do
+        _ = XPRSoptimize(model, model.solve_method, solvestatusP, solstatusP)
+        return
+    end
     model.cached_solution.solve_time = time() - start_time
     check_cb_exception(model)
     # Should be almost a no-op if not needed. Might have minor overhead due to
