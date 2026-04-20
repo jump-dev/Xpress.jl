@@ -2977,7 +2977,6 @@ end
 
 function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
-    set_temporary_callback = false
     if check_moi_callback_validity(model)
         pInt = Ref{Cint}()
         ret = XPRSgetintcontrol(model, XPRS_HEURSTRATEGY, pInt)
@@ -2989,8 +2988,7 @@ function MOI.optimize!(model::Optimizer)
         end
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
         model.has_generic_callback = false # because it is set as true in the above
-        set_temporary_callback = true
-    elseif !model.has_generic_callback
+    elseif !model.has_generic_callback && is_mip(model)
         # From the docstring of disable_sigint, "External functions that do not
         # call julia code or julia runtime automatically disable sigint during
         # their execution." We don't want this though! We want to be able to
@@ -2998,8 +2996,11 @@ function MOI.optimize!(model::Optimizer)
         # Julia introduces an interruptible ccall --- which it likely won't
         # https://github.com/JuliaLang/julia/issues/2622 --- set a null
         # callback.
+        #
+        # But we also set this callback only for MIP models, because otherwise
+        # Xpress doesn't compute things like infeasibility certificates for LPs.
         MOI.set(model, CallbackFunction(), (cb_data) -> nothing)
-        set_temporary_callback = true
+        model.has_generic_callback = false
     end
     pre_solve_reset(model)
     # cache rhs: must be done before hand because it cant be
@@ -3080,11 +3081,6 @@ function MOI.optimize!(model::Optimizer)
         ret = XPRSgetdualray(model, model.cached_solution.linear_dual, has_Ray)
         _check(model, ret)
         model.cached_solution.has_dual_certificate = _has_dual_ray(model)
-    end
-    if set_temporary_callback
-        # See https://github.com/jump-dev/Gurobi.jl/issues/395 - avoid error
-        # from _check_moi_callback_validity upon next optimize! call.
-        MOI.set(model, CallbackFunction(), nothing)
     end
     return
 end
