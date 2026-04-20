@@ -11,106 +11,100 @@ using Test
 import MathOptInterface as MOI
 
 function runtests()
-    for name in names(@__MODULE__; all = true)
-        if startswith("$(name)", "test_")
-            @testset "$(name)" begin
-                getfield(@__MODULE__, name)()
-            end
-        end
+    is_test(name::Symbol) = startswith("$name", "test_")
+    @testset "$name" for name in filter(is_test, names(@__MODULE__; all = true))
+        getfield(@__MODULE__, name)()
     end
     return
 end
 
 function test_Basic_Parameters()
-    optimizer = Xpress.Optimizer()
-    MOI.set(optimizer, MOI.Silent(), true)
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("logfile")) == ""
-    optimizer = Xpress.Optimizer()
-    MOI.set(optimizer, MOI.Silent(), true)
-    MOI.set(optimizer, MOI.RawOptimizerAttribute("logfile"), "output.log")
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("logfile")) ==
-          "output.log"
-    @test MOI.set(optimizer, MOI.TimeLimitSec(), 100) === nothing
-    @test MOI.set(optimizer, MOI.TimeLimitSec(), 3600.0) === nothing
-
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("MIPRELSTOP")) == 0.0001
-    MOI.set(optimizer, MOI.RawOptimizerAttribute("MIPRELSTOP"), 0.123)
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("MIPRELSTOP")) == 0.123
-
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("MPSOBJNAME")) == ""
-    MOI.set(optimizer, MOI.RawOptimizerAttribute("MPSOBJNAME"), "qwerty")
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("MPSOBJNAME")) ==
-          "qwerty"
-
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("PRESOLVE")) == 1
-    MOI.set(optimizer, MOI.RawOptimizerAttribute("PRESOLVE"), 3)
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("PRESOLVE")) == 3
-
-    @show MOI.get(optimizer, MOI.RawOptimizerAttribute("XPRESSVERSION"))
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("MATRIXNAME")) == ""
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("SUMPRIMALINF")) == 0.0
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("NAMELENGTH")) == 8
-    @test MOI.get(optimizer, MOI.SolverName()) == "Xpress"
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    @test MOI.get(model, MOI.RawOptimizerAttribute("logfile")) == ""
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("logfile"), "output.log")
+    @test MOI.get(model, MOI.RawOptimizerAttribute("logfile")) == "output.log"
+    @test MOI.set(model, MOI.TimeLimitSec(), 100) === nothing
+    @test MOI.set(model, MOI.TimeLimitSec(), 3600.0) === nothing
+    @test MOI.get(model, MOI.RawOptimizerAttribute("MIPRELSTOP")) == 0.0001
+    MOI.set(model, MOI.RawOptimizerAttribute("MIPRELSTOP"), 0.123)
+    @test MOI.get(model, MOI.RawOptimizerAttribute("MIPRELSTOP")) == 0.123
+    @test MOI.get(model, MOI.RawOptimizerAttribute("MPSOBJNAME")) == ""
+    MOI.set(model, MOI.RawOptimizerAttribute("MPSOBJNAME"), "qwerty")
+    @test MOI.get(model, MOI.RawOptimizerAttribute("MPSOBJNAME")) == "qwerty"
+    @test MOI.get(model, MOI.RawOptimizerAttribute("PRESOLVE")) == 1
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 3)
+    @test MOI.get(model, MOI.RawOptimizerAttribute("PRESOLVE")) == 3
+    @test MOI.get(model, MOI.RawOptimizerAttribute("MATRIXNAME")) == ""
+    @test MOI.get(model, MOI.RawOptimizerAttribute("SUMPRIMALINF")) == 0.0
+    @test MOI.get(model, MOI.RawOptimizerAttribute("NAMELENGTH")) == 8
+    @test MOI.get(model, MOI.SolverName()) == "Xpress"
+    return
 end
 
 function test_runtests()
     model = MOI.instantiate(Xpress.Optimizer; with_bridge_type = Float64)
     MOI.set(model, MOI.Silent(), true)
-    MOI.Test.runtests(
-        model,
-        MOI.Test.Config(; atol = 1e-3, rtol = 1e-3);
-        exclude = [
-            # An upstream bug in Xpress@9.7.0
-            "test_solve_conflict_bound_bound",
-            "test_solve_conflict_invalid_interval",
-            # tested with PRESOLVE=0 below
-            "_SecondOrderCone_",
-            "test_constraint_PrimalStart_DualStart_SecondOrderCone",
-            "_RotatedSecondOrderCone_",
-            "_GeometricMeanCone_",
-            # Xpress cannot handle nonconvex quadratic constraint
-            "test_quadratic_nonconvex_",
-            # Nonlinear tests because these return LOCALLY_SOLVED
-            "test_nonlinear_",
-        ],
-    )
-    # For Xpress >= 46, use local solver for consistent NLP behavior
+    config = MOI.Test.Config(; atol = 1e-3, rtol = 1e-3)
+    exclude = [
+        # These are tested in `test_runtests_nonlinear`
+        "test_quadratic_nonconvex_",
+        "test_nonlinear_",
+        # These are tested in `test_runtests_second_order_cone`
+        "_SecondOrderCone_",
+        "test_constraint_PrimalStart_DualStart_SecondOrderCone",
+        "_RotatedSecondOrderCone_",
+        "_GeometricMeanCone_",
+    ]
+    if Xpress.get_version() < v"46"
+        # An upstream bug in Xpress@9.7.0
+        push!(exclude, "test_solve_conflict_bound_bound")
+        push!(exclude, "test_solve_conflict_invalid_interval")
+    end
+    MOI.Test.runtests(model, config; exclude)
+    return
+end
+
+function test_runtests_nonlinear()
+    model = MOI.instantiate(Xpress.Optimizer; with_bridge_type = Float64)
+    MOI.set(model, MOI.Silent(), true)
     if Xpress.get_version() >= v"46"
         MOI.set(model, MOI.RawOptimizerAttribute("NLPSOLVER"), 1)
     end
+    config = MOI.Test.Config(;
+        atol = 1e-3,
+        rtol = 1e-3,
+        exclude = Any[MOI.ConstraintDual],
+        optimal_status = MOI.LOCALLY_SOLVED,
+    )
+    global_tests = [
+        "test_nonlinear_expression_overrides_objective",
+        "test_nonlinear_quadratic_1",
+        "test_nonlinear_quadratic_4",
+    ]
+    exclude = copy(global_tests)
+    if Xpress.get_version() < v"46.01.02"
+        # There is a segfault in Xpress 46.01.01 and earlier
+        diag = "test_nonlinear_with_scalar_quadratic_function_with_off_diag"
+        push!(exclude, diag)
+    end
     MOI.Test.runtests(
         model,
-        MOI.Test.Config(;
-            atol = 1e-3,
-            rtol = 1e-3,
-            exclude = Any[MOI.ConstraintDual],
-            optimal_status = MOI.LOCALLY_SOLVED,
-        );
-        include = ["test_nonlinear_"],
-        # This test is actually MOI.OPTIMAL. It's okay to ignore for now.
-        exclude = [
-            "test_nonlinear_expression_overrides_objective",
-            "test_nonlinear_quadratic_1",
-            "test_nonlinear_quadratic_4",
-            "test_nonlinear_with_scalar_quadratic_function_with_off_diag",
-        ],
+        config;
+        include = ["test_nonlinear_", "test_quadratic_nonconvex_"],
+        exclude,
     )
-    MOI.Test.runtests(
-        model,
-        MOI.Test.Config(;
-            atol = 1e-3,
-            rtol = 1e-3,
-            exclude = Any[MOI.ConstraintDual],
-        );
-        include = [
-            "test_nonlinear_expression_overrides_objective",
-            "test_nonlinear_quadratic_1",
-            "test_nonlinear_quadratic_4",
-            # TODO(odow): this test triggers a segfault in
-            # MathOptInterface/actions/workflows/solvertests.yml
-            # "test_nonlinear_with_scalar_quadratic_function_with_off_diag",
-        ],
-    )
+    # These tests were actually solved to global optimality
+    config.optimal_status = MOI.OPTIMAL
+    MOI.Test.runtests(model, config; include = global_tests)
+    return
+end
+
+function test_runtests_second_order_cone()
+    model = MOI.instantiate(Xpress.Optimizer; with_bridge_type = Float64)
+    MOI.set(model, MOI.Silent(), true)
     MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     MOI.Test.runtests(
         model,
@@ -129,289 +123,205 @@ function test_runtests()
     return
 end
 
-function test_Binaryfixing()
-    @testset "Binary Equal to 1" begin
-        T = Float64
-        config = MOI.Test.Config(; atol = 1e-3, rtol = 1e-3)
-        model = Xpress.Optimizer()
-        MOI.set(model, MOI.Silent(), true)
-        x = MOI.add_variable(model)
-        MOI.add_constraint(model, x, MOI.EqualTo(T(1)))
-        f = MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(T(1), x)], T(0))
-        MOI.add_constraint(model, x, MOI.ZeroOne())
-        MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
-        MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-        MOI.Test._test_model_solution(
-            model,
-            config;
-            objective_value = T(1),
-            variable_primal = [(x, T(1))],
-        )
-    end
-
-    @testset "Binary Equal to 1 - delete constraint" begin
-        T = Float64
-        config = MOI.Test.Config(; atol = 1e-3, rtol = 1e-3)
-        model = Xpress.Optimizer()
-        MOI.set(model, MOI.Silent(), true)
-        x = MOI.add_variable(model)
-        MOI.add_constraint(model, x, MOI.ZeroOne())
-        c1 = MOI.add_constraint(model, x, MOI.EqualTo(T(1)))
-        MOI.delete(model, c1)
-        f = MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(T(1), x)], T(0))
-        MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
-        MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-        MOI.Test._test_model_solution(
-            model,
-            config;
-            objective_value = T(0),
-            variable_primal = [(x, T(0))],
-        )
-    end
+function test_Binaryfixing_1()
+    T = Float64
+    config = MOI.Test.Config(; atol = 1e-3, rtol = 1e-3)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.EqualTo(T(1)))
+    f = T(1) * x
+    MOI.add_constraint(model, x, MOI.ZeroOne())
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.Test._test_model_solution(
+        model,
+        config;
+        objective_value = T(1),
+        variable_primal = [(x, T(1))],
+    )
+    return
 end
 
-function test_Conflicts()
-    @testset "Binary" begin
-        T = Float64
-        model = Xpress.Optimizer()
-        MOI.set(model, MOI.Silent(), true)
-        MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
-        MOI.set(model, MOI.RawOptimizerAttribute("DEFAULTALG"), 3)
-        x, c1 = MOI.add_constrained_variable(model, MOI.ZeroOne())
-        c2 = MOI.add_constraint(
-            model,
-            MOI.ScalarAffineFunction(
-                MOI.ScalarAffineTerm.(one(T), [x]),
-                zero(T),
-            ),
-            MOI.EqualTo(T(0.5)),
-        )
-        MOI.optimize!(model)
-        @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
-        MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
-        zeroone_conflict = MOI.get(model, MOI.ConstraintConflictStatus(), c1)
-        @test zeroone_conflict == MOI.MAYBE_IN_CONFLICT ||
-              zeroone_conflict == MOI.IN_CONFLICT
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) ==
-              MOI.IN_CONFLICT
-    end
-    for warning in [true, false]
-        @testset "Variable bounds" begin
-            model = Xpress.Optimizer()
-            MOI.set(model, MOI.Silent(), true)
-            MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
-            MOI.set(model, MOI.RawOptimizerAttribute("DEFAULTALG"), 3)
-            MOI.set(model, MOI.RawOptimizerAttribute("MOI_WARNINGS"), warning)
-            x = MOI.add_variable(model)
-            c1 = MOI.add_constraint(model, x, MOI.GreaterThan(2.0))
-            c2 = MOI.add_constraint(model, x, MOI.LessThan(1.0))
+function test_Binaryfixing_1_delete_constraint()
+    T = Float64
+    config = MOI.Test.Config(; atol = 1e-3, rtol = 1e-3)
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    MOI.add_constraint(model, x, MOI.ZeroOne())
+    c1 = MOI.add_constraint(model, x, MOI.EqualTo(T(1)))
+    MOI.delete(model, c1)
+    f = T(1) * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.Test._test_model_solution(
+        model,
+        config;
+        objective_value = T(0),
+        variable_primal = [(x, T(0))],
+    )
+    return
+end
 
-            # Getting the results before the conflict refiner has been called must return an error.
-            @test MOI.get(model, MOI.ConflictStatus()) ==
-                  MOI.COMPUTE_CONFLICT_NOT_CALLED
-            @test_throws ErrorException MOI.get(
-                model,
-                MOI.ConstraintConflictStatus(),
-                c1,
-            )
+function test_conflict_binary()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("DEFAULTALG"), 3)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
+    x, c1 = MOI.add_constrained_variable(model, MOI.ZeroOne())
+    c2 = MOI.add_constraint(model, 1.0 * x, MOI.EqualTo(0.5))
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
+    MOI.compute_conflict!(model)
+    @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+    zeroone_conflict = MOI.get(model, MOI.ConstraintConflictStatus(), c1)
+    @test zeroone_conflict == MOI.MAYBE_IN_CONFLICT ||
+          zeroone_conflict == MOI.IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == MOI.IN_CONFLICT
+    return
+end
 
-            # Once it's called, no problem.
-            MOI.compute_conflict!(model)
-            @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
-            @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) ==
-                  MOI.IN_CONFLICT
-            @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) ==
-                  MOI.IN_CONFLICT
-        end
-    end
+function test_conflict_variable_bound()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("DEFAULTALG"), 3)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("MOI_WARNINGS"), true)
+    x = MOI.add_variable(model)
+    c1 = MOI.add_constraint(model, x, MOI.GreaterThan(2.0))
+    c2 = MOI.add_constraint(model, x, MOI.LessThan(1.0))
+    # Getting the results before the conflict refiner has been called must return an error.
+    @test MOI.get(model, MOI.ConflictStatus()) ==
+          MOI.COMPUTE_CONFLICT_NOT_CALLED
+    @test_throws ErrorException MOI.get(
+        model,
+        MOI.ConstraintConflictStatus(),
+        c1,
+    )
+    # Once it's called, no problem.
+    MOI.compute_conflict!(model)
+    @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) == MOI.IN_CONFLICT
+    return
+end
 
-    @testset "Two conflicting constraints (GreaterThan, LessThan)" begin
-        model = Xpress.Optimizer()
-        MOI.set(model, MOI.Silent(), true)
-        x = MOI.add_variable(model)
-        y = MOI.add_variable(model)
-        b1 = MOI.add_constraint(
-            model,
-            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0),
-            MOI.GreaterThan(0.0),
-        )
-        b2 = MOI.add_constraint(
-            model,
-            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [y]), 0.0),
-            MOI.GreaterThan(0.0),
-        )
-        cf1 = MOI.ScalarAffineFunction(
-            MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]),
-            0.0,
-        )
-        c1 = MOI.add_constraint(model, cf1, MOI.LessThan(-1.0))
-        cf2 = MOI.ScalarAffineFunction(
-            MOI.ScalarAffineTerm.([1.0, -1.0], [x, y]),
-            0.0,
-        )
-        c2 = MOI.add_constraint(model, cf2, MOI.GreaterThan(1.0))
+function test_conflict_two_conflict_greater_than_less_than()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    y = MOI.add_variable(model)
+    b1 = MOI.add_constraint(model, 1.0 * x, MOI.GreaterThan(0.0))
+    b2 = MOI.add_constraint(model, 1.0 * y, MOI.GreaterThan(0.0))
+    c1 = MOI.add_constraint(model, 1.0 * x + 1.0 * y, MOI.LessThan(-1.0))
+    c2 = MOI.add_constraint(model, 1.0 * x + -1.0 * y, MOI.GreaterThan(1.0))
+    # Getting the results before the conflict refiner has been called must return an error.
+    @test MOI.get(model, MOI.ConflictStatus()) ==
+          MOI.COMPUTE_CONFLICT_NOT_CALLED
+    @test_throws(
+        ErrorException,
+        MOI.get(model, MOI.ConstraintConflictStatus(), c1)
+    )
+    # Once it's called, no problem.
+    # Two possible IISes: b1, b2, c1 OR b2, c1, c2
+    MOI.compute_conflict!(model)
+    @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) in
+          [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) == MOI.IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) in
+          [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
+    return
+end
 
-        # Getting the results before the conflict refiner has been called must return an error.
-        @test MOI.get(model, MOI.ConflictStatus()) ==
-              MOI.COMPUTE_CONFLICT_NOT_CALLED
-        @test_throws ErrorException MOI.get(
-            model,
-            MOI.ConstraintConflictStatus(),
-            c1,
-        )
+function test_conflict_two_conflict_equal_to_constraints()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    y = MOI.add_variable(model)
+    b1 = MOI.add_constraint(model, 1.0 * x, MOI.GreaterThan(0.0))
+    b2 = MOI.add_constraint(model, 1.0 * y, MOI.GreaterThan(0.0))
+    c1 = MOI.add_constraint(model, 1.0 * x + 1.0 * y, MOI.EqualTo(-1.0))
+    c2 = MOI.add_constraint(model, 1.0 * x + -1.0 * y, MOI.GreaterThan(1.0))
+    # Getting the results before the conflict refiner has been called must return an error.
+    @test MOI.get(model, MOI.ConflictStatus()) ==
+          MOI.COMPUTE_CONFLICT_NOT_CALLED
+    @test_throws(
+        ErrorException,
+        MOI.get(model, MOI.ConstraintConflictStatus(), c1)
+    )
+    # Once it's called, no problem.
+    # Two possible IISes: b1, b2, c1 OR b2, c1, c2
+    MOI.compute_conflict!(model)
+    @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) in
+          [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) == MOI.IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) in
+          [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
+    return
+end
 
-        # Once it's called, no problem.
-        # Two possible IISes: b1, b2, c1 OR b2, c1, c2
-        MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) in
-              [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) ==
-              MOI.IN_CONFLICT
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) ==
-              MOI.IN_CONFLICT
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) in
-              [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
-    end
+function test_conflict_variables_outside_conflict()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    y = MOI.add_variable(model)
+    z = MOI.add_variable(model)
+    b1 = MOI.add_constraint(model, 1.0 * x, MOI.GreaterThan(0.0))
+    b2 = MOI.add_constraint(model, 1.0 * y, MOI.GreaterThan(0.0))
+    b3 = MOI.add_constraint(model, 1.0 * z, MOI.GreaterThan(0.0))
+    c1 = MOI.add_constraint(model, 1.0 * x + 1.0 * y, MOI.LessThan(-1.0))
+    c2 = MOI.add_constraint(
+        model,
+        1.0 * x + -1.0 * y + 1.0 * z,
+        MOI.GreaterThan(1.0),
+    )
+    # Getting the results before the conflict refiner has been called must return an error.
+    @test MOI.get(model, MOI.ConflictStatus()) ==
+          MOI.COMPUTE_CONFLICT_NOT_CALLED
+    @test_throws(
+        ErrorException,
+        MOI.get(model, MOI.ConstraintConflictStatus(), c1)
+    )
+    # Once it's called, no problem.
+    MOI.compute_conflict!(model)
+    @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) == MOI.IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) == MOI.IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), b3) ==
+          MOI.NOT_IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) == MOI.IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) ==
+          MOI.NOT_IN_CONFLICT
+    return
+end
 
-    @testset "Two conflicting constraints (EqualTo)" begin
-        model = Xpress.Optimizer()
-        MOI.set(model, MOI.Silent(), true)
-        x = MOI.add_variable(model)
-        y = MOI.add_variable(model)
-        b1 = MOI.add_constraint(
-            model,
-            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0),
-            MOI.GreaterThan(0.0),
-        )
-        b2 = MOI.add_constraint(
-            model,
-            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [y]), 0.0),
-            MOI.GreaterThan(0.0),
-        )
-        cf1 = MOI.ScalarAffineFunction(
-            MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]),
-            0.0,
-        )
-        c1 = MOI.add_constraint(model, cf1, MOI.EqualTo(-1.0))
-        cf2 = MOI.ScalarAffineFunction(
-            MOI.ScalarAffineTerm.([1.0, -1.0], [x, y]),
-            0.0,
-        )
-        c2 = MOI.add_constraint(model, cf2, MOI.GreaterThan(1.0))
-
-        # Getting the results before the conflict refiner has been called must return an error.
-        @test MOI.get(model, MOI.ConflictStatus()) ==
-              MOI.COMPUTE_CONFLICT_NOT_CALLED
-        @test_throws ErrorException MOI.get(
-            model,
-            MOI.ConstraintConflictStatus(),
-            c1,
-        )
-
-        # Once it's called, no problem.
-        # Two possible IISes: b1, b2, c1 OR b2, c1, c2
-        MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) in
-              [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) ==
-              MOI.IN_CONFLICT
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) ==
-              MOI.IN_CONFLICT
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) in
-              [MOI.IN_CONFLICT, MOI.NOT_IN_CONFLICT]
-    end
-
-    @testset "Variables outside conflict" begin
-        model = Xpress.Optimizer()
-        MOI.set(model, MOI.Silent(), true)
-        x = MOI.add_variable(model)
-        y = MOI.add_variable(model)
-        z = MOI.add_variable(model)
-        b1 = MOI.add_constraint(
-            model,
-            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0),
-            MOI.GreaterThan(0.0),
-        )
-        b2 = MOI.add_constraint(
-            model,
-            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [y]), 0.0),
-            MOI.GreaterThan(0.0),
-        )
-        b3 = MOI.add_constraint(
-            model,
-            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [z]), 0.0),
-            MOI.GreaterThan(0.0),
-        )
-        cf1 = MOI.ScalarAffineFunction(
-            MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]),
-            0.0,
-        )
-        c1 = MOI.add_constraint(model, cf1, MOI.LessThan(-1.0))
-        cf2 = MOI.ScalarAffineFunction(
-            MOI.ScalarAffineTerm.([1.0, -1.0, 1.0], [x, y, z]),
-            0.0,
-        )
-        c2 = MOI.add_constraint(model, cf2, MOI.GreaterThan(1.0))
-
-        # Getting the results before the conflict refiner has been called must return an error.
-        @test MOI.get(model, MOI.ConflictStatus()) ==
-              MOI.COMPUTE_CONFLICT_NOT_CALLED
-        @test_throws ErrorException MOI.get(
-            model,
-            MOI.ConstraintConflictStatus(),
-            c1,
-        )
-
-        # Once it's called, no problem.
-        MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b1) ==
-              MOI.IN_CONFLICT
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b2) ==
-              MOI.IN_CONFLICT
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), b3) ==
-              MOI.NOT_IN_CONFLICT
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) ==
-              MOI.IN_CONFLICT
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) ==
-              MOI.NOT_IN_CONFLICT
-    end
-
-    @testset "No conflict" begin
-        model = Xpress.Optimizer()
-        MOI.set(model, MOI.Silent(), true)
-        x = MOI.add_variable(model)
-        c1 = MOI.add_constraint(
-            model,
-            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0),
-            MOI.GreaterThan(1.0),
-        )
-        c2 = MOI.add_constraint(
-            model,
-            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.0),
-            MOI.LessThan(2.0),
-        )
-
-        # Getting the results before the conflict refiner has been called must return an error.
-        @test MOI.get(model, MOI.ConflictStatus()) ==
-              MOI.COMPUTE_CONFLICT_NOT_CALLED
-        @test_throws ErrorException MOI.get(
-            model,
-            MOI.ConstraintConflictStatus(),
-            c1,
-        )
-
-        # Once it's called, no problem.
-        MOI.compute_conflict!(model)
-        @test MOI.get(model, MOI.ConflictStatus()) == MOI.NO_CONFLICT_EXISTS
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) ==
-              MOI.NOT_IN_CONFLICT
-        @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) ==
-              MOI.NOT_IN_CONFLICT
-    end
+function test_conflict_no_conflict()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    x = MOI.add_variable(model)
+    c1 = MOI.add_constraint(model, 1.0 * x, MOI.GreaterThan(1.0))
+    c2 = MOI.add_constraint(model, 1.0 * x, MOI.LessThan(2.0))
+    # Getting the results before the conflict refiner has been called must return an error.
+    @test MOI.get(model, MOI.ConflictStatus()) ==
+          MOI.COMPUTE_CONFLICT_NOT_CALLED
+    @test_throws ErrorException MOI.get(
+        model,
+        MOI.ConstraintConflictStatus(),
+        c1,
+    )
+    # Once it's called, no problem.
+    MOI.compute_conflict!(model)
+    @test MOI.get(model, MOI.ConflictStatus()) == MOI.NO_CONFLICT_EXISTS
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c1) ==
+          MOI.NOT_IN_CONFLICT
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c2) ==
+          MOI.NOT_IN_CONFLICT
+    return
 end
 
 # Xpress can only obtain primal and dual rays without presolve. Check more on
@@ -424,11 +334,7 @@ function test_Farkas_Dual_Min()
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.set(model, MOI.ObjectiveFunction{MOI.VariableIndex}(), x[1])
     clb = MOI.add_constraint.(model, x, MOI.GreaterThan(0.0))
-    c = MOI.add_constraint(
-        model,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0, 1.0], x), 0.0),
-        MOI.LessThan(-1.0),
-    )
+    c = MOI.add_constraint(model, 2.0 * x[1] + 1.0 * x[2], MOI.LessThan(-1.0))
     MOI.optimize!(model)
     @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
     @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
@@ -439,6 +345,7 @@ function test_Farkas_Dual_Min()
     @test c_dual[1] < -1e-6
     @test clb_dual[1] ≈ -2 * c_dual atol = 1e-6
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
+    return
 end
 
 function test_Farkas_Dual_Min_Interval()
@@ -449,11 +356,7 @@ function test_Farkas_Dual_Min_Interval()
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.set(model, MOI.ObjectiveFunction{MOI.VariableIndex}(), x[1])
     clb = MOI.add_constraint.(model, x, MOI.Interval(0.0, 10.0))
-    c = MOI.add_constraint(
-        model,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0, 1.0], x), 0.0),
-        MOI.LessThan(-1.0),
-    )
+    c = MOI.add_constraint(model, 2.0 * x[1] + 1.0 * x[2], MOI.LessThan(-1.0))
     MOI.optimize!(model)
     @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
     @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
@@ -464,6 +367,7 @@ function test_Farkas_Dual_Min_Interval()
     @test c_dual[1] < -1e-6
     @test clb_dual[1] ≈ -2 * c_dual atol = 1e-6
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
+    return
 end
 
 function test_Farkas_Dual_Min_Equalto()
@@ -474,11 +378,7 @@ function test_Farkas_Dual_Min_Equalto()
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.set(model, MOI.ObjectiveFunction{MOI.VariableIndex}(), x[1])
     clb = MOI.add_constraint.(model, x, MOI.EqualTo(0.0))
-    c = MOI.add_constraint(
-        model,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0, 1.0], x), 0.0),
-        MOI.LessThan(-1.0),
-    )
+    c = MOI.add_constraint(model, 2.0 * x[1] + 1.0 * x[2], MOI.LessThan(-1.0))
     MOI.optimize!(model)
     @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
     @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
@@ -489,6 +389,7 @@ function test_Farkas_Dual_Min_Equalto()
     @test c_dual[1] < -1e-6
     @test clb_dual[1] ≈ -2 * c_dual atol = 1e-6
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
+    return
 end
 
 function test_Farkas_Dual_Min_2()
@@ -497,17 +398,10 @@ function test_Farkas_Dual_Min_2()
     MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    MOI.set(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(-1.0, x[1])], 0.0),
-    )
+    f = -1.0 * x[1]
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
     clb = MOI.add_constraint.(model, x, MOI.LessThan(0.0))
-    c = MOI.add_constraint(
-        model,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([-2.0, -1.0], x), 0.0),
-        MOI.LessThan(-1.0),
-    )
+    c = MOI.add_constraint(model, -2.0 * x[1] + -1.0 * x[2], MOI.LessThan(-1.0))
     MOI.optimize!(model)
     @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
     @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
@@ -518,6 +412,7 @@ function test_Farkas_Dual_Min_2()
     @test c_dual[1] < -1e-6
     @test clb_dual[1] ≈ 2 * c_dual atol = 1e-6
     @test clb_dual[2] ≈ c_dual atol = 1e-6
+    return
 end
 
 function test_Farkas_Dual_Max()
@@ -528,11 +423,7 @@ function test_Farkas_Dual_Max()
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     MOI.set(model, MOI.ObjectiveFunction{MOI.VariableIndex}(), x[1])
     clb = MOI.add_constraint.(model, x, MOI.GreaterThan(0.0))
-    c = MOI.add_constraint(
-        model,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0, 1.0], x), 0.0),
-        MOI.LessThan(-1.0),
-    )
+    c = MOI.add_constraint(model, 2.0 * x[1] + 1.0 * x[2], MOI.LessThan(-1.0))
     MOI.optimize!(model)
     @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
     @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
@@ -543,6 +434,7 @@ function test_Farkas_Dual_Max()
     @test c_dual[1] < -1e-6
     @test clb_dual[1] ≈ -2 * c_dual atol = 1e-6
     @test clb_dual[2] ≈ -c_dual atol = 1e-6
+    return
 end
 
 function test_Farkas_Dual_Max_2()
@@ -551,17 +443,10 @@ function test_Farkas_Dual_Max_2()
     MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     x = MOI.add_variables(model, 2)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
-    MOI.set(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        MOI.ScalarAffineFunction([MOI.ScalarAffineTerm(-1.0, x[1])], 0.0),
-    )
+    f = -1.0 * x[1]
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
     clb = MOI.add_constraint.(model, x, MOI.LessThan(0.0))
-    c = MOI.add_constraint(
-        model,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([-2.0, -1.0], x), 0.0),
-        MOI.LessThan(-1.0),
-    )
+    c = MOI.add_constraint(model, -2.0 * x[1] - 1.0 * x[2], MOI.LessThan(-1.0))
     MOI.optimize!(model)
     @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
     @test MOI.get(model, MOI.DualStatus()) == MOI.INFEASIBILITY_CERTIFICATE
@@ -572,6 +457,7 @@ function test_Farkas_Dual_Max_2()
     @test c_dual[1] < -1e-6
     @test clb_dual[1] ≈ 2 * c_dual atol = 1e-6
     @test clb_dual[2] ≈ c_dual atol = 1e-6
+    return
 end
 
 function test_Delete_equality_constraint_in_binary_variable()
@@ -589,67 +475,44 @@ function test_Delete_equality_constraint_in_binary_variable()
     #         y is integer: 0 <= y <= 10
     #         z is binary
     v = MOI.add_variables(model, 3)
-
-    cf =
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 1.0, 1.0], v), 0.0)
+    cf = 1.0 * v[1] + 1.0 * v[2] + 1.0 * v[3]
     c = MOI.add_constraint(model, cf, MOI.LessThan(10.0))
-    cf2 =
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 2.0, 1.0], v), 0.0)
+    cf2 = 1.0 * v[1] + 2.0 * v[2] + 1.0 * v[3]
     c2 = MOI.add_constraint(model, cf2, MOI.LessThan(15.0))
-
     vc1 = MOI.add_constraint(model, v[1], MOI.Interval(0.0, 5.0))
     vc2 = MOI.add_constraint(model, v[2], MOI.Interval(0.0, 10.0))
     vc3 = MOI.add_constraint(model, v[2], MOI.Integer())
     vc4 = MOI.add_constraint(model, v[3], MOI.ZeroOne())
-
-    objf =
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.1, 2.0, 5.0], v), 0.0)
-    MOI.set(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        objf,
-    )
+    objf = 1.1 * v[1] + 2.0 * v[2] + 5.0 * v[3]
+    MOI.set(model, MOI.ObjectiveFunction{typeof(objf)}(), objf)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
-
     MOI.optimize!(model)
-
     @test MOI.get(model, MOI.TerminationStatus()) == MOI.OPTIMAL
     @test MOI.get(model, MOI.ResultCount()) >= 1
     @test MOI.get(model, MOI.PrimalStatus()) in
           [MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT]
-    @test MOI.get(model, MOI.ObjectiveValue()) ≈ 19.4 atol = atol rtol = rtol
-    @test MOI.get(model, MOI.VariablePrimal(), v) ≈ [4, 5, 1] atol = atol rtol =
-        rtol
-    @test MOI.get(model, MOI.ConstraintPrimal(), c) ≈ 10 atol = atol rtol = rtol
-    @test MOI.get(model, MOI.ConstraintPrimal(), c2) ≈ 15 atol = atol rtol =
-        rtol
+    @test ≈(MOI.get(model, MOI.ObjectiveValue()), 19.4; atol, rtol)
+    @test ≈(MOI.get(model, MOI.VariablePrimal(), v), [4, 5, 1]; atol, rtol)
+    @test ≈(MOI.get(model, MOI.ConstraintPrimal(), c), 10; atol, rtol)
+    @test ≈(MOI.get(model, MOI.ConstraintPrimal(), c2), 15; atol, rtol)
     @test MOI.get(model, MOI.ObjectiveBound()) >= 19.4 - atol
-
     z_value = MOI.get(model, MOI.VariablePrimal(), v)[3]
-
     # Relax binary bounds of z variable
     MOI.delete(model, vc4)
-
     # Fix z to its optimal value
     vc5 = MOI.add_constraint(model, v[3], MOI.EqualTo(z_value))
-
     MOI.optimize!(model)
-
     @test MOI.get(model, MOI.TerminationStatus()) == MOI.OPTIMAL
     @test MOI.get(model, MOI.ResultCount()) >= 1
     @test MOI.get(model, MOI.PrimalStatus()) in
           [MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT]
-    @test MOI.get(model, MOI.ObjectiveValue()) ≈ 19.4 atol = atol rtol = rtol
-    @test MOI.get(model, MOI.VariablePrimal(), v) ≈ [4, 5, 1] atol = atol rtol =
-        rtol
-    @test MOI.get(model, MOI.ConstraintPrimal(), c) ≈ 10 atol = atol rtol = rtol
-    @test MOI.get(model, MOI.ConstraintPrimal(), c2) ≈ 15 atol = atol rtol =
-        rtol
+    @test ≈(MOI.get(model, MOI.ObjectiveValue()), 19.4; atol, rtol)
+    @test ≈(MOI.get(model, MOI.VariablePrimal(), v), [4, 5, 1]; atol, rtol)
+    @test ≈(MOI.get(model, MOI.ConstraintPrimal(), c), 10; atol, rtol)
+    @test ≈(MOI.get(model, MOI.ConstraintPrimal(), c2), 15; atol, rtol)
     @test MOI.get(model, MOI.ObjectiveBound()) >= 19.4 - atol
-
     # Add back binary bounds to z
     vc4 = MOI.add_constraint(model, v[3], MOI.ZeroOne())
-
     # Remove equality constraint
     MOI.delete(model, vc5)
     MOI.optimize!(model)
@@ -657,13 +520,12 @@ function test_Delete_equality_constraint_in_binary_variable()
     @test MOI.get(model, MOI.ResultCount()) >= 1
     @test MOI.get(model, MOI.PrimalStatus()) in
           [MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT]
-    @test MOI.get(model, MOI.ObjectiveValue()) ≈ 19.4 atol = atol rtol = rtol
-    @test MOI.get(model, MOI.VariablePrimal(), v) ≈ [4, 5, 1] atol = atol rtol =
-        rtol
-    @test MOI.get(model, MOI.ConstraintPrimal(), c) ≈ 10 atol = atol rtol = rtol
-    @test MOI.get(model, MOI.ConstraintPrimal(), c2) ≈ 15 atol = atol rtol =
-        rtol
+    @test ≈(MOI.get(model, MOI.ObjectiveValue()), 19.4; atol, rtol)
+    @test ≈(MOI.get(model, MOI.VariablePrimal(), v), [4, 5, 1]; atol, rtol)
+    @test ≈(MOI.get(model, MOI.ConstraintPrimal(), c), 10; atol, rtol)
+    @test ≈(MOI.get(model, MOI.ConstraintPrimal(), c2), 15; atol, rtol)
     @test MOI.get(model, MOI.ObjectiveBound()) >= 19.4 - atol
+    return
 end
 
 function test_Binary_Variables_Infeasibility()
@@ -671,16 +533,13 @@ function test_Binary_Variables_Infeasibility()
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
     v = MOI.add_variable(model)
-
-    infeas_err = ErrorException("The problem is infeasible")
-    vc1 = MOI.add_constraint(model, v, MOI.ZeroOne())
-    @test_throws infeas_err vc2 =
-        MOI.add_constraint(model, v, MOI.GreaterThan(2.0))
-    @test_throws infeas_err vc3 =
-        MOI.add_constraint(model, v, MOI.LessThan(-1.0))
-    @test_throws infeas_err vc4 =
-        MOI.add_constraint(model, v, MOI.Interval(-1.0, -0.5))
-    @test_throws infeas_err vc5 = MOI.add_constraint(model, v, MOI.EqualTo(2.0))
+    MOI.add_constraint(model, v, MOI.ZeroOne())
+    err = ErrorException("The problem is infeasible")
+    @test_throws err MOI.add_constraint(model, v, MOI.GreaterThan(2.0))
+    @test_throws err MOI.add_constraint(model, v, MOI.LessThan(-1.0))
+    @test_throws err MOI.add_constraint(model, v, MOI.Interval(-1.0, -0.5))
+    @test_throws err MOI.add_constraint(model, v, MOI.EqualTo(2.0))
+    return
 end
 
 function test_MIP_Start()
@@ -698,108 +557,17 @@ function test_MIP_Start()
     #   used the MIP-start (we checked XPRESS could not solve it using
     #   a single node).
     atol = rtol = 1e-6
+    #! format:off
     weight = Float64[
-        677,
-        460,
-        752,
-        852,
-        580,
-        116,
-        457,
-        121,
-        454,
-        870,
-        443,
-        196,
-        411,
-        539,
-        348,
-        187,
-        771,
-        127,
-        338,
-        527,
-        932,
-        961,
-        48,
-        135,
-        367,
-        998,
-        363,
-        153,
-        921,
-        578,
-        311,
-        560,
-        293,
-        258,
-        474,
-        884,
-        162,
-        136,
-        479,
-        289,
-        813,
-        139,
-        795,
-        825,
-        945,
-        750,
-        462,
-        659,
-        270,
-        34,
-        758,
-        865,
-        238,
-        367,
-        444,
-        116,
-        69,
-        894,
-        584,
-        96,
-        29,
-        199,
-        712,
-        703,
-        856,
-        692,
-        396,
-        409,
-        603,
-        632,
-        479,
-        848,
-        822,
-        248,
-        424,
-        978,
-        738,
-        655,
-        210,
-        173,
-        731,
-        100,
-        889,
-        195,
-        245,
-        329,
-        446,
-        47,
-        235,
-        25,
-        254,
-        150,
-        520,
-        665,
-        391,
-        907,
-        123,
-        826,
-        959,
-        176,
+        677, 460, 752, 852, 580, 116, 457, 121, 454, 870, 443, 196, 411, 539,
+        348, 187, 771, 127, 338, 527, 932, 961, 48, 135, 367, 998, 363, 153,
+        921, 578, 311, 560, 293, 258, 474, 884, 162, 136, 479, 289, 813, 139,
+        795, 825, 945, 750, 462, 659, 270, 34, 758, 865, 238, 367, 444, 116, 69,
+        894, 584, 96, 29, 199, 712, 703, 856, 692, 396, 409, 603, 632, 479, 848,
+        822, 248, 424, 978, 738, 655, 210, 173, 731, 100, 889, 195, 245, 329,
+        446, 47, 235, 25, 254, 150, 520, 665, 391, 907, 123, 826, 959, 176,
     ]
+    #! format:on
     profit = weight .- (5.0,)
     capacity = 10000.0
     model = Xpress.Optimizer()
@@ -813,24 +581,14 @@ function test_MIP_Start()
     # The variables: x[1:100], Bin
     x, _ = MOI.add_constrained_variables(model, fill(MOI.ZeroOne(), 100))
     # The objective function: maximize sum(profit' * x)
-    objf = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(profit, x), 0.0)
-    MOI.set(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        objf,
-    )
+    objf = profit' * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(objf)}(), objf)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     # The capacity constraint: sum(weight' * x) <= capacity
-    MOI.add_constraint(
-        model,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(weight, x), 0.0),
-        MOI.LessThan(capacity),
-    )
-
+    MOI.add_constraint(model, weight' * x, MOI.LessThan(capacity))
     # FIRST RUN: get the optimal value. Check that the optimal
     # value was not discovered at the root node.
     MOI.optimize!(model)
-
     solution = MOI.get(model, MOI.VariablePrimal(), x)
     computed_obj_value = profit' * solution
     obtained_obj_value = MOI.get(model, MOI.ObjectiveValue())::Float64
@@ -841,18 +599,13 @@ function test_MIP_Start()
         atol = atol,
     )
     @test isapprox(9945.0, computed_obj_value; rtol = rtol, atol = atol)
-
     node_solution_was_found =
         MOI.get(model, MOI.RawOptimizerAttribute("MIPSOLNODE"))
-
     @test node_solution_was_found > 1
-
     # SECOND RUN: run without MIP-start and only searching the first node.
     # Should give a worse solution than the previous one.
     MOI.set(model, MOI.RawOptimizerAttribute("MAXNODE"), 1)
-
     MOI.optimize!(model)
-
     # One node may not be enough to even get any solution.
     if MOI.get(model, MOI.PrimalStatus()) == MOI.FEASIBLE_POINT
         solution2 = MOI.get(model, MOI.VariablePrimal(), x)
@@ -867,25 +620,12 @@ function test_MIP_Start()
         # There should be at least one unit of difference.
         @test obtained_obj_value1 > obtained_obj_value2 + 0.5
     end
-
     # THIRD RUN: run with MIP-start and searching only the root node.
     # Should find the optimal solution impossible to get in one node.
     MOI.set.(model, MOI.VariablePrimalStart(), x, solution)
-
-    # This postsolve is necessary because of an unrelated bug. Apparently,
-    # if Xpress is stopped because MAXNODE and has no feasible solution,
-    # then MOI.optimize! will not call postsolve over it, however calling
-    # postsolve is necessary otherwise a new call to MOI.optimize will
-    # trigger error 707 ("707 Error: Function cannot be called during the
-    # global search, except in callbacks.").
-    # XPRSpostsolve(model.inner)
-
     MOI.set(model, MOI.RawOptimizerAttribute("MAXNODE"), 1)
-
     MOI.optimize!(model)
-
     @test MOI.get(model, MOI.RawStatusString()) isa String
-
     solution3 = MOI.get(model, MOI.VariablePrimal(), x)
     computed_obj_value3 = profit' * solution3
     obtained_obj_value3 = MOI.get(model, MOI.ObjectiveValue())::Float64
@@ -896,69 +636,43 @@ function test_MIP_Start()
         atol = atol,
     )
     @test isapprox(9945.0, computed_obj_value3; rtol = rtol, atol = atol)
+    return
 end
 
 function test_multiple_modifications()
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
-
     x = MOI.add_variables(model, 3)
-
-    saf = MOI.ScalarAffineFunction(
-        [
-            MOI.ScalarAffineTerm(1.0, x[1]),
-            MOI.ScalarAffineTerm(1.0, x[2]),
-            MOI.ScalarAffineTerm(1.0, x[3]),
-        ],
-        0.0,
-    )
+    saf = 1.0 * x[1] + 1.0 * x[2] + 1.0 * x[3]
     ci1 = MOI.add_constraint(model, saf, MOI.LessThan(1.0))
     ci2 = MOI.add_constraint(model, saf, MOI.LessThan(2.0))
-
-    MOI.set(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        saf,
-    )
-
+    attr = MOI.ObjectiveFunction{typeof(saf)}()
+    MOI.set(model, attr, saf)
     fc1 = MOI.get(model, MOI.ConstraintFunction(), ci1)
     @test MOI.coefficient.(fc1.terms) == [1.0, 1.0, 1.0]
     fc2 = MOI.get(model, MOI.ConstraintFunction(), ci2)
     @test MOI.coefficient.(fc2.terms) == [1.0, 1.0, 1.0]
-    obj = MOI.get(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-    )
+    obj = MOI.get(model, attr)
     @test MOI.coefficient.(obj.terms) == [1.0, 1.0, 1.0]
-
     changes_cis = [
         MOI.ScalarCoefficientChange(MOI.VariableIndex(1), 4.0)
         MOI.ScalarCoefficientChange(MOI.VariableIndex(1), 0.5)
         MOI.ScalarCoefficientChange(MOI.VariableIndex(3), 2.0)
     ]
     MOI.modify(model, [ci1, ci2, ci2], changes_cis)
-
     fc1 = MOI.get(model, MOI.ConstraintFunction(), ci1)
     @test MOI.coefficient.(fc1.terms) == [4.0, 1.0, 1.0]
     fc2 = MOI.get(model, MOI.ConstraintFunction(), ci2)
     @test MOI.coefficient.(fc2.terms) == [0.5, 1.0, 2.0]
-
     changes_obj = [
         MOI.ScalarCoefficientChange(MOI.VariableIndex(1), 4.0)
         MOI.ScalarCoefficientChange(MOI.VariableIndex(2), 10.0)
         MOI.ScalarCoefficientChange(MOI.VariableIndex(3), 2.0)
     ]
-    MOI.modify(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        changes_obj,
-    )
-
-    obj = MOI.get(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-    )
+    MOI.modify(model, attr, changes_obj)
+    obj = MOI.get(model, attr)
     @test MOI.coefficient.(obj.terms) == [4.0, 10.0, 2.0]
+    return
 end
 
 function infeasible_problem()
@@ -1064,45 +778,26 @@ function test_dummy_nlp()
     MOI.set(
         model,
         MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(c, x), 0.0),
+        c' * x,
     )
-
     MOI.set(model, MOI.VariableName(), x, ["x1", "x2"])
-
     Xpress._pass_variable_names_to_solver(model)
-
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-
     b1 = MOI.add_constraint.(model, x, MOI.GreaterThan(0.0))
     b1 = MOI.add_constraint.(model, x, MOI.LessThan(10.0))
-
-    c1 = MOI.add_constraint(
-        model,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.0], x), 0.0),
-        MOI.EqualTo(0.0),
-    )
-
-    c3 = MOI.add_constraint(
-        model,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([0.0, 1.0], x), 0.0),
-        MOI.GreaterThan(10.0),
-    )
-
+    c1 = MOI.add_constraint(model, 1.0 * x[1], MOI.EqualTo(0.0))
+    c3 = MOI.add_constraint(model, 1.0 * x[2], MOI.GreaterThan(10.0))
     MOI.optimize!(model)
-
     x_sol = MOI.get.(model, MOI.VariablePrimal(), x)
     @test x_sol == [0.0, 10.0]
-
     ret = XPRSnlpchgformulastring(model.inner, Cint(0), "- 5 * x1 - 3")
     @test ret == 0
     ret = XPRSnlpchgformulastring(model.inner, Cint(0), "- 3.14")
     @test ret == 0
-
     solvestatus = Ref{Cint}(0)
     solstatus = Ref{Cint}(0)
     ret = XPRSoptimize(model.inner, "", solvestatus, solstatus)
     @test ret == 0
-
     xx = Array{Float64}(undef, 2)
     slack = Array{Float64}(undef, 2)
     duals = Array{Float64}(undef, 2)
@@ -1111,16 +806,13 @@ function test_dummy_nlp()
     @test ret == 0
     @test xx == [3.14, 10]
     @test slack == [0, 0]
-
     ret = XPRSnlpchgformulastring(model.inner, Cint(0), "- 0.5 * x1 - 3")
     @test ret == 0
-
     # to optimize NLPs we need: XPRSoptimize
     solvestatus = Ref{Cint}(0)
     solstatus = Ref{Cint}(0)
     ret = XPRSoptimize(model.inner, "", solvestatus, solstatus)
     @test ret == 0
-
     # to get solution values from NLP we need: XPRSgetnlpsol
     xx = Array{Float64}(undef, 2)
     slack = Array{Float64}(undef, 2)
@@ -1130,33 +822,21 @@ function test_dummy_nlp()
     @test ret == 0
     @test xx == [6, 10]
     @test slack == [0, 0]
-
-    return nothing
+    return
 end
 
 function test_multiple_modifications2()
     model = Xpress.Optimizer()
     MOI.set(model, MOI.Silent(), true)
-
     x = MOI.add_variable(model)
-
     c = MOI.add_constraint(model, x, MOI.GreaterThan(1.0))
-
-    MOI.set(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        2.0 * x,
-    )
-
+    f = 2.0 * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-
     MOI.optimize!(model)
-
     @test MOI.get(model, MOI.VariablePrimal(), x) == 1.0
-
     @test MOI.get(model, MOI.ConstraintDual(), c) == 2.0
     @test MOI.get(model, Xpress.ReducedCost(), x) == 2.0
-
     return
 end
 
@@ -1200,16 +880,9 @@ function callback_knapsack_model()
     MOI.add_constraints(model, x, MOI.ZeroOne())
     MOI.set.(model, MOI.VariablePrimalStart(), x, 0.0)
     item_weights, item_values = abs.(cos.(1:N)), abs.(sin.(1:N))
-    MOI.add_constraint(
-        model,
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(item_weights, x), 0.0),
-        MOI.LessThan(10.0),
-    )
-    MOI.set(
-        model,
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(item_values, x), 0.0),
-    )
+    MOI.add_constraint(model, item_weights' * x, MOI.LessThan(10.0))
+    f = item_values' * x
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
     return model, x, item_weights
 end
@@ -1239,20 +912,14 @@ function test_lazy_constraint_callback_lazy_constraint()
                 MOI.submit(
                     model,
                     MOI.LazyConstraint(cb_data),
-                    MOI.ScalarAffineFunction{Float64}(
-                        MOI.ScalarAffineTerm.([-1.0, 1.0], [x, y]),
-                        0.0,
-                    ),
+                    -1.0 * x + 1.0 * y,
                     MOI.LessThan{Float64}(1.0),
                 )
             elseif y_val + x_val > 3 + 1e-6
                 MOI.submit(
                     model,
                     MOI.LazyConstraint(cb_data),
-                    MOI.ScalarAffineFunction{Float64}(
-                        MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]),
-                        0.0,
-                    ),
+                    1.0 * x + 1.0 * y,
                     MOI.LessThan{Float64}(3.0),
                 )
             end
@@ -1500,20 +1167,14 @@ function test_callback_function_LazyConstraint()
             MOI.submit(
                 model,
                 MOI.LazyConstraint(cb_data),
-                MOI.ScalarAffineFunction{Float64}(
-                    MOI.ScalarAffineTerm.([-1.0, 1.0], [x, y]),
-                    0.0,
-                ),
+                -1.0 * x + 1.0 * y,
                 MOI.LessThan{Float64}(1.0),
             )
         elseif y_val + x_val > 3 + 1e-6
             MOI.submit(
                 model,
                 MOI.LazyConstraint(cb_data),
-                MOI.ScalarAffineFunction{Float64}(
-                    MOI.ScalarAffineTerm.([1.0, 1.0], [x, y]),
-                    0.0,
-                ),
+                1.0 * x + 1.0 * y,
                 MOI.LessThan{Float64}(3.0),
             )
         end
