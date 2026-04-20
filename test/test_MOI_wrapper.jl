@@ -1305,30 +1305,32 @@ function test_callback_lazy_constraint_dual_reductions()
     return
 end
 
+function _cbpreintsol(
+    cbprob::XPRSprob,
+    cbdata::Ptr{Cdouble},
+    soltype::Cint,
+    p_reject::Ptr{Cint},
+    p_cutoff::Ptr{Cdouble},
+)
+    data = unsafe_wrap(Array, cbdata, (3, 3))
+    data[1, 1] = soltype
+    return Cint(0)
+end
+
 function test_callback_preintsol()
     model, x, y = callback_simple_model()
-    data = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
-    function foo(cb::Xpress.CallbackData)
-        cb.data[1] = 98
-        pInt = Ref{Cint}(0)
-        XPRSgetintattrib(cb.model, XPRS_COLS, pInt)
-        cols = pInt[]
-        ans_variable_primal = Vector{Float64}(undef, cols)
-        ans_linear_primal = Vector{Float64}(undef, cols)
-        XPRSgetlpsol(
-            cb.model,
-            ans_variable_primal,
-            ans_linear_primal,
-            C_NULL,
-            C_NULL,
-        )
-        return
+    callback_ptr = @cfunction(
+        _cbpreintsol,
+        Cint,
+        (XPRSprob, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cdouble})
+    )
+    data = Cint[-1 0 0; 0 1 0; 0 0 1]
+    GC.@preserve data begin
+        _ = XPRSaddcbpreintsol(model, callback_ptr, data, 0)
+        @test data[1] == -1
+        MOI.optimize!(model)
+        @test data[1] in (0, 1)  # Either continuous relaxation or heuristic
     end
-    func_ptr, data_ptr = Xpress.set_callback_preintsol!(model.inner, foo, data)
-    @test data[1] == 1
-    MOI.optimize!(model)
-    @test data[1] == 98
-    @test func_ptr isa Ptr{Cvoid}
     return
 end
 
