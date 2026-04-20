@@ -217,34 +217,3 @@ function set_callback_preintsol!(
     _ = XPRSaddcbpreintsol(model.ptr, callback_ptr, user_data, 0)
     return callback_ptr, user_data
 end
-
-function _addcboutput2screen_wrapper(
-    ::XPRSprob,
-    ptr_user_data::Ptr{Cvoid},
-    msg::Ptr{Cchar},
-    ::Cint,
-    msgtype::Cint,
-)
-    user_data = unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
-    if msgtype == 1 || (msgtype == 3 && user_data.data::Bool)
-        # Information || Warning
-        println(unsafe_string(msg))
-    elseif msgtype == 2 || msgtype == 4
-        # Not used || Error
-    else
-        # Exiting - buffers need flushing
-        flush(stdout)
-    end
-    return Cint(0)
-end
-
-function setoutputcb!(model::XpressProblem, show_warning::Bool)
-    callback_ptr = @cfunction(
-        _addcboutput2screen_wrapper,
-        Cint,
-        (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cchar}, Cint, Cint)
-    )
-    user_data = _CallbackUserData(() -> nothing, model, show_warning)
-    _ = XPRSaddcbmessage(model.ptr, callback_ptr, user_data, 0)
-    return callback_ptr, user_data
-end
