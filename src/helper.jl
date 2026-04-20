@@ -169,8 +169,7 @@ function _setcboptnode_wrapper(
     ptr_user_data::Ptr{Cvoid},
     feas::Ptr{Cint},
 )
-    user_data =
-        unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
+    user_data = unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
     try
         reenable_sigint() do
             inner = XpressProblem(ptr_inner; finalize_env = false)
