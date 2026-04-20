@@ -189,31 +189,3 @@ function set_callback_optnode!(
     _ = XPRSaddcboptnode(model.ptr, callback_ptr, user_data, 0)
     return callback_ptr, user_data
 end
-
-function _setcbpreintsol_wrapper(
-    ptr_model::XPRSprob,
-    ptr_user_data::Ptr{Cvoid},
-    ::Ptr{Cint},
-    ::Ptr{Cint},
-    ::Ptr{Cdouble},
-)
-    user_data = unsafe_pointer_to_objref(ptr_user_data)::_CallbackUserData
-    inner = XpressProblem(ptr_model; finalize_env = false)
-    user_data.callback(CallbackData(user_data.model, user_data.data, inner))
-    return Cint(0)
-end
-
-function set_callback_preintsol!(
-    model::XpressProblem,
-    callback::Function,
-    data::Any = nothing,
-)
-    callback_ptr = @cfunction(
-        _setcbpreintsol_wrapper,
-        Cint,
-        (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble})
-    )
-    user_data = _CallbackUserData(callback, model, data)
-    _ = XPRSaddcbpreintsol(model.ptr, callback_ptr, user_data, 0)
-    return callback_ptr, user_data
-end
