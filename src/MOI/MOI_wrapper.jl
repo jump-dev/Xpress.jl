@@ -248,7 +248,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     params::Dict{Any,Any}
 
-    function Optimizer(; kwargs...)
+    function Optimizer()
         model = new()
         model.params = Dict{Any,Any}()
         model.log_level = 1 # is xpress default
@@ -262,10 +262,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.termination_status = MOI.OPTIMIZE_NOT_CALLED
         model.primal_status = MOI.NO_SOLUTION
         model.dual_status = MOI.NO_SOLUTION
-        for (name, value) in kwargs
-            name = MOI.RawOptimizerAttribute(string(name))
-            model.params[name] = value
-        end
         model.variable_info =
             CleverDicts.CleverDict{MOI.VariableIndex,VariableInfo}()
         model.affine_constraint_info = Dict{Int,ConstraintInfo}()
