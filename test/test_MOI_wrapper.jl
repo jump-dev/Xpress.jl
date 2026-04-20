@@ -2314,7 +2314,7 @@ function test_issue_274()
     return
 end
 
-function test_AAA_InterruptException()
+function test_InterruptException()
     model, x, item_weights = callback_knapsack_model()
     interrupt_thrown = false
     function my_callback(cb)

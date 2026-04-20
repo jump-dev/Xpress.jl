@@ -2992,7 +2992,7 @@ function MOI.optimize!(model::Optimizer)
         # From the docstring of disable_sigint, "External functions that do not
         # call julia code or julia runtime automatically disable sigint during
         # their execution." We don't want this though! We want to be able to
-        # SIGINT Gurobi, and then catch it as an interrupt. As a hack, until
+        # SIGINT Xpress, and then catch it as an interrupt. As a hack, until
         # Julia introduces an interruptible ccall --- which it likely won't
         # https://github.com/JuliaLang/julia/issues/2622 --- set a null
         # callback.
