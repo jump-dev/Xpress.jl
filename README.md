@@ -120,25 +120,22 @@ set_attribute(model, "PRESOLVE", 0)
 
 For other parameters see the [Xpress Optimizer manual](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/).
 
-If `logfile` is set to `""`, the log file is disabled and output is printed to
-the console ([there might be issues with console output on windows (it is manually implemented with callbacks)](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html)).
-
-If `logfile` is set to a file's path, output is printed to that file. By
-default, `logfile = ""` (console).
-
 ### Custom options
 
- * `MOI_POST_SOLVE::Bool`: set this attribute to `false` to skip `XPRSpostsolve`.
-   This is most useful in older versions of Xpress that throw an error if the
-   model is infeasible.
- * `MOI_IGNORE_START::Bool`: set this attribute to `true` to skip setting
-   `MOI.VariablePrimalStart`
- * `MOI_WARNINGS::Bool`: set this attribute to `false` to turn off the various
-   warnings printed by the MathOptInterface wrapper
- * `MOI_SOLVE_MODE::String`: set the `flags` argument to
-   [`lpoptimize`](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/R/HTML/lpoptimize.html)
- * `XPRESS_WARNING_WINDOWS::Bool`: set this attribute to `false` to turn of
-   warnings on Windows.
+ * `logfile::String = ""`: if `logfile` is set to `""`, the log file is disabled
+   and output is printed to the console ([there might be issues with console output on windows (it is manually implemented with callbacks)](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/OUTPUTLOG.html)). If `logfile` is set to a
+   file path, output is printed to that file.
+ * `MOI_POST_SOLVE::Bool = true`: set this attribute to `false` to skip
+   `XPRSpostsolve`. This is most useful in older versions of Xpress that throw
+   an error if the model is infeasible.
+ * `MOI_IGNORE_START::Bool = false`: set this attribute to `true` to skip
+   setting `MOI.VariablePrimalStart`
+ * `MOI_WARNINGS::Bool = true`: set this attribute to `false` to turn off the
+   various warnings printed by the MathOptInterface wrapper
+ * `MOI_SOLVE_MODE::String = ""`: set the `flags` argument to
+   [`XPRSoptimize`](https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSoptimize.html)
+ * `XPRESS_WARNING_WINDOWS::Bool = true`: set this attribute to `false` to turn
+   off warnings on Windows.
 
 ## Callbacks
 

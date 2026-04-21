@@ -105,22 +105,13 @@ end
 
 mutable struct XpressProblem
     ptr::XPRSprob
-    logfile::String
 
-    function XpressProblem(
-        ptr::XPRSprob;
-        finalize_env::Bool = true,
-        logfile = "",
-    )
+    function XpressProblem(ptr::XPRSprob; finalize_env::Bool = true)
         if ptr == C_NULL
             msg = "Failed to create XpressProblem. Received null pointer from Xpress C interface."
             throw(XpressError(16, msg))
         end
-        prob = new(ptr, logfile)
-        if !isempty(logfile)
-            ret = XPRSsetlogfile(prob, logfile)
-            _check(prob, ret)
-        end
+        prob = new(ptr)
         if finalize_env
             finalizer(XPRSdestroyprob, prob)
         end

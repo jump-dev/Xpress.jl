@@ -47,14 +47,6 @@ function test_show_xpress_error()
     return
 end
 
-function test_xpress_problem_logfile()
-    # Use mktempdir so that the file is removed on process exit
-    filename = joinpath(mktempdir(), "test.log")
-    p = Xpress.XpressProblem(; logfile = filename)
-    @test isfile(filename)
-    return
-end
-
 function test_XpressProblem_show()
     p = Xpress.XpressProblem()
     target = """
