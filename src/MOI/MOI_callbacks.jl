@@ -15,18 +15,37 @@ MOI.supports(::Optimizer, ::CallbackFunction) = true
 
 function MOI.set(model::Optimizer, ::CallbackFunction, ::Nothing)
     if model.callback_data !== nothing
-        _ = XPRSremovecboptnode(model, C_NULL, C_NULL)
+        ret = XPRSremovecboptnode(model, C_NULL, C_NULL)
+        _check(model, ret)
         model.callback_data = nothing
     end
     model.has_generic_callback = false
     return
 end
 
+struct CallbackData
+    model::XpressProblem
+end
+
+mutable struct _CallbackUserData
+    callback::Function
+end
+
+Base.cconvert(::Type{Ptr{Cvoid}}, x::_CallbackUserData) = x
+
+function Base.unsafe_convert(::Type{Ptr{Cvoid}}, x::_CallbackUserData)
+    return pointer_from_objref(x)::Ptr{Cvoid}
+end
+
+function _cboptnode(cbprob::XPRSprob, cbdata::Ptr{Cvoid}, ::Ptr{Cint})
+    user_data = unsafe_pointer_to_objref(cbdata)::_CallbackUserData
+    prob = XpressProblem(cbprob; finalize_env = false)
+    user_data.callback(CallbackData(prob))
+    return Cint(0)
+end
+
 function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
-    if model.callback_data !== nothing
-        _ = XPRSremovecboptnode(model, C_NULL, C_NULL)
-        model.callback_data = nothing
-    end
+    MOI.set(model, CallbackFunction(), nothing)  # Clear any existing callback
     model.has_generic_callback = true
     function callback(cb_data)
         model.callback_state = CB_GENERIC
@@ -42,7 +61,10 @@ function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
         model.callback_state = CB_NONE
         return
     end
-    model.callback_data = set_callback_optnode!(model.inner, callback)
+    model.callback_data = callback
+    cb = @cfunction(_cboptnode, Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cint}))
+    ret = XPRSaddcboptnode(model, cb, _CallbackUserData(model.callback_data), 0)
+    _check(model, ret)
     return
 end
 

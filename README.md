@@ -146,7 +146,6 @@ Here is an example using Xpress's solver-specific callbacks.
 
 ```julia
 using JuMP, Xpress, Test
-
 model = direct_model(Xpress.Optimizer())
 @variable(model, 0 <= x <= 2.5, Int)
 @variable(model, 0 <= y <= 2.5, Int)
@@ -154,13 +153,14 @@ model = direct_model(Xpress.Optimizer())
 function my_callback_function(cb_data)
     prob = cb_data.model
     p_value = Ref{Cint}(0)
-    ret = XPRSgetintattrib(prob, XPRS_MIPINFEAS, p_value)
+    @assert XPRSgetintattrib(prob, XPRS_MIPINFEAS, p_value) == 0
     if p_value[] > 0
-        return  # There are integer infeasibilities. The solution is fractional.
+        # There are integer infeasibilities. The solution is fractional.
+        return
     end
     p_obj, p_bound = Ref{Cdouble}(), Ref{Cdouble}()
-    XPRSgetdblattrib(prob, XPRS_MIPBESTOBJVAL, p_obj)
-    XPRSgetdblattrib(prob, XPRS_BESTBOUND, p_bound)
+    @assert XPRSgetdblattrib(prob, XPRS_MIPBESTOBJVAL, p_obj) == 0
+    @assert XPRSgetdblattrib(prob, XPRS_BESTBOUND, p_bound) == 0
     rel_gap = abs((p_obj[] - p_bound[]) / p_obj[])
     @info "Relative gap = $rel_gap"
     # Before querying `callback_value`, you must call:
@@ -178,7 +178,7 @@ function my_callback_function(cb_data)
     end
     if rand() < 0.1
         # You can terminate the callback as follows:
-        XPRSinterrupt(cb_data.model, 1234)
+        @assert XPRSinterrupt(cb_data.model, XPRS_STOP_USER) == 0
     end
     return
 end
