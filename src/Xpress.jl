@@ -16,7 +16,7 @@ let _DEPS_JL = joinpath(dirname(@__DIR__), "deps", "deps.jl")
 end
 
 function __init__()
-    if get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") != "true"
+    if get(ENV, "JULIA_REGISTRYCI_AUTOMERGE", "false") == "true"
         return
     elseif haskey(ENV, "XPRESS_JL_LIBRARY")
         global libxprs = ENV["XPRESS_JL_LIBRARY"]
