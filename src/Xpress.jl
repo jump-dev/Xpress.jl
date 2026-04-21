@@ -25,7 +25,7 @@ function __init__()
     end
     # Validate that the Xpress library is compatible with this release. This is
     # safe to call even if XPRSinit has not been called.
-    _validate_version()
+    _validate_version(get_version())
     if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT")
         initialize()
     end
@@ -43,7 +43,7 @@ function get_version()
     end
 end
 
-function _validate_version(version::VersionNumber = get_version())
+function _validate_version(version::VersionNumber)
     if version < v"41"
         error(
             "Unsupported Xpress version: $version. We require Xpress v41.0.0 (v9) or above",
