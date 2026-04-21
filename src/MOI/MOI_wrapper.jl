@@ -171,6 +171,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     log_level::Int32
     # option to show warnings in Windows
     show_warning::Bool
+    logfile::String
 
     # turn off warning by the MOI interface implementation [advanced usage]
     moi_warnings::Bool
@@ -263,6 +264,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.params = Dict{Any,Any}()
         model.log_level = 1 # is xpress default
         model.show_warning = true
+        model.logfile = ""
         model.moi_warnings = true
         model.ignore_start = false
         model.post_solve = true
@@ -545,15 +547,19 @@ function MOI.supports(model::Optimizer, attr::MOI.RawOptimizerAttribute)
     return ret == 0 && !p_type_fail
 end
 
+function _XPRSsetlogfile(model::Optimizer, value::AbstractString)
+    model.logfile = value
+    ret = XPRSsetlogfile(model, isempty(value) ? C_NULL : value)
+    _check(model, ret)
+    reset_message_callback(model)
+    return
+end
+
 function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
     if !MOI.supports(model, param)
         throw(MOI.UnsupportedAttribute(param))
     elseif param == MOI.RawOptimizerAttribute("logfile")
-        model.inner.logfile = value
-        reset_message_callback(model)
-        value = ifelse(value == "", C_NULL, value)
-        ret = XPRSsetlogfile(model, value)
-        _check(model, ret)
+        _XPRSsetlogfile(model, value)
     elseif param == MOI.RawOptimizerAttribute("MOI_POST_SOLVE")
         model.post_solve = value
     elseif param == MOI.RawOptimizerAttribute("MOI_IGNORE_START")
@@ -625,7 +631,7 @@ function reset_message_callback(model)
         _check(model, ret)
         model.message_callback = nothing
     end
-    if isempty(model.inner.logfile) && model.log_level != 0
+    if isempty(model.logfile) && model.log_level != 0
         callback_ptr = @cfunction(
             _XPRSaddcbmessage_inner,
             Cint,
@@ -645,7 +651,7 @@ function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
     end
     name = param.name
     if name == "logfile"
-        return model.inner.logfile
+        return model.logfile
     elseif name == "MOI_IGNORE_START"
         return model.ignore_start
     elseif name == "MOI_POST_SOLVE"
