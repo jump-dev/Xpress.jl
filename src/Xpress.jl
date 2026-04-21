@@ -23,11 +23,9 @@ function __init__()
     elseif isempty(libxprs) && !haskey(ENV, "XPRESS_JL_NO_DEPS_ERROR")
         error("XPRESS cannot be loaded. Please run Pkg.build(\"Xpress\").")
     end
-    # Validate that the Xpress library is compatible with this release. This is
-    # safe to call even if XPRSinit has not been called.
-    _validate_version(get_version())
     if !haskey(ENV, "XPRESS_JL_NO_AUTO_INIT")
         initialize()
+        _validate_version(get_version())
     end
     return
 end
