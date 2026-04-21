@@ -1,6 +1,6 @@
 name = "Xpress"
 uuid = "9e70acf3-d6c9-5be6-b5bd-4e2c73e3e054"
-version = "0.17.2"
+version = "0.18.0"
 authors = ["Joaquim Dias Garcia <joaquim@psr-inc.com>, Dheepak Krishnamurthy <me@kdheepak.com>, Jose Daniel Lara <jdlara@berkeley.edu>"]
 url = "https://github.com/jump-dev/Xpress.jl"
 
