@@ -283,6 +283,61 @@ end
 
 Base.cconvert(::Type{Ptr{Cvoid}}, model::Optimizer) = model.inner
 
+"""
+    show(io::IO, prob::XpressProblem)
+
+Prints a simplified problem description
+"""
+function Base.show(io::IO, prob::XpressProblem)
+    pInt, pFloat = Ref{Cint}(0), Ref{Cdouble}(0.0)
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALCOLS, pInt)
+    _check(prob, ret)
+    m = pInt[]
+    ret = XPRSgetdblattrib(prob, XPRS_OBJSENSE, pFloat)
+    _check(prob, ret)
+    sense = pFloat[] == XPRS_OBJ_MINIMIZE ? :minimize : :maximize
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALQCONSTRAINTS, pInt)
+    _check(prob, ret)
+    qcons = pInt[]
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALROWS, pInt)
+    _check(prob, ret)
+    ncons = pInt[]
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALQCELEMS, pInt)
+    _check(prob, ret)
+    qcelems = pInt[]
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALQELEMS, pInt)
+    _check(prob, ret)
+    qelems = pInt[]
+    ret = XPRSgetintattrib(prob, XPRS_ELEMS, pInt)
+    _check(prob, ret)
+    nnz = pInt[]
+    problem_type = ifelse(qcons > 0, "QCP", ifelse(qelems > 0, "QP", "LP"))
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALSETS, pInt)
+    _check(prob, ret)
+    nsos = pInt[]
+    ret = XPRSgetintattrib(prob, XPRS_ORIGINALMIPENTS, pInt)
+    _check(prob, ret)
+    mipents = pInt[]
+    suffix = ifelse(mipents + nsos > 0, " (MIP)", "")
+    print(
+        io,
+        """
+        Xpress Problem:
+            type   : $problem_type$suffix
+            sense  : $sense
+            number of variables                    = $m
+            number of linear constraints           = $(ncons - qcons)
+            number of quadratic constraints        = $qcons
+            number of sos constraints              = $nsos
+            number of non-zero coeffs              = $nnz
+            number of non-zero qp objective terms  = $qelems
+            number of non-zero qp constraint terms = $qcelems
+            number of integer entities             = $mipents
+        """,
+    )
+    return
+end
+
 Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 
 function MOI.empty!(model::Optimizer)
