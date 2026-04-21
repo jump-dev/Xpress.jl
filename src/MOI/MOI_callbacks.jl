@@ -15,20 +15,29 @@ MOI.supports(::Optimizer, ::CallbackFunction) = true
 
 function MOI.set(model::Optimizer, ::CallbackFunction, ::Nothing)
     if model.callback_data !== nothing
-        _ = XPRSremovecboptnode(model, C_NULL, C_NULL)
+        ret = XPRSremovecboptnode(model, C_NULL, C_NULL)
+        _check(model, ret)
         model.callback_data = nothing
     end
     model.has_generic_callback = false
     return
 end
 
+struct CallbackData
+    model::XpressProblem
+end
+
+function _cboptnode(cbprob::XPRSprob, cbdata::Ptr{Cvoid}, ::Ptr{Cint})
+    user_data = unsafe_pointer_to_objref(cbdata)::_CallbackUserData
+    prob = XpressProblem(cbprob; finalize_env = false)
+    user_data.callback(CallbackData(prob))
+    return Cint(0)
+end
+
 function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
-    if model.callback_data !== nothing
-        _ = XPRSremovecboptnode(model, C_NULL, C_NULL)
-        model.callback_data = nothing
-    end
+    MOI.set(model, CallbackFunction(), nothing)  # Clear any existing callback
     model.has_generic_callback = true
-    function callback(cb_data)
+    function callback(cb_data::CallbackData)
         model.callback_state = CB_GENERIC
         try
             reenable_sigint(() -> f(cb_data))
@@ -42,7 +51,10 @@ function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
         model.callback_state = CB_NONE
         return
     end
-    model.callback_data = set_callback_optnode!(model.inner, callback)
+    model.callback_data = _CallbackUserData(callback)
+    cb = @cfunction(_cboptnode, Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cint}))
+    ret = XPRSaddcboptnode(model, cb, model.callback_data, 0)
+    _check(model, ret)
     return
 end
 

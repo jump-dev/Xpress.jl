@@ -144,6 +144,16 @@ mutable struct IISData
     colbndtype::Vector{UInt8} # sense of the column bounds that participate
 end
 
+mutable struct _CallbackUserData
+    callback::Function
+end
+
+Base.cconvert(::Type{Ptr{Cvoid}}, x::_CallbackUserData) = x
+
+function Base.unsafe_convert(::Type{Ptr{Cvoid}}, x::_CallbackUserData)
+    return pointer_from_objref(x)::Ptr{Cvoid}
+end
+
 """
     Optimizer()
 
@@ -243,7 +253,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     heuristic_callback::Union{Nothing,Function}
 
     has_generic_callback::Bool
-    callback_data::Union{Nothing,Tuple{Ptr{Nothing},_CallbackUserData}}
+    callback_data::Union{Nothing,_CallbackUserData}
     message_callback::Union{Nothing,Base.RefValue{Bool}}
 
     params::Dict{Any,Any}
