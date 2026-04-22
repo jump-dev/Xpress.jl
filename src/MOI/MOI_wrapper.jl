@@ -345,7 +345,6 @@ function MOI.empty!(model::Optimizer)
     for (name, value) in model.params
         MOI.set(model, name, value)
     end
-    MOI.set(model, MOI.RawOptimizerAttribute("MPSNAMELENGTH"), 64)
     MOI.set(
         model,
         MOI.RawOptimizerAttribute("XPRESS_WARNING_WINDOWS"),
@@ -4798,7 +4797,7 @@ function _pass_variable_names_to_solver(model::Optimizer; warn::Bool = true)
             push!(duplicate_check, info.name)
         end
     end
-    ret = XPRSaddnames(model, 2, join(names, "\0"), 0, n - 1)
+    ret = XPRSaddnames(model, XPRS_NAMES_COLUMN, join(names, "\0"), 0, n - 1)
     _check(model, ret)
     return
 end
@@ -4830,21 +4829,28 @@ function _pass_constraint_names_to_solver(model::Optimizer; warn::Bool = true)
             push!(duplicate_check, info.name)
         end
     end
-    ret = XPRSaddnames(model, 1, join(names, "\0"), 0, n - 1)
+    ret = XPRSaddnames(model, XPRS_NAMES_ROW, join(names, "\0"), 0, n - 1)
     _check(model, ret)
     return
 end
 
 function _get_variable_names(model::Optimizer)
-    return _get_names(model, Cint(2), length(model.variable_info))
+    return _get_names(model, XPRS_NAMES_COLUMN, length(model.variable_info))
 end
 
 function _get_constraint_names(model::Optimizer)
-    return _get_names(model, Cint(1), length(model.affine_constraint_info))
+    return _get_names(
+        model,
+        XPRS_NAMES_ROW,
+        length(model.affine_constraint_info),
+    )
 end
 
-function _get_names(model::Optimizer, type::Cint, n::Int; name_length::Int = 64)
-    buffer = fill(UInt8('\0'), n * (8 * name_length + 1))
+function _get_names(model::Optimizer, type, n::Int)
+    pInt = Ref{Cint}(0)
+    ret = XPRSgetintattrib(model, XPRS_NAMELENGTH, pInt)
+    _check(model, ret)
+    buffer = fill(UInt8('\0'), n * (8 * pInt[] + 1))
     GC.@preserve buffer begin
         ret = XPRSgetnames(model, type, pointer(buffer), 0, n - 1)
         _check(model, ret)
