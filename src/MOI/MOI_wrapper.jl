@@ -3087,14 +3087,10 @@ end
 function MOI.optimize!(model::Optimizer)
     # Initialize callbacks if necessary.
     if check_moi_callback_validity(model)
-        pInt = Ref{Cint}()
-        ret = XPRSgetintcontrol(model, XPRS_HEURSTRATEGY, pInt)
+        # Disable heuristics. There numerous cases where the heuristics ignore
+        # our callbacks.
+        ret = XPRSsetintcontrol(model, XPRS_HEUREMPHASIS, 0)
         _check(model, ret)
-        if model.moi_warnings && pInt[] != 0
-            @warn(
-                "Callbacks in XPRESS might not work correctly with HEURSTRATEGY != 0",
-            )
-        end
         MOI.set(model, CallbackFunction(), default_moi_callback(model))
         model.has_generic_callback = false # because it is set as true in the above
     elseif !model.has_generic_callback && is_mip(model)

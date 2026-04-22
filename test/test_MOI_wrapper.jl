@@ -843,8 +843,6 @@ end
 function callback_simple_model()
     model = Xpress.Optimizer()
     MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
-    MOI.set(model, MOI.RawOptimizerAttribute("HEURSTRATEGY"), 0)
-    MOI.set(model, MOI.RawOptimizerAttribute("HEUREMPHASIS"), 0)
     MOI.set(model, MOI.RawOptimizerAttribute("CUTSTRATEGY"), 0)
     MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     MOI.Utilities.loadfromstring!(
@@ -866,7 +864,6 @@ end
 function callback_knapsack_model()
     model = Xpress.Optimizer()
     MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
-    MOI.set(model, MOI.RawOptimizerAttribute("HEUREMPHASIS"), 0)
     MOI.set(model, MOI.RawOptimizerAttribute("CUTSTRATEGY"), 0)
     MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
     MOI.set(model, MOI.NumberOfThreads(), 2)
