@@ -454,9 +454,14 @@ end
 function MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.ScalarQuadraticFunction{Float64}},
-    ::Type{F},
-) where {F<:Union{MOI.LessThan{Float64},MOI.GreaterThan{Float64}}}
-    # Note: Xpress does not support quadratic equality constraints.
+    ::Type{S},
+) where {
+    S<:Union{
+        MOI.LessThan{Float64},
+        MOI.GreaterThan{Float64},
+        MOI.EqualTo{Float64},
+    },
+}
     return true
 end
 
