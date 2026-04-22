@@ -3,7 +3,7 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-const CleverDicts = MOI.Utilities.CleverDicts
+using MathOptInterface.Utilities: CleverDicts
 
 @enum(VariableType, CONTINUOUS, BINARY, INTEGER, SEMIINTEGER, SEMICONTINUOUS)
 
@@ -31,25 +31,6 @@ const CleverDicts = MOI.Utilities.CleverDicts
 @enum(ObjectiveType, SINGLE_VARIABLE, SCALAR_AFFINE, SCALAR_QUADRATIC)
 
 @enum(CallbackState, CB_NONE, CB_GENERIC, CB_LAZY, CB_USER_CUT, CB_HEURISTIC)
-
-const SCALAR_SETS = Union{
-    MOI.GreaterThan{Float64},
-    MOI.LessThan{Float64},
-    MOI.EqualTo{Float64},
-    MOI.Interval{Float64},
-}
-
-const SIMPLE_SCALAR_SETS =
-    Union{MOI.GreaterThan{Float64},MOI.LessThan{Float64},MOI.EqualTo{Float64}}
-
-const INDICATOR_SETS = Union{
-    MOI.Indicator{MOI.ACTIVATE_ON_ONE,MOI.GreaterThan{Float64}},
-    MOI.Indicator{MOI.ACTIVATE_ON_ZERO,MOI.GreaterThan{Float64}},
-    MOI.Indicator{MOI.ACTIVATE_ON_ONE,MOI.LessThan{Float64}},
-    MOI.Indicator{MOI.ACTIVATE_ON_ZERO,MOI.LessThan{Float64}},
-    MOI.Indicator{MOI.ACTIVATE_ON_ONE,MOI.EqualTo{Float64}},
-    MOI.Indicator{MOI.ACTIVATE_ON_ZERO,MOI.EqualTo{Float64}},
-}
 
 mutable struct VariableInfo
     index::MOI.VariableIndex
@@ -107,15 +88,37 @@ end
 mutable struct CachedSolution
     variable_primal::Vector{Float64}
     variable_dual::Vector{Float64}
-
     linear_primal::Vector{Float64}
     linear_dual::Vector{Float64}
-
     has_primal_certificate::Bool
     has_dual_certificate::Bool
     has_feasible_point::Bool
-
     solve_time::Float64
+end
+
+function _reset_cached_solution(::Nothing, num_vars, num_rows)
+    return CachedSolution(
+        fill(NaN, num_vars),
+        fill(NaN, num_vars),
+        fill(NaN, num_rows),
+        fill(NaN, num_rows),
+        false,
+        false,
+        false,
+        NaN,
+    )
+end
+
+function _reset_cached_solution(cache::CachedSolution, num_vars, num_rows)
+    resize!(cache.variable_primal, num_vars)
+    resize!(cache.variable_dual, num_vars)
+    resize!(cache.linear_primal, num_rows)
+    resize!(cache.linear_dual, num_rows)
+    cache.has_primal_certificate = false
+    cache.has_dual_certificate = false
+    cache.has_feasible_point = false
+    cache.solve_time = NaN
+    return cache
 end
 
 mutable struct CallbackCutData
@@ -169,17 +172,19 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # A flag to keep track of MOI.Silent, which over-rides the OUTPUTLOG
     # parameter.
     log_level::Int32
-    # option to show warnings in Windows
+
+    # Option to show warnings in Windows
     show_warning::Bool
+
     logfile::String
 
-    # turn off warning by the MOI interface implementation [advanced usage]
+    # Turn off warning by the MOI interface implementation [advanced usage]
     moi_warnings::Bool
 
-    # false by default - ignores starting points which might be expensive to load.
+    # False by default - ignores starting points which might be expensive to load.
     ignore_start::Bool
 
-    # false by default - perform the postsolve routine
+    # Talse by default - perform the postsolve routine
     post_solve::Bool
 
     # An enum to remember what objective is currently stored in the model.
@@ -256,26 +261,23 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     callback_data::Union{Nothing,_CallbackUserData}
     message_callback::Union{Nothing,Base.RefValue{Bool}}
 
-    params::Dict{Any,Any}
+    params::Dict{String,Any}
 
     function Optimizer()
         model = new()
-        model.params = Dict{Any,Any}()
-        model.log_level = 1 # is xpress default
+        model.log_level = 1
         model.show_warning = true
         model.logfile = ""
         model.moi_warnings = true
         model.ignore_start = false
         model.post_solve = true
-        model.solve_method = ""
-        model.message_callback = nothing
-        model.termination_status = MOI.OPTIMIZE_NOT_CALLED
-        model.primal_status = MOI.NO_SOLUTION
-        model.dual_status = MOI.NO_SOLUTION
         model.variable_info =
             CleverDicts.CleverDict{MOI.VariableIndex,VariableInfo}()
         model.affine_constraint_info = Dict{Int,ConstraintInfo}()
         model.sos_constraint_info = Dict{Int,ConstraintInfo}()
+        model.solve_method = ""
+        model.message_callback = nothing
+        model.params = Dict{String,Any}()
         MOI.empty!(model)
         return model
     end
@@ -342,16 +344,17 @@ Base.show(io::IO, model::Optimizer) = show(io, model.inner)
 
 function MOI.empty!(model::Optimizer)
     model.inner = XpressProblem()
-    for (name, value) in model.params
-        MOI.set(model, name, value)
-    end
+    model.name = ""
+    MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), model.log_level)
     MOI.set(
         model,
         MOI.RawOptimizerAttribute("XPRESS_WARNING_WINDOWS"),
         model.show_warning,
     )
-    MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), model.log_level)
-    model.name = ""
+    # logfile
+    # moi_warnings
+    # ignore_start
+    # post_solve
     model.objective_type = SCALAR_AFFINE
     model.is_objective_set = false
     model.objective_sense = nothing
@@ -367,19 +370,21 @@ function MOI.empty!(model::Optimizer)
     model.termination_status = MOI.OPTIMIZE_NOT_CALLED
     model.primal_status = MOI.NO_SOLUTION
     model.dual_status = MOI.NO_SOLUTION
-    model.callback_cached_solution = nothing
-    model.cb_cut_data = CallbackCutData(false, Array{XPRScut}(undef, 0))
-    model.callback_state = CB_NONE
-    model.cb_exception = nothing
+    # solve_method
     model.forward_sensitivity_cache = nothing
     model.backward_sensitivity_cache = nothing
+    model.callback_cached_solution = nothing
+    model.cb_cut_data = CallbackCutData(false, XPRScut[])
+    model.callback_state = CB_NONE
+    model.cb_exception = nothing
     model.lazy_callback = nothing
     model.user_cut_callback = nothing
     model.heuristic_callback = nothing
     model.has_generic_callback = false
     model.callback_data = nothing
+    # message_callback
     for (name, value) in model.params
-        MOI.set(model, name, value)
+        MOI.set(model, MOI.RawOptimizerAttribute(name), value)
     end
     return
 end
@@ -410,68 +415,13 @@ function MOI.is_empty(model::Optimizer)
            model.callback_data === nothing
 end
 
-function reset_cached_solution(model::Optimizer)
-    num_variables = length(model.variable_info)
-    num_affine = length(model.affine_constraint_info)
-    if model.cached_solution === nothing
-        model.cached_solution = CachedSolution(
-            fill(NaN, num_variables),
-            fill(NaN, num_variables),
-            fill(NaN, num_affine),
-            fill(NaN, num_affine),
-            false,
-            false,
-            false,
-            NaN,
-        )
-    else
-        resize!(model.cached_solution.variable_primal, num_variables)
-        resize!(model.cached_solution.variable_dual, num_variables)
-        resize!(model.cached_solution.linear_primal, num_affine)
-        resize!(model.cached_solution.linear_dual, num_affine)
-        model.cached_solution.has_primal_certificate = false
-        model.cached_solution.has_dual_certificate = false
-        model.cached_solution.has_feasible_point = false
-        model.cached_solution.solve_time = NaN
-    end
-    return model.cached_solution
-end
-
-function reset_callback_cached_solution(model::Optimizer)
-    num_variables = length(model.variable_info)
-    num_affine = length(model.affine_constraint_info)
-    if model.callback_cached_solution === nothing
-        model.callback_cached_solution = CachedSolution(
-            fill(NaN, num_variables),
-            fill(NaN, num_variables),
-            fill(NaN, num_affine),
-            fill(NaN, num_affine),
-            false,
-            false,
-            false,
-            NaN,
-        )
-    else
-        resize!(model.callback_cached_solution.variable_primal, num_variables)
-        resize!(model.callback_cached_solution.variable_dual, num_variables)
-        resize!(model.callback_cached_solution.linear_primal, num_affine)
-        resize!(model.callback_cached_solution.linear_dual, num_affine)
-        model.callback_cached_solution.has_primal_certificate = false
-        model.callback_cached_solution.has_dual_certificate = false
-        model.callback_cached_solution.has_feasible_point = false
-        model.callback_cached_solution.solve_time = NaN
-    end
-    return model.callback_cached_solution
-end
-
 MOI.get(::Optimizer, ::MOI.SolverName) = "Xpress"
 
-# Currently this returns the version of the Xpress package as a whole
-# which is different from the Xpress Optimizer version
-# the first is a good match because is the version number that appears
-# in the dowload package
-function MOI.get(optimizer::Optimizer, ::MOI.SolverVersion)
-    return MOI.get(optimizer, MOI.RawOptimizerAttribute("XPRESSVERSION"))
+# Currently this returns the version of the Xpress package as a whole, which is
+# different from the Xpress Optimizer version. The first is a good match because
+# it is the version number that appears in the dowload package.
+function MOI.get(model::Optimizer, ::MOI.SolverVersion)
+    return MOI.get(model, MOI.RawOptimizerAttribute("XPRESSVERSION"))
 end
 
 function MOI.supports_add_constrained_variables(
@@ -491,7 +441,13 @@ function MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.ScalarAffineFunction{Float64}},
     ::Type{F},
-) where {F<:SIMPLE_SCALAR_SETS}
+) where {
+    F<:Union{
+        MOI.GreaterThan{Float64},
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+    },
+}
     return true
 end
 
@@ -506,9 +462,16 @@ end
 
 function MOI.supports_constraint(
     ::Optimizer,
-    ::Type{<:MOI.VectorAffineFunction},
-    ::Type{T},
-) where {T<:INDICATOR_SETS}
+    ::Type{MOI.VectorAffineFunction{Float64}},
+    ::Type{MOI.Indicator{A,S}},
+) where {
+    A,
+    S<:Union{
+        MOI.GreaterThan{Float64},
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+    },
+}
     return true
 end
 
@@ -541,7 +504,7 @@ function _XPRSsetlogfile(model::Optimizer, value::AbstractString)
     model.logfile = value
     ret = XPRSsetlogfile(model, isempty(value) ? C_NULL : value)
     _check(model, ret)
-    reset_message_callback(model)
+    _reset_message_callback(model)
     return
 end
 
@@ -561,12 +524,12 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
         model.solve_method = value
     elseif param == MOI.RawOptimizerAttribute("XPRESS_WARNING_WINDOWS")
         model.show_warning = value
-        reset_message_callback(model)
+        _reset_message_callback(model)
     elseif param == MOI.RawOptimizerAttribute("OUTPUTLOG")
         model.log_level = value
         ret = XPRSsetintcontrol(model, XPRS_OUTPUTLOG, convert(Cint, value))
         _check(model, ret)
-        reset_message_callback(model)
+        _reset_message_callback(model)
     elseif param == MOI.RawOptimizerAttribute("NLPSOLVER")
         # NLPSOLVER control added in v46, not recognized by name lookup
         ret = XPRSsetintcontrol(model, XPRS_NLPSOLVER, Cint(value))
@@ -595,7 +558,7 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
     # Always store value in params dictionary when setting. This is because when
     # calling `MOI.empty!` we create a new XpressProblem and want to set all the
     # raw parameters and attributes again.
-    model.params[param] = value
+    model.params[param.name] = value
     return
 end
 
@@ -614,7 +577,7 @@ function _XPRSaddcbmessage_inner(
     return Cint(0)
 end
 
-function reset_message_callback(model)
+function _reset_message_callback(model)
     if model.message_callback !== nothing
         # remove all message callbacks
         ret = XPRSremovecbmessage(model, C_NULL, C_NULL)
@@ -730,11 +693,19 @@ function MOI.get(model::Optimizer, ::MOI.TimeLimitSec)
     return convert(Float64, -ret)
 end
 
+#=
+    MOI.copy_to
+=#
+
 MOI.supports_incremental_interface(::Optimizer) = true
 
 function MOI.copy_to(dest::Optimizer, src::MOI.ModelLike)
     return MOI.Utilities.default_copy_to(dest, src)
 end
+
+#=
+    MOI.ListOf...AttributesSet
+=#
 
 function MOI.get(model::Optimizer, ::MOI.ListOfVariableAttributesSet)
     ret = MOI.AbstractVariableAttribute[]
@@ -785,6 +756,10 @@ function MOI.get(
     end
     return ret
 end
+
+#=
+    _indices_and_coefficients
+=#
 
 function _indices_and_coefficients(
     indices::AbstractVector{Cint},
@@ -1233,12 +1208,10 @@ function _zero_objective(model::Optimizer)
     num_vars = Cint(length(model.variable_info))
     ret = XPRSchgobj(
         model,
-        num_vars,
-        collect(Cint(0):Cint(num_vars-1)),
-        zeros(Float64, num_vars),
+        num_vars + 1,
+        collect(Cint(-1):Cint(num_vars-1)),
+        zeros(Float64, num_vars + 1),
     )
-    _check(model, ret)
-    ret = XPRSchgobj(model, Cint(1), Ref{Cint}(-1), Ref(0.0))
     _check(model, ret)
     return
 end
@@ -1363,7 +1336,9 @@ function MOI.get(
     terms = MOI.ScalarAffineTerm{Float64}[]
     for (index, info) in model.variable_info
         coefficient = dest[info.column]
-        iszero(coefficient) && continue
+        if iszero(coefficient)
+            continue
+        end
         push!(terms, MOI.ScalarAffineTerm(coefficient, index))
     end
     pDouble = Ref{Cdouble}(0.0)
@@ -1439,7 +1414,9 @@ function MOI.get(
     q_terms = MOI.ScalarQuadraticTerm{Float64}[]
     row = 0
     for (i, j, coeff) in zip(I, J, V)
-        iszero(coeff) && continue
+        if iszero(coeff)
+            continue
+        end
         push!(
             q_terms,
             MOI.ScalarQuadraticTerm(
@@ -1650,7 +1627,14 @@ function MOI.add_constraint(
     model::Optimizer,
     f::MOI.VariableIndex,
     s::S,
-) where {S<:SCALAR_SETS}
+) where {
+    S<:Union{
+        MOI.GreaterThan{Float64},
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+        MOI.Interval{Float64},
+    },
+}
     info = _info(model, f)
     if info.type == BINARY
         lower, upper = something.(_bounds(s), (0.0, 1.0))
@@ -2027,7 +2011,14 @@ function MOI.set(
     ::MOI.ConstraintSet,
     c::MOI.ConstraintIndex{MOI.VariableIndex,S},
     s::S,
-) where {S<:SCALAR_SETS}
+) where {
+    S<:Union{
+        MOI.GreaterThan{Float64},
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+        MOI.Interval{Float64},
+    },
+}
     MOI.throw_if_not_valid(model, c)
     lower, upper = _bounds(s)
     info = _info(model, c)
@@ -2319,7 +2310,11 @@ end
 function MOI.add_constraint(
     model::Optimizer,
     f::MOI.ScalarAffineFunction{Float64},
-    s::SIMPLE_SCALAR_SETS,
+    s::Union{
+        MOI.GreaterThan{Float64},
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+    },
 )
     F, S = typeof(f), typeof(s)
     if !iszero(f.constant)
@@ -2348,15 +2343,21 @@ end
 function MOI.add_constraints(
     model::Optimizer,
     f::Vector{MOI.ScalarAffineFunction{Float64}},
-    s::Vector{<:SIMPLE_SCALAR_SETS},
-)
+    s::Vector{S},
+) where {
+    S<:Union{
+        MOI.GreaterThan{Float64},
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+    },
+}
     if length(f) != length(s)
         error("Number of functions does not equal number of sets.")
     end
     canonicalized_functions = MOI.Utilities.canonical.(f)
     # First pass: compute number of non-zeros to allocate space.
     nnz = 0
-    F, S = eltype(f), eltype(s)
+    F = eltype(f)
     for fi in canonicalized_functions
         if !iszero(fi.constant)
             throw(MOI.ScalarFunctionConstantNotZero{Float64,F,S}(fi.constant))
@@ -2501,7 +2502,9 @@ function _get_affine_terms(model::Optimizer, c::MOI.ConstraintIndex)
 
     terms = MOI.ScalarAffineTerm{Float64}[]
     for i in 1:nzcnt
-        iszero(rmatval[i]) && continue
+        if iszero(rmatval[i])
+            continue
+        end
         push!(
             terms,
             MOI.ScalarAffineTerm(
@@ -2672,7 +2675,15 @@ function MOI.get(
         MOI.VectorAffineFunction{Float64},
         MOI.Indicator{A,S},
     },
-) where {A,S<:SCALAR_SETS}
+) where {
+    A,
+    S<:Union{
+        MOI.GreaterThan{Float64},
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+        MOI.Interval{Float64},
+    },
+}
     return _info(model, c).set
 end
 
@@ -2780,7 +2791,12 @@ end
 function MOI.add_constraint(
     model::Optimizer,
     f::MOI.ScalarQuadraticFunction{Float64},
-    s::SCALAR_SETS,
+    s::Union{
+        MOI.GreaterThan{Float64},
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+        MOI.Interval{Float64},
+    },
 )
     F, S = typeof(f), typeof(s)
     if !iszero(f.constant)
@@ -3020,7 +3036,11 @@ end
 function pre_solve_reset(model::Optimizer)
     model.basis_status = nothing
     model.cb_exception = nothing
-    reset_cached_solution(model)
+    model.cached_solution = _reset_cached_solution(
+        model.cached_solution,
+        length(model.variable_info),
+        length(model.affine_constraint_info),
+    )
     return
 end
 
@@ -4154,9 +4174,16 @@ end
 function MOI.set(
     model::Optimizer,
     ::MOI.ConstraintFunction,
-    c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64},<:SCALAR_SETS},
+    c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64},S},
     f::MOI.ScalarAffineFunction{Float64},
-)
+) where {
+    S<:Union{
+        MOI.GreaterThan{Float64},
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+        MOI.Interval{Float64},
+    },
+}
     # TODO: this query is very slow, potentially simply replace everything
     previous = MOI.get(model, MOI.ConstraintFunction(), c)
     MOI.Utilities.canonicalize!(previous)
@@ -4197,7 +4224,14 @@ function MOI.get(
     model::Optimizer,
     ::MOI.ConstraintBasisStatus,
     c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64},S},
-) where {S<:SCALAR_SETS}
+) where {
+    S<:Union{
+        MOI.GreaterThan{Float64},
+        MOI.LessThan{Float64},
+        MOI.EqualTo{Float64},
+        MOI.Interval{Float64},
+    },
+}
     if model.basis_status == nothing
         _generate_basis_status(model)
     end
@@ -4695,11 +4729,8 @@ end
 function MOI.get(
     model::Optimizer,
     ::MOI.ConstraintConflictStatus,
-    index::MOI.ConstraintIndex{
-        <:MOI.ScalarAffineFunction,
-        <:Union{MOI.LessThan,MOI.GreaterThan,MOI.EqualTo},
-    },
-)
+    index::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64},S},
+) where {S<:Union{MOI.LessThan,MOI.GreaterThan,MOI.EqualTo}}
     _ensure_conflict_computed(model)
     if _info(model, index).row - 1 in model.conflict.miisrow
         return MOI.IN_CONFLICT
