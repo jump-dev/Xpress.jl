@@ -237,7 +237,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     dual_status::MOI.ResultStatusCode
 
     solve_method::String
-    solve_relaxation::Bool
 
     #Stores the input and output of derivatives
     forward_sensitivity_cache::Union{Nothing,SensitivityCache}
@@ -269,7 +268,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         model.ignore_start = false
         model.post_solve = true
         model.solve_method = ""
-        model.solve_relaxation = false
         model.message_callback = nothing
         model.termination_status = MOI.OPTIMIZE_NOT_CALLED
         model.primal_status = MOI.NO_SOLUTION
@@ -3044,7 +3042,7 @@ function is_mip(model::Optimizer)
     ret = XPRSgetintattrib(model, XPRS_ORIGINALSETS, pInt)
     _check(model, ret)
     nsos = pInt[]
-    return !model.solve_relaxation && n + nsos > 0
+    return n + nsos > 0
 end
 
 function _set_MIP_start(model)
