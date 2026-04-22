@@ -55,6 +55,9 @@ function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
     cb = @cfunction(_cboptnode, Cint, (XPRSprob, Ptr{Cvoid}, Ptr{Cint}))
     ret = XPRSaddcboptnode(model, cb, model.callback_data, 0)
     _check(model, ret)
+    # Disable calling the callback from anything other than the main thread
+    ret = XPRSsetintcontrol(model, XPRS_CALLBACKFROMMAINTHREAD, 1)
+    _check(model, ret)
     return
 end
 

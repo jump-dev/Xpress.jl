@@ -348,13 +348,6 @@ function MOI.empty!(model::Optimizer)
         MOI.set(model, name, value)
     end
     MOI.set(model, MOI.RawOptimizerAttribute("MPSNAMELENGTH"), 64)
-    callback_main_thread = if get_version() >= v"46"
-        "CALLBACKFROMMAINTHREAD"
-    else
-        # Kept for compatibility with older versions
-        "CALLBACKFROMMASTERTHREAD"
-    end
-    MOI.set(model, MOI.RawOptimizerAttribute(callback_main_thread), 1)
     MOI.set(
         model,
         MOI.RawOptimizerAttribute("XPRESS_WARNING_WINDOWS"),
