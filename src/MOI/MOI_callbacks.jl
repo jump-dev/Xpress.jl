@@ -62,14 +62,19 @@ function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
 end
 
 function get_cb_solution(model::Optimizer, model_inner::XpressProblem)
-    reset_callback_cached_solution(model)
-    _ = XPRSgetlpsol(
+    model.callback_cached_solution = _reset_cached_solution(
+        model.callback_cached_solution,
+        length(model.variable_info),
+        length(model.affine_constraint_info),
+    )
+    ret = XPRSgetlpsol(
         model_inner,
         model.callback_cached_solution.variable_primal,
         model.callback_cached_solution.linear_primal,
         model.callback_cached_solution.linear_dual,
         model.callback_cached_solution.variable_dual,
     )
+    _check(model_inner, ret)
     return
 end
 
