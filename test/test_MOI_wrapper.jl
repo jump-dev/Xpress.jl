@@ -39,7 +39,7 @@ function test_Basic_Parameters()
     @test MOI.get(model, MOI.RawOptimizerAttribute("PRESOLVE")) == 3
     @test MOI.get(model, MOI.RawOptimizerAttribute("MATRIXNAME")) == ""
     @test MOI.get(model, MOI.RawOptimizerAttribute("SUMPRIMALINF")) == 0.0
-    @test MOI.get(model, MOI.RawOptimizerAttribute("NAMELENGTH")) == 8
+    @test MOI.get(model, MOI.RawOptimizerAttribute("NAMELENGTH")) == 1
     @test MOI.get(model, MOI.SolverName()) == "Xpress"
     return
 end
