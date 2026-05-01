@@ -3744,11 +3744,10 @@ end
     MOI.DualObjectiveValue
 =#
 
-# TODO(odow): this is wrong
 function MOI.get(model::Optimizer, attr::MOI.DualObjectiveValue)
     _throw_if_optimize_in_progress(model, attr)
     MOI.check_result_index_bounds(model, attr)
-    return MOI.get(model, MOI.ObjectiveValue(attr.result_index))
+    return MOI.Utilities.get_fallback(model, attr, Float64)
 end
 
 #=
