@@ -145,7 +145,7 @@ function default_moi_callback(model::Optimizer)
 end
 
 function MOI.get(model::Optimizer, attr::MOI.CallbackNodeStatus{CallbackData})
-    if !check_moi_callback_validity(model)
+    if !_check_moi_callback_validity(model)
         return MOI.CALLBACK_NODE_STATUS_UNKNOWN
     end
     pInt = Ref{Cint}(0)
@@ -186,6 +186,7 @@ function _throw_if_invalid_state(model, cb, calling_state)
     end
     return callback_exception(model, cb, MOI.InvalidCallbackUsage(attr, cb))
 end
+
 # ==============================================================================
 #    MOI.UserCutCallback  & MOI.LazyConstraint
 # ==============================================================================
