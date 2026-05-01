@@ -45,7 +45,8 @@ function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
             if ex isa InterruptException
                 _ = XPRSinterrupt(model, XPRS_STOP_CTRLC)
             else
-                callback_exception(model, cb_data, ex)
+                model.cb_exception = ex
+                _ = XPRSinterrupt(cb_data.model, XPRS_STOP_USER)
             end
         end
         model.callback_state = CB_NONE
@@ -166,12 +167,6 @@ function MOI.get(
     return model.callback_cached_solution.variable_primal[column]
 end
 
-function callback_exception(model::Optimizer, cb, err::Exception)
-    model.cb_exception = err
-    _ = XPRSinterrupt(cb.callback_data.model, XPRS_STOP_USER)
-    return
-end
-
 function _throw_if_invalid_state(model, cb, calling_state)
     if model.callback_state in (calling_state, CB_NONE, CB_GENERIC)
         return
@@ -184,7 +179,9 @@ function _throw_if_invalid_state(model, cb, calling_state)
         @assert model.callback_state == CB_USER_CUT
         MOI.UserCutCallback()
     end
-    return callback_exception(model, cb, MOI.InvalidCallbackUsage(attr, cb))
+    model.cb_exception = MOI.InvalidCallbackUsage(attr, cb)
+    _ = XPRSinterrupt(cb.callback_data.model, XPRS_STOP_USER)
+    return
 end
 
 # ==============================================================================
