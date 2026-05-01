@@ -2332,6 +2332,13 @@ function test_InterruptException()
     return
 end
 
+function test_error_in_callback()
+    model, _, _ = callback_knapsack_model()
+    MOI.set(model, Xpress.CallbackFunction(), cb -> error("Error in callback"))
+    @test_throws ErrorException("Error in callback") MOI.optimize!(model)
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()
