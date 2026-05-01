@@ -160,8 +160,6 @@ function my_callback_function(cb_data)
     @assert XPRSgetdblattrib(prob, XPRS_BESTBOUND, p_bound) == 0
     rel_gap = abs((p_obj[] - p_bound[]) / p_obj[])
     @info "Relative gap = $rel_gap"
-    # Before querying `callback_value`, you must call:
-    Xpress.get_cb_solution(unsafe_backend(model), cb_data.model)
     x_val = callback_value(cb_data, x)
     y_val = callback_value(cb_data, y)
     # You can submit solver-independent MathOptInterface attributes such as

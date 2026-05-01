@@ -61,23 +61,6 @@ function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
     return
 end
 
-function get_cb_solution(model::Optimizer, model_inner::XpressProblem)
-    model.callback_cached_solution = _reset_cached_solution(
-        model.callback_cached_solution,
-        length(model.variable_info),
-        length(model.affine_constraint_info),
-    )
-    ret = XPRSgetlpsol(
-        model_inner,
-        model.callback_cached_solution.variable_primal,
-        model.callback_cached_solution.linear_primal,
-        model.callback_cached_solution.linear_dual,
-        model.callback_cached_solution.variable_dual,
-    )
-    _check(model_inner, ret)
-    return
-end
-
 function _load_existing_cuts(model::Optimizer, cb_data::CallbackData)
     if isempty(model.cb_cut_data.cutptrs)
         return false
@@ -126,7 +109,6 @@ function default_moi_callback(model::Optimizer)
         if pInt[] > 1
             return
         end
-        get_cb_solution(model, cb_data.model)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             model.heuristic_callback(cb_data)
@@ -159,11 +141,14 @@ end
 
 function MOI.get(
     model::Optimizer,
-    ::MOI.CallbackVariablePrimal{CallbackData},
+    attr::MOI.CallbackVariablePrimal{CallbackData},
     x::MOI.VariableIndex,
 )
-    column = _info(model, x).column
-    return model.callback_cached_solution.variable_primal[column]
+    c = _info(model, x).column - 1
+    xP = Ref{Cdouble}()
+    ret = XPRSgetcallbacksolution(attr.callback_data.model, C_NULL, xP, c, c)
+    _check(model, ret)
+    return xP[]
 end
 
 function callback_exception(model::Optimizer, cb, err::Exception)
@@ -314,3 +299,6 @@ function MOI.submit(
 end
 
 MOI.supports(::Optimizer, ::MOI.HeuristicSolution{CallbackData}) = true
+
+# Kept for backward compatibility with v0.18
+get_cb_solution(::Optimizer, ::XpressProblem) = nothing

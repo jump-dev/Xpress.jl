@@ -1155,7 +1155,6 @@ function test_callback_function_LazyConstraint()
     global generic_lazy_called = false
     function callback_function(cb_data)
         push!(cb_calls, 1)
-        Xpress.get_cb_solution(model, cb_data.model)
         x_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), x)
         y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
         if y_val - x_val > 1 + 1e-6
@@ -1196,7 +1195,6 @@ function test_callback_function_UserCut()
             if pInt[] > 1
                 return
             end
-            Xpress.get_cb_solution(model, cb_data.model)
             terms = MOI.ScalarAffineTerm{Float64}[]
             accumulated = 0.0
             for (i, xi) in enumerate(x)
@@ -1235,7 +1233,6 @@ function test_callback_function_HeuristicSolution()
             if pInt[] > 1
                 return
             end
-            Xpress.get_cb_solution(model, cb_data.model)
             x_vals =
                 MOI.get.(model, MOI.CallbackVariablePrimal(cb_data), x)
             @test MOI.submit(
@@ -1547,7 +1544,6 @@ end
 function test_callback_function_nothing()
     model, x, y = callback_simple_model()
     function callback_function(cb_data)
-        Xpress.get_cb_solution(model, cb_data.model)
         x_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), x)
         y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
         if y_val - x_val > 1 + 1e-6
@@ -1583,7 +1579,6 @@ end
 function test_callback_function_replace()
     model, x, y = callback_simple_model()
     function callback_function(cb_data)
-        Xpress.get_cb_solution(model, cb_data.model)
         x_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), x)
         y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
         if y_val - x_val > 1 + 1e-6
@@ -2329,6 +2324,12 @@ function test_InterruptException()
     MOI.set(model, Xpress.CallbackFunction(), my_callback)
     MOI.optimize!(model)
     @test MOI.get(model, MOI.TerminationStatus()) == MOI.INTERRUPTED
+    return
+end
+
+function test_get_cb_solution()
+    model = Xpress.Optimizer()
+    @test Xpress.get_cb_solution(model, model.inner) === nothing
     return
 end
 

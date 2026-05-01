@@ -248,7 +248,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     backward_sensitivity_cache::Union{Nothing,SensitivityCache}
 
     # Callback fields.
-    callback_cached_solution::Union{Nothing,CachedSolution}
     cb_cut_data::CallbackCutData
     callback_state::CallbackState
     cb_exception::Union{Nothing,Exception}
@@ -373,7 +372,6 @@ function MOI.empty!(model::Optimizer)
     # solve_method
     model.forward_sensitivity_cache = nothing
     model.backward_sensitivity_cache = nothing
-    model.callback_cached_solution = nothing
     model.cb_cut_data = CallbackCutData(false, XPRScut[])
     model.callback_state = CB_NONE
     model.cb_exception = nothing
@@ -405,7 +403,6 @@ function MOI.is_empty(model::Optimizer)
            model.termination_status == MOI.OPTIMIZE_NOT_CALLED &&
            model.primal_status == MOI.NO_SOLUTION &&
            model.dual_status == MOI.NO_SOLUTION &&
-           model.callback_cached_solution === nothing &&
            model.callback_state == CB_NONE &&
            model.cb_exception === nothing &&
            model.lazy_callback === nothing &&
