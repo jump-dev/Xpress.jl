@@ -2159,7 +2159,7 @@ function _info(
     if haskey(model.affine_constraint_info, key.value)
         return model.affine_constraint_info[key.value]
     end
-    throw(MOI.InvalidIndex(key))
+    return throw(MOI.InvalidIndex(key))
 end
 
 function MOI.is_valid(
@@ -2715,7 +2715,7 @@ function _info(
     if haskey(model.sos_constraint_info, key.value)
         return model.sos_constraint_info[key.value]
     end
-    throw(MOI.InvalidIndex(key))
+    return throw(MOI.InvalidIndex(key))
 end
 
 _sos_type(::MOI.SOS1) = convert(Cchar, '1')
