@@ -21,7 +21,7 @@ jobs:
         # If updating most recent version, change shell script below
         XPRESS_JLL_VERSION: ['9.4.1', '9.8.1']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
@@ -48,7 +48,7 @@ jobs:
     name: Test-local-install
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
         with:
           version: '1'
