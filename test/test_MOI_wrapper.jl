@@ -40,8 +40,6 @@ function test_Basic_Parameters()
     @test MOI.get(model, MOI.RawOptimizerAttribute("MATRIXNAME")) == ""
     @test MOI.get(model, MOI.RawOptimizerAttribute("SUMPRIMALINF")) == 0.0
     @test MOI.get(model, MOI.RawOptimizerAttribute("NAMELENGTH")) == 1
-    # We can't check MOI.get on NLPLOG because of a bug in Xpress.
-    MOI.set(model, MOI.RawOptimizerAttribute("NLPLOG"), 1)
     @test MOI.get(model, MOI.SolverName()) == "Xpress"
     return
 end
@@ -2338,6 +2336,14 @@ function test_error_in_callback()
     model, _, _ = callback_knapsack_model()
     MOI.set(model, Xpress.CallbackFunction(), cb -> error("Error in callback"))
     @test_throws ErrorException("Error in callback") MOI.optimize!(model)
+    return
+end
+
+function test_NLPLOG()
+    model = Xpress.Optimizer()
+    attr = MOI.RawOptimizerAttribute("NLPLOG")
+    @test MOI.supports(model, attr)
+    @test MOI.set(model, attr, 1) === nothing
     return
 end
 
