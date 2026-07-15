@@ -40,6 +40,8 @@ function test_Basic_Parameters()
     @test MOI.get(model, MOI.RawOptimizerAttribute("MATRIXNAME")) == ""
     @test MOI.get(model, MOI.RawOptimizerAttribute("SUMPRIMALINF")) == 0.0
     @test MOI.get(model, MOI.RawOptimizerAttribute("NAMELENGTH")) == 1
+    # We can't check MOI.get on NLPLOG because of a bug in Xpress.
+    MOI.set(model, MOI.RawOptimizerAttribute("NLPLOG"), 1)
     @test MOI.get(model, MOI.SolverName()) == "Xpress"
     return
 end
