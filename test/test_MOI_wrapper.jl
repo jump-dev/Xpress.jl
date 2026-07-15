@@ -2339,6 +2339,14 @@ function test_error_in_callback()
     return
 end
 
+function test_NLPLOG()
+    model = Xpress.Optimizer()
+    attr = MOI.RawOptimizerAttribute("NLPLOG")
+    @test MOI.supports(model, attr)
+    @test MOI.set(model, attr, 1) === nothing
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()
