@@ -4303,7 +4303,10 @@ end
 
 function _getfirstiis(model::Optimizer)
     status_code = Ref{Cint}(0)
-    ret = XPRSiisfirst(model, 1, status_code)
+    ret = disable_sigint() do
+        return XPRSiisfirst(model, 1, status_code)
+    end
+    _check_cb_exception(model)
     _check(model, ret)
     if status_code[] == 1  # The problem is actually feasible.
         return IISData(status_code[], 0, 0, Cint[], Cint[], UInt8[], UInt8[])

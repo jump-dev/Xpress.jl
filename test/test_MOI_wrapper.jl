@@ -2347,6 +2347,26 @@ function test_NLPLOG()
     return
 end
 
+function test_issue_332()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.Silent(), true)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("MIPPRESOLVE"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("HEURSTRATEGY"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("CUTSTRATEGY"), 0)
+    n = 10
+    x = MOI.add_variables(model, n)
+    MOI.add_constraint.(model, x, MOI.ZeroOne())
+    f = sum(2.0 * i * x[i] for i in 1:n)
+    c = MOI.add_constraint(model, f, MOI.EqualTo(2.0 * sum(1:n) - 1.0))
+    MOI.optimize!(model)
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.INFEASIBLE
+    MOI.compute_conflict!(model)
+    @test MOI.get(model, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+    @test MOI.get(model, MOI.ConstraintConflictStatus(), c) == MOI.IN_CONFLICT
+    return
+end
+
 end  # TestMOIWrapper
 
 TestMOIWrapper.runtests()
