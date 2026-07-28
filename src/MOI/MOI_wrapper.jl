@@ -4310,14 +4310,9 @@ function _getfirstiis(model::Optimizer)
     _check(model, ret)
     if status_code[] == 1  # The problem is actually feasible.
         return IISData(status_code[], 0, 0, Cint[], Cint[], UInt8[], UInt8[])
-    elseif 2 <= status_code[] <= 3 # 2 = error, 3 = timeout
-        if model.moi_warnings
-            @warn(
-                "Xpress can't find IIS with invalid bounds, the constraints " *
-                "that keep the model infeasible can't be found, only the " *
-                "infeasible bounds will be available",
-            )
-        end
+    elseif status_code[] in (2, 3) # 2 = error, 3 = timeout
+        # Something went wrong computing the IIS. As a fallback, check for
+        # infeasible variable bounds.
         nvars = length(model.variable_info)
         lbs, ubs = zeros(Cdouble, nvars), zeros(Cdouble, nvars)
         ret = XPRSgetlb(model, lbs, Cint(0), Cint(nvars - 1))
