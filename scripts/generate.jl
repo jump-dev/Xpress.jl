@@ -38,7 +38,7 @@ function replace_line_cstring(line, signature)
 end
 
 function postprocess(filename)
-    contents = read(filename, String);
+    contents = read(filename, String)
     # Remove the deprecated if-else blocks
     regex = r"if XPRSdeprecated[a-z]+\n\s+(.+?)\n\s+else\n\s+\1\s+end"s
     while (m = match(regex, contents)) !== nothing
@@ -58,7 +58,7 @@ function postprocess(filename)
     write(filename, contents)
     # Add comments to any symbols which are new in the current version
     lines = readlines(filename)
-    old_xprs_contents = read(old_xprs_filename, String);
+    old_xprs_contents = read(old_xprs_filename, String)
     # XPRSsetcheckedmode(int checkedmode)
     xprs_signatures = Dict{String,String}()
     for line in readlines(xprs_filename)
