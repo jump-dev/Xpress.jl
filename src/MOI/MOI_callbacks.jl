@@ -108,6 +108,8 @@ end
 # ==============================================================================
 
 function default_moi_callback(model::Optimizer)
+    last_node = Ref{Cint}(-1)
+    last_primal = Float64[]
     function default_callback(cb_data)
         # If we added a cut from the existing pool, it means that the current
         # solution violates a cut that we previously added but that has since
@@ -118,16 +120,17 @@ function default_moi_callback(model::Optimizer)
         if _load_existing_cuts(model, cb_data)
             return
         end
-        # Check if this callback has been called at this solution before and
-        # exit. We should be called only once at each node.
-        attr = XPRS_CALLBACKCOUNT_OPTNODE
         pInt = Ref{Cint}(0)
-        ret = XPRSgetintattrib(cb_data.model, attr, pInt)
+        ret = XPRSgetintattrib(cb_data.model, XPRS_CURRENTNODE, pInt)
         _check(model, ret)
-        if pInt[] > 1
+        get_cb_solution(model, cb_data.model)
+        primal = model.callback_cached_solution.variable_primal
+        # Invoke user callback and apply cuts until node's primal is unchanged.
+        if pInt[] == last_node[] && primal == last_primal
             return
         end
-        get_cb_solution(model, cb_data.model)
+        last_node[] = pInt[]
+        copy!(last_primal, primal)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             model.heuristic_callback(cb_data)
