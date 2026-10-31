@@ -938,40 +938,38 @@ function test_lazy_constraint_callback_resolved_node()
     MOI.Utilities.loadfromstring!(
         model,
         """
-    variables: y
-    maxobjective: y
-    c1: y in Integer()
-    c2: y >= 0.0
-    c3: 2.0 * y <= 7.0
-""",
+        variables: y
+        maxobjective: y
+        c1: y in Integer()
+        c2: y >= 0.0
+        c3: 2.0 * y <= 7.0
+        """,
     )
     y = MOI.get(model, MOI.VariableIndex, "y")
-    MOI.set(
-        model,
-        MOI.LazyConstraintCallback(),
-        cb_data -> begin
-            y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
-            status = MOI.get(model, MOI.CallbackNodeStatus(cb_data))
-            # Two rounds of cuts at fractional solutions make Xpress re-solve
-            # the root node into an integer solution on its third call, which
-            # must still reach the callback.
-            if status == MOI.CALLBACK_NODE_STATUS_FRACTIONAL && y_val > 2 + 1e-6
-                MOI.submit(
-                    model,
-                    MOI.LazyConstraint(cb_data),
-                    1.0 * y,
-                    MOI.LessThan{Float64}(y_val > 2.5 + 1e-6 ? 2.5 : 2.0),
-                )
-            elseif status == MOI.CALLBACK_NODE_STATUS_INTEGER && y_val > 1 + 1e-6
-                MOI.submit(
-                    model,
-                    MOI.LazyConstraint(cb_data),
-                    1.0 * y,
-                    MOI.LessThan{Float64}(1.0),
-                )
-            end
-        end,
-    )
+    function callback(cb_data)
+        y_val = MOI.get(model, MOI.CallbackVariablePrimal(cb_data), y)
+        status = MOI.get(model, MOI.CallbackNodeStatus(cb_data))
+        # Two rounds of cuts at fractional solutions make Xpress re-solve the
+        # root node into an integer solution on its third call, which must still
+        # reach the callback.
+        if status == MOI.CALLBACK_NODE_STATUS_FRACTIONAL && y_val > 2 + 1e-6
+            MOI.submit(
+                model,
+                MOI.LazyConstraint(cb_data),
+                1.0 * y,
+                MOI.LessThan{Float64}(y_val > 2.5 + 1e-6 ? 2.5 : 2.0),
+            )
+        elseif status == MOI.CALLBACK_NODE_STATUS_INTEGER && y_val > 1 + 1e-6
+            MOI.submit(
+                model,
+                MOI.LazyConstraint(cb_data),
+                1.0 * y,
+                MOI.LessThan{Float64}(1.0),
+            )
+        end
+        return
+    end
+    MOI.set(model, MOI.LazyConstraintCallback(), callback)
     MOI.optimize!(model)
     @test MOI.get(model, MOI.VariablePrimal(), y) == 1
     return
