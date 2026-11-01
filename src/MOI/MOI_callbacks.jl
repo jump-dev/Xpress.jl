@@ -118,6 +118,7 @@ function default_moi_callback(model::Optimizer)
         if _load_existing_cuts(model, cb_data)
             return
         end
+        get_cb_solution(model, cb_data.model)
         if model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             model.heuristic_callback(cb_data)
