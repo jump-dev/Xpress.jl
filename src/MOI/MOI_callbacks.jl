@@ -118,8 +118,10 @@ function default_moi_callback(model::Optimizer)
         if _load_existing_cuts(model, cb_data)
             return
         end
-        # Check if this callback has been called at this solution before and
-        # exit. We should be called only once at each node.
+        # Check if this callback has been called at this solution before. We
+        # might want to add multiple cuts and lazy constraints, but we should
+        # call the heuristic callback only once. See Xpress.j#338 and #339 for
+        # details.
         attr = XPRS_CALLBACKCOUNT_OPTNODE
         pInt = Ref{Cint}(0)
         ret = XPRSgetintattrib(cb_data.model, attr, pInt)
