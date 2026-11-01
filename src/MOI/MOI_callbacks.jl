@@ -118,13 +118,13 @@ function default_moi_callback(model::Optimizer)
         if _load_existing_cuts(model, cb_data)
             return
         end
-        get_cb_solution(model, cb_data.model)
         # Check if this callback has been called at this solution before and
         # exit. We should be called only once at each node.
         attr = XPRS_CALLBACKCOUNT_OPTNODE
         pInt = Ref{Cint}(0)
         ret = XPRSgetintattrib(cb_data.model, attr, pInt)
         _check(model, ret)
+        get_cb_solution(model, cb_data.model)
         if pInt[] == 0 && model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             model.heuristic_callback(cb_data)
