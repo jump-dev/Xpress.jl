@@ -127,7 +127,7 @@ function default_moi_callback(model::Optimizer)
         ret = XPRSgetintattrib(cb_data.model, attr, pInt)
         _check(model, ret)
         get_cb_solution(model, cb_data.model)
-        if pInt[] == 0 && model.heuristic_callback !== nothing
+        if pInt[] <= 1 && model.heuristic_callback !== nothing
             model.callback_state = CB_HEURISTIC
             model.heuristic_callback(cb_data)
         end
