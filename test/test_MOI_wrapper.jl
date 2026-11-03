@@ -928,6 +928,57 @@ function test_lazy_constraint_callback_lazy_constraint()
     return
 end
 
+function test_lazy_constraint_callback_load_existing_cuts()
+    model = Xpress.Optimizer()
+    MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("HEURSTRATEGY"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("HEUREMPHASIS"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("CUTSTRATEGY"), 0)
+    MOI.set(model, MOI.RawOptimizerAttribute("PRESOLVE"), 0)
+    MOI.set(model, MOI.NumberOfThreads(), 1)
+    x = MOI.add_variables(model, 4)
+    MOI.add_constraint.(model, x, MOI.ZeroOne())
+    # The LP relaxation is fractional, so Xpress must branch before it finds an
+    # integer solution.
+    MOI.add_constraint(model, sum(2.0 * xi for xi in x), MOI.LessThan(5.0))
+    f = sum(Float64(i) * x[i] for i in 1:4)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+    MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+    n_submitted, n_violated_after_submit = 0, 0
+    function callback(cb_data)
+        x_val = MOI.get.(model, MOI.CallbackVariablePrimal(cb_data), x)
+        is_violated = x_val[3] + x_val[4] > 1 + 1e-6
+        if n_submitted > 0
+            n_violated_after_submit += is_violated
+            return
+        end
+        status = MOI.get(model, MOI.CallbackNodeStatus(cb_data))
+        # Submit the lazy constraint exactly once, at an integer node below the
+        # root. Cuts loaded at a node apply only to its subtree, so the
+        # constraint is enforced elsewhere in the tree only if
+        # `_load_existing_cuts` re-loads it from the cut pool.
+        if status == MOI.CALLBACK_NODE_STATUS_INTEGER && is_violated
+            MOI.submit(
+                model,
+                MOI.LazyConstraint(cb_data),
+                1.0 * x[3] + 1.0 * x[4],
+                MOI.LessThan(1.0),
+            )
+            n_submitted += 1
+        end
+        return
+    end
+    MOI.set(model, MOI.LazyConstraintCallback(), callback)
+    MOI.optimize!(model)
+    @test n_submitted == 1
+    @test n_violated_after_submit == 0
+    @test MOI.get(model, MOI.TerminationStatus()) == MOI.OPTIMAL
+    x_sol = MOI.get.(model, MOI.VariablePrimal(), x)
+    @test x_sol[3] + x_sol[4] <= 1 + 1e-6
+    @test MOI.get(model, MOI.ObjectiveValue()) ≈ 6.0
+    return
+end
+
 function test_lazy_constraint_callback_resolved_node()
     model = Xpress.Optimizer()
     MOI.set(model, MOI.RawOptimizerAttribute("OUTPUTLOG"), 0)

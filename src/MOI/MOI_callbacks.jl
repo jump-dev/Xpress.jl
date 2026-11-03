@@ -27,6 +27,8 @@ struct CallbackData
     model::XpressProblem
 end
 
+Base.cconvert(::Type{Ptr{Cvoid}}, x::CallbackData) = x.model
+
 function _cboptnode(cbprob::XPRSprob, cbdata::Ptr{Cvoid}, ::Ptr{Cint})
     user_data = unsafe_pointer_to_objref(cbdata)::_CallbackUserData
     prob = XpressProblem(cbprob; finalize_env = false)
@@ -46,7 +48,7 @@ function MOI.set(model::Optimizer, ::CallbackFunction, f::Function)
                 _ = XPRSinterrupt(model, XPRS_STOP_CTRLC)
             else
                 model.cb_exception = ex
-                _ = XPRSinterrupt(cb_data.model, XPRS_STOP_USER)
+                _ = XPRSinterrupt(cb_data, XPRS_STOP_USER)
             end
         end
         model.callback_state = CB_NONE
@@ -79,28 +81,34 @@ function get_cb_solution(model::Optimizer, model_inner::XpressProblem)
     return
 end
 
+"""
+    _load_existing_cuts(model::Optimizer, cb_data::CallbackData)
+
+Load every cut in the cut pool that is violated by the current node solution.
+
+Cuts loaded by `XPRSloadcuts` are active only in the subtree of the node at
+which they were loaded, so a lazy constraint submitted in one part of the tree
+is not enforced in a sibling subtree unless we re-load it from the pool.
+
+Returns `true` if any cuts were loaded. In that case the matrix has changed, so
+the node solution is no longer available, and Xpress will re-solve the node and
+call the callback again.
+"""
 function _load_existing_cuts(model::Optimizer, cb_data::CallbackData)
-    if isempty(model.cb_cut_data.cutptrs)
+    p_ncuts = Ref{Cint}(0)
+    # The first call (with maxcuts = 0) returns the number of violated cuts
+    ret = XPRSgetcpcutlist(cb_data, 1, -1, 0.0, p_ncuts, 0, C_NULL, C_NULL)
+    _check(model, ret)
+    n = p_ncuts[]
+    if n == 0
         return false
     end
-    p_ncuts = Ref{Cint}(0)
-    size = length(model.cb_cut_data.cutptrs)
-    mcutptr = Vector{XPRScut}(undef, size)
-    dviol = Vector{Cdouble}(undef, size)
-    ret = XPRSgetcpcutlist(
-        cb_data.model,
-        1, # itype
-        -1, # interp
-        0.0, # delta
-        p_ncuts,
-        size,
-        mcutptr,
-        dviol,
-    )
+    p_cuts = fill(C_NULL, n)
+    ret = XPRSgetcpcutlist(cb_data, 1, -1, 0.0, p_ncuts, n, p_cuts, C_NULL)
     _check(model, ret)
-    ret = XPRSloadcuts(cb_data.model, 1, -1, p_ncuts[], mcutptr)
+    ret = XPRSloadcuts(cb_data, 1, -1, n, p_cuts)
     _check(model, ret)
-    return p_ncuts[] > 0
+    return n > 0
 end
 
 # ==============================================================================
@@ -109,31 +117,34 @@ end
 
 function default_moi_callback(model::Optimizer)
     function default_callback(cb_data)
-        # If we added a cut from the existing pool, it means that the current
-        # solution violates a cut that we previously added but that has since
-        # been deleted.
-        #
-        # TODO(odow): could we remove this? We don't enforce it for any other
-        # solver.
+        # If we loaded a violated cut from the pool, the matrix has changed and
+        # the node solution is no longer available. Return; Xpress will re-solve
+        # the node and call us again.
         if _load_existing_cuts(model, cb_data)
             return
         end
+        get_cb_solution(model, cb_data.model)
         # Check if this callback has been called at this solution before. We
-        # might want to add multiple cuts and lazy constraints, but we should
-        # call the heuristic callback only once. See Xpress.j#338 and #339 for
-        # details.
+        # might want to add multiple lazy constraints, but we should call the
+        # heuristic and user cut callbacks only once. See Xpress.j#338 and #339
+        # for details.
         attr = XPRS_CALLBACKCOUNT_OPTNODE
         pInt = Ref{Cint}(0)
-        ret = XPRSgetintattrib(cb_data.model, attr, pInt)
+        ret = XPRSgetintattrib(cb_data, attr, pInt)
         _check(model, ret)
-        get_cb_solution(model, cb_data.model)
-        if pInt[] <= 1 && model.heuristic_callback !== nothing
-            model.callback_state = CB_HEURISTIC
-            model.heuristic_callback(cb_data)
-        end
-        if model.user_cut_callback !== nothing
-            model.callback_state = CB_USER_CUT
-            model.user_cut_callback(cb_data)
+        if pInt[] == 0
+            # Run the heuristic and user-cut callbacks only on the first time
+            # the node is explored. We need to run the lazy callback multiple
+            # times because it may invalidate the current solution, causing
+            # Xpress to call the callback another time.
+            if model.heuristic_callback !== nothing
+                model.callback_state = CB_HEURISTIC
+                model.heuristic_callback(cb_data)
+            end
+            if model.user_cut_callback !== nothing
+                model.callback_state = CB_USER_CUT
+                model.user_cut_callback(cb_data)
+            end
         end
         if model.lazy_callback !== nothing
             model.callback_state = CB_LAZY
@@ -149,7 +160,7 @@ function MOI.get(model::Optimizer, attr::MOI.CallbackNodeStatus{CallbackData})
         return MOI.CALLBACK_NODE_STATUS_UNKNOWN
     end
     pInt = Ref{Cint}(0)
-    ret = XPRSgetintattrib(attr.callback_data.model, XPRS_MIPINFEAS, pInt)
+    ret = XPRSgetintattrib(attr.callback_data, XPRS_MIPINFEAS, pInt)
     _check(model, ret)
     if pInt[] == 0
         return MOI.CALLBACK_NODE_STATUS_INTEGER
@@ -168,7 +179,7 @@ end
 
 function _throw_if_invalid_state(model, cb, calling_state)
     if model.callback_state in (calling_state, CB_NONE, CB_GENERIC)
-        return
+        return false
     end
     attr = if model.callback_state == CB_HEURISTIC
         MOI.HeuristicCallback()
@@ -179,8 +190,8 @@ function _throw_if_invalid_state(model, cb, calling_state)
         MOI.UserCutCallback()
     end
     model.cb_exception = MOI.InvalidCallbackUsage(attr, cb)
-    _ = XPRSinterrupt(cb.callback_data.model, XPRS_STOP_USER)
-    return
+    _ = XPRSinterrupt(cb.callback_data, XPRS_STOP_USER)
+    return true
 end
 
 # ==============================================================================
@@ -207,13 +218,14 @@ function MOI.submit(
         MOI.EqualTo{Float64},
     },
 )
-    model.cb_cut_data.submitted = true
-    _throw_if_invalid_state(model, cb, CB_USER_CUT)
+    if _throw_if_invalid_state(model, cb, CB_USER_CUT)
+        return
+    end
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
     mindex = Vector{XPRScut}(undef, 1)
     ret = XPRSstorecuts(
-        cb.callback_data.model,
+        cb.callback_data,
         1,                          # ncuts
         2,                          # nodupl,
         Cint[1],                    # mtype
@@ -225,9 +237,8 @@ function MOI.submit(
         coefficients,
     )
     _check(model, ret)
-    ret = XPRSloadcuts(cb.callback_data.model, 1, Cint(-1), 1, mindex)
+    ret = XPRSloadcuts(cb.callback_data, 1, -1, 1, mindex)
     _check(model, ret)
-    push!(model.cb_cut_data.cutptrs, mindex[1])
     return
 end
 
@@ -253,13 +264,14 @@ function MOI.submit(
         MOI.EqualTo{Float64},
     },
 )
-    model.cb_cut_data.submitted = true
-    _throw_if_invalid_state(model, cb, CB_LAZY)
+    if _throw_if_invalid_state(model, cb, CB_LAZY)
+        return
+    end
     indices, coefficients = _indices_and_coefficients(model, f)
     sense, rhs = _sense_and_rhs(s)
     mindex = Vector{XPRScut}(undef, 1)
     ret = XPRSstorecuts(
-        cb.callback_data.model,
+        cb.callback_data,
         1,                          # ncuts
         2,                          # nodupl,
         Cint[1],                    # mtype
@@ -271,9 +283,8 @@ function MOI.submit(
         coefficients,
     )
     _check(model, ret)
-    ret = XPRSloadcuts(cb.callback_data.model, 1, Cint(-1), 1, mindex)
+    ret = XPRSloadcuts(cb.callback_data, 1, -1, 1, mindex)
     _check(model, ret)
-    push!(model.cb_cut_data.cutptrs, mindex[1])
     return
 end
 
@@ -294,17 +305,14 @@ function MOI.submit(
     model::Optimizer,
     cb::MOI.HeuristicSolution{CallbackData},
     variables::Vector{MOI.VariableIndex},
-    values::MOI.Vector{Float64},
+    values::Vector{Float64},
 )
-    _throw_if_invalid_state(model, cb, CB_HEURISTIC)
-    nnz = length(variables)
-    mipsolcol = if nnz == MOI.get(model, MOI.NumberOfVariables())
-        C_NULL
-    else
-        Cint[_info(model, x).column - 1 for x in variables]
+    if _throw_if_invalid_state(model, cb, CB_HEURISTIC)
+        return MOI.HEURISTIC_SOLUTION_UNKNOWN
     end
-    model_cb = cb.callback_data.model::XpressProblem
-    ret = XPRSaddmipsol(model_cb, nnz, values, mipsolcol, C_NULL)
+    nnz = length(variables)
+    mipsolcol = Cint[_info(model, x).column - 1 for x in variables]
+    ret = XPRSaddmipsol(cb.callback_data, nnz, values, mipsolcol, C_NULL)
     _check(model, ret)
     return MOI.HEURISTIC_SOLUTION_UNKNOWN
 end
