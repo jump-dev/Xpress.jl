@@ -121,11 +121,6 @@ function _reset_cached_solution(cache::CachedSolution, num_vars, num_rows)
     return cache
 end
 
-mutable struct CallbackCutData
-    submitted::Bool
-    cutptrs::Vector{XPRScut}
-end
-
 mutable struct BasisStatus
     con_status::Vector{Cint}
     var_status::Vector{Cint}
@@ -249,7 +244,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 
     # Callback fields.
     callback_cached_solution::Union{Nothing,CachedSolution}
-    cb_cut_data::CallbackCutData
     callback_state::CallbackState
     cb_exception::Union{Nothing,Exception}
 
@@ -374,7 +368,6 @@ function MOI.empty!(model::Optimizer)
     model.forward_sensitivity_cache = nothing
     model.backward_sensitivity_cache = nothing
     model.callback_cached_solution = nothing
-    model.cb_cut_data = CallbackCutData(false, XPRScut[])
     model.callback_state = CB_NONE
     model.cb_exception = nothing
     model.lazy_callback = nothing
