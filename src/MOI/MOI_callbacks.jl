@@ -132,7 +132,11 @@ function default_moi_callback(model::Optimizer)
         pInt = Ref{Cint}(0)
         ret = XPRSgetintattrib(cb_data, attr, pInt)
         _check(model, ret)
-        if pInt[] == 0
+        # This really should be `pInt[] == 0`, but Xpress is not consistent as
+        # to whether it thinks `XPRS_CALLBACKCOUNT_OPTNODE` should be `1` or `0`
+        # during the first call to the callback... It seems to differ between
+        # versions.
+        if pInt[] <= 1
             # Run the heuristic and user-cut callbacks only on the first time
             # the node is explored. We need to run the lazy callback multiple
             # times because it may invalidate the current solution, causing
